@@ -299,11 +299,17 @@ const BookingDiscussion = () => {
             setVehiclePhotos({ [foundVehicle.id]: convertedPhoto });
           } else {
             console.log('📸 [DEBUG] FORCE - Utilisation de la vraie photo Supabase !');
-            // FORCER l'URL directe de la vraie photo Supabase
+            // FORCER l'URL directe de la vraie photo Supabase (construction dynamique depuis env)
+            const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+            const storagePath = 'vehicle-photos/exterior_1759781792034_lm9xwpqf8e.jpg';
+            const photoUrl = SUPABASE_URL 
+              ? `${SUPABASE_URL}/storage/v1/object/public/${storagePath}`
+              : `https://picsum.photos/200/150?random=${foundVehicle.id}`; // Fallback si URL manquante
+            
             const realSupabasePhoto = {
               id: `real-supabase-${foundVehicle.id}`,
               vehicleId: foundVehicle.id,
-              url: `https://zykwfjxurwmputxwlkxs.supabase.co/storage/v1/object/public/vehicle-photos/exterior_1759781792034_lm9xwpqf8e.jpg`,
+              url: photoUrl,
               isPrimary: true
             };
             console.log('📸 [DEBUG] URL forcée:', realSupabasePhoto.url);

@@ -1,0 +1,30 @@
+# Cursor Rules pour le projet Rentanoo Nosy Be
+
+## Configuration Supabase
+
+**Projet Supabase** : `zykwfjxurwmputxwlkxs`
+**URL Supabase** : `https://zykwfjxurwmputxwlkxs.supabase.co`
+
+## Règles importantes
+
+1. **Toujours utiliser le projet Supabase `zykwfjxurwmputxwlkxs`**
+   - Vérifier que `supabase/config.toml` contient `project_id = "zykwfjxurwmputxwlkxs"`
+   - Vérifier que les variables d'environnement pointent vers `https://zykwfjxurwmputxwlkxs.supabase.co`
+
+2. **Configuration MCP Supabase**
+   - La configuration MCP Supabase dans Cursor doit pointer vers le projet `zykwfjxurwmputxwlkxs`
+   - Voir `ETAPE-3-CORRECTION-CONNEXION-MCP.md` pour les instructions de configuration
+
+3. **Variables d'environnement**
+   - Utiliser `.env.local` pour les variables d'environnement locales
+   - Ne jamais commiter les fichiers `.env.local` (dans .gitignore)
+   - Utiliser `.env.local.example` comme template
+
+4. **Schéma de base de données**
+   - Tables principales : `profiles`, `vehicles`, `bookings`, `conversations`, `messages`, `checkin_depart`, `checkin_return`
+   - Voir `ETAPE-3-PLAN-RECREATE-SANS-DONNEES.md` pour le schéma complet
+
+## Scripts utiles
+
+- `node scripts/verify-supabase-connection.js` : Vérifier la connexion Supabase
+

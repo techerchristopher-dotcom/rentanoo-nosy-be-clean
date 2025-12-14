@@ -17,7 +17,8 @@
     "dev:api": "tsx server/index.ts",
     "start": "tsx server/index.ts",
     "start:prod": "NODE_ENV=production tsx server/index.ts",
-    "diagnostic:duplication": "node scripts/diagnostic-duplication.js"
+    "diagnostic:duplication": "node scripts/diagnostic-duplication.js",
+    "verify:supabase": "node scripts/verify-supabase-connection.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

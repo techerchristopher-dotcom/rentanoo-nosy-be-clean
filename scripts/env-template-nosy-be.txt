@@ -10,14 +10,15 @@
 # ============================================
 
 # ============================================
-# SUPABASE (NOUVELLES CLÉS - NOUVEAU PROJET)
+# SUPABASE - PROJET RENTANOO (zykwfjxurwmputxwlkxs)
 # ============================================
 # 
+# ⚠️ IMPORTANT : Ce projet utilise le projet Supabase zykwfjxurwmputxwlkxs
 # Récupérez ces valeurs depuis :
-# https://supabase.com/dashboard/project/[NOUVEAU_PROJECT_ID]/settings/api
+# https://supabase.com/dashboard/project/zykwfjxurwmputxwlkxs/settings/api
 #
-VITE_SUPABASE_URL=https://[NOUVEAU_PROJECT_ID].supabase.co
-VITE_SUPABASE_ANON_KEY=[NOUVELLE_ANON_KEY]
+VITE_SUPABASE_URL=https://zykwfjxurwmputxwlkxs.supabase.co
+VITE_SUPABASE_ANON_KEY=[VOTRE_ANON_KEY]
 
 # ============================================
 # SITE URL (NOUVEAU DOMAINE)
@@ -45,8 +46,8 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_[VOTRE_CLE_STRIPE]
 # Ces variables NE DOIVENT PAS avoir le préfixe VITE_
 # Elles sont utilisées par le serveur Express (server/index.ts)
 #
-# SUPABASE_URL=https://[NOUVEAU_PROJECT_ID].supabase.co
-# SUPABASE_SERVICE_ROLE_KEY=[NOUVELLE_SERVICE_ROLE_KEY]
+# SUPABASE_URL=https://zykwfjxurwmputxwlkxs.supabase.co
+# SUPABASE_SERVICE_ROLE_KEY=[VOTRE_SERVICE_ROLE_KEY]
 # STRIPE_SECRET_KEY=sk_test_[VOTRE_CLE_SECRETE_STRIPE]
 # STRIPE_WEBHOOK_SECRET=whsec_[VOTRE_WEBHOOK_SECRET]
 
