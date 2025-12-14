@@ -1,0 +1,66 @@
+[
+  {
+    "id": "payment_1",
+    "bookingId": "booking_1",
+    "type": "charge",
+    "amount": 70,
+    "currency": "EUR", 
+    "status": "succeeded",
+    "stripePaymentIntentId": "pi_mock_1234567890",
+    "createdAt": "2024-09-08T14:35:00Z",
+    "updatedAt": "2024-09-08T14:36:00Z"
+  },
+  {
+    "id": "payment_2",
+    "bookingId": "booking_2", 
+    "type": "charge",
+    "amount": 40,
+    "currency": "EUR",
+    "status": "succeeded", 
+    "stripePaymentIntentId": "pi_mock_2345678901",
+    "createdAt": "2024-09-09T16:50:00Z",
+    "updatedAt": "2024-09-09T16:51:00Z"
+  },
+  {
+    "id": "payment_3",
+    "bookingId": "booking_3",
+    "type": "charge",
+    "amount": 135,
+    "currency": "EUR",
+    "status": "succeeded",
+    "stripePaymentIntentId": "pi_mock_3456789012",
+    "createdAt": "2024-08-10T12:20:00Z",
+    "updatedAt": "2024-08-10T12:21:00Z"
+  },
+  {
+    "id": "payment_4",
+    "bookingId": "booking_3",
+    "type": "payout", 
+    "amount": 108,
+    "currency": "EUR",
+    "status": "succeeded",
+    "createdAt": "2024-08-18T10:00:00Z",
+    "updatedAt": "2024-08-18T10:01:00Z"
+  },
+  {
+    "id": "payment_5",
+    "bookingId": "booking_4",
+    "type": "charge",
+    "amount": 70,
+    "currency": "EUR",
+    "status": "succeeded", 
+    "stripePaymentIntentId": "pi_mock_4567890123",
+    "createdAt": "2024-08-28T09:35:00Z",
+    "updatedAt": "2024-08-28T09:36:00Z"
+  },
+  {
+    "id": "payment_6",
+    "bookingId": "booking_4",
+    "type": "refund",
+    "amount": 70,
+    "currency": "EUR",
+    "status": "succeeded",
+    "createdAt": "2024-08-30T14:25:00Z",
+    "updatedAt": "2024-08-30T14:26:00Z"
+  }
+]

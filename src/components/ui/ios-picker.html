@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>iOS Picker Demo</title>
+    <style>
+        /* CSS Variables */
+        :root {
+            --row-h: 44px;
+            --accent: #007AFF;
+            --sep: #E5E5EA;
+            --bg: #FFF;
+            --text: #111;
+            --secondary: #8E8E93;
+            --border: #C7C7CC;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+        }
+
+        /* Base / Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.4;
+            overflow-x: hidden;
+        }
+
+        /* Sheet & Toolbar */
+        .picker-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg);
+            border-radius: 16px 16px 0 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            padding-bottom: var(--safe-bottom);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 44px;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--sep);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .toolbar-left {
+            display: flex;
+            gap: 8px;
+            font-size: 16px;
+            color: var(--secondary);
+        }
+
+        .toolbar-right {
+            color: var(--accent);
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .picker-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Picker Card */
+        .picker-card {
+            background: var(--bg);
+            border: 1px solid var(--sep);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .picker-card .toolbar {
+            border-bottom: 1px solid var(--sep);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .picker-wheel-container {
+            position: relative;
+            height: calc(var(--row-h) * 5);
+            overflow: hidden;
+        }
+
+        /* Picker wheel core */
+        .picker-wheel {
+            height: 100%;
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .picker-wheel::-webkit-scrollbar {
+            display: none;
+        }
+
+        .picker-item {
+            height: var(--row-h);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(16px, 4vw, 18px);
+            color: var(--text);
+            scroll-snap-align: center;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            min-height: 44px;
+        }
+
+        .picker-item:hover {
+            color: var(--accent);
+        }
+
+        .picker-item[aria-selected="true"] {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* Selection overlay */
+        .selection-overlay {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: var(--row-h);
+            transform: translateY(-50%);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Mask fade */
+        .picker-wheel-container::before,
+        .picker-wheel-container::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: calc(var(--row-h) * 2);
+            pointer-events: none;
+            z-index: 6;
+        }
+
+        .picker-wheel-container::before {
+            top: 0;
+            background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+        }
+
+        .picker-wheel-container::after {
+            bottom: 0;
+            background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+        }
+
+        /* Multi-column picker */
+        .multi-picker {
+            display: flex;
+            height: calc(var(--row-h) * 5);
+        }
+
+        .multi-picker .picker-wheel {
+            flex: 1;
+            border-right: 1px solid var(--sep);
+        }
+
+        .multi-picker .picker-wheel:last-child {
+            border-right: none;
+        }
+
+        .multi-picker .selection-overlay {
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+
+        /* Grid & responsive */
+        @media (min-width: 768px) {
+            .picker-sheet {
+                position: relative;
+                max-height: none;
+                border-radius: 16px;
+                margin: 20px;
+                max-width: 800px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .picker-content {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .picker-card {
+                min-height: 300px;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1C1C1E;
+                --text: #FFFFFF;
+                --secondary: #8E8E93;
+                --sep: #38383A;
+                --border: #48484A;
+            }
+        }
+
+        /* Demo specific styles */
+        .demo-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-end;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: var(--safe-top) var(--safe-left) var(--safe-bottom) var(--safe-right);
+        }
+
+        .demo-trigger {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .demo-trigger:hover {
+            background: #0056CC;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <button class="demo-trigger" onclick="togglePicker()">
+            Ouvrir le Picker iOS
+        </button>
+        
+        <div class="picker-sheet hidden" id="pickerSheet">
+            <!-- Card 1: Meal Times -->
+            <div class="picker-card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <span>‹</span>
+                        <span>›</span>
+                    </div>
+                    <div class="toolbar-right">Terminé</div>
+                </div>
+                <div class="picker-wheel-container">
+                    <div class="picker-wheel" role="listbox">
+                        <div class="picker-item" role="option" aria-selected="true">Choisir une option</div>
+                        <div class="picker-item" role="option">Avant le petit-déjeuner</div>
+                        <div class="picker-item" role="option">Après le petit-déjeuner</div>
+                        <div class="picker-item" role="option">Avant le déjeuner</div>
+                        <div class="picker-item" role="option">Après le déjeuner</div>
+                        <div class="picker-item" role="option">Avant le dîner</div>
+                        <div class="picker-item" role="option">Après le dîner</div>
+                        <div class="picker-item" role="option">Collation</div>
+                    </div>
+                    <div class="selection-overlay"></div>
+                </div>
+            </div>
+
+            <!-- Card 2: Meal Times (pre-scrolled) -->
+            <div class="picker-card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <span>‹</span>
+                        <span>›</span>
+                    </div>
+                    <div class="toolbar-right">Terminé</div>
+                </div>
+                <div class="picker-wheel-container">
+                    <div class="picker-wheel" role="listbox" style="scroll-padding-top: calc(var(--row-h) * 4);">
+                        <div class="picker-item" role="option">Avant le petit-déjeuner</div>
+                        <div class="picker-item" role="option">Après le petit-déjeuner</div>
+                        <div class="picker-item" role="option">Avant le déjeuner</div>
+                        <div class="picker-item" role="option" aria-selected="true">Après le déjeuner</div>
+                        <div class="picker-item" role="option">Avant le dîner</div>
+                        <div class="picker-item" role="option">Après le dîner</div>
+                        <div class="picker-item" role="option">Collation</div>
+                    </div>
+                    <div class="selection-overlay"></div>
+                </div>
+            </div>
+
+            <!-- Card 3: Months -->
+            <div class="picker-card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <span>‹</span>
+                        <span>›</span>
+                    </div>
+                    <div class="toolbar-right">Terminé</div>
+                </div>
+                <div class="picker-wheel-container">
+                    <div class="picker-wheel" role="listbox">
+                        <div class="picker-item" role="option">Janvier 2017</div>
+                        <div class="picker-item" role="option">Février 2017</div>
+                        <div class="picker-item" role="option" aria-selected="true">Mars 2017</div>
+                        <div class="picker-item" role="option">Avril 2017</div>
+                        <div class="picker-item" role="option">Mai 2017</div>
+                        <div class="picker-item" role="option">Juin 2017</div>
+                        <div class="picker-item" role="option">Juillet 2017</div>
+                    </div>
+                    <div class="selection-overlay"></div>
+                </div>
+            </div>
+
+            <!-- Card 4: Date & Time -->
+            <div class="picker-card">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <span>‹</span>
+                        <span>›</span>
+                    </div>
+                    <div class="toolbar-right">Terminé</div>
+                </div>
+                <div class="picker-wheel-container">
+                    <div class="multi-picker">
+                        <div class="picker-wheel" role="listbox">
+                            <div class="picker-item" role="option">Lun 7 Sep</div>
+                            <div class="picker-item" role="option">Mar 8 Sep</div>
+                            <div class="picker-item" role="option" aria-selected="true">Mer 9 Sep</div>
+                            <div class="picker-item" role="option">Jeu 10 Sep</div>
+                            <div class="picker-item" role="option">Ven 11 Sep</div>
+                            <div class="picker-item" role="option">Sam 12 Sep</div>
+                            <div class="picker-item" role="option">Dim 13 Sep</div>
+                        </div>
+                        <div class="picker-wheel" role="listbox">
+                            <div class="picker-item" role="option">08</div>
+                            <div class="picker-item" role="option">09</div>
+                            <div class="picker-item" role="option" aria-selected="true">10</div>
+                            <div class="picker-item" role="option">11</div>
+                            <div class="picker-item" role="option">12</div>
+                            <div class="picker-item" role="option">13</div>
+                            <div class="picker-item" role="option">14</div>
+                        </div>
+                        <div class="picker-wheel" role="listbox">
+                            <div class="picker-item" role="option">00</div>
+                            <div class="picker-item" role="option">15</div>
+                            <div class="picker-item" role="option" aria-selected="true">00</div>
+                            <div class="picker-item" role="option">15</div>
+                            <div class="picker-item" role="option">30</div>
+                            <div class="picker-item" role="option">45</div>
+                        </div>
+                    </div>
+                    <div class="selection-overlay"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePicker() {
+            const picker = document.getElementById('pickerSheet');
+            picker.classList.toggle('hidden');
+        }
+
+        // Close picker when clicking outside
+        document.addEventListener('click', function(e) {
+            const picker = document.getElementById('pickerSheet');
+            const trigger = document.querySelector('.demo-trigger');
+            
+            if (!picker.contains(e.target) && !trigger.contains(e.target)) {
+                picker.classList.add('hidden');
+            }
+        });
+
+        // Handle picker item selection
+        document.querySelectorAll('.picker-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove selection from siblings
+                this.parentNode.querySelectorAll('.picker-item').forEach(sibling => {
+                    sibling.setAttribute('aria-selected', 'false');
+                });
+                
+                // Select current item
+                this.setAttribute('aria-selected', 'true');
+                
+                // Scroll to center the selected item
+                this.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+

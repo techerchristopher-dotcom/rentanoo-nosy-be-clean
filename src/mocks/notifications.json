@@ -1,0 +1,47 @@
+[
+  {
+    "id": "notif_1",
+    "userId": "user_2",
+    "type": "booking_request",
+    "title": "Nouvelle demande de réservation", 
+    "message": "Marie Dupont souhaite louer votre Dacia Sandero du 10 au 12 septembre",
+    "isRead": false,
+    "createdAt": "2024-09-08T14:30:00Z"
+  },
+  {
+    "id": "notif_2",
+    "userId": "user_1",
+    "type": "booking_accepted", 
+    "title": "Réservation acceptée",
+    "message": "Votre réservation pour la Renault Clio a été acceptée par Pierre Martin",
+    "isRead": true,
+    "createdAt": "2024-09-10T08:20:00Z" 
+  },
+  {
+    "id": "notif_3",
+    "userId": "user_5",
+    "type": "payment_succeeded",
+    "title": "Paiement confirmé",
+    "message": "Votre paiement de 40€ pour la Renault Clio a été traité avec succès", 
+    "isRead": false,
+    "createdAt": "2024-09-09T16:51:00Z"
+  },
+  {
+    "id": "notif_4",
+    "userId": "user_4", 
+    "type": "kyc_approved",
+    "title": "Vérification approuvée", 
+    "message": "Félicitations ! Votre identité a été vérifiée. Vous pouvez maintenant publier des véhicules",
+    "isRead": false,
+    "createdAt": "2024-09-12T10:15:00Z"
+  },
+  {
+    "id": "notif_5",
+    "userId": "user_1",
+    "type": "booking_declined",
+    "title": "Réservation refusée",
+    "message": "Votre demande de réservation pour la Peugeot 208 a été déclinée",
+    "isRead": true,
+    "createdAt": "2024-08-25T15:30:00Z"
+  }
+]

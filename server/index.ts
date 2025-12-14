@@ -1,0 +1,500 @@
+import path from "path";
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import { createClient } from "@supabase/supabase-js";
+
+// Charger .env.local explicitement avant d'importer Stripe
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+
+// Import dynamique pour garantir que les variables d'env sont chargées
+const { stripe } = await import("../src/lib/stripe");
+
+const app = express();
+app.use(cors());
+
+// Webhook Stripe nécessite le body RAW. On MONTE d'abord la route webhook (avec express.raw)
+// puis ensuite seulement le parser JSON global.
+
+// Supabase admin client (service role) pour mises à jour serveur
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL as string,
+  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  { auth: { persistSession: false } }
+);
+
+// Route Webhook Stripe - DOIT être déclarée avant app.use(express.json())
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"] as string | undefined;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    let event: any;
+    
+    // Vérifier la signature si STRIPE_WEBHOOK_SECRET est configuré
+    if (webhookSecret) {
+      if (!sig) {
+        console.error("❌ [webhook] Missing Stripe-Signature header");
+        return res.status(400).send("Missing Stripe-Signature");
+      }
+      try {
+        event = (await import("stripe")).default.webhooks.constructEvent(
+          (req as any).body,
+          sig,
+          webhookSecret
+        );
+      } catch (err: any) {
+        console.error("❌ [webhook] Signature verification failed:", err?.message);
+        return res.status(400).send(`Webhook Error: ${err?.message}`);
+      }
+    } else {
+      // TODO: sécuriser avec STRIPE_WEBHOOK_SECRET en prod
+      console.warn("⚠️ [webhook] STRIPE_WEBHOOK_SECRET non configuré - mode dev non sécurisé");
+      try {
+        event = JSON.parse((req as any).body.toString());
+      } catch (err: any) {
+        console.error("❌ [webhook] Erreur parsing body:", err?.message);
+        return res.status(400).send(`Invalid JSON: ${err?.message}`);
+      }
+    }
+
+    try {
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object as any; // Stripe.Checkout.Session
+        const bookingId: string | undefined = session?.metadata?.bookingId;
+        if (!bookingId) {
+          console.error("❌ bookingId absent dans metadata");
+          return res.status(200).json({ received: true });
+        }
+
+        const paymentIntentId: string | undefined = session?.payment_intent || undefined;
+        const checkoutSessionId: string = session?.id;
+        const amountTotal: number = (session?.amount_total || 0) / 100; // EUR
+        const currency: string = (session?.currency || "eur").toUpperCase();
+
+        // Lire commission base depuis Supabase: subtotal
+        const { data: bookingRow, error: fetchErr } = await supabaseAdmin
+          .from("bookings")
+          .select("subtotal")
+          .eq("id", bookingId)
+          .single();
+        if (fetchErr) {
+          console.error("❌ Lecture bookings.subtotal:", fetchErr);
+          return res.status(500).json({ ok: false, error: fetchErr.message });
+        }
+
+        const commissionBase = Number(bookingRow?.subtotal || 0);
+        // Calculs business (15% locataire + 15% propriétaire) sur subtotal
+        const round2 = (n: number) => Math.round(n * 100) / 100;
+        const serviceFeeRenter = round2(commissionBase * 0.15);
+        const serviceFeeOwner = round2(commissionBase * 0.15);
+        const amountTotalPaid = round2(commissionBase + serviceFeeRenter);
+        const ownerPayoutAmount = round2(commissionBase - serviceFeeOwner);
+        const platformTotalFee = round2(serviceFeeRenter + serviceFeeOwner);
+
+        // Alerte si désalignement montant Stripe vs calcul (tolérance arrondis)
+        if (amountTotal && Math.abs(amountTotal - amountTotalPaid) > 0.02) {
+          console.warn("⚠️ Stripe amount_total différent du calcul business", {
+            amountTotalFromStripe: amountTotal,
+            amountTotalPaid,
+          });
+        }
+
+        const { error: updateErr } = await supabaseAdmin
+          .from("bookings")
+          .update({
+            status: "accepted",
+            paid_at: new Date().toISOString(),
+            stripe_payment_intent_id: paymentIntentId || null,
+            stripe_checkout_session_id: checkoutSessionId,
+            amount_total_paid: amountTotal || amountTotalPaid,
+            service_fee_renter: serviceFeeRenter,
+            service_fee_owner: serviceFeeOwner,
+            owner_payout_amount: ownerPayoutAmount,
+            platform_total_fee: platformTotalFee,
+            currency,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", bookingId);
+
+        if (updateErr) {
+          console.error("❌ Update bookings après paiement:", updateErr);
+          return res.status(500).json({ ok: false, error: updateErr.message });
+        }
+
+        console.log("✅ [webhook] Booking mis à jour après paiement:", {
+          bookingId,
+          status: "accepted",
+          paymentStatus: "paid",
+          amountTotalPaid,
+          ownerPayoutAmount,
+          platformTotalFee,
+        });
+        
+        console.log(`✅ [webhook] bookingId=${bookingId}, payment confirmed -> statutReservation=accepted, statutPaiement=paid`);
+      }
+
+      return res.status(200).json({ received: true });
+    } catch (err: any) {
+      console.error("❌ Erreur traitement webhook:", err);
+      return res.status(500).json({ ok: false, error: err?.message || "webhook failed" });
+    }
+  }
+);
+
+// Parser JSON global après la route webhook
+app.use(express.json());
+
+app.get("/api/stripe-health", async (_req, res) => {
+  try {
+    const account = await stripe.accounts.retrieve();
+    res.status(200).json({
+      ok: true,
+      stripeReady: true,
+      livemode: Boolean((account as any).livemode),
+    });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e?.message || "Stripe health check failed" });
+  }
+});
+
+// Route pour démarrer un état des lieux de départ
+app.post("/api/checkin/start", async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+
+    // Validation de l'entrée
+    if (!bookingId || typeof bookingId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "bookingId est requis et doit être une chaîne de caractères",
+      });
+    }
+
+    // Vérifier que le booking existe et récupérer les informations nécessaires
+    const { data: booking, error: bookingError } = await supabaseAdmin
+      .from("bookings")
+      .select("id, user_id, vehicle_id")
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingError || !booking) {
+      console.error("❌ [checkin/start] Erreur récupération booking:", bookingError);
+      return res.status(404).json({
+        success: false,
+        error: "Réservation introuvable",
+      });
+    }
+
+    const renterId = booking.user_id;
+    const vehicleId = booking.vehicle_id;
+
+    // Récupérer le owner_id depuis le véhicule
+    const { data: vehicle, error: vehicleError } = await supabaseAdmin
+      .from("vehicles")
+      .select("owner_id")
+      .eq("id", vehicleId)
+      .single();
+
+    if (vehicleError || !vehicle) {
+      console.error("❌ [checkin/start] Erreur récupération véhicule:", vehicleError);
+      return res.status(404).json({
+        success: false,
+        error: "Véhicule introuvable",
+      });
+    }
+
+    const ownerId = vehicle.owner_id;
+
+    // Vérifier qu'un état des lieux n'existe pas déjà pour ce booking
+    const { data: existingCheckin, error: checkinCheckError } = await supabaseAdmin
+      .from("checkin_depart")
+      .select("id")
+      .eq("booking_id", bookingId)
+      .maybeSingle();
+
+    if (checkinCheckError) {
+      console.error("❌ [checkin/start] Erreur vérification checkin existant:", checkinCheckError);
+      return res.status(500).json({
+        success: false,
+        error: "Erreur lors de la vérification d'un état des lieux existant",
+      });
+    }
+
+    if (existingCheckin) {
+      return res.status(400).json({
+        success: false,
+        error: "Un état des lieux existe déjà pour cette réservation",
+        checkin_id: existingCheckin.id,
+      });
+    }
+
+    // Créer un nouvel état des lieux de départ
+    const { data: newCheckin, error: insertError } = await supabaseAdmin
+      .from("checkin_depart")
+      .insert({
+        booking_id: bookingId,
+        owner_id: ownerId,
+        renter_id: renterId,
+        status: "draft",
+        created_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !newCheckin) {
+      console.error("❌ [checkin/start] Erreur création checkin:", insertError);
+      return res.status(500).json({
+        success: false,
+        error: insertError?.message || "Erreur lors de la création de l'état des lieux",
+      });
+    }
+
+    console.log("✅ [checkin/start] État des lieux créé:", {
+      checkin_id: newCheckin.id,
+      booking_id: bookingId,
+      owner_id: ownerId,
+      renter_id: renterId,
+    });
+
+    // Retourner la réponse avec succès
+    return res.status(200).json({
+      success: true,
+      checkin_id: newCheckin.id,
+      redirectUrl: `/etat-des-lieux/depart/${newCheckin.id}`,
+    });
+  } catch (error: any) {
+    console.error("❌ [checkin/start] Erreur inattendue:", error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || "Erreur serveur lors de la création de l'état des lieux",
+    });
+  }
+});
+
+// Route pour sauvegarder un brouillon d'état des lieux de départ
+app.post("/api/checkin/saveDraft", async (req, res) => {
+  // ⚠️ TOUT DANS LE TRY/CATCH, même les logs avec JSON.stringify !
+  try {
+    // ⭐ LOG CRITIQUE : Handler appelé
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("[CHECKIN SAVE DRAFT] 🚀 Handler appelé");
+    
+    // ⚠️ JSON.stringify peut throw si body contient des circulaires ou non-sérialisables
+    try {
+      console.log("[CHECKIN SAVE DRAFT] 📦 Raw body:", JSON.stringify(req.body, null, 2));
+    } catch (stringifyError) {
+      console.warn("[CHECKIN SAVE DRAFT] ⚠️ Body non-stringifiable, affichage basique");
+      console.log("[CHECKIN SAVE DRAFT] 📦 Raw body (basic):", req.body);
+    }
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    const body = req.body;
+    const {
+      checkin_id,   // optionnel -> si fourni: UPDATE
+      booking_id,   // obligatoire à l'INSERT
+      owner_id,     // obligatoire à l'INSERT
+      renter_id,    // obligatoire à l'INSERT
+      status,       // "draft"
+      section,      // ex: "conducteur"
+      data,         // ex: { conducteur: {...} }
+    } = body || {};
+
+    // Logs structurés pour debug détaillé
+    console.log("[saveDraft] 📊 Requête parsée:", {
+      booking_id,
+      owner_id,
+      renter_id,
+      checkin_id,
+      section,
+      status,
+      hasData: !!data,
+      dataKeys: Object.keys(data || {}),
+    });
+    
+    // ⚠️ LOG CRITIQUE : Inspecter la structure de data.step1 si présent
+    if (data?.step1) {
+      console.log("[saveDraft] 🔍 Structure data.step1:", {
+        keys: Object.keys(data.step1),
+        completedAt: data.step1.completedAt,
+        hasIdentification: !!data.step1.identification,
+        identificationKeys: data.step1.identification ? Object.keys(data.step1.identification) : null,
+      });
+    }
+
+    // Helper pour fusionner l'ancien JSONB avec le nouveau bloc partiel
+    function mergeDataSection(oldData: any, newPartial: any) {
+      return {
+        ...(oldData || {}),
+        ...(newPartial || {}),
+      };
+    }
+
+    //
+    // CAS UPDATE (on a déjà un brouillon, donc on doit merger data)
+    //
+    if (checkin_id) {
+      console.log("[saveDraft] Mode UPDATE pour checkin_id =", checkin_id);
+
+      const { data: existingRow, error: selectError } = await supabaseAdmin
+        .from("checkin_depart")
+        .select("data")
+        .eq("id", checkin_id)
+        .single();
+
+      if (selectError) {
+        console.error("[saveDraft] Erreur SELECT brouillon existant:", selectError);
+        return res.status(500).json({
+          error: "SELECT_FAILED",
+          details: selectError.message,
+        });
+      }
+
+      const mergedData = mergeDataSection(existingRow?.data, data);
+
+      const { data: updatedRow, error: updateError } = await supabaseAdmin
+        .from("checkin_depart")
+        .update({
+          status: status || "draft",
+          data: mergedData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", checkin_id)
+        .select("id, booking_id, owner_id, renter_id, status, data, updated_at")
+        .single();
+
+      if (updateError) {
+        console.error("[saveDraft] Erreur UPDATE checkin_depart:", updateError);
+        return res.status(500).json({
+          error: "UPDATE_FAILED",
+          details: updateError.message,
+        });
+      }
+
+      console.log("✅ [saveDraft] UPDATE réussi:", {
+        checkin_id: updatedRow?.id,
+        booking_id: updatedRow?.booking_id,
+        status: updatedRow?.status,
+        dataKeys: Object.keys(updatedRow?.data || {}),
+      });
+      return res.status(200).json({ checkin: updatedRow });
+    }
+
+    //
+    // CAS INSERT (première sauvegarde brouillon)
+    //
+    console.log("[saveDraft] Mode INSERT (nouveau brouillon)");
+
+    // ⚠️ Validation : seul booking_id est VRAIMENT obligatoire
+    // owner_id et renter_id peuvent être null au début du flow
+    if (!booking_id) {
+      console.error("[saveDraft] booking_id manquant pour INSERT:", {
+        booking_id,
+        owner_id,
+        renter_id,
+      });
+      return res.status(400).json({
+        error: "MISSING_BOOKING_ID",
+        details: "booking_id est obligatoire pour créer un brouillon",
+      });
+    }
+
+    // ⭐ LOG CRITIQUE : Payload exact envoyé à Supabase
+    const insertPayload = {
+          booking_id,
+          owner_id,
+          renter_id,
+          status: status || "draft",
+          data: data || {},
+          created_at: new Date().toISOString(),
+    };
+    
+    // ⚠️ Sécuriser JSON.stringify pour éviter les crashes
+    try {
+      console.log("[saveDraft] 🗄️  Payload INSERT vers Supabase:", JSON.stringify(insertPayload, null, 2));
+    } catch {
+      console.log("[saveDraft] 🗄️  Payload INSERT vers Supabase (basic):", insertPayload);
+    }
+
+    const { data: insertedRow, error: insertError } = await supabaseAdmin
+      .from("checkin_depart")
+      .insert([insertPayload])
+      .select("id, booking_id, owner_id, renter_id, status, data, created_at")
+      .single();
+
+    if (insertError) {
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("[saveDraft] ❌ Erreur INSERT checkin_depart:");
+      console.error("[saveDraft] Error message:", insertError.message);
+      console.error("[saveDraft] Error details:", insertError.details);
+      console.error("[saveDraft] Error hint:", insertError.hint);
+      console.error("[saveDraft] Error code:", insertError.code);
+      
+      // ⚠️ Sécuriser JSON.stringify
+      try {
+        console.error("[saveDraft] Full error object:", JSON.stringify(insertError, null, 2));
+      } catch {
+        console.error("[saveDraft] Full error object (basic):", insertError);
+      }
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      
+      return res.status(500).json({
+        error: "INSERT_FAILED",
+        details: insertError.message,
+        code: insertError.code,
+        hint: insertError.hint,
+      });
+    }
+
+    console.log("✅ [saveDraft] INSERT réussi:", {
+      checkin_id: insertedRow?.id,
+      booking_id: insertedRow?.booking_id,
+      status: insertedRow?.status,
+      dataKeys: Object.keys(insertedRow?.data || {}),
+    });
+    return res.status(200).json({ checkin: insertedRow });
+  } catch (e: any) {
+    // si on a une exception au niveau du handler lui-même
+    console.error("[saveDraft] Exception fatale côté API:", e);
+    return res.status(500).json({
+      error: "EXCEPTION",
+      details: e?.message || String(e),
+    });
+  }
+});
+
+// ⚠️ ENDPOINT OBSOLÈTE - Migré vers Supabase Edge Function
+// L'endpoint /api/create-checkout-session a été remplacé par la Supabase Edge Function
+// déployée à: https://zykwfjxurwmputxwlkxs.functions.supabase.co/create-checkout-session
+// Le frontend utilise maintenant payerLocation() dans src/lib/payerLocation.ts
+
+// 🚀 PRODUCTION : Servir le frontend buildé depuis le dossier dist/
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.resolve(process.cwd(), "dist");
+  
+  // Servir les fichiers statiques (CSS, JS, images, etc.)
+  app.use(express.static(distPath));
+  
+  console.log(`📦 Serveur en mode PRODUCTION - Frontend servi depuis: ${distPath}`);
+  
+  // SPA fallback : toutes les routes non-API redirigent vers index.html
+  // Express 5 / path-to-regexp v8 : wildcard must be named
+  app.get("/*splat", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(distPath, "index.html"));
+    }
+  });
+} else {
+  console.log(`🔧 Serveur en mode DÉVELOPPEMENT - Frontend sur port 3000 (Vite)`);
+}
+
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 API backend démarrée sur http://localhost:${PORT}`);
+  if (process.env.NODE_ENV === "production") {
+    console.log(`✅ Frontend et API disponibles sur le même port: ${PORT}`);
+  }
+});
+
+

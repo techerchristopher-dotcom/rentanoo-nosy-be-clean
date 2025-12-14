@@ -1,0 +1,65 @@
+[
+  {
+    "id": "photo_1",
+    "vehicleId": "vehicle_1",
+    "url": "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop",
+    "angle": "front", 
+    "position": 1,
+    "isPrimary": true,
+    "createdAt": "2024-02-01T10:30:00Z"
+  },
+  {
+    "id": "photo_2", 
+    "vehicleId": "vehicle_1",
+    "url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop",
+    "angle": "driver_side",
+    "position": 2,
+    "isPrimary": false,
+    "createdAt": "2024-02-01T10:31:00Z"
+  },
+  {
+    "id": "photo_3",
+    "vehicleId": "vehicle_1", 
+    "url": "https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&h=600&fit=crop",
+    "angle": "rear",
+    "position": 3,
+    "isPrimary": false,
+    "createdAt": "2024-02-01T10:32:00Z"
+  },
+  {
+    "id": "photo_4",
+    "vehicleId": "vehicle_2",
+    "url": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&h=600&fit=crop",
+    "angle": "front",
+    "position": 1,
+    "isPrimary": true,
+    "createdAt": "2024-02-15T14:45:00Z" 
+  },
+  {
+    "id": "photo_5",
+    "vehicleId": "vehicle_2",
+    "url": "https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&h=600&fit=crop", 
+    "angle": "driver_side",
+    "position": 2,
+    "isPrimary": false,
+    "createdAt": "2024-02-15T14:46:00Z"
+  },
+  {
+    "id": "photo_6",
+    "vehicleId": "vehicle_3",
+    "url": "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=800&h=600&fit=crop",
+    "angle": "front",
+    "position": 1, 
+    "isPrimary": true,
+    "createdAt": "2024-03-01T09:30:00Z"
+  },
+  {
+    "id": "photo_7",
+    "vehicleId": "vehicle_3",
+    "url": "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&h=600&fit=crop",
+    "angle": "passenger_side",
+    "position": 2,
+    "isPrimary": false,
+    "createdAt": "2024-03-01T09:31:00Z"
+  }
+]

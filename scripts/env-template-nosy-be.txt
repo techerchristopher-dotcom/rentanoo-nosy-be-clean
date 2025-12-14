@@ -1,0 +1,61 @@
+# ============================================
+# FICHIER D'ENVIRONNEMENT - RENTANOO NOSY BE
+# ============================================
+# 
+# ⚠️ INSTRUCTIONS :
+# 1. Copiez ce fichier vers .env.local dans le NOUVEAU projet
+# 2. Remplacez toutes les valeurs [À_REMPLACER] par les vraies valeurs
+# 3. Ne commitez JAMAIS ce fichier avec les vraies clés !
+#
+# ============================================
+
+# ============================================
+# SUPABASE (NOUVELLES CLÉS - NOUVEAU PROJET)
+# ============================================
+# 
+# Récupérez ces valeurs depuis :
+# https://supabase.com/dashboard/project/[NOUVEAU_PROJECT_ID]/settings/api
+#
+VITE_SUPABASE_URL=https://[NOUVEAU_PROJECT_ID].supabase.co
+VITE_SUPABASE_ANON_KEY=[NOUVELLE_ANON_KEY]
+
+# ============================================
+# SITE URL (NOUVEAU DOMAINE)
+# ============================================
+#
+# ⚠️ IMPORTANT : Changez rentanoo.yt en rentanoo.com
+#
+VITE_PUBLIC_SITE_URL=https://rentanoo.com
+
+# ============================================
+# STRIPE
+# ============================================
+#
+# Option A : Utiliser les MÊMES clés que l'ancien projet (partage du compte Stripe)
+# Option B : Créer un NOUVEAU compte Stripe pour rentanoo.com (séparation complète)
+#
+# Récupérez depuis : https://dashboard.stripe.com/apikeys
+#
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_[VOTRE_CLE_STRIPE]
+
+# ============================================
+# VARIABLES BACKEND (si utilisées côté serveur)
+# ============================================
+#
+# Ces variables NE DOIVENT PAS avoir le préfixe VITE_
+# Elles sont utilisées par le serveur Express (server/index.ts)
+#
+# SUPABASE_URL=https://[NOUVEAU_PROJECT_ID].supabase.co
+# SUPABASE_SERVICE_ROLE_KEY=[NOUVELLE_SERVICE_ROLE_KEY]
+# STRIPE_SECRET_KEY=sk_test_[VOTRE_CLE_SECRETE_STRIPE]
+# STRIPE_WEBHOOK_SECRET=whsec_[VOTRE_WEBHOOK_SECRET]
+
+# ============================================
+# NOTES
+# ============================================
+#
+# - Les variables VITE_* sont injectées dans le code au moment du BUILD
+# - Les variables sans préfixe VITE_ sont utilisées côté serveur uniquement
+# - En développement local, ce fichier .env.local est automatiquement chargé
+# - En production (Coolify), configurez ces variables dans le dashboard de déploiement
+#

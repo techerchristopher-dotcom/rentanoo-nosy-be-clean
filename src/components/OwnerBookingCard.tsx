@@ -1,0 +1,1509 @@
+// src/components/OwnerBookingCard.tsx
+import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import {
+  Calendar,
+  Euro,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Car,
+  FileText,
+  XCircle,
+  CheckCircle,
+  Plus,
+  Plane,
+  Ship,
+  Home,
+  Baby,
+  UserPlus,
+  Info,
+  Zap,
+  CreditCard,
+  Shield,
+  Bell,
+  Download,
+  User as UserIcon,
+  MapPin as MapPinIcon,
+  AlertCircle,
+  Loader2,
+  RotateCcw,
+} from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { PaymentCountdown } from '@/components/ui/payment-countdown'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
+import { normalizeBookingOptions } from '@/utils/bookingOptions'
+import { Booking, Vehicle, Photo, User, CheckinDepartSummary, CheckinReturnSummary } from '@/types'
+import { cn } from '@/lib/utils'
+import { ProfileService } from '@/services/supabase/profile'
+import { SupabaseBookingsService } from '@/services/supabase/bookings'
+import { supabase } from '@/integrations/supabase/client'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
+import { Separator } from '@/components/ui/separator'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ConversationsService } from '@/services/supabase/conversations'
+import { MessagesService } from '@/services/supabase/messages'
+import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
+
+type BookingWithDetails = Booking & {
+  vehicle?: Vehicle
+  primaryPhoto?: Photo
+  renter?: User
+  conversation?: {
+    id: string
+  }
+  pickupLocation?: string
+  selectedOptions?: any[]
+  pricePerDay?: number
+  rentalDays?: number
+  subtotal?: number
+  serviceFee?: number
+  totalPrice?: number
+  depositStatus?: 'pending' | 'paid' | 'refunded' | null
+   checkinDepart?: CheckinDepartSummary
+  checkinReturn?: CheckinReturnSummary
+}
+
+type OwnerBookingCardProps = {
+  booking: BookingWithDetails
+  isExpanded: boolean
+  toggleExpanded: (id: string) => void
+  formatDate: (date: string) => string
+  getDuration: (start: string, end: string) => string
+  onBookingDeleted?: (bookingId: string) => void
+  onBookingUpdated?: (bookingId: string) => void
+}
+
+export default function OwnerBookingCard({
+  booking,
+  isExpanded,
+  toggleExpanded,
+  formatDate,
+  getDuration,
+  onBookingDeleted,
+  onBookingUpdated,
+}: OwnerBookingCardProps) {
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [renter, setRenter] = useState<User | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectReason, setRejectReason] = useState<string>('')
+  const [customRejectReason, setCustomRejectReason] = useState<string>('')
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancellationReason, setCancellationReason] = useState('')
+  const [isStartingCheckin, setIsStartingCheckin] = useState(false)
+  
+  // Afficher la durée calculée depuis les heures réelles
+  const calculateRealDuration = () => {
+    const startDate = new Date(booking.startDate)
+    const endDate = new Date(booking.endDate)
+    
+    // Récupérer les heures depuis booking
+    const startTime = (booking as any).startTime || '06:30'
+    const endTime = (booking as any).endTime || '14:00'
+    
+    const [startHour, startMinute] = startTime.split(':')
+    const [endHour, endMinute] = endTime.split(':')
+    
+    startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
+    endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
+    
+    const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
+    const completeDays = Math.floor(rentalHours / 24)
+    const extraHours = Math.floor(rentalHours % 24)
+    
+    if (rentalHours < 24) {
+      return '1 jour'
+    } else if (extraHours === 0) {
+      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`
+    } else {
+      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`
+    }
+  }
+
+  // Fonction pour déterminer l'icône selon le nom du service
+  const getServiceIcon = (serviceName: string) => {
+    switch (serviceName) {
+      case 'Récupération à l\'aéroport':
+        return <Plane className="h-4 w-4 text-primary" />;
+      case 'Retour à l\'aéroport':
+        return <Plane className="h-4 w-4 text-primary" />;
+      case 'Récupération Barge Grande Terre':
+        return <Ship className="h-4 w-4 text-primary" />;
+      case 'Retour Barge Grande Terre':
+        return <Ship className="h-4 w-4 text-primary" />;
+      case 'Récupération Barge Petite Terre':
+        return <Ship className="h-4 w-4 text-primary" />;
+      case 'Retour Barge Petite Terre':
+        return <Ship className="h-4 w-4 text-primary" />;
+      case 'Livraison à domicile (aller)':
+        return <Home className="h-4 w-4 text-primary" />;
+      case 'Livraison à domicile (retour)':
+        return <Home className="h-4 w-4 text-primary" />;
+      case 'Siège bébé':
+        return <Baby className="h-4 w-4 text-primary" />;
+      case 'Conducteur additionnel':
+        return <UserPlus className="h-4 w-4 text-primary" />;
+      default:
+        return <Plane className="h-4 w-4 text-primary" />;
+    }
+  };
+
+  // Charger les données du locataire
+  useEffect(() => {
+    const loadRenter = async () => {
+      if (booking.renterId) {
+        try {
+          const result = await ProfileService.getUserProfile(booking.renterId)
+          if (result.data) {
+            setRenter(result.data)
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement du locataire:', error)
+        }
+      } else if (booking.renter) {
+        setRenter(booking.renter)
+      }
+    }
+    
+    loadRenter()
+  }, [booking.renterId, booking.renter])
+
+  // Charger les données de l'utilisateur actuel (propriétaire)
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const { data, error } = await ProfileService.getCurrentUserProfile()
+        if (!error && data) {
+          setCurrentUser(data)
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de l\'utilisateur actuel:', error)
+      }
+    }
+    
+    loadCurrentUser()
+  }, [])
+
+  // Charger le nombre de messages non lus (READ-ONLY, ne crée jamais de conversation)
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      if (!currentUser || !booking.id) return
+
+      try {
+        // Utiliser getConversationByBookingId pour éviter toute création automatique
+        const convResult = await ConversationsService.getConversationByBookingId(booking.id)
+
+        if (convResult.error || !convResult.data) {
+          // Pas de conversation existante, pas de messages non lus
+          setUnreadCount(0)
+          return
+        }
+
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', convResult.data.id)
+          .eq('is_read', false)
+          .neq('sender_id', currentUser.id)
+
+        setUnreadCount(count || 0)
+      } catch (error) {
+        console.error('Erreur lors du chargement des messages non lus:', error)
+        setUnreadCount(0)
+      }
+    }
+
+    loadUnreadCount()
+  }, [currentUser, booking.id])
+
+  const handleAccept = async () => {
+    setIsUpdating(true)
+    try {
+      const result = await SupabaseBookingsService.updateBookingStatus(booking.id, 'pending_payment')
+      
+      if (result.error) {
+        toast({
+          title: 'Erreur',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Envoyer un message automatique de confirmation
+      try {
+        const currentUserResult = await ProfileService.getCurrentUserProfile()
+        const owner = currentUserResult.data
+
+        if (!owner || !booking.vehicle || !renter) {
+          console.warn('[handleAccept] Données manquantes pour l\'envoi du message', {
+            hasOwner: !!owner,
+            hasVehicle: !!booking.vehicle,
+            hasRenter: !!renter
+          })
+          // Ne pas bloquer le flow, juste avertir
+        } else {
+          // Récupérer ou créer la conversation (gère gracieusement les erreurs 406)
+          const convResult = await ConversationsService.getOrCreateConversation({
+            vehicleId: booking.vehicleId,
+            renterId: booking.renterId,
+            ownerId: owner.id,
+            bookingId: booking.id,
+          })
+
+          if (!convResult.data || convResult.error) {
+            console.warn('[handleAccept] Pas de conversation disponible, message auto pas envoyé', {
+              error: convResult.error,
+              hasData: !!convResult.data
+            })
+            // Ne pas bloquer le flow, juste avertir
+          } else {
+            // Formater les dates
+            const formatDate = (dateString: string) => {
+              return new Date(dateString).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              });
+            };
+            
+            // Construire les variables nécessaires
+            const renterFirstName = renter?.firstName || 'Locataire'
+            const vehicleTitle = `${booking.vehicle.brand} ${booking.vehicle.model}`
+            const startTime = (booking as any).startTime || '08:00'
+            const endTime = (booking as any).endTime || '10:00'
+            const totalPrice = (booking as any).totalPrice || booking.totalAmount || 0
+            const formattedStartDate = formatDate(booking.startDate)
+            const formattedEndDate = formatDate(booking.endDate)
+            
+            // Construire le message selon le format exact demandé
+            let messageText = `✅ Réservation confirmée !\n` +
+              `Bonjour ${renterFirstName}, Votre demande de réservation pour le ${vehicleTitle} a été acceptée.\n` +
+              `📅 Dates: ${formattedStartDate} → ${formattedEndDate}\n` +
+              `⏰ Début: ${startTime} ⏰ Fin: ${endTime}\n`
+            
+            // Ajouter la ligne des options si présentes
+            if (booking.selectedOptions && booking.selectedOptions.length > 0) {
+              const optionsLabels = booking.selectedOptions.map(opt => opt.name).join(', ')
+              messageText += `🧩 Options supplémentaires : ${optionsLabels}\n`
+            }
+            
+            messageText += `💰 Total: ${totalPrice}€\n` +
+              `⏰ IMPORTANT: Vous avez 24 heures pour finaliser le paiement.`
+            
+            console.log('[handleAccept] Envoi message de confirmation', { 
+              convId: convResult.data.id, 
+              bookingId: booking.id,
+              messageLength: messageText.length
+            })
+            
+            // Envoyer le message (ne pas bloquer le flow si l'envoi échoue)
+            try {
+              const sentMessageResult = await MessagesService.sendMessage({
+                conversationId: convResult.data.id,
+                senderId: owner.id,
+                content: messageText,
+                messageType: 'text',
+              })
+              
+              if (sentMessageResult.error) {
+                console.error('[handleAccept] Erreur lors de l\'envoi du message:', sentMessageResult.error)
+              } else {
+                console.log('[handleAccept] Message de confirmation envoyé avec succès')
+              }
+            } catch (sendError) {
+              console.error('[handleAccept] Exception lors de l\'envoi du message:', sendError)
+              // Ne pas throw, juste logger l'erreur
+            }
+          }
+        }
+      } catch (messageError) {
+        console.error('[handleAccept] Erreur lors de la préparation du message:', messageError)
+        // Ne pas bloquer le flow même si l'envoi du message échoue
+      }
+
+      toast({
+        title: 'Demande acceptée',
+        description: 'La réservation a été confirmée.',
+      })
+      
+      if (onBookingUpdated) {
+        onBookingUpdated(booking.id)
+      }
+    } catch (error) {
+      console.error('[handleAccept] Erreur générale:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'accepter la demande',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleReject = () => {
+    setShowRejectModal(true)
+  }
+
+  const handleOpenCancelModal = () => {
+    console.log('[OwnerBookingCard] ouverture modale annulation', { bookingId: booking.id, status: booking.status })
+    setShowCancelModal(true)
+  }
+
+  const handleConfirmReject = async () => {
+    if (!rejectReason && !customRejectReason) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner ou saisir un motif de refus',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      const reason = customRejectReason || rejectReason
+
+      // Mettre à jour le statut avec le motif
+      const result = await (SupabaseBookingsService as any).updateBookingStatusWithReason(
+        booking.id, 
+        'declined',
+        reason
+      )
+      
+      if (result.error) {
+        toast({
+          title: 'Erreur',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Fermer la conversation associée à cette réservation
+      console.log('[OwnerBookingCard] Fermeture conversation demandée pour booking', booking.id);
+      await ConversationsService.closeConversationForBooking(booking.id);
+      console.log('[OwnerBookingCard] Fermeture conversation exécutée');
+
+      // Envoyer un message dans la conversation
+      if (booking.conversation && currentUser) {
+        const message = `Votre demande de réservation a été refusée. Motif: ${reason}`
+        await MessagesService.sendMessage({
+          conversationId: booking.conversation.id,
+          content: message,
+          senderId: currentUser.id
+        })
+      }
+
+      toast({
+        title: 'Demande refusée',
+        description: 'La réservation a été refusée et le locataire a été informé.',
+      })
+      
+      // Fermer la modal et réinitialiser
+      setShowRejectModal(false)
+      setRejectReason('')
+      setCustomRejectReason('')
+      
+      if (onBookingUpdated) {
+        onBookingUpdated(booking.id)
+      }
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de refuser la demande',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleCancelBooking = async () => {
+    if (!cancellationReason.trim()) {
+      toast({
+        title: 'Erreur',
+        description: `Veuillez saisir une raison d'annulation`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      console.log('[handleCancelBooking] >>> Début fonction appelé', { bookingId: booking.id })
+      
+      const result = await (SupabaseBookingsService as any).updateBookingStatusWithReason(
+        booking.id,
+        'cancelled',
+        cancellationReason
+      )
+
+      if (result.error) {
+        toast({
+          title: 'Erreur',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Fermer la conversation associée à cette réservation
+      console.log('[OwnerBookingCard] Fermeture conversation demandée pour booking', booking.id);
+      await ConversationsService.closeConversationForBooking(booking.id);
+      console.log('[OwnerBookingCard] Fermeture conversation exécutée');
+
+      // Envoyer un message dans la conversation
+      if (booking.conversation && currentUser) {
+        const message = `Cette réservation a été annulée par le propriétaire. Motif: ${cancellationReason}`
+        await MessagesService.sendMessage({
+          conversationId: booking.conversation.id,
+          content: message,
+          senderId: currentUser.id
+        })
+      }
+
+      toast({
+        title: 'Réservation annulée',
+        description: `Le locataire a été informé de l'annulation.`,
+      })
+
+      setShowCancelModal(false)
+      setCancellationReason('')
+
+      if (onBookingUpdated) {
+        onBookingUpdated(booking.id)
+      }
+    } catch (error) {
+      console.error('[handleCancelBooking] Erreur:', error)
+      toast({
+        title: 'Erreur',
+        description: `Impossible d'annuler la réservation`,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleStartCheckin = async (bookingId: string) => {
+    setIsStartingCheckin(true)
+    try {
+      const res = await fetch('/api/checkin/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Erreur lors de l\'initialisation' }))
+        throw new Error(errorData.error || errorData.message || 'Erreur lors de l\'initialisation')
+      }
+
+      const data = await res.json()
+      // Utiliser le redirectUrl de la réponse ou construire l'URL avec checkin_id
+      const redirectUrl = data.redirectUrl || `/etat-des-lieux/depart/${data.checkin_id || bookingId}`
+      navigate(redirectUrl)
+    } catch (error) {
+      console.error('[handleStartCheckin] Erreur:', error)
+      toast({
+        title: 'Erreur',
+        description: error instanceof Error ? error.message : 'Impossible d\'ouvrir l\'état des lieux',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsStartingCheckin(false)
+    }
+  }
+
+  // Fonction pour générer le badge de statut enrichi selon les règles métier
+  const getEnrichedStatusBadge = () => {
+    const now = new Date()
+    const startDate = new Date(booking.startDate)
+    const endDate = new Date(booking.endDate)
+    const depositStatus = (booking as any).depositStatus || null
+
+    // Règle 1: confirmed + deposit_status pending
+    if (booking.status === 'confirmed' && depositStatus === 'pending') {
+      return {
+        badgeLabel: 'Paiement confirmé',
+        badgeColor: 'bg-orange-100 text-orange-800 border border-orange-300',
+        note: 'En attente de la caution',
+        noteColor: 'text-orange-700'
+      }
+    }
+
+    // Règle 2: confirmed + deposit_status paid + startDate > now
+    if (booking.status === 'confirmed' && depositStatus === 'paid' && startDate > now) {
+      return {
+        badgeLabel: 'Prêt à partir',
+        badgeColor: 'bg-green-100 text-green-800 border border-green-300',
+        note: 'Paiement et caution validés',
+        noteColor: 'text-green-700'
+      }
+    }
+
+    // Règle 3: active OU (confirmed + deposit paid + dates chevauchantes)
+    if (booking.status === 'active' || 
+        (booking.status === 'confirmed' && depositStatus === 'paid' && startDate <= now && endDate >= now)) {
+      return {
+        badgeLabel: 'En cours',
+        badgeColor: 'bg-green-100 text-green-800 border border-green-300',
+        note: null,
+        noteColor: null
+      }
+    }
+
+    // Règle 4: completed
+    if (booking.status === 'completed') {
+      return {
+        badgeLabel: 'Terminé',
+        badgeColor: 'bg-gray-100 text-gray-700 border border-gray-300',
+        note: null,
+        noteColor: null
+      }
+    }
+
+    // Règle 5: cancelled, rejected, declined
+    if (booking.status === 'cancelled' || booking.status === 'rejected' || booking.status === 'declined') {
+      return {
+        badgeLabel: 'Annulée',
+        badgeColor: 'bg-gray-100 text-gray-500 border border-gray-300',
+        note: null,
+        noteColor: null
+      }
+    }
+
+    // Par défaut, utiliser le StatusBadge standard pour les autres statuts
+    return null
+  }
+
+  const handleDownloadPDF = async () => {
+    try {
+      // Récupérer l'élément à exporter (toute la modal sauf le bouton fermer)
+      const modalContent = document.querySelector('[data-modal-content]')
+      if (!modalContent) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de trouver le contenu à exporter',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Capturer le contenu en image haute qualité
+      const canvas = await html2canvas(modalContent as HTMLElement, {
+        scale: 2, // Haute résolution
+        useCORS: true,
+        logging: false,
+      })
+
+      // Créer le PDF en format A4 portrait
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const imgHeightRatio = imgHeight / imgWidth
+      const pdfImgWidth = pdfWidth - 20 // Marges gauche et droite
+      const pdfImgHeight = pdfImgWidth * imgHeightRatio
+
+      // Ajuster si le contenu dépasse une page
+      if (pdfImgHeight > pdfHeight - 20) {
+        // Si trop grand, diviser en plusieurs pages
+        const totalPages = Math.ceil(pdfImgHeight / (pdfHeight - 20))
+        const pageHeight = pdfHeight - 20
+        let position = 0
+
+        for (let i = 0; i < totalPages; i++) {
+          if (i > 0) {
+            pdf.addPage()
+          }
+          
+          const srcY = i * pageHeight * (canvas.height / pdfImgHeight)
+          const srcHeight = Math.min(pageHeight * (canvas.height / pdfImgHeight), imgHeight - srcY)
+          
+          const tempCanvas = document.createElement('canvas')
+          tempCanvas.width = imgWidth
+          tempCanvas.height = srcHeight
+          const ctx = tempCanvas.getContext('2d')
+          ctx?.drawImage(canvas, 0, -srcY)
+          
+          const pageImg = tempCanvas.toDataURL('image/png')
+          pdf.addImage(pageImg, 'PNG', 10, 10, pdfImgWidth, pdfImgHeight / totalPages)
+        }
+      } else {
+        // Une seule page, centrer l'image
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, pdfImgWidth, pdfImgHeight)
+      }
+
+      // Télécharger le PDF
+      pdf.save(`reservation-${booking.id.substring(0, 8)}-${format(new Date(), 'yyyy-MM-dd')}.pdf`)
+
+      toast({
+        title: 'PDF téléchargé',
+        description: 'Votre document de réservation a été téléchargé avec succès.',
+      })
+    } catch (error) {
+      console.error('Erreur lors de la génération du PDF:', error)
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de générer le PDF',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  return (
+    <>
+    <Collapsible
+        key={booking.id}
+      open={isExpanded}
+      onOpenChange={() => toggleExpanded(booking.id)}
+    >
+      <Card className={cn(
+        "transition-all duration-300 relative",
+        (booking.status === 'cancelled' || booking.status === 'declined')
+          ? "opacity-60 grayscale-[0.7] bg-muted/50" 
+          : "hover:shadow-lagoon hover:scale-[1.01] bg-gradient-to-br from-card to-card/50"
+      )}>
+        <CollapsibleTrigger asChild>
+          <CardContent className={cn(
+            "p-4",
+            (booking.status === 'cancelled' || booking.status === 'declined') ? "cursor-default" : "cursor-pointer"
+          )}>
+            <div className="flex items-center justify-between">
+              {/* Informations principales */}
+              <div className="flex items-center space-x-4 flex-1">
+                  {/* Mini photo véhicule */}
+                  <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                    <img
+                      src={
+                        booking.primaryPhoto?.url ||
+                        'https://images.unsplash.com/photo-1549924231-f129b911e442?w=100&h=75&fit=crop'
+                      }
+                      alt={
+                        booking.vehicle
+                          ? `${booking.vehicle.brand} ${booking.vehicle.model}`
+                          : 'Véhicule'
+                      }
+                      className={cn(
+                        "w-full h-full object-cover",
+                        (booking.status === 'cancelled' || booking.status === 'declined') && "opacity-40"
+                      )}
+                    />
+                  </div>
+
+                  {/* Détails principaux */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-base text-foreground truncate">
+                        {booking.vehicle
+                          ? `${booking.vehicle.brand} ${booking.vehicle.model}`
+                          : 'Véhicule supprimé'}
+                      </h3>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                        <span>
+                          {formatDate(booking.startDate).split(' ')[0]}{' '}
+                          {formatDate(booking.startDate).split(' ')[1]}
+                        </span>
+                    </div>
+                    <span>→</span>
+                    <div className="flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                        <span>
+                          {formatDate(booking.endDate).split(' ')[0]}{' '}
+                          {formatDate(booking.endDate).split(' ')[1]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions et statut - alignement parfait */}
+                <div className="flex flex-col items-end gap-2 h-16">
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-end gap-1">
+                      {/* Badge statut enrichi */}
+                      {(() => {
+                        const enrichedBadge = getEnrichedStatusBadge()
+                        if (enrichedBadge) {
+                          return (
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span className={cn(
+                                "rounded-full px-3 py-1 text-sm font-medium",
+                                enrichedBadge.badgeColor
+                              )}>
+                                {enrichedBadge.badgeLabel}
+                              </span>
+                              {enrichedBadge.note && (
+                                <span className={cn(
+                                  "text-xs font-medium",
+                                  enrichedBadge.noteColor
+                                )}>
+                                  {enrichedBadge.note}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        }
+                        // Fallback vers StatusBadge pour les autres statuts
+                        return <StatusBadge status={booking.status} size="sm" />
+                      })()}
+                      {booking.status === 'pending' && (
+                        <PaymentCountdown 
+                          confirmedAt={new Date((booking as any).updatedAt || (booking as any).createdAt)}
+                          deadlineHours={24}
+                          className="mt-1"
+                        />
+                      )}
+                      
+                      {/* Motif d'annulation + date de mise à jour */}
+                      {(booking.status === 'cancelled' || booking.status === 'declined') && (() => {
+                        const cancellation = (booking.selectedOptions as any)?.cancellation || {};
+                        const cancellationReason = cancellation?.reason;
+                        const updatedTs = cancellation?.cancelledAt || (booking as any).updatedAt || (booking as any).updated_at;
+                        const updatedText = updatedTs
+                          ? new Date(updatedTs).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : undefined;
+                        return (
+                          <div className="flex flex-col items-end">
+                            <span className="text-[10px] text-muted-foreground/70 italic">
+                              {cancellationReason || (booking.status === 'cancelled' ? 'Délai de paiement expiré' : 'Réservation refusée')}
+                            </span>
+                            {updatedText && (
+                              <span className="text-[10px] text-muted-foreground/60">Mise à jour le : {updatedText}</span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    
+                    {/* Avatar locataire avec tooltip flottant */}
+                    {booking.status !== 'cancelled' && booking.status !== 'declined' && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              className="flex flex-col items-center cursor-pointer hover:opacity-80 transition-opacity group relative z-10"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (booking.vehicle) {
+                                  navigate(`/vehicle/${booking.vehicle.license || 'unknown'}/booking/discussion`)
+                                }
+                              }}
+                            >
+                              <div className="relative">
+                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary/10 to-primary/20 border-2 border-primary/20 flex items-center justify-center shadow-sm mb-2 group-hover:shadow-md transition-shadow">
+                                  {renter?.avatarUrl ? (
+                                    <img
+                                      src={renter.avatarUrl}
+                                      alt={renter.firstName || 'Locataire'}
+                                      className="w-full h-full object-cover object-center"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
+                                      {renter?.firstName?.charAt(0) || renter?.lastName?.charAt(0) || 'L'}
+                                    </div>
+                                  )}
+                                </div>
+                                {unreadCount > 0 && (
+                                  <div className="absolute -top-1 -right-1 bg-destructive rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 border-2 border-white shadow-lg">
+                                    {unreadCount > 9 ? (
+                                      <span className="text-[10px] font-bold text-white">9+</span>
+                                    ) : (
+                                      <span className="text-[10px] font-bold text-white">{unreadCount}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+                                <MessageSquare className="h-3 w-3" />
+                                <span>Message</span>
+              </div>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent 
+                            className="z-[9999] relative"
+                            side="top"
+                            align="center"
+                            sideOffset={8}
+                          >
+                            <p className="text-sm font-medium">
+                              Cliquez pour discuter avec {renter?.firstName || 'le locataire'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                
+                {/* Chevron */}
+                <div className="flex items-center justify-center w-6 h-6">
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                    </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+            <div className="px-4 pb-4 border-t border-border/50">
+            <div className="pt-4 space-y-4">
+                {/* Détails complets avec espacement optimisé */}
+                <div className="space-y-6">
+                  {/* Informations principales */}
+                  <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <Calendar className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
+                        <span className="font-medium text-foreground">Début:</span>
+                        <span className="ml-2 font-semibold text-primary">
+                          {(() => {
+                            const date = new Date(booking.startDate)
+                            const time = (booking as any).startTime || '08:00'
+                            const [hour, minute] = time.split(':')
+                            date.setHours(parseInt(hour), parseInt(minute), 0, 0)
+                            return date.toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <Calendar className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
+                        <span className="font-medium text-foreground">Fin:</span>
+                        <span className="ml-2 font-semibold text-primary">
+                          {(() => {
+                            const date = new Date(booking.endDate)
+                            const time = (booking as any).endTime || '10:00'
+                            const [hour, minute] = time.split(':')
+                            date.setHours(parseInt(hour), parseInt(minute), 0, 0)
+                            return date.toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })
+                          })()}
+                        </span>
+                    </div>
+                  </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <Clock className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
+                        <span className="font-medium text-foreground">Durée:</span>
+                        <span className="ml-2 font-semibold text-primary">
+                          {calculateRealDuration()}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <Euro className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
+                        <span className="font-medium text-foreground">Total:</span>
+                        <span className="ml-2 font-bold text-primary text-lg">
+                        {(booking as any).totalPrice || booking.totalAmount || 0}€
+                        </span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button className="ml-2 text-muted-foreground hover:text-primary transition-colors">
+                                <Info className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs" side="top" align="start">
+                              <div className="space-y-2 text-sm">
+                                <div className="font-semibold mb-2">Détail du revenu :</div>
+                                <div className="flex justify-between">
+                                  <span>Revenu (85%)</span>
+                          <span className="font-semibold text-success">
+                            {Math.round(((booking as any).totalPrice || booking.totalAmount || 0) * 0.85)}€
+                          </span>
+                        </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                  <span>Commission (15%)</span>
+                                  <span>-{Math.round(((booking as any).totalPrice || booking.totalAmount || 0) * 0.15)}€</span>
+                                </div>
+                        </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Services supplémentaires sélectionnés */}
+                  {booking.selectedOptions && booking.selectedOptions.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-foreground flex items-center">
+                        ✨ Services supplémentaires:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {booking.selectedOptions.map((option, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/20"
+                          >
+                            <div className="flex-shrink-0">
+                              {getServiceIcon(option.name)}
+                </div>
+                            <span className="font-medium text-xs">{option.name}</span>
+                    </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                </div>
+
+                {/* Actions supplémentaires */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {booking.status === 'pending' && (
+                    <>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={(e) => {
+                          console.log('[UI] Bouton "Accepter" cliqué', { bookingId: booking.id, status: booking.status })
+                          e.stopPropagation()
+                          handleAccept()
+                        }}
+                        disabled={isUpdating}
+                        className="bg-success hover:bg-success/90 flex-1 sm:flex-none"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Accepter
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleReject()
+                        }}
+                        disabled={isUpdating}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Refuser
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Bouton État des lieux de départ : visible si status confirmed et pas encore de checkin */}
+                  {booking.status === 'confirmed' && !(booking as any).hasCheckin && (
+                    <Link
+                      to={`/checking/${booking.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Button
+                        variant="default"
+                        size="sm"
+                        disabled={isUpdating}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition shadow-sm w-full"
+                      >
+                        <Car className="h-4 w-4" />
+                        État des lieux de départ
+                      </Button>
+                    </Link>
+                  )}
+
+                  {/* Bouton État des lieux de retour : visible si checkin_depart est complété */}
+                  {booking.checkinDepart?.status === 'completed' && (
+                    <>
+                      {!booking.checkinReturn || booking.checkinReturn.status === 'draft' ? (
+                        <Link
+                          to={`/checkin-return/${booking.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-1 sm:flex-none"
+                        >
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled={isUpdating}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition shadow-sm w-full"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            {booking.checkinReturn?.status === 'draft'
+                              ? "Reprendre l'état des lieux de retour"
+                              : "État des lieux de retour"}
+                          </Button>
+                        </Link>
+                      ) : booking.checkinReturn.status === 'completed' ? (
+                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Retour complété
+                          </Badge>
+                          {booking.checkinReturn.legalPdfUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(booking.checkinReturn!.legalPdfUrl!, '_blank', 'noopener,noreferrer');
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <FileText className="h-4 w-4" />
+                              Voir le PDF
+                            </Button>
+                          )}
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+                  
+                  {/* Bouton annuler la réservation : TOUJOURS AFFICHÉ */}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenCancelModal()
+                    }}
+                    disabled={isUpdating}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Annuler la réservation
+                  </Button>
+
+                  <BookingMoreActionsMenu
+                    checkinDepart={booking.checkinDepart}
+                    checkinReturn={booking.checkinReturn}
+                    onViewDetails={() => {
+                      setShowDetailsModal(true)
+                    }}
+                    onViewVehicle={() => {
+                      if (booking.vehicle) {
+                        navigate(`/vehicle/${booking.vehicle.license}`)
+                      }
+                    }}
+                  />
+              </div>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+
+      {/* Modal des détails de réservation */}
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {/* Wrapper pour export PDF */}
+          <div data-modal-content>
+          <DialogHeader className="border-b pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="h-6 w-6 text-primary" />
+                <DialogTitle className="text-2xl font-bold text-[#004E4E]">
+                  Détails de votre réservation
+                </DialogTitle>
+              </div>
+              <Badge variant="secondary" className="font-semibold">
+                Réservation #{booking.id.substring(0, 8)} • Créée le {new Date(booking.createdAt).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            {/* Colonne gauche */}
+            <div className="space-y-6">
+              {/* Informations véhicule */}
+              <div className="border rounded-lg p-4 bg-gradient-to-br from-primary/5 to-primary/10">
+                <div className="flex items-start gap-4">
+                  <div className="w-24 h-18 rounded-lg overflow-hidden flex-shrink-0">
+                    <img
+                      src={booking.primaryPhoto?.url || 'https://images.unsplash.com/photo-1549924231-f129b911e442?w=200&h=150&fit=crop'}
+                      alt={booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Véhicule'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground mb-1">
+                      {booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Véhicule supprimé'}
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Année {booking.vehicle?.year || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations client */}
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <UserIcon className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold text-lg">Informations client</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground mb-1">Nom</p>
+                    <p className="font-semibold">{renter?.lastName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Prénom</p>
+                    <p className="font-semibold">{renter?.firstName || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Zone de prise en charge */}
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPinIcon className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold">Zone de prise en charge</h4>
+                </div>
+                <p className="text-lg font-semibold">{(booking as any).pickupLocation || booking.pickupLocation || 'Non spécifiée'}</p>
+              </div>
+
+              {/* Dates de location */}
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold">Dates de location</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground mb-2">Départ</p>
+                    <div className="space-y-1">
+                      <p className="font-semibold">
+                        {(() => {
+                          const date = new Date(booking.startDate)
+                          return date.toLocaleDateString('fr-FR', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })
+                        })()}
+                      </p>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{(booking as any).startTime || '08:00'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-2">Retour</p>
+                    <div className="space-y-1">
+                      <p className="font-semibold">
+                        {(() => {
+                          const date = new Date(booking.endDate)
+                          return date.toLocaleDateString('fr-FR', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })
+                        })()}
+                      </p>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{(booking as any).endTime || '10:00'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full mt-4 bg-primary/10 text-primary border-primary hover:bg-primary hover:text-white"
+                  disabled
+                >
+                  Durée: {calculateRealDuration()}
+                </Button>
+              </div>
+            </div>
+
+            {/* Colonne droite - Tarifs */}
+            <div>
+              <div className="border rounded-lg p-4 sticky top-0">
+                <div className="flex items-center gap-2 mb-4">
+                  <Euro className="h-5 w-5 text-primary" />
+                  <h4 className="font-semibold">Tarif de base</h4>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">Location véhicule</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(booking as any).pricePerDay || 0}€/jour x {(booking as any).rentalDays || 1} jour{((booking as any).rentalDays || 1) > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <span className="font-semibold">{(booking as any).pricePerDay * ((booking as any).rentalDays || 1) || 0}€</span>
+                  </div>
+
+                  {/* Services supplémentaires */}
+                  {(() => {
+                    const normalizedOptions = normalizeBookingOptions((booking as any).selectedOptions);
+                    if (!normalizedOptions.length) return null;
+                    const optionsTotal = normalizedOptions.reduce((sum, option) => sum + (option.totalPrice || 0), 0);
+
+                    return (
+                      <div className="pt-2 border-t">
+                        <p className="font-medium mb-2">Services supplémentaires</p>
+                        <div className="space-y-2">
+                          {normalizedOptions.map((option, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span>{option.name}</span>
+                              <span className="font-semibold">+{option.totalPrice || 0}€</span>
+                            </div>
+                          ))}
+                        </div>
+                        {optionsTotal > 0 && (
+                          <div className="flex justify-between text-sm font-semibold border-t pt-2 mt-2">
+                            <span>Sous-total options</span>
+                            <span>+{optionsTotal}€</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-medium">Total réservation</span>
+                      <span className="font-semibold">{(booking as any).totalPrice || booking.totalAmount || 0}€</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="text-sm">Commission de la plateforme (15%)</span>
+                      <span className="text-sm text-destructive">- {(booking as any).serviceFee || Math.round(((booking as any).totalPrice || 0) * 0.15)}€</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-lg text-[#004E4E]">REVENU PROPRIÉTAIRE</span>
+                      <span className="font-bold text-2xl text-[#004E4E]">
+                        {(() => {
+                          const total = (booking as any).totalPrice || booking.totalAmount || 0;
+                          const commission = (booking as any).serviceFee || Math.round(total * 0.15);
+                          return total - commission;
+                        })()}€
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions en bas */}
+          <div className="flex gap-3 mt-6 pt-6 border-t">
+            <Button
+              variant="outline"
+              onClick={handleDownloadPDF}
+              className="flex-1"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Télécharger en PDF
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => setShowDetailsModal(false)}
+              className="flex-1 bg-[#004E4E] hover:bg-[#004E4E]/90"
+            >
+              Fermer
+            </Button>
+          </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de refus avec motif */}
+      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-destructive">
+              Refuser la réservation
+            </DialogTitle>
+            <DialogDescription>
+              Veuillez indiquer le motif du refus. Le locataire sera informé de votre décision.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <RadioGroup value={rejectReason} onValueChange={setRejectReason}>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="Véhicule indisponible à ces dates" id="reason1" />
+                  <Label htmlFor="reason1" className="flex-1 cursor-pointer">
+                    Véhicule indisponible à ces dates
+                  </Label>
+                </div>
+
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="Dates ne correspondant pas aux attentes" id="reason2" />
+                  <Label htmlFor="reason2" className="flex-1 cursor-pointer">
+                    Dates ne correspondant pas aux attentes
+                  </Label>
+                </div>
+
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="Problème avec le profil du locataire" id="reason3" />
+                  <Label htmlFor="reason3" className="flex-1 cursor-pointer">
+                    Problème avec le profil du locataire
+                  </Label>
+                </div>
+
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="Autre raison (personnalisée)" id="reason4" />
+                  <Label htmlFor="reason4" className="flex-1 cursor-pointer">
+                    Autre raison (personnalisée)
+                  </Label>
+                </div>
+              </div>
+            </RadioGroup>
+
+            {rejectReason === 'Autre raison (personnalisée)' && (
+              <div className="space-y-2">
+                <Label htmlFor="customReason">Expliquez votre motif</Label>
+                <Textarea
+                  id="customReason"
+                  placeholder="Ex: Le véhicule est en révision..."
+                  value={customRejectReason}
+                  onChange={(e) => setCustomRejectReason(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectModal(false)
+                setRejectReason('')
+                setCustomRejectReason('')
+              }}
+              className="flex-1"
+              disabled={isUpdating}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmReject}
+              className="flex-1"
+              disabled={isUpdating || (!rejectReason && !customRejectReason)}
+            >
+              {isUpdating ? 'Envoi...' : 'Confirmer le refus'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+  
+      {/* Modal d'annulation */}
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent
+          onClick={(e) => e.stopPropagation()}
+          className="max-w-md"
+        >
+          <DialogHeader>
+            <DialogTitle>{`Confirmer l'annulation`}</DialogTitle>
+            <DialogDescription>
+              {booking.status === 'pending'
+                ? "Tu es sur le point d'annuler cette demande avant acceptation."
+                : "Tu es sur le point d'annuler une réservation déjà acceptée ou en cours de paiement."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Alerte rouge visible UNIQUEMENT si ce n'est pas du pending */}
+          {booking.status !== 'pending' && (
+            <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <div>
+                <p className="font-medium">
+                  Cette réservation est déjà engagée.
+                </p>
+                <p>
+                  Préviens le locataire avant d'annuler pour éviter un litige.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col gap-2">
+            <label className="text-sm font-medium">
+              Raison de l'annulation (visible pour le locataire)
+            </label>
+            <textarea
+              className="w-full rounded-md border border-gray-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              rows={3}
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              placeholder="Ex: Véhicule indisponible à ces dates"
+            />
+          </div>
+
+          <DialogFooter className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelModal(false)}
+              disabled={isUpdating}
+            >
+              Retour
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                await handleCancelBooking()
+              }}
+              disabled={isUpdating || cancellationReason.trim().length === 0}
+            >
+              {`Confirmer l'annulation`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}

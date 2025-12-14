@@ -1,0 +1,57 @@
+[
+  {
+    "id": "user_1",
+    "email": "renter@demo.fr",
+    "firstName": "Marie",
+    "lastName": "Dupont",
+    "phone": "+262 692 12 34 56",
+    "role": "renter",
+    "kycStatus": "verified",
+    "createdAt": "2024-01-15T10:30:00Z",
+    "updatedAt": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": "user_2", 
+    "email": "owner@demo.fr",
+    "firstName": "Pierre",
+    "lastName": "Martin",
+    "phone": "+262 692 78 90 12",
+    "role": "owner",
+    "kycStatus": "verified", 
+    "createdAt": "2024-01-10T14:20:00Z",
+    "updatedAt": "2024-01-10T14:20:00Z"
+  },
+  {
+    "id": "user_3",
+    "email": "admin@demo.fr", 
+    "firstName": "Sophie",
+    "lastName": "Administrateur",
+    "phone": "+262 692 11 22 33",
+    "role": "admin",
+    "kycStatus": "verified",
+    "createdAt": "2024-01-01T09:00:00Z",
+    "updatedAt": "2024-01-01T09:00:00Z"
+  },
+  {
+    "id": "user_4",
+    "email": "jean.proprietaire@mayotte.yt",
+    "firstName": "Jean",
+    "lastName": "Dupont", 
+    "phone": "+262 692 44 55 66",
+    "role": "renter",
+    "kycStatus": "pending",
+    "createdAt": "2024-09-01T08:15:00Z",
+    "updatedAt": "2024-09-01T08:15:00Z"
+  },
+  {
+    "id": "user_5",
+    "email": "anna.locataire@mayotte.yt",
+    "firstName": "Anna", 
+    "lastName": "Locataire",
+    "phone": "+262 692 33 44 55",
+    "role": "renter",
+    "kycStatus": "verified",
+    "createdAt": "2024-08-20T16:45:00Z", 
+    "updatedAt": "2024-08-20T16:45:00Z"
+  }
+]

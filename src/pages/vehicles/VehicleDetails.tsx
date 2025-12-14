@@ -1,0 +1,1368 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { 
+  Car, 
+  Fuel, 
+  Settings, 
+  Wind, 
+  MapPin, 
+  Euro, 
+  Users,
+  Calendar,
+  ArrowLeft,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  Clock,
+  UserCheck,
+  Navigation,
+  Bluetooth,
+  Smartphone,
+  Volume2,
+  Thermometer,
+  Phone,
+  CheckCircle,
+  Info,
+  Heart,
+  BarChart3,
+  MessageSquare,
+  Camera,
+  FileText,
+  HelpCircle,
+  Gauge,
+  Cog,
+  Calendar as CalendarIcon,
+  Plane,
+  Ship,
+  Zap
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
+import { MultiVehicleModal } from "@/components/vehicles/MultiVehicleModal";
+import { BookingConfirmationModal } from "@/components/booking/BookingConfirmationModal";
+import { VehiclesService, PhotosService } from "@/services";
+import { SupabaseBookingsService } from "@/services/supabase/bookings";
+import { ProfileService } from "@/services/supabase/profile";
+import { Photo, User, RentalCalculation, VehicleRentalInfo } from "@/types";
+import { Vehicle } from "@/services/supabaseVehiclesService";
+import { createVehicleRentalInfo } from "@/lib/utils";
+import { createBookingDraft, getBookingDraft, clearBookingDraft, saveBookingDraft } from "@/services/localStorage/bookingStorage";
+import { markPageRefresh } from "@/services/localStorage/searchStorage";
+import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
+import { PhotoService } from "@/services/supabase/photos";
+import VehicleOwnerCard from "@/components/VehicleOwnerCard";
+import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptions";
+import { useToast } from "@/hooks/use-toast";
+
+const fuelLabels = {
+  gasoline: "Essence",
+  diesel: "Diesel",
+  electric: "Électrique", 
+  hybrid: "Hybride"
+};
+
+const transmissionLabels = {
+  manual: "Manuelle",
+  automatic: "Automatique"
+};
+
+// Fonction pour obtenir l'icône appropriée selon la zone
+const getLocationIcon = (zone: string) => {
+  switch (zone) {
+    case "Aéroport":
+      return Plane;
+    case "Barge Petite Terre":
+    case "Barge Grande Terre":
+      return Ship;
+    default:
+      return MapPin;
+  }
+};
+
+export default function VehicleDetails() {
+  console.log('🎯 [DEBUG] VehicleDetails component rendering');
+  
+  const { license } = useParams<{ license: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  
+  console.log('🎯 [DEBUG] License from useParams:', license);
+  console.log('🎯 [DEBUG] Navigate function:', typeof navigate);
+  console.log('🎯 [DEBUG] Location state:', location.state);
+  
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [vehiclePhotos, setVehiclePhotos] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showMultiVehicleModal, setShowMultiVehicleModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [expandedSections, setExpandedSections] = useState({
+    owner: true,
+    technical: true,
+    options: true,
+    reviews: true,
+    insurance: true,
+    benefits: true,
+    legal: false
+  });
+
+  useEffect(() => {
+    console.log('🔄 [VehicleDetails] Marquage du rafraîchissement de page');
+    markPageRefresh();
+  }, []);
+
+  useEffect(() => {
+    console.log('🚀 [DEBUG] VehicleDetails useEffect triggered');
+    console.log('🚀 [DEBUG] License param:', license);
+    console.log('🚀 [DEBUG] Current URL:', window.location.href);
+    loadVehicleData();
+    loadCurrentUser();
+  }, [license]);
+
+  const loadCurrentUser = async () => {
+    console.log('🔍 [DEBUG] Chargement de l\'utilisateur actuel...');
+    try {
+      const result = await ProfileService.getCurrentUserProfile();
+      console.log('📊 [DEBUG] Résultat ProfileService:', result);
+      console.log('👤 [DEBUG] Données utilisateur:', result.data);
+      console.log('❌ [DEBUG] Erreur ProfileService:', result.error);
+      
+      if (result.error) {
+        console.error('❌ [DEBUG] ProfileService a retourné une erreur:', result.error);
+        setCurrentUser(null);
+      } else {
+        console.log('✅ [DEBUG] Utilisateur chargé avec succès');
+        setCurrentUser(result.data);
+      }
+    } catch (error) {
+      console.error('❌ [DEBUG] Erreur lors du chargement de l\'utilisateur:', error);
+      setCurrentUser(null);
+    }
+  };
+
+  const loadVehicleData = async () => {
+    if (!license) return;
+    
+    try {
+      setLoading(true);
+      
+             // Charger tous les véhicules depuis Supabase
+             const allVehicles = await SupabaseVehiclesService.getAvailableVehicles();
+             
+             console.log('🚗 [DEBUG] Tous les véhicules chargés:', allVehicles.length);
+             console.log('🚗 [DEBUG] License recherchée:', license);
+             
+             // Afficher les 8 premiers caractères de chaque véhicule pour debug
+             allVehicles.forEach((v, index) => {
+               const vehicleLicense = v.id.substring(0, 8).toUpperCase();
+               console.log(`🚗 [DEBUG] Véhicule ${index}: ID=${v.id}, License=${vehicleLicense}, Match=${vehicleLicense === license}`);
+             });
+             
+             // Trouver le véhicule qui correspond à la license (license générée à partir des 8 premiers caractères de l'ID)
+             const vehicle = allVehicles.find(v => v.id.substring(0, 8).toUpperCase() === license.toUpperCase());
+      
+      if (vehicle) {
+        // Convertir le véhicule Supabase vers l'interface Vehicle attendue
+        const mappedVehicle: Vehicle = {
+          id: vehicle.id,
+          ownerId: vehicle.owner_id || "",
+          license: license,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          color: vehicle.color || "Non spécifié",
+          fuel: (vehicle.fuel_type as any) || "gasoline",
+          year: vehicle.year,
+          hasAC: true, // À ajouter dans la DB plus tard
+          doors: vehicle.seats || 5,
+          transmission: (vehicle.transmission as any) || "manual",
+          mileage: vehicle.mileage || 0,
+          dailyPrice: vehicle.price_per_day,
+          currency: "EUR",
+          latitude: 0, // À ajouter dans la DB plus tard
+          longitude: 0, // À ajouter dans la DB plus tard
+          status: "available" as any,
+          description: vehicle.description || undefined, // Description du véhicule
+          location: vehicle.pickup_zones && vehicle.pickup_zones.length > 0 
+            ? vehicle.pickup_zones.join(', ') 
+            : "Mamoudzou, Mayotte", // Utiliser les zones de prise en charge
+          
+          // 🆕 Services supplémentaires - MAPPING COMPLET
+          // 🛩️ Services Aéroport
+          airport_pickup_service: vehicle.airport_pickup_service || false,
+          airport_pickup_retrieval: vehicle.airport_pickup_retrieval || false,
+          airport_pickup_retrieval_free: vehicle.airport_pickup_retrieval_free || false,
+          airport_pickup_retrieval_price: vehicle.airport_pickup_retrieval_price || 0,
+          airport_pickup_return: vehicle.airport_pickup_return || false,
+          airport_pickup_return_free: vehicle.airport_pickup_return_free || false,
+          airport_pickup_return_price: vehicle.airport_pickup_return_price || 0,
+          
+          // 🚢 Services Barge Petite Terre
+          barge_petite_terre_service: vehicle.barge_petite_terre_service || false,
+          barge_petite_terre_retrieval: vehicle.barge_petite_terre_retrieval || false,
+          barge_petite_terre_retrieval_free: vehicle.barge_petite_terre_retrieval_free || false,
+          barge_petite_terre_retrieval_price: vehicle.barge_petite_terre_retrieval_price || 0,
+          barge_petite_terre_return: vehicle.barge_petite_terre_return || false,
+          barge_petite_terre_return_free: vehicle.barge_petite_terre_return_free || false,
+          barge_petite_terre_return_price: vehicle.barge_petite_terre_return_price || 0,
+          
+          // 🚢 Services Barge Grande Terre
+          barge_grande_terre_service: vehicle.barge_grande_terre_service || false,
+          barge_grande_terre_retrieval: vehicle.barge_grande_terre_retrieval || false,
+          barge_grande_terre_retrieval_free: vehicle.barge_grande_terre_retrieval_free || false,
+          barge_grande_terre_retrieval_price: vehicle.barge_grande_terre_retrieval_price || 0,
+          barge_grande_terre_return: vehicle.barge_grande_terre_return || false,
+          barge_grande_terre_return_free: vehicle.barge_grande_terre_return_free || false,
+          barge_grande_terre_return_price: vehicle.barge_grande_terre_return_price || 0,
+          
+          // 🚚 Services Livraison à domicile
+          home_delivery_service: vehicle.home_delivery_service || false,
+          home_delivery_pickup: vehicle.home_delivery_pickup || false,
+          home_delivery_pickup_free: vehicle.home_delivery_pickup_free || false,
+          home_delivery_pickup_price: vehicle.home_delivery_pickup_price || 0,
+          home_delivery_return: vehicle.home_delivery_return || false,
+          home_delivery_return_free: vehicle.home_delivery_return_free || false,
+          home_delivery_return_price: vehicle.home_delivery_return_price || 0,
+          
+          // 👶 Services Siège bébé
+          baby_seat_service: vehicle.baby_seat_service || false,
+          baby_seat_free: vehicle.baby_seat_free || false,
+          baby_seat_price: vehicle.baby_seat_price || 0,
+          
+          // 👨‍✈️ Services Conducteur additionnel
+          additional_driver_service: vehicle.additional_driver_service || false,
+          additional_driver_free: vehicle.additional_driver_free || false,
+          additional_driver_price: vehicle.additional_driver_price || 0,
+          
+          createdAt: vehicle.created_at || new Date().toISOString(),
+          updatedAt: vehicle.updated_at || new Date().toISOString(),
+        };
+        
+        // 🧪 DEBUG: Vérifier le mapping des services
+        console.log('🔧 [VehicleDetails] Véhicule Supabase original:', vehicle);
+        console.log('🔧 [VehicleDetails] Véhicule mappé:', mappedVehicle);
+        console.log('🔧 [VehicleDetails] Airport service mappé:', mappedVehicle.airport_pickup_service);
+        console.log('🔧 [VehicleDetails] Baby seat service mappé:', mappedVehicle.baby_seat_service);
+        
+        setVehicle(mappedVehicle);
+
+        // Charger les photos depuis Supabase Storage
+        const photosResult = await PhotoService.getVehiclePhotos(vehicle.id);
+        
+        if (photosResult.data.length > 0) {
+          // Convertir les photos Supabase vers le format de l'application
+          const convertedPhotos: Photo[] = photosResult.data.map((supabasePhoto, index) => ({
+            id: supabasePhoto.id,
+            vehicleId: supabasePhoto.vehicleId,
+            url: supabasePhoto.url,
+            angle: supabasePhoto.photoType === 'frontLeft' ? 'front' :
+                  supabasePhoto.photoType === 'profileLeft' ? 'side' :
+                  supabasePhoto.photoType === 'interior' ? 'interior' : 'other',
+            position: supabasePhoto.position,
+            isPrimary: supabasePhoto.isPrimary,
+            createdAt: new Date().toISOString()
+          }));
+          
+          setPhotos(convertedPhotos);
+          setVehiclePhotos(photosResult.data);
+        } else {
+          // Fallback vers l'image principale du véhicule
+          const defaultPhoto: Photo = {
+            id: `photo-${vehicle.id}`,
+            vehicleId: vehicle.id,
+            url: vehicle.image_url || "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop",
+            angle: "front" as any,
+            position: 1,
+            isPrimary: true,
+            createdAt: new Date().toISOString()
+          };
+          setPhotos([defaultPhoto]);
+        }
+        
+      } else {
+        toast({
+          title: "Véhicule non trouvé",
+          description: "Ce véhicule n'existe pas ou n'est plus disponible.",
+          variant: "destructive",
+        });
+        navigate("/");
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement du véhicule:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les informations du véhicule.",
+        variant: "destructive",
+      });
+      navigate("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBooking = () => {
+    console.log('🎯 [DEBUG] Clic sur Réserver');
+    console.log('👤 [DEBUG] currentUser:', currentUser);
+    console.log('🚗 [DEBUG] vehicle:', vehicle);
+    
+    if (!currentUser) {
+      console.log('❌ [DEBUG] Utilisateur non connecté, redirection vers login');
+      toast({
+        title: "Connexion requise",
+        description: "Vous devez être connecté pour réserver un véhicule.",
+      });
+      navigate("/auth/login");
+      return;
+    }
+
+    if (!vehicle || !navigationState?.rentalCalculation) {
+      toast({
+        title: "Informations manquantes",
+        description: "Veuillez sélectionner des dates de location.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // 🔧 SOLUTION : Récupérer le brouillon existant au lieu de le créer à nouveau
+    let bookingDraft = getBookingDraft();
+    
+    if (!bookingDraft) {
+      console.log('📝 [DEBUG] Aucun brouillon existant, création d\'un nouveau');
+      // Créer un nouveau brouillon seulement s'il n'existe pas
+      bookingDraft = createBookingDraft(
+        vehicle.id,
+        {
+          brand: vehicle.brand,
+          model: vehicle.model,
+          year: vehicle.year,
+          imageUrl: photos.length > 0 ? photos[0].url : undefined
+        },
+        navigationState.pickupLocation || 'Non spécifié',
+        navigationState.rentalCalculation,
+        dailyRate,
+        vehicleRentalInfo?.totalCost || 0
+      );
+    } else {
+      console.log('🔄 [DEBUG] Brouillon existant trouvé, mise à jour avec les nouvelles données');
+      console.log('🔍 [DEBUG] Services déjà sélectionnés:', bookingDraft.selectedOptions);
+      
+      // ✅ PRÉSERVER les selectedOptions existantes
+      const existingSelectedOptions = bookingDraft.selectedOptions || [];
+      console.log('💾 [DEBUG] Préservation de', existingSelectedOptions.length, 'options sélectionnées');
+      
+      // Mettre à jour le brouillon existant avec les nouvelles données
+      bookingDraft = {
+        ...bookingDraft,
+        vehicleId: vehicle.id,
+        vehicleBrand: vehicle.brand,
+        vehicleModel: vehicle.model,
+        vehicleYear: vehicle.year,
+        vehicleImageUrl: photos.length > 0 ? photos[0].url : undefined,
+        pickupLocation: navigationState.pickupLocation || 'Non spécifié',
+        startDate: navigationState.rentalCalculation.startDate.toISOString(),
+        endDate: navigationState.rentalCalculation.endDate.toISOString(),
+        startTime: navigationState.rentalCalculation.startTime,
+        endTime: navigationState.rentalCalculation.endTime,
+        rentalDays: navigationState.rentalCalculation.rentalDays,
+        pricePerDay: dailyRate,
+        basePrice: vehicleRentalInfo?.totalCost || 0,
+        // ✅ GARDER les selectedOptions existantes !
+        selectedOptions: existingSelectedOptions,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Sauvegarder le brouillon mis à jour
+      saveBookingDraft(bookingDraft);
+    }
+    
+    console.log('💾 [DEBUG] Brouillon final:', bookingDraft);
+    
+    // Ouvrir la modal de confirmation de réservation
+    setShowConfirmationModal(true);
+  };
+  
+  const handleConfirmBooking = async () => {
+    console.log('✅ [DEBUG] Confirmation de la réservation');
+    // Fermer la modal de confirmation
+    setShowConfirmationModal(false);
+    
+    // Rediriger directement vers la page de discussion
+    if (!vehicle) {
+      console.log('❌ [DEBUG] Pas de véhicule, arrêt');
+      return;
+    }
+    
+    if (!vehicle.license) {
+      console.log('❌ [DEBUG] Pas de license, arrêt');
+      return;
+    }
+    
+    // Utiliser les dates depuis les critères de recherche ou des dates par défaut
+    let startDate: Date;
+    let endDate: Date;
+    let pickupLocation: string = '';
+    let startTime: string = '06:30';
+    let endTime: string = '06:00';
+    
+    if (navigationState?.startDate && navigationState?.endDate) {
+      // Utiliser les dates depuis les critères de recherche
+      startDate = new Date(navigationState.startDate);
+      endDate = new Date(navigationState.endDate);
+      pickupLocation = navigationState.pickupLocation || '';
+      startTime = navigationState.startTime || '06:30';
+      endTime = navigationState.endTime || '06:00';
+      
+      // Ajouter les heures si disponibles
+      if (navigationState.startTime) {
+        const [hours, minutes] = navigationState.startTime.split(':');
+        startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      if (navigationState.endTime) {
+        const [hours, minutes] = navigationState.endTime.split(':');
+        endDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      }
+      
+      console.log('📅 [DEBUG] Utilisation des dates depuis les critères de recherche:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        startTime: navigationState.startTime,
+        endTime: navigationState.endTime,
+        pickupLocation
+      });
+    } else {
+      // Utiliser des dates par défaut
+      startDate = new Date();
+      startDate.setHours(6, 0, 0, 0); // 06:00 aujourd'hui
+      endDate = new Date();
+      endDate.setDate(endDate.getDate() + 1); // demain
+      endDate.setHours(14, 0, 0, 0); // 14:00
+      
+      console.log('📅 [DEBUG] Utilisation des dates par défaut:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
+    }
+    
+    // Calculer les informations de réservation pour la modal
+    // Calcul précis en heures (durée réelle)
+    const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+    
+    // Calcul par blocs de 24h + heures supplémentaires
+    const completeDays = Math.floor(rentalHours / 24);
+    const extraHours = rentalHours % 24;
+    
+    // Prix = (jours complets × prix/jour) + (heures supplémentaires × prix/heure) arrondi supérieur
+    // Si < 24h → minimum 1 jour
+    let totalPrice: number;
+    if (rentalHours < 24) {
+      totalPrice = vehicle.dailyPrice; // Minimum 1 jour
+    } else if (extraHours === 0) {
+      totalPrice = completeDays * vehicle.dailyPrice;
+    } else {
+      // Toujours facturer les heures supplémentaires au prorata
+      // Peu importe si heure retour < heure départ
+      const hourPrice = vehicle.dailyPrice / 24;
+      const extraHoursPrice = extraHours * hourPrice;
+      totalPrice = Math.ceil((completeDays * vehicle.dailyPrice) + extraHoursPrice);
+    }
+    
+    console.log('⏱️ [DEBUG] Calcul durée réelle:', {
+      rentalHours: rentalHours.toFixed(2),
+      completeDays: completeDays,
+      extraHours: extraHours.toFixed(2),
+      totalPrice: totalPrice
+    });
+    
+    // Pour l'affichage, on utilise rentalDays = nombre de jours complets + 1 si heures supplémentaires
+    const rentalDays = rentalHours < 24 ? 1 : completeDays + (extraHours > 0 ? 1 : 0);
+    const basePrice = totalPrice;
+    
+    // Récupérer les options sélectionnées depuis bookingStorage
+    const bookingDraft = getBookingDraft();
+    const selectedOptions = bookingDraft?.selectedOptions ? bookingDraft.selectedOptions
+      .filter(option => option.selected)
+      .map(option => ({
+        name: option.name,
+        pricePerDay: option.pricePerDay,
+        totalPrice: option.totalPrice
+      })) : [];
+    
+    const optionsTotal = selectedOptions.reduce((sum, option) => sum + option.totalPrice, 0);
+    const totalPriceWithOptions = basePrice + optionsTotal;
+    
+    // Créer l'objet de données de réservation pour la page de discussion
+    const bookingData = {
+      vehicle: {
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year,
+        color: vehicle.color,
+        license: vehicle.license,
+        imageUrl: vehiclePhotos.exterior?.url || vehiclePhotos.other?.url || vehiclePhotos.side?.url
+      },
+      rentalInfo: {
+        pickupLocation,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        startTime,
+        endTime,
+        rentalDays,
+        pricePerDay: vehicle.dailyPrice,
+        basePrice,
+        optionsTotal,
+        totalPrice: totalPriceWithOptions
+      },
+      selectedOptions
+    };
+    
+    console.log('📋 [DEBUG] Données de réservation pour la discussion:', bookingData);
+    
+    // 🆕 CRÉER LA RÉSERVATION DANS SU comunesE
+    try {
+      console.log('💾 [DEBUG] Création de la réservation dans Supabase...');
+      
+      // Calculer les valeurs nécessaires
+      const subtotal = basePrice + optionsTotal;
+      const serviceFee = Math.round(subtotal * 0.15 * 100) / 100;
+      
+      const bookingResult = await SupabaseBookingsService.createBooking({
+        vehicleId: vehicle.id,
+        renterId: currentUser.id,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        totalPrice: totalPriceWithOptions,
+        pickupLocation: bookingData.rentalInfo.pickupLocation,
+        startTime: bookingData.rentalInfo.startTime,
+        endTime: bookingData.rentalInfo.endTime,
+        selectedOptions: bookingData.selectedOptions,
+        basePrice: bookingData.rentalInfo.basePrice,
+        optionsTotal: bookingData.rentalInfo.optionsTotal,
+        serviceFee: serviceFee,
+        subtotal: subtotal,
+        pricePerDay: vehicle.dailyPrice,
+        rentalDays: bookingData.rentalInfo.rentalDays,
+      });
+      
+      if (bookingResult.data) {
+        console.log('✅ [DEBUG] Réservation créée avec succès:', bookingResult.data);
+        // Ajouter l'ID de la réservation aux données pour la discussion
+        bookingData.bookingId = bookingResult.data.id;
+        
+        // Sauvegarder les données dans sessionStorage pour la page de discussion
+        sessionStorage.setItem('lagon_booking_data', JSON.stringify(bookingData));
+        
+        // Inclure l'ID de la réservation dans l'URL pour créer une conversation unique
+        const bookingId = bookingResult.data.id;
+        let url = `/vehicle/${vehicle.license}/booking/discussion?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+        if (bookingId) {
+          url += `&bookingId=${bookingId}`;
+        }
+        console.log('🔗 [DEBUG] URL de navigation directe:', url);
+        
+        try {
+          navigate(url);
+          console.log('✅ [DEBUG] Navigation directe vers la discussion réussie');
+        } catch (error) {
+          console.error('❌ [DEBUG] Erreur navigation directe:', error);
+        }
+        
+      } else if (bookingResult.error) {
+        console.error('❌ [DEBUG] Erreur création réservation:', bookingResult.error);
+        toast({
+          title: "Erreur de réservation",
+          description: bookingResult.error || "Impossible de créer la réservation",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('❌ [DEBUG] Erreur lors de la création de la réservation:', error);
+      toast({
+        title: "Erreur inattendue",
+        description: "Une erreur est survenue lors de la création de la réservation",
+        variant: "destructive",
+      });
+      return;
+    }
+  };
+
+  const handleChooseMoreVehicles = () => {
+    navigate('/');
+  };
+
+  const handleContinueWithOneVehicle = () => {
+    console.log('🎯 [DEBUG] ===== DÉBUT handleContinueWithOneVehicle =====');
+    console.log('🎯 [DEBUG] Clic sur "Envoyer ma demande maintenant"');
+    console.log('🚗 [DEBUG] Vehicle:', vehicle);
+    console.log('🔍 [DEBUG] Vehicle.license:', vehicle?.license);
+    console.log('🔍 [DEBUG] License type:', typeof vehicle?.license);
+    console.log('🔍 [DEBUG] License value:', vehicle?.license);
+    
+    if (!vehicle) {
+      console.log('❌ [DEBUG] Pas de véhicule, arrêt');
+      console.log('🎯 [DEBUG] ===== FIN handleContinueWithOneVehicle (pas de véhicule) =====');
+      return;
+    }
+    
+    if (!vehicle.license) {
+      console.log('❌ [DEBUG] Pas de license, arrêt');
+      console.log('🎯 [DEBUG] ===== FIN handleContinueWithOneVehicle (pas de license) =====');
+      return;
+    }
+    
+    // Simuler les dates par défaut (à terme, elles viendront d'un formulaire de dates)
+    const startDate = new Date();
+    startDate.setHours(10, 0, 0, 0); // 10h00 aujourd'hui
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 1); // demain
+    endDate.setHours(18, 0, 0, 0); // 18h00
+    
+    const url = `/vehicle/${vehicle.license}/booking/discussion?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    console.log('🔗 [DEBUG] URL de navigation:', url);
+    console.log('🚀 [DEBUG] Navigation vers:', url);
+    console.log('🚀 [DEBUG] Avant navigate() - URL actuelle:', window.location.href);
+    
+    try {
+      console.log('🚀 [DEBUG] Appel navigate()...');
+      navigate(url);
+      console.log('✅ [DEBUG] navigate() appelé avec succès');
+      console.log('🚀 [DEBUG] Après navigate() - URL actuelle:', window.location.href);
+    } catch (error) {
+      console.error('❌ [DEBUG] Erreur navigation:', error);
+    }
+    
+    console.log('🎯 [DEBUG] ===== FIN handleContinueWithOneVehicle =====');
+  };
+
+  if (loading || !vehicle) {
+    console.log('🚫 [DEBUG] Loading:', loading, 'Vehicle:', vehicle);
+    console.log('🚫 [DEBUG] License param:', license);
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-soft">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Chargement du véhicule...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const primaryPhoto = photos.find(p => p.isPrimary) || photos[0];
+  const dailyRate = vehicle.dailyPrice;
+  const originalRate = Math.round(dailyRate * 1.2);
+  
+  // Récupérer les informations de location depuis le state de navigation
+  const navigationState = location.state as {
+    rentalCalculation?: RentalCalculation;
+    startDate?: string;
+    endDate?: string;
+    startTime?: string;
+    endTime?: string;
+    pickupLocation?: string; // Zone de prise en charge depuis la recherche
+  } | null;
+  
+  // Calculer les informations de location pour ce véhicule
+  const vehicleRentalInfo: VehicleRentalInfo | null = navigationState?.rentalCalculation 
+    ? createVehicleRentalInfo(vehicle.id, dailyRate, navigationState.rentalCalculation)
+    : null;
+  
+  console.log('💰 [DEBUG] VehicleDetails - Rental Info:', {
+    hasRentalCalculation: !!navigationState?.rentalCalculation,
+    rentalDays: navigationState?.rentalCalculation?.rentalDays,
+    totalCost: vehicleRentalInfo?.totalCost,
+    formattedPrice: vehicleRentalInfo?.formattedPrice,
+    pickupLocation: navigationState?.pickupLocation || 'Non défini'
+  });
+
+  const nextPhoto = () => {
+    setSelectedPhotoIndex((prev) => (prev + 1) % photos.length);
+  };
+
+  const prevPhoto = () => {
+    setSelectedPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length);
+  };
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // Sticky Pricing Component
+  const PricingCard = ({ isMobile = false }: { isMobile?: boolean }) => (
+    <Card className={`${isMobile ? 'shadow-xl border-t' : 'lg:shadow-lg'}`}>
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl font-bold text-primary">{dailyRate}€</span>
+              <span className="text-sm text-muted-foreground line-through">{originalRate}€</span>
+            </div>
+            <p className="text-muted-foreground">par jour</p>
+            
+            {/* Afficher le total si des dates sont sélectionnées */}
+            {vehicleRentalInfo && (
+              <div className="mt-3 pt-3 border-t border-muted">
+                <p className="text-sm text-muted-foreground mb-1">
+                  Tarif de base* :
+                </p>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-3xl font-bold text-primary">
+                    {vehicleRentalInfo.totalCost}€
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {dailyRate}€/jour × {vehicleRentalInfo.formattedPrice.match(/\((.*?)\)/)?.[1]}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  * Hors options et frais de service
+                </p>
+              </div>
+            )}
+          </div>
+
+          <Button
+            size="lg"
+            onClick={handleBooking}
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
+          >
+            <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
+            Réserver
+          </Button>
+
+          {/* Services supplémentaires proposés par ce véhicule */}
+          {(() => {
+            console.log('🔍 [VehicleDetails] Condition VehicleServiceOptions:', {
+              vehicle: !!vehicle,
+              navigationState: !!navigationState,
+              rentalCalculation: !!navigationState?.rentalCalculation,
+              vehicleId: vehicle?.id,
+              rentalDays: navigationState?.rentalCalculation?.rentalDays
+            });
+            return vehicle && navigationState?.rentalCalculation;
+          })() && (
+            <VehicleServiceOptions 
+              vehicle={vehicle}
+              rentalDays={navigationState.rentalCalculation.rentalDays}
+            />
+          )}
+
+          <Badge variant="secondary" className="w-full justify-center py-1">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Annulation gratuite
+          </Badge>
+        </div>
+
+        <Separator className="my-6" />
+
+        <div>
+          <h3 className="font-semibold mb-4">Inclus dans le prix</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-green-500" />
+              <span>Assurance multirisque</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-blue-500" />
+              <span>Assistance routière 24/7</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-purple-500" />
+              <span>Conducteurs additionnels gratuits</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background pb-20 lg:pb-0">{/* pb-20 pour laisser l'espace au sticky mobile */}
+      <Navbar />
+      
+      <main className="flex-1 py-4 md:py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mb-6"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour
+          </Button>
+
+          <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Photos Gallery */}
+              <div className="space-y-4">
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-muted">
+                  <img
+                    src={photos[selectedPhotoIndex]?.url || primaryPhoto?.url || "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop"}
+                    alt={`${vehicle.brand} ${vehicle.model}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {photos.length > 1 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur"
+                        onClick={prevPhoto}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/90 backdrop-blur"
+                        onClick={nextPhoto}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                  <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur rounded-md px-2 py-1 text-sm">
+                    {selectedPhotoIndex + 1} / {photos.length || 1}
+                  </div>
+                </div>
+                
+                {/* Photo Thumbnails */}
+                {photos.length > 1 && (
+                  <div className="grid grid-cols-6 gap-2">
+                    {photos.slice(0, 6).map((photo, index) => (
+                      <button
+                        key={photo.id}
+                        onClick={() => setSelectedPhotoIndex(index)}
+                        className={`aspect-square rounded-lg overflow-hidden transition-all ${
+                          selectedPhotoIndex === index 
+                            ? "ring-2 ring-primary" 
+                            : "hover:ring-2 hover:ring-primary/50"
+                        }`}
+                      >
+                        <img
+                          src={photo.url}
+                          alt={`Vue ${photo.angle}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile: Price card appears here, right after photos - NOT STICKY */}
+              <div className="lg:hidden mb-6">
+                <PricingCard />
+              </div>
+
+              {/* Vehicle Title and Info */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <Badge variant="secondary" className="text-sm">{vehicle.license}</Badge>
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-semibold">5.0</span>
+                    <span className="text-muted-foreground">(24 avis)</span>
+                  </div>
+                </div>
+                
+                <h1 className="text-3xl md:text-4xl font-bold mb-3">
+                  {vehicle.brand} {vehicle.model} {vehicle.year}
+                </h1>
+                
+                <div className="flex flex-wrap items-center gap-4 text-muted-foreground mb-4">
+                  <span>{vehicle.mileage.toLocaleString()} km</span>
+                  <span>•</span>
+                  <span>{vehicle.year}</span>
+                  <span>•</span>
+                  <span>5 places</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Parking réservé
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Settings className="h-3 w-3" />
+                    {transmissionLabels[vehicle.transmission]}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Location Map */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Récupération du véhicule</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Zones de prise en charge */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-foreground">Zones de prise en charge disponibles :</h4>
+                      {vehicle?.location ? (
+                        <div className="flex flex-wrap gap-2">
+                          {vehicle.location.split(', ').map((zone, index) => {
+                            const IconComponent = getLocationIcon(zone.trim());
+                            return (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="flex items-center gap-1 px-2 py-1"
+                              >
+                                <IconComponent className="h-3 w-3" />
+                                {zone.trim()}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <Badge variant="secondary" className="flex items-center gap-1 px-2 py-1">
+                          <MapPin className="h-3 w-3" />
+                          Mamoudzou, Mayotte
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="h-24 bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg flex items-center justify-center border border-muted/40">
+                      <div className="text-center text-muted-foreground">
+                        <MapPin className="h-5 w-5 mx-auto mb-1" />
+                        <p className="text-sm">Carte interactive</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Vous récupérerez les clés directement auprès du propriétaire lors de votre arrivée.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Owner and Description */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Propriétaire dynamique */}
+                <div className="max-w-md">
+                  {vehicle && (
+                    <VehicleOwnerCard 
+                      vehicleId={vehicle.id} 
+                      className="w-full"
+                    />
+                  )}
+                </div>
+
+                {/* Description */}
+                {vehicle.description && (
+                  <div className="max-w-md">
+                    <Card className="h-full overflow-hidden">
+                      <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Car className="h-5 w-5 text-primary" />
+                          Description de la voiture
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 p-4">
+                        <p className="text-gray-700 leading-relaxed text-sm">
+                          {vehicle.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </div>
+
+              {/* Technical Specifications */}
+              <Collapsible open={expandedSections.technical} onOpenChange={() => toggleSection('technical')}>
+                <Card className="overflow-hidden">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
+                      <CardTitle className="flex items-center justify-between text-lg">
+                        Caractéristiques techniques
+                        <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.technical ? 'rotate-90' : ''}`} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="bg-gray-50/50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-600 mb-1">Moteur</div>
+                          <div className="text-sm font-semibold text-primary">{vehicle.fuel || "Non spécifié"}</div>
+                        </div>
+                        <div className="bg-gray-50/50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-600 mb-1">Transmission</div>
+                          <div className="text-sm font-semibold text-primary">{vehicle.transmission || "Non spécifiée"}</div>
+                        </div>
+                        <div className="bg-gray-50/50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-600 mb-1">Kilométrage</div>
+                          <div className="text-sm font-semibold text-primary">{vehicle.mileage.toLocaleString()} km</div>
+                        </div>
+                        <div className="bg-gray-50/50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-600 mb-1">Portes</div>
+                          <div className="text-sm font-semibold text-primary">{vehicle.doors}</div>
+                        </div>
+                        <div className="bg-gray-50/50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-600 mb-1">Places</div>
+                          <div className="text-sm font-semibold text-primary">5</div>
+                        </div>
+                        <div className="bg-gray-50/50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-600 mb-1">Couleur</div>
+                          <div className="text-sm font-semibold text-primary">{vehicle.color}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Options and Accessories */}
+              <Collapsible open={expandedSections.options} onOpenChange={() => toggleSection('options')}>
+                <Card className="overflow-hidden">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
+                      <CardTitle className="flex items-center justify-between text-lg">
+                        Options et accessoires
+                        <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.options ? 'rotate-90' : ''}`} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
+                          <Wind className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                          <span className="text-xs font-medium">Climatisation</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
+                          <Navigation className="h-4 w-4 text-green-500 flex-shrink-0" />
+                          <span className="text-xs font-medium">GPS</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
+                          <Gauge className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                          <span className="text-xs font-medium">Régulateur</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
+                          <Volume2 className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                          <span className="text-xs font-medium">Audio/iPod</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
+                          <Bluetooth className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                          <span className="text-xs font-medium">Bluetooth</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
+                          <Smartphone className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                          <span className="text-xs font-medium">CarPlay</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Reviews */}
+              <Collapsible open={expandedSections.reviews} onOpenChange={() => toggleSection('reviews')}>
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span>Évaluations</span>
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-lg font-bold">5.0</span>
+                          </div>
+                        </div>
+                        <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.reviews ? 'rotate-90' : ''}`} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <div className="space-y-4 mb-6">
+                        {[5, 4, 3, 2, 1].map((rating) => (
+                          <div key={rating} className="flex items-center gap-3">
+                            <span className="text-sm w-3">{rating}</span>
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <Progress value={rating === 5 ? 90 : 0} className="flex-1" />
+                            <span className="text-sm text-muted-foreground w-8">{rating === 5 ? '22' : '0'}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="border-t pt-4">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face" />
+                              <AvatarFallback>M</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">Marie</span>
+                                <div className="flex">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star key={star} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                  ))}
+                                </div>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-1">
+                                Il y a 2 semaines • 3 jours de location
+                              </p>
+                              <p className="text-sm">
+                                Véhicule en parfait état, très propre. Pierre est un hôte attentionné et disponible. Je recommande vivement !
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" />
+                              <AvatarFallback>J</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">Jean</span>
+                                <div className="flex">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star key={star} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                  ))}
+                                </div>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-1">
+                                Il y a 1 mois • 5 jours de location
+                              </p>
+                              <p className="text-sm">
+                                Excellent véhicule pour découvrir l'île. Économique et fiable. Communication parfaite avec le propriétaire.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Insurance */}
+              <Collapsible open={expandedSections.insurance} onOpenChange={() => toggleSection('insurance')}>
+                <Card className="border-primary/20 bg-primary/5">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-primary/10 transition-colors">
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-primary" />
+                          Assurance incluse
+                        </div>
+                        <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.insurance ? 'rotate-90' : ''}`} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <span>Assurance multirisque fournie par AXA</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <span>Assistance routière 24/7</span>
+                        </div>
+
+                        <Separator />
+
+                        <div className="grid md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <h4 className="font-medium mb-2">Ce que prend en charge l'assurance :</h4>
+                            <ul className="space-y-1 text-muted-foreground">
+                              <li>• Dommages collision</li>
+                              <li>• Vol et vandalisme</li>
+                              <li>• Bris de glace</li>
+                              <li>• Incendie</li>
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2">Conditions :</h4>
+                            <ul className="space-y-1 text-muted-foreground">
+                              <li>• Âge minimum : 21 ans</li>
+                              <li>• Permis depuis 2 ans</li>
+                              <li>• Franchise : 800€</li>
+                              <li>• Caution : 1000€</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Benefits */}
+              <Collapsible open={expandedSections.benefits} onOpenChange={() => toggleSection('benefits')}>
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                      <CardTitle className="flex items-center justify-between">
+                        Avantages à chaque location
+                        <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.benefits ? 'rotate-90' : ''}`} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-4 w-4 text-blue-500" />
+                          <span>Prolongation facile</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>30 minutes de marge pour les retours tardifs</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Phone className="h-4 w-4 text-purple-500" />
+                          <span>Support client 7j/7</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+
+              {/* Legal Information */}
+              <Collapsible open={expandedSections.legal} onOpenChange={() => toggleSection('legal')}>
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                      <CardTitle className="flex items-center justify-between">
+                        Informations précontractuelles
+                        <ChevronRight className={`h-4 w-4 transition-transform ${expandedSections.legal ? 'rotate-90' : ''}`} />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <div className="space-y-3 text-sm text-muted-foreground">
+                        <p>
+                          Conformément à l'article L.221-18 du Code de la consommation, vous disposez d'un droit de rétractation de 14 jours à compter de la conclusion du contrat.
+                        </p>
+                        <p>
+                          En cas de litige, vous pouvez recourir à la médiation de la consommation ou saisir le tribunal compétent.
+                        </p>
+                        <div className="flex gap-4">
+                          <Button variant="link" className="p-0 h-auto text-primary">
+                            Conditions générales
+                          </Button>
+                          <Button variant="link" className="p-0 h-auto text-primary">
+                            En savoir plus
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            </div>
+
+            {/* Sticky Sidebar - Only visible on desktop */}
+            <div className="hidden lg:block">
+              <div className="sticky top-24 h-fit">
+                <PricingCard />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      {/* Mobile Sticky Bottom Price Card */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              {vehicleRentalInfo ? (
+                <>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-primary">{vehicleRentalInfo.totalCost}€*</span>
+                    <span className="text-xs text-muted-foreground">({vehicleRentalInfo.formattedPrice.match(/\((.*?)\)/)?.[1]})</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {dailyRate}€/jour • Hors options
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold text-primary">{dailyRate}€</span>
+                  <span className="text-sm text-muted-foreground line-through">{originalRate}€</span>
+                  <span className="text-sm text-muted-foreground">par jour</span>
+                </div>
+              )}
+            </div>
+            <Button
+              size="lg"
+              onClick={handleBooking}
+              className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
+            >
+              <Zap className="h-4 w-4 mr-2 text-yellow-400" fill="currentColor" />
+              Réserver
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      <Footer />
+      
+      {/* Booking Confirmation Modal */}
+      {vehicle && navigationState?.rentalCalculation && (
+        <BookingConfirmationModal
+          isOpen={showConfirmationModal}
+          onClose={() => setShowConfirmationModal(false)}
+          onConfirm={handleConfirmBooking}
+          vehicle={{
+            brand: vehicle.brand,
+            model: vehicle.model,
+            year: vehicle.year,
+            imageUrl: photos.length > 0 ? photos[0].url : undefined
+          }}
+          rentalInfo={{
+            pickupLocation: navigationState.pickupLocation || 'Non spécifié',
+            startDate: new Date(navigationState.startDate!),
+            endDate: new Date(navigationState.endDate!),
+            startTime: navigationState.startTime!,
+            endTime: navigationState.endTime!,
+            rentalDays: navigationState.rentalCalculation.rentalDays,
+            pricePerDay: dailyRate,
+            basePrice: vehicleRentalInfo?.totalCost || 0
+          }}
+          selectedOptions={[]}
+        />
+      )}
+      
+      {/* Multi Vehicle Selection Modal */}
+      <MultiVehicleModal
+        isOpen={showMultiVehicleModal}
+        onClose={() => setShowMultiVehicleModal(false)}
+        onContinueWithOne={handleContinueWithOneVehicle}
+        selectedVehicleImage={photos.length > 0 ? photos[0].url : undefined}
+        selectedVehicleName={vehicle ? `${vehicle.brand} ${vehicle.model}` : undefined}
+      />
+    </div>
+  );
+}

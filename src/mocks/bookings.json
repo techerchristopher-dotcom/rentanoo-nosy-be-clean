@@ -1,0 +1,50 @@
+[
+  {
+    "id": "booking_1",
+    "vehicleId": "vehicle_1", 
+    "renterId": "user_1",
+    "startDate": "2025-09-10T09:00:00Z",
+    "endDate": "2025-09-12T09:00:00Z",
+    "totalAmount": 70,
+    "currency": "EUR",
+    "status": "pending",
+    "createdAt": "2024-09-08T14:30:00Z",
+    "updatedAt": "2024-09-08T14:30:00Z"
+  },
+  {
+    "id": "booking_2", 
+    "vehicleId": "vehicle_2",
+    "renterId": "user_5",
+    "startDate": "2025-09-11T10:00:00Z", 
+    "endDate": "2025-09-12T10:00:00Z",
+    "totalAmount": 40,
+    "currency": "EUR",
+    "status": "accepted",
+    "createdAt": "2024-09-09T16:45:00Z",
+    "updatedAt": "2024-09-10T08:20:00Z"
+  },
+  {
+    "id": "booking_3",
+    "vehicleId": "vehicle_3",
+    "renterId": "user_1", 
+    "startDate": "2024-08-15T08:00:00Z",
+    "endDate": "2024-08-18T08:00:00Z",
+    "totalAmount": 135,
+    "currency": "EUR",
+    "status": "closed",
+    "createdAt": "2024-08-10T12:15:00Z", 
+    "updatedAt": "2024-08-18T08:00:00Z"
+  },
+  {
+    "id": "booking_4",
+    "vehicleId": "vehicle_1",
+    "renterId": "user_5",
+    "startDate": "2024-09-01T10:00:00Z",
+    "endDate": "2024-09-03T10:00:00Z", 
+    "totalAmount": 70,
+    "currency": "EUR",
+    "status": "cancelled",
+    "createdAt": "2024-08-28T09:30:00Z",
+    "updatedAt": "2024-08-30T14:20:00Z"
+  }
+]
