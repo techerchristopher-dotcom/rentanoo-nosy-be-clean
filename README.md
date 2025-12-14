@@ -1,75 +1,87 @@
-# ok
+# Rentanoo Nosy Be
 
-## Welcome to your Lovable project
+Plateforme de location de véhicules pour Nosy Be, Madagascar.
 
-## Project info
+## 🚀 Projet
 
-**URL**: https://lovable.dev/projects/5219a04c-6db0-47f3-983e-fa716da4cf93
+Ce projet est une duplication propre et indépendante du projet Lagon Car Share, adaptée spécifiquement pour Nosy Be.
 
-## How can I edit this code?
+## 📋 Prérequis
 
-There are several ways of editing your application.
+- Node.js >= 18.0.0
+- npm ou yarn
+- Compte Supabase configuré
 
-**Use Lovable**
+## 🛠️ Installation
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5219a04c-6db0-47f3-983e-fa716da4cf93) and start prompting.
+```bash
+# Installer les dépendances
+npm install
 
-Changes made via Lovable will be committed automatically to this repo.
+# Copier le template d'environnement
+cp scripts/env-template-nosy-be.txt .env
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Configurer les variables d'environnement dans .env
+# (Voir scripts/env-template-nosy-be.txt pour la liste complète)
 ```
 
-**Edit a file directly in GitHub**
+## 🏃 Développement
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Démarrer le serveur de développement
+npm run dev
 
-**Use GitHub Codespaces**
+# Démarrer sur un port spécifique
+npm run dev:renter  # Port 3000
+npm run dev:3002    # Port 3002
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📦 Build
 
-## What technologies are used for this project?
+```bash
+# Build de production
+npm run build
 
-This project is built with:
+# Build de développement
+npm run build:dev
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🗄️ Base de données
 
-## How can I deploy this project?
+Le projet utilise Supabase. La configuration se trouve dans le dossier `supabase/`.
 
-Simply open [Lovable](https://lovable.dev/projects/5219a04c-6db0-47f3-983e-fa716da4cf93) and click on Share -> Publish.
+Voir les fichiers `ETAPE-*.md` pour les instructions de duplication de la base de données.
 
-## Can I connect a custom domain to my Lovable project?
+## 📚 Structure du projet
 
-Yes, you can!
+```
+├── src/              # Code source React/TypeScript
+├── supabase/         # Configuration Supabase
+├── scripts/          # Scripts de duplication et migration
+├── public/           # Assets statiques
+└── server/           # Backend Express
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🔐 Sécurité
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+⚠️ **IMPORTANT**: Ne jamais commiter de fichiers `.env` ou contenant des secrets.
+
+Le `.gitignore` est configuré pour exclure automatiquement :
+- `.env*`
+- `node_modules/`
+- `dist/`
+
+## 📝 Documentation
+
+- `ETAPE-1-DUPLICATION-CODE.md` : Instructions de duplication du code
+- `ETAPE-1-OFFICIELLE.md` : Guide officiel étape 1
+- `SETUP-GITHUB.md` : Instructions pour configurer le repo GitHub
+- `scripts/README-DUPLICATION.md` : Documentation des scripts de duplication
+
+## 🚢 Déploiement
+
+Le projet est configuré pour être déployé avec Nixpacks (voir `nixpacks.toml`).
+
+## 📄 Licence
+
+Propriétaire - Rentanoo
