@@ -18,7 +18,8 @@
     "start": "tsx server/index.ts",
     "start:prod": "NODE_ENV=production tsx server/index.ts",
     "diagnostic:duplication": "node scripts/diagnostic-duplication.js",
-    "verify:supabase": "node scripts/verify-supabase-connection.js"
+    "verify:supabase": "node scripts/verify-supabase-connection.js",
+    "switch:supabase": "./scripts/switch-supabase-project.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
