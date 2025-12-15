@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "dictionary": "Dictionnaire",
+    "login": "Connexion",
+    "dashboard": "Tableau de bord"
+  },
+  "common": {
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "error": "Erreur"
+  },
+  "dictionary": {
+    "title": "Dictionnaire",
+    "searchPlaceholder": "Rechercher un mot...",
+    "noResults": "Aucun résultat pour cette recherche.",
+    "back": "Retour au dictionnaire",
+    "definitionsTitle": "Définitions",
+    "etymologyTitle": "Étymologie",
+    "sourcesTitle": "Sources",
+    "originLabel": "Origine :",
+    "derivationLabel": "Dérivation :",
+    "relatedWordsLabel": "Mots apparentés :"
+  }
+}
+

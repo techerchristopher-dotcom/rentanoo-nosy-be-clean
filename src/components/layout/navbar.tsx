@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Car, Menu, X, User, LogOut, Plus, Settings, LayoutDashboard } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -14,8 +15,10 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileService } from "@/services/supabase/profile";
 import { User as UserType } from "@/types";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 export function Navbar() {
+  const { t } = useTranslation("common");
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -79,6 +82,18 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
+            <Link 
+              to="/" 
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              {t("nav.home")}
+            </Link>
+            <Link 
+              to="/dictionary" 
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              {t("nav.dictionary")}
+            </Link>
             {user ? (
               <>
                 {/* Lien Mes réservations pour locataire */}
@@ -116,6 +131,9 @@ export function Navbar() {
 
           {/* User Menu / Auth + CTA */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+            
             {user ? (
               <div className="flex items-center space-x-3">
                 <DropdownMenu>
@@ -178,7 +196,7 @@ export function Navbar() {
             ) : (
               <div className="flex items-center space-x-3">
                 <Link to="/auth/login">
-                  <Button variant="ghost">Connexion</Button>
+                  <Button variant="ghost">{t("nav.login")}</Button>
                 </Link>
                 <Link to="/auth/register">
                   <Button className="bg-gradient-lagoon hover:opacity-90 shadow-lagoon">
@@ -217,6 +235,27 @@ export function Navbar() {
         {isOpen && (
           <div className="md:hidden py-4 border-t">
             <div className="flex flex-col space-y-3">
+              {/* Mobile Navigation Links */}
+              <Link 
+                to="/" 
+                className="text-foreground hover:text-primary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                {t("nav.home")}
+              </Link>
+              <Link 
+                to="/dictionary" 
+                className="text-foreground hover:text-primary transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                {t("nav.dictionary")}
+              </Link>
+              
+              {/* Language Switcher Mobile */}
+              <div className="pt-2 pb-2 border-t">
+                <LanguageSwitcher />
+              </div>
+              
               {/* CTA Mobile - Devenir loueur (visible uniquement pour les locataires) */}
               {canBecomeOwner && (
                 <Link to="/rent-my-car" onClick={() => setIsOpen(false)}>

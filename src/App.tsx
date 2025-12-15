@@ -31,6 +31,8 @@ import Legal from "./pages/legal/Legal";
 import { PickerDemo } from "./pages/PickerDemo";
 import AirportServicesDemo from "./pages/AirportServicesDemo";
 import SimpleTest from "./pages/SimpleTest";
+import DictionaryIndex from "./pages/dictionary/DictionaryIndex";
+import DictionaryEntryPage from "./pages/dictionary/DictionaryEntry";
 import NotFound from "./pages/NotFound";
 import Checking from "./pages/Checking";
 import CheckinReturnPage from "./pages/checkin-return/[bookingId]";
@@ -76,6 +78,8 @@ const App = () => (
             <Route path="/picker-demo" element={<PickerDemo />} />
             <Route path="/airport-services-demo" element={<AirportServicesDemo />} />
             <Route path="/simple-test" element={<SimpleTest />} />
+            <Route path="/dictionary" element={<DictionaryIndex />} />
+            <Route path="/dictionary/:id" element={<DictionaryEntryPage />} />
             <Route path="/checking/:bookingId" element={<Checking />} />
             <Route path="/checkin-return/:bookingId" element={<CheckinReturnPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
