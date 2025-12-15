@@ -118,23 +118,51 @@ module.exports = function transformer(file, api) {
     }
   });
 
-  // Transformer les chaînes dans les attributs JSX text
-  root.find(j.JSXText).forEach(path => {
-    const text = path.value.value.trim();
-    if (shouldTranslateString(text)) {
-      addUseTranslationImport();
-      const key = generateTranslationKey(text);
-      // Remplacer le texte JSX par une expression
-      const parent = path.parent.value;
-      if (parent && parent.type === 'JSXElement') {
-        j(path.parent).replaceWith(
-          j.jsxExpressionContainer(
-            j.callExpression(j.identifier('t'), [j.literal(key)])
-          )
-        );
-        hasChanges = true;
+  // Transformer les textes JSX en préservant la balise et ses props
+  // Cas supportés (mode "safe") :
+  // - <h1>Texte</h1>              -> <h1>{t("...")}</h1>
+  // - <SelectItem>Texte</SelectItem> -> <SelectItem>{t("...")}</SelectItem>
+  // - <span>Texte :</span>        -> <span>{t("...")}</span>
+  //
+  // Règles de sécurité :
+  // - Ne transformer que si l'élément a un unique enfant textuel (hors espaces)
+  // - Ne jamais remplacer l'élément complet par une expression
+  // - Si la structure est plus complexe (ternaires, concaténations, fragments, etc.), on ignore
+  root.find(j.JSXElement).forEach(path => {
+    const element = path.node;
+    const children = element.children || [];
+
+    // Enfants non vides (on ignore les espaces/blancs)
+    const meaningfulChildren = children.filter(child => {
+      if (child.type === 'JSXText') {
+        return child.value.trim().length > 0;
       }
-    }
+      return true;
+    });
+
+    // Mode "safe" : uniquement un enfant significatif, et c'est du texte
+    if (meaningfulChildren.length !== 1) return;
+
+    const onlyChild = meaningfulChildren[0];
+    if (onlyChild.type !== 'JSXText') return;
+
+    const text = onlyChild.value.trim();
+    if (!shouldTranslateString(text)) return;
+
+    addUseTranslationImport();
+    const key = generateTranslationKey(text);
+
+    // Remplacer uniquement l'enfant texte par {t("clé")}, en préservant la balise et toutes ses props
+    element.children = children.map(child => {
+      if (child === onlyChild) {
+        return j.jsxExpressionContainer(
+          j.callExpression(j.identifier('t'), [j.literal(key)])
+        );
+      }
+      return child;
+    });
+
+    hasChanges = true;
   });
 
   // Transformer les chaînes dans les déclarations de variables (avec prudence)
@@ -216,11 +244,19 @@ module.exports = function transformer(file, api) {
     root.find(j.VariableDeclarator).forEach(path => {
       if (path.value.init && path.value.init.type === 'ArrowFunctionExpression') {
         const arrowFunc = path.value.init;
-        const body = arrowFunc.body.body;
+        // Gérer les arrow functions avec BlockStatement (avec accolades) ou Expression (sans accolades)
+        const body = arrowFunc.body.type === 'BlockStatement' ? arrowFunc.body.body : null;
         const id = path.value.id;
         
         if (id.type === 'Identifier' && id.name[0] === id.name[0].toUpperCase()) {
           // C'est un composant React
+          // Si c'est une expression body (sans accolades), on ne peut pas ajouter useTranslation
+          // car il faudrait convertir en BlockStatement, ce qui est complexe
+          if (!body) {
+            // Arrow function avec expression body - skip pour l'instant
+            return;
+          }
+          
           const hasHook = body && body.some(stmt => 
             stmt.type === 'VariableDeclaration' &&
             stmt.declarations.some(decl =>

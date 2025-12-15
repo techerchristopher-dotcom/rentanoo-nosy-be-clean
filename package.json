@@ -22,10 +22,10 @@
     "verify:supabase": "node scripts/verify-supabase-connection.js",
     "switch:supabase": "./scripts/switch-supabase-project.sh",
     "i18n:extract": "i18next-scanner --config i18next-scanner.config.js",
-    "i18n:codemod": "jscodeshift -t codemods/i18n-transform.js",
-    "i18n:codemod:dry-run": "jscodeshift -t codemods/i18n-transform.js --dry --print",
-    "i18n:codemod:pages": "jscodeshift -t codemods/i18n-transform.js src/pages",
-    "i18n:codemod:components": "jscodeshift -t codemods/i18n-transform.js src/components"
+    "i18n:codemod": "jscodeshift --parser=tsx -t codemods/i18n-transform.js",
+    "i18n:codemod:dry-run": "jscodeshift --parser=tsx -t codemods/i18n-transform.js --dry --print",
+    "i18n:codemod:pages": "jscodeshift --parser=tsx -t codemods/i18n-transform.js src/pages",
+    "i18n:codemod:components": "jscodeshift --parser=tsx -t codemods/i18n-transform.js src/components"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
