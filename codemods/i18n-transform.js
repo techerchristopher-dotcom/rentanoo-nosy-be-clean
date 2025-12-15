@@ -109,9 +109,10 @@ module.exports = function transformer(file, api) {
       if (shouldTranslateString(str)) {
         addUseTranslationImport();
         const key = generateTranslationKey(str);
+        // Ajouter le defaultValue (texte original) comme 2e argument pour sécurité i18n
         path.value.expression = j.callExpression(
           j.identifier('t'),
-          [j.literal(key)]
+          [j.literal(key), j.literal(str)]
         );
         hasChanges = true;
       }
@@ -152,11 +153,12 @@ module.exports = function transformer(file, api) {
     addUseTranslationImport();
     const key = generateTranslationKey(text);
 
-    // Remplacer uniquement l'enfant texte par {t("clé")}, en préservant la balise et toutes ses props
+    // Remplacer uniquement l'enfant texte par {t("clé", "texte original")}, en préservant la balise et toutes ses props
+    // Le defaultValue (texte original) garantit qu'on n'affichera jamais __STRING_NOT_TRANSLATED__ même si la traduction manque
     element.children = children.map(child => {
       if (child === onlyChild) {
         return j.jsxExpressionContainer(
-          j.callExpression(j.identifier('t'), [j.literal(key)])
+          j.callExpression(j.identifier('t'), [j.literal(key), j.literal(text)])
         );
       }
       return child;
@@ -183,7 +185,8 @@ module.exports = function transformer(file, api) {
         if (shouldTranslateString(str)) {
           addUseTranslationImport();
           const key = generateTranslationKey(str);
-          path.value.init = j.callExpression(j.identifier('t'), [j.literal(key)]);
+          // Ajouter le defaultValue (texte original) comme 2e argument pour sécurité i18n
+          path.value.init = j.callExpression(j.identifier('t'), [j.literal(key), j.literal(str)]);
           hasChanges = true;
         }
       }

@@ -21,7 +21,7 @@
     "diagnostic:duplication": "node scripts/diagnostic-duplication.js",
     "verify:supabase": "node scripts/verify-supabase-connection.js",
     "switch:supabase": "./scripts/switch-supabase-project.sh",
-    "i18n:extract": "i18next-scanner --config i18next-scanner.config.js",
+    "i18n:extract": "i18next-scanner --config i18next-scanner.config.cjs",
     "i18n:codemod": "jscodeshift --parser=tsx -t codemods/i18n-transform.js",
     "i18n:codemod:dry-run": "jscodeshift --parser=tsx -t codemods/i18n-transform.js --dry --print",
     "i18n:codemod:pages": "jscodeshift --parser=tsx -t codemods/i18n-transform.js src/pages",

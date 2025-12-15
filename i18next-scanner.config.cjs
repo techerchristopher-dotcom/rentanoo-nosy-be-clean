@@ -12,7 +12,7 @@ module.exports = {
     '!src/i18n/**',
     '!src/vite-env.d.ts',
   ],
-  output: './src/i18n/locales',
+  output: './',
   
   options: {
     debug: true,

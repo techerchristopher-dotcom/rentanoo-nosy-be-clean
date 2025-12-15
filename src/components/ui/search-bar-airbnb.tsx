@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import { createPortal } from "react-dom";
 import { Search, MapPin, Calendar, Clock, X, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
@@ -75,6 +76,11 @@ export function SearchBarAirbnb({
   onResetSearch,
 }: SearchBarAirbnbProps) {
   const [activeField, setActiveField] = useState<'destination' | 'dates' | 'travelers' | null>(null);
+
+  const {
+    t: t,
+  } = useTranslation('common');
+
   const [hoveredField, setHoveredField] = useState<'destination' | 'dates' | 'travelers' | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -135,9 +141,7 @@ export function SearchBarAirbnb({
                   }`}>
                     <MapPin className="h-5 w-5" />
                   </div>
-                  <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">
-                    Lieu de prise en charge
-                  </span>
+                  <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">{t('common.lieu_de_prise_en_charge')}</span>
                 </div>
                     <div className="flex flex-col items-center">
                       <span className={`text-lg font-semibold transition-colors duration-300 ${
@@ -190,14 +194,12 @@ export function SearchBarAirbnb({
                   }`}>
                     <Calendar className="h-5 w-5" />
                   </div>
-                  <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">
-                    Dates
-                  </span>
+                  <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">{t('common.dates')}</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-6 text-center">
                     <div className="flex flex-col items-center">
-                      <span className="text-xs text-gray-500 font-medium mb-1">Départ</span>
+                      <span className="text-xs text-gray-500 font-medium mb-1">{t('common.dpart')}</span>
                       <span className={`text-sm font-semibold transition-colors duration-300 ${
                         startDate 
                           ? 'text-gray-900' 
@@ -208,7 +210,7 @@ export function SearchBarAirbnb({
                     </div>
                     <div className="text-gray-400 text-lg font-bold">→</div>
                     <div className="flex flex-col items-center">
-                      <span className="text-xs text-gray-500 font-medium mb-1">Retour</span>
+                      <span className="text-xs text-gray-500 font-medium mb-1">{t('common.retour')}</span>
                       <span className={`text-sm font-semibold transition-colors duration-300 ${
                         endDate 
                           ? 'text-gray-900' 
@@ -246,14 +248,12 @@ export function SearchBarAirbnb({
                   }`}>
                     <Clock className="h-5 w-5" />
                   </div>
-                  <span className="ml-3 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Heures
-                  </span>
+                  <span className="ml-3 text-xs font-bold text-gray-700 uppercase tracking-wider">{t('common.heures')}</span>
                 </div>
               <div className="flex flex-col items-center">
                 <div className="flex items-center gap-6 text-center">
                   <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500 font-medium mb-1">Départ</span>
+                    <span className="text-xs text-gray-500 font-medium mb-1">{t('common.dpart')}</span>
                     <span className={`text-sm font-semibold transition-colors duration-300 ${
                       startTime 
                         ? 'text-gray-900' 
@@ -264,7 +264,7 @@ export function SearchBarAirbnb({
                   </div>
                   <div className="text-gray-400 text-lg font-bold">→</div>
                   <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500 font-medium mb-1">Retour</span>
+                    <span className="text-xs text-gray-500 font-medium mb-1">{t('common.retour')}</span>
                     <span className={`text-sm font-semibold transition-colors duration-300 ${
                       endTime 
                         ? 'text-gray-900' 
@@ -304,13 +304,12 @@ export function SearchBarAirbnb({
           </div>
         </div>
       </div>
-      
       {/* Modal flottant avec calendrier Airbnb - EN DEHORS DE LA STRUCTURE PRINCIPALE */}
       {showDatePicker && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-4xl max-h-[90vh] overflow-auto">
                 <div className="flex items-center justify-center mb-4 relative">
-                  <h3 className="text-xl font-bold text-gray-900">Sélectionner les dates</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{t('common.slectionner_les_dates')}</h3>
                   <button
                     onClick={() => setShowDatePicker(false)}
                     className="absolute right-0 text-gray-500 hover:text-gray-700"
@@ -351,88 +350,83 @@ export function SearchBarAirbnb({
                     setActiveField(null);
                   }}
                   className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-8 py-3 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  Valider mes dates
-                </Button>
+                >{t('common.valider_mes_dates')}</Button>
               </div>
             )}
           </div>
             </div>,
             document.body
           )}
-          
-          {/* Modal flottant avec sélection d'heures */}
-          {showTimePicker && createPortal(
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-              <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl max-h-[90vh] overflow-auto">
-                <div className="flex items-center justify-center mb-4 relative">
-                  <h3 className="text-xl font-bold text-gray-900">Sélectionner les heures</h3>
-                  <button
-                    onClick={() => setShowTimePicker(false)}
-                    className="absolute right-0 text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-                
-                {/* Sélection des heures */}
-                <div className="flex items-center justify-center gap-8 mb-6">
-                  {/* Heure de départ */}
-                  <div className="flex flex-col items-center">
-                    <span className="text-sm font-semibold text-gray-700 mb-3">Heure de départ</span>
-                    <Select value={startTime} onValueChange={onStartTimeChange}>
-                      <SelectTrigger className="w-24 h-12 text-lg font-semibold border-2 border-gray-300 rounded-xl">
-                        <SelectValue placeholder="08:00" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 24 }, (_, i) => (
-                          <SelectItem key={i} value={`${i.toString().padStart(2, '0')}:00`}>
-                            {`${i.toString().padStart(2, '0')}:00`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Flèche */}
-                  <div className="text-gray-400 text-2xl font-bold mt-8">→</div>
-                  
-                  {/* Heure de retour */}
-                  <div className="flex flex-col items-center">
-                    <span className="text-sm font-semibold text-gray-700 mb-3">Heure de retour</span>
-                    <Select value={endTime} onValueChange={onEndTimeChange}>
-                      <SelectTrigger className="w-24 h-12 text-lg font-semibold border-2 border-gray-300 rounded-xl">
-                        <SelectValue placeholder="18:00" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 24 }, (_, i) => (
-                          <SelectItem key={i} value={`${i.toString().padStart(2, '0')}:00`}>
-                            {`${i.toString().padStart(2, '0')}:00`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {/* Bouton Valider - apparaît quand les 2 heures sont sélectionnées */}
-                {startTime && endTime && (
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={() => {
-                        setShowTimePicker(false);
-                        setActiveField(null);
-                      }}
-                      className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-8 py-3 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      Valider mes heures
-                    </Button>
-                  </div>
-                )}
+      {/* Modal flottant avec sélection d'heures */}
+      {showTimePicker && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-center mb-4 relative">
+              <h3 className="text-xl font-bold text-gray-900">{t('common.slectionner_les_heures')}</h3>
+              <button
+                onClick={() => setShowTimePicker(false)}
+                className="absolute right-0 text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            {/* Sélection des heures */}
+            <div className="flex items-center justify-center gap-8 mb-6">
+              {/* Heure de départ */}
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-semibold text-gray-700 mb-3">{t('common.heure_de_dpart')}</span>
+                <Select value={startTime} onValueChange={onStartTimeChange}>
+                  <SelectTrigger className="w-24 h-12 text-lg font-semibold border-2 border-gray-300 rounded-xl">
+                    <SelectValue placeholder="08:00" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={`${i.toString().padStart(2, '0')}:00`}>
+                        {`${i.toString().padStart(2, '0')}:00`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>,
-            document.body
-          )}
-        </div>
-      );
-    }
+              
+              {/* Flèche */}
+              <div className="text-gray-400 text-2xl font-bold mt-8">→</div>
+              
+              {/* Heure de retour */}
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-semibold text-gray-700 mb-3">{t('common.heure_de_retour')}</span>
+                <Select value={endTime} onValueChange={onEndTimeChange}>
+                  <SelectTrigger className="w-24 h-12 text-lg font-semibold border-2 border-gray-300 rounded-xl">
+                    <SelectValue placeholder="18:00" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={`${i.toString().padStart(2, '0')}:00`}>
+                        {`${i.toString().padStart(2, '0')}:00`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Bouton Valider - apparaît quand les 2 heures sont sélectionnées */}
+            {startTime && endTime && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => {
+                    setShowTimePicker(false);
+                    setActiveField(null);
+                  }}
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-8 py-3 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                >{t('common.valider_mes_heures')}</Button>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}

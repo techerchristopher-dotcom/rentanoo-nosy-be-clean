@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Plane, Ship, X, Check, Star, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,6 +25,10 @@ export const SingleLocationModal: React.FC<SingleLocationModalProps> = ({
   trigger,
   placeholder = "Sélectionner un lieu de prise en charge"
 }) => {
+  const {
+    t: t,
+  } = useTranslation('common');
+
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelectedLocation, setTempSelectedLocation] = useState<string>(selectedLocation);
 
@@ -58,9 +63,7 @@ export const SingleLocationModal: React.FC<SingleLocationModalProps> = ({
             <MapPin className="h-5 w-5 text-primary" />
             Lieu de prise en charge
           </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-2">
-            Sélectionnez le lieu où vous souhaitez récupérer votre véhicule
-          </p>
+          <p className="text-sm text-muted-foreground mt-2">{t('common.slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre')}</p>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4">
@@ -89,7 +92,7 @@ export const SingleLocationModal: React.FC<SingleLocationModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2 px-2">
               <Star className="h-4 w-4 text-primary" />
-              <h4 className="text-sm font-semibold text-primary">Points stratégiques</h4>
+              <h4 className="text-sm font-semibold text-primary">{t('common.points_stratgiques')}</h4>
             </div>
             <div className="grid grid-cols-1 gap-2">
               {STRATEGIC_POINTS.map((location) => {
@@ -130,7 +133,7 @@ export const SingleLocationModal: React.FC<SingleLocationModalProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2 px-2">
               <Building className="h-4 w-4 text-secondary-foreground" />
-              <h4 className="text-sm font-semibold text-secondary-foreground">Communes</h4>
+              <h4 className="text-sm font-semibold text-secondary-foreground">{t('common.communes')}</h4>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {MAYOTTE_COMMUNES.map((location) => {
@@ -174,17 +177,13 @@ export const SingleLocationModal: React.FC<SingleLocationModalProps> = ({
             type="button"
             variant="outline"
             onClick={handleCancel}
-          >
-            Annuler
-          </Button>
+          >{t('common.annuler')}</Button>
           <Button
             type="button"
             onClick={handleSave}
             disabled={!tempSelectedLocation}
             className="bg-primary hover:bg-primary/90"
-          >
-            Valider
-          </Button>
+          >{t('common.valider')}</Button>
         </div>
       </DialogContent>
     </Dialog>

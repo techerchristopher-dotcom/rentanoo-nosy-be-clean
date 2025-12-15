@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,8 +57,12 @@ const getLocationIcon = (zone: string) => {
 };
 
 export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalInfo }: VehicleCardProps) {
+  const {
+    t: t,
+  } = useTranslation('common');
+
   const FuelIcon = fuelIcons[vehicle.fuel] || Fuel;
-  
+
   // Formater l'affichage du prix (avec ou sans calcul de location)
   const displayPrice = rentalInfo?.formattedPrice || `${vehicle.dailyPrice}€ par jour`;
 
@@ -90,7 +95,6 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
           )}
         </div>
       </div>
-
       <CardContent className="p-4">
         {/* Title & Year */}
         <div className="mb-3">
@@ -141,7 +145,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
             ) : (
               <div className="flex items-center text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 mr-1" />
-                <span>Mayotte</span>
+                <span>{t('common.mayotte')}</span>
               </div>
             )}
           </div>
@@ -149,25 +153,25 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
           <div className="text-right ml-2">
             {rentalInfo ? (
               // Affichage avec calcul de location
-              <div className="flex flex-col items-end">
+              (<div className="flex flex-col items-end">
                 <div className="flex items-center text-2xl font-bold text-primary">
                   <Euro className="h-5 w-5" />
                   {vehicle.dailyPrice}
                 </div>
-                <div className="text-xs text-muted-foreground">par jour</div>
+                <div className="text-xs text-muted-foreground">{t('common.par_jour')}</div>
                 <div className="text-sm text-muted-foreground mt-1">
                   soit {rentalInfo.totalCost}€ ({rentalInfo.formattedPrice.match(/\((.*?)\)/)?.[1] || 'Total'})
                 </div>
-              </div>
+              </div>)
             ) : (
               // Affichage par défaut sans calcul
-              <>
+              (<>
                 <div className="flex items-center text-2xl font-bold text-primary">
                   <Euro className="h-5 w-5" />
                   {vehicle.dailyPrice}
                 </div>
-                <div className="text-xs text-muted-foreground">par jour</div>
-              </>
+                <div className="text-xs text-muted-foreground">{t('common.par_jour')}</div>
+              </>)
             )}
           </div>
         </div>
@@ -180,9 +184,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
               e.stopPropagation();
               onClick();
             }}
-          >
-            Voir la fiche
-          </Button>
+          >{t('common.voir_la_fiche')}</Button>
         )}
       </CardContent>
     </Card>

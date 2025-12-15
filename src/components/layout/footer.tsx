@@ -1,7 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from "react-router-dom";
 import { Car, MapPin, Mail, Phone } from "lucide-react";
 
 export function Footer() {
+  const {
+    t: t,
+  } = useTranslation('common');
+
   return (
     <footer className="bg-gradient-to-r from-primary/5 to-primary-soft/10 border-t mt-auto">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -12,61 +17,45 @@ export function Footer() {
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-lagoon rounded-2xl shadow-lagoon">
                 <Car className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
-                MayCar
-              </span>
+              <span className="text-xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">{t('common.maycar')}</span>
             </div>
-            <p className="text-muted-foreground text-sm mb-4 max-w-md">
-              La plateforme d'autopartage de Mayotte. Louez et partagez vos véhicules en toute confiance dans le lagon mahorais.
-            </p>
+            <p className="text-muted-foreground text-sm mb-4 max-w-md">{t('common.la_plateforme_dautopartage_de_mayotte_louez_et_par')}</p>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <div className="flex items-center space-x-1">
                 <MapPin className="h-4 w-4" />
-                <span>Mayotte, France</span>
+                <span>{t('common.mayotte_france')}</span>
               </div>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Navigation</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('common.navigation')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">
-                  Rechercher un véhicule
-                </Link>
+                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">{t('common.rechercher_un_vhicule')}</Link>
               </li>
               <li>
-                <Link to="/auth/register" className="text-muted-foreground hover:text-primary transition-colors">
-                  Devenir propriétaire
-                </Link>
+                <Link to="/auth/register" className="text-muted-foreground hover:text-primary transition-colors">{t('common.devenir_propritaire')}</Link>
               </li>
               <li>
-                <Link to="/auth/login" className="text-muted-foreground hover:text-primary transition-colors">
-                  Se connecter
-                </Link>
+                <Link to="/auth/login" className="text-muted-foreground hover:text-primary transition-colors">{t('common.se_connecter')}</Link>
               </li>
             </ul>
           </div>
 
           {/* Legal Links */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Légal</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('common.lgal')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">
-                  Conditions d'utilisation
-                </Link>
+                <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">{t('common.conditions_dutilisation')}</Link>
               </li>
               <li>
-                <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">
-                  Politique de confidentialité
-                </Link>
+                <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">{t('common.politique_de_confidentialit')}</Link>
               </li>
               <li>
-                <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">
-                  Mentions légales
-                </Link>
+                <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">{t('common.mentions_lgales')}</Link>
               </li>
             </ul>
           </div>
@@ -74,13 +63,9 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="text-sm text-muted-foreground">
-            © 2024 MayCar. Tous droits réservés. Une initiative pour Mayotte.
-          </div>
+          <div className="text-sm text-muted-foreground">{t('common.2024_maycar_tous_droits_rservs_une_initiative_pour')}</div>
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <div className="text-xs text-muted-foreground">
-              Made with ❤️ pour le 101ème département français
-            </div>
+            <div className="text-xs text-muted-foreground">{t('common.made_with_pour_le_101me_dpartement_franais')}</div>
           </div>
         </div>
       </div>

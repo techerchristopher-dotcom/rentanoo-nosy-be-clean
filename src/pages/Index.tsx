@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
 import { Search, Filter, Calendar, MapPin, X } from "lucide-react";
 import { format } from "date-fns";
@@ -26,6 +27,10 @@ import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpi
 
 
 const Index = () => {
+  const {
+    t: t,
+  } = useTranslation('common');
+
   const [vehicles, setVehicles] = useState<SupabaseVehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<SupabaseVehicle[]>([]);
   const [photos, setPhotos] = useState<Record<string, Photo>>({});
@@ -40,10 +45,10 @@ const Index = () => {
   const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
   const [selectedTransmissions, setSelectedTransmissions] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  
+
   // Variables pour le calcul de location (structure structurée)
   const [rentalCalculation, setRentalCalculation] = useState<RentalCalculation | null>(null);
-  
+
   // Fonction pour mettre à jour le calcul de location
   const updateRentalCalculation = () => {
     if (startDate && endDate && startTime && endTime) {
@@ -99,7 +104,7 @@ const Index = () => {
     }
     return createVehicleRentalInfo(vehicleId, pricePerDay, rentalCalculation);
   };
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -344,7 +349,7 @@ const Index = () => {
 
   // Vérifier si des critères de recherche sont actifs
   const hasSearchCriteria = searchText.trim() !== "" || startDate !== undefined || endDate !== undefined;
-  
+
   // Debug pour voir les valeurs
   console.log('🔍 Debug recherche:', {
     searchText: searchText,
@@ -440,17 +445,12 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft">
       <Navbar />
-      
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-gradient-lagoon text-white py-16 lg:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
-              Partagez la route à Mayotte
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto font-medium">
-              Louez des véhicules entre particuliers dans le plus beau lagon du monde
-            </p>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">{t('common.partagez_la_route_mayotte')}</h1>
+            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto font-medium">{t('common.louez_des_vhicules_entre_particuliers_dans_le_plus')}</p>
             
             {/* 🎨 Nouvelle SearchBar style Airbnb */}
             <SearchBarAirbnb
@@ -479,7 +479,7 @@ const Index = () => {
               <div className="flex flex-wrap gap-4 items-center">
                 <div className="flex items-center space-x-2">
                   <Filter className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Filtres :</span>
+                  <span className="font-medium">{t('common.filtres')}</span>
                 </div>
                 
                 <Select
@@ -492,10 +492,10 @@ const Index = () => {
                     <SelectValue placeholder="Carburant" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gasoline">Essence</SelectItem>
-                    <SelectItem value="diesel">Diesel</SelectItem>
-                    <SelectItem value="electric">Électrique</SelectItem>
-                    <SelectItem value="hybrid">Hybride</SelectItem>
+                    <SelectItem value="gasoline">{t('common.essence')}</SelectItem>
+                    <SelectItem value="diesel">{t('common.diesel')}</SelectItem>
+                    <SelectItem value="electric">{t('common.lectrique')}</SelectItem>
+                    <SelectItem value="hybrid">{t('common.hybride')}</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -509,8 +509,8 @@ const Index = () => {
                     <SelectValue placeholder="Transmission" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manual">Manuelle</SelectItem>
-                    <SelectItem value="automatic">Automatique</SelectItem>
+                    <SelectItem value="manual">{t('common.manuelle')}</SelectItem>
+                    <SelectItem value="automatic">{t('common.automatique')}</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -524,18 +524,18 @@ const Index = () => {
                     <SelectValue placeholder="Catégorie" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Berline">Berline</SelectItem>
-                    <SelectItem value="Break (SW)">Break (SW)</SelectItem>
-                    <SelectItem value="Cabriolet">Cabriolet</SelectItem>
-                    <SelectItem value="Citadine">Citadine</SelectItem>
-                    <SelectItem value="Coupé">Coupé</SelectItem>
+                    <SelectItem value="Berline">{t('common.berline')}</SelectItem>
+                    <SelectItem value="Break (SW)">{t('common.break_sw')}</SelectItem>
+                    <SelectItem value="Cabriolet">{t('common.cabriolet')}</SelectItem>
+                    <SelectItem value="Citadine">{t('common.citadine')}</SelectItem>
+                    <SelectItem value="Coupé">{t('common.coup')}</SelectItem>
                     <SelectItem value="Coupé 4 portes / GT">Coupé 4 portes / GT</SelectItem>
-                    <SelectItem value="Crossover">Crossover</SelectItem>
-                    <SelectItem value="Minibus">Minibus</SelectItem>
-                    <SelectItem value="Monospace">Monospace</SelectItem>
-                    <SelectItem value="Pick-up">Pick-up</SelectItem>
-                    <SelectItem value="Roadster">Roadster</SelectItem>
-                    <SelectItem value="SUV">SUV</SelectItem>
+                    <SelectItem value="Crossover">{t('common.crossover')}</SelectItem>
+                    <SelectItem value="Minibus">{t('common.minibus')}</SelectItem>
+                    <SelectItem value="Monospace">{t('common.monospace')}</SelectItem>
+                    <SelectItem value="Pick-up">{t('common.pickup')}</SelectItem>
+                    <SelectItem value="Roadster">{t('common.roadster')}</SelectItem>
+                    <SelectItem value="SUV">{t('common.suv')}</SelectItem>
                     <SelectItem value="Supercar / Hypercar">Supercar / Hypercar</SelectItem>
                   </SelectContent>
                 </Select>
@@ -549,9 +549,7 @@ const Index = () => {
                       setSelectedTransmissions([]);
                       setSelectedCategories([]);
                     }}
-                  >
-                    Réinitialiser
-                  </Button>
+                  >{t('common.rinitialiser')}</Button>
                 )}
               </div>
             </div>
@@ -559,8 +557,7 @@ const Index = () => {
             {/* Results */}
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-foreground">
-                  Véhicules disponibles</h2>
+                <h2 className="text-2xl font-bold text-foreground">{t('common.vhicules_disponibles')}</h2>
                 <p className="text-muted-foreground">
                   {filteredVehicles.length} véhicule{filteredVehicles.length > 1 ? 's' : ''} trouvé{filteredVehicles.length > 1 ? 's' : ''}
                 </p>
@@ -642,13 +639,9 @@ const Index = () => {
                     <Button variant="outline" onClick={() => {
                       setSelectedFuelTypes([]);
                       setSelectedTransmissions([]);
-                    }}>
-                      Réinitialiser les filtres
-                    </Button>
+                    }}>{t('common.rinitialiser_les_filtres')}</Button>
                   ) : (
-                    <Button variant="outline" onClick={() => window.location.reload()}>
-                      Actualiser la page
-                    </Button>
+                    <Button variant="outline" onClick={() => window.location.reload()}>{t('common.actualiser_la_page')}</Button>
                   )}
                 </Card>
               ) : null}
@@ -656,7 +649,6 @@ const Index = () => {
           </div>
         </section>
       </main>
-
       <Footer />
     </div>
   );
