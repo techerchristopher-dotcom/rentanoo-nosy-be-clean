@@ -4,6 +4,9 @@ import { createPortal } from "react-dom";
 import { Search, MapPin, Calendar, Clock, X, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
+import { enUS } from "date-fns/locale/en-US";
+import { it as itLocale } from "date-fns/locale/it";
+import { de as deLocale } from "date-fns/locale/de";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -17,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SingleLocationModal } from "@/components/ui/single-location-modal";
+import { FEATURES } from "@/config/features";
 
 interface SearchBarAirbnbProps {
   searchText: string;
@@ -78,22 +82,32 @@ export function SearchBarAirbnb({
   const [activeField, setActiveField] = useState<'destination' | 'dates' | 'travelers' | null>(null);
 
   const {
-    t: t,
+    t,
+    i18n,
   } = useTranslation('common');
+
+  // Locale du calendrier / formatage des dates en fonction de la langue active
+  const currentLang = i18n.language || "fr";
+  const dateLocale =
+    currentLang.startsWith("fr") ? fr :
+    currentLang.startsWith("it") ? itLocale :
+    currentLang.startsWith("de") ? deLocale :
+    enUS;
 
   const [hoveredField, setHoveredField] = useState<'destination' | 'dates' | 'travelers' | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const [openTimeAfterDates, setOpenTimeAfterDates] = useState(false);
 
   // Format des dates pour l'affichage
   const formatDateRange = () => {
     if (startDate && endDate) {
-      return `${format(startDate, "d MMM", { locale: fr })} - ${format(endDate, "d MMM", { locale: fr })}`;
+      return `${format(startDate, "d MMM", { locale: dateLocale })} - ${format(endDate, "d MMM", { locale: dateLocale })}`;
     } else if (startDate) {
-      return `${format(startDate, "d MMM", { locale: fr })} - ...`;
+      return `${format(startDate, "d MMM", { locale: dateLocale })} - ...`;
     }
-    return "Ajouter des dates";
+    return t("common.addDates", "Ajouter des dates");
   };
 
   // Fonction pour effacer les dates
@@ -110,197 +124,243 @@ export function SearchBarAirbnb({
     }
   };
 
+  // Helpers d'orchestration des modales
+  const openDateModal = () => {
+    setActiveField('dates');
+    setShowDatePicker(true);
+  };
+
+  const openTimeModal = () => {
+    setActiveField('travelers');
+    setShowTimePicker(true);
+  };
+
+  const handleDepartureDateClick = () => {
+    openDateModal();
+  };
+
+  const handleReturnDateClick = () => {
+    openDateModal();
+  };
+
+  const handleTimeClick = () => {
+    if (startDate && endDate) {
+      openTimeModal();
+    } else {
+      // Si les dates ne sont pas encore sélectionnées, ouvrir d'abord la modale de dates
+      setOpenTimeAfterDates(true);
+      openDateModal();
+    }
+  };
+
   return (
-    <div className="relative">
+    <div className="relative mx-auto w-full max-w-5xl px-4">
       {/* Barre de recherche principale */}
-      <div className="bg-white shadow-2xl border-0 rounded-3xl overflow-hidden relative backdrop-blur-sm">
-        <div className="flex items-stretch relative min-h-[80px]">
-          {/* Lieu de prise en charge */}
-          <div 
-            className={`flex-1 relative transition-all duration-500 ease-out ${
-              hoveredField === 'destination' || activeField === 'destination'
-                ? 'bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl border border-blue-200 mx-3 my-2 scale-[1.02]'
-                : 'border-r border-gray-100 hover:bg-gray-50/50'
-            }`}
-            onMouseEnter={() => setHoveredField('destination')}
-            onMouseLeave={() => setHoveredField(null)}
-            onClick={() => setActiveField('destination')}
-          >
-            <div className="px-8 py-6 flex flex-col justify-center min-h-[80px]">
-              <SingleLocationModal
-                selectedLocation={searchText}
-                onLocationChange={onSearchTextChange}
-                placeholder="Rechercher une ville de prise en charge"
-                trigger={
-                  <div className="cursor-pointer group relative">
-                <div className="flex items-center justify-center mb-2">
-                  <div className={`p-2 rounded-xl transition-all duration-300 ${
-                    hoveredField === 'destination' || activeField === 'destination'
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                  }`}>
-                    <MapPin className="h-5 w-5" />
-                  </div>
-                  <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">{t('common.lieu_de_prise_en_charge')}</span>
-                </div>
-                    <div className="flex flex-col items-center">
-                      <span className={`text-lg font-semibold transition-colors duration-300 ${
-                        searchText 
-                          ? 'text-primary' 
-                          : 'text-muted-foreground group-hover:text-primary/70'
-                      } truncate text-center w-full`}>
-                        {searchText || "Rechercher une ville de prise en charge"}
-                      </span>
-                      {searchText && onResetSearch && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onResetSearch();
-                          }}
-                          className="absolute top-2 right-2 hover:bg-red-100 rounded-full p-2 transition-all duration-300 flex items-center justify-center group/btn"
+      <div className="bg-white shadow-xl border-0 rounded-3xl overflow-hidden relative backdrop-blur-sm">
+        <div className="flex flex-col md:flex-row items-stretch relative min-h-[64px] md:min-h-[72px]">
+          {/* Lieu de prise en charge (MVP: disabled via feature flag until hotel partnerships) */}
+          {FEATURES.pickupLocationEnabled && (
+            <div
+              className={`hidden lg:flex flex-1 relative transition-all duration-500 ease-out ${
+                hoveredField === 'destination' || activeField === 'destination'
+                  ? 'bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl border border-blue-200 mx-3 my-2 scale-[1.02]'
+                  : 'border-r border-gray-100 hover:bg-gray-50/50'
+              }`}
+              onMouseEnter={() => setHoveredField('destination')}
+              onMouseLeave={() => setHoveredField(null)}
+              onClick={() => setActiveField('destination')}
+            >
+              <div className="px-4 py-3 flex flex-col justify-center">
+                <SingleLocationModal
+                  selectedLocation={searchText}
+                  onLocationChange={onSearchTextChange}
+                  placeholder={t('common.rechercher_une_ville_de_prise_en_charge', 'Rechercher une ville de prise en charge')}
+                  trigger={
+                    <div className="cursor-pointer group relative">
+                      <div className="flex items-center mb-2">
+                        <div
+                          className={`p-2 rounded-xl transition-all duration-300 ${
+                            hoveredField === 'destination' || activeField === 'destination'
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                          }`}
                         >
-                          <X className="h-4 w-4 text-gray-500 group-hover/btn:text-red-500" />
-                        </button>
-                      )}
+                          <MapPin className="h-5 w-5" />
+                        </div>
+                        <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">
+                          {t('common.lieu_de_prise_en_charge')}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span
+                          className={`text-sm font-semibold transition-colors duration-300 ${
+                            searchText
+                              ? 'text-primary'
+                              : 'text-muted-foreground group-hover:text-primary/70'
+                          } truncate`}
+                        >
+                          {searchText || t('common.rechercher_une_ville_de_prise_en_charge', 'Rechercher une ville de prise en charge')}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                }
-              />
-            </div>
-          </div>
-
-          {/* Dates */}
-          <div 
-            className={`flex-1 relative transition-all duration-500 ease-out ${
-              hoveredField === 'dates' || activeField === 'dates'
-                ? 'bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-xl border border-green-200 mx-3 my-2 scale-[1.02]'
-                : 'border-r border-gray-100 hover:bg-gray-50/50'
-            }`}
-            onMouseEnter={() => setHoveredField('dates')}
-            onMouseLeave={() => setHoveredField(null)}
-            onClick={() => {
-              console.log('🗓️ Dates section clicked!');
-              setActiveField('dates');
-              setShowDatePicker(true);
-            }}
-          >
-            <div className="px-8 py-6 flex flex-col justify-center min-h-[80px]">
-              <div className="cursor-pointer group relative">
-                <div className="flex items-center justify-center mb-2">
-                  <div className={`p-2 rounded-xl transition-all duration-300 ${
-                    hoveredField === 'dates' || activeField === 'dates'
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                  }`}>
-                    <Calendar className="h-5 w-5" />
-                  </div>
-                  <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">{t('common.dates')}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="flex items-center gap-6 text-center">
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs text-gray-500 font-medium mb-1">{t('common.dpart')}</span>
-                      <span className={`text-sm font-semibold transition-colors duration-300 ${
-                        startDate 
-                          ? 'text-gray-900' 
-                          : 'text-gray-400 group-hover:text-gray-600'
-                      }`}>
-                        {startDate ? format(startDate, "d MMM", { locale: fr }) : "Sélectionner"}
-                      </span>
-                    </div>
-                    <div className="text-gray-400 text-lg font-bold">→</div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs text-gray-500 font-medium mb-1">{t('common.retour')}</span>
-                      <span className={`text-sm font-semibold transition-colors duration-300 ${
-                        endDate 
-                          ? 'text-gray-900' 
-                          : 'text-gray-400 group-hover:text-gray-600'
-                      }`}>
-                        {endDate ? format(endDate, "d MMM", { locale: fr }) : "Sélectionner"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  }
+                />
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Heures */}
-          <div 
-            className={`flex-1 relative transition-all duration-500 ease-out ${
-              hoveredField === 'travelers' || activeField === 'travelers'
-                ? 'bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl shadow-xl border border-purple-200 mx-3 my-2 scale-[1.02]'
-                : 'hover:bg-gray-50/50'
-            }`}
-            onMouseEnter={() => setHoveredField('travelers')}
-            onMouseLeave={() => setHoveredField(null)}
-            onClick={() => {
-              setActiveField('travelers');
-              setShowTimePicker(true);
-            }}
-          >
-            <div className="px-8 py-6 flex flex-col justify-center min-h-[80px]">
-                <div className="flex items-center justify-center mb-2">
-                  <div className={`p-2 rounded-xl transition-all duration-300 ${
-                    hoveredField === 'travelers' || activeField === 'travelers'
-                      ? 'bg-purple-100 text-purple-600'
-                      : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                  }`}>
-                    <Clock className="h-5 w-5" />
+          {/* Bloc central : Pattern A Départ / Retour */}
+          <div className="flex-1 px-3 py-3 md:px-4 md:py-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-stretch">
+              {/* Colonne Départ */}
+              <button
+                type="button"
+                className={`flex-1 text-center rounded-2xl border border-gray-100 hover:bg-gray-50/50 transition-all duration-300 px-3 py-3 md:px-4 md:py-3 ${
+                  activeField === 'dates'
+                    ? 'shadow-lg border-primary/40 bg-gradient-to-br from-green-50 to-emerald-50'
+                    : ''
+                }`}
+                onClick={handleDepartureDateClick}
+              >
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="p-2 rounded-xl bg-gray-100 text-gray-600">
+                    <Calendar className="h-4 w-4" />
                   </div>
-                  <span className="ml-3 text-xs font-bold text-gray-700 uppercase tracking-wider">{t('common.heures')}</span>
+                  <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                    {t('searchBar.departure', 'Départ')}
+                  </span>
                 </div>
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-6 text-center">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500 font-medium mb-1">{t('common.dpart')}</span>
-                    <span className={`text-sm font-semibold transition-colors duration-300 ${
-                      startTime 
-                        ? 'text-gray-900' 
-                        : 'text-gray-400 group-hover:text-gray-600'
-                    }`}>
-                      {startTime || "Sélectionner"}
+                <div className="flex flex-wrap items-center justify-center gap-4 text-center">
+                  <div
+                    className="flex flex-col items-center cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDepartureDateClick();
+                    }}
+                  >
+                    <span className="text-xs text-gray-500 font-medium mb-1">
+                      {t('searchBar.date', 'Date')}
+                    </span>
+                    <span
+                      className={`text-sm font-semibold ${
+                        startDate ? 'text-gray-900' : 'text-gray-400'
+                      }`}
+                    >
+                      {startDate ? format(startDate, 'd MMM', { locale: dateLocale }) : 'Sélectionner'}
                     </span>
                   </div>
-                  <div className="text-gray-400 text-lg font-bold">→</div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500 font-medium mb-1">{t('common.retour')}</span>
-                    <span className={`text-sm font-semibold transition-colors duration-300 ${
-                      endTime 
-                        ? 'text-gray-900' 
-                        : 'text-gray-400 group-hover:text-gray-600'
-                    }`}>
-                      {endTime || "Sélectionner"}
+                  <div className="hidden sm:block text-gray-300 text-lg font-bold">·</div>
+                  <div
+                    className="flex flex-col items-center cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTimeClick();
+                    }}
+                  >
+                    <span className="text-xs text-gray-500 font-medium mb-1">
+                      {t('searchBar.time', 'Heure')}
+                    </span>
+                    <span
+                      className={`text-sm font-semibold ${
+                        startTime ? 'text-gray-900' : 'text-gray-400'
+                      }`}
+                    >
+                      {startTime || '--:--'}
                     </span>
                   </div>
                 </div>
+              </button>
+
+              {/* Séparateur flèche (desktop uniquement) */}
+              <div className="hidden md:flex items-center justify-center px-1 mx-1">
+                <span className="text-gray-400 text-lg font-bold">→</span>
               </div>
+
+              {/* Colonne Retour */}
+              <button
+                type="button"
+                className={`flex-1 text-center rounded-2xl border border-gray-100 hover:bg-gray-50/50 transition-all duration-300 px-3 py-3 md:px-4 md:py-3 ${
+                  activeField === 'dates'
+                    ? 'shadow-lg border-primary/40 bg-gradient-to-br from-green-50 to-emerald-50'
+                    : ''
+                }`}
+                onClick={handleReturnDateClick}
+              >
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="p-2 rounded-xl bg-gray-100 text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                  </div>
+                  <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                    {t('searchBar.return', 'Retour')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-4 text-center">
+                  <div
+                    className="flex flex-col items-center cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReturnDateClick();
+                    }}
+                  >
+                    <span className="text-xs text-gray-500 font-medium mb-1">
+                      {t('searchBar.date', 'Date')}
+                    </span>
+                    <span
+                      className={`text-sm font-semibold ${
+                        endDate ? 'text-gray-900' : 'text-gray-400'
+                      }`}
+                    >
+                      {endDate ? format(endDate, 'd MMM', { locale: dateLocale }) : 'Sélectionner'}
+                    </span>
+                  </div>
+                  <div className="hidden sm:block text-gray-300 text-lg font-bold">·</div>
+                  <div
+                    className="flex flex-col items-center cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTimeClick();
+                    }}
+                  >
+                    <span className="text-xs text-gray-500 font-medium mb-1">
+                      {t('searchBar.time', 'Heure')}
+                    </span>
+                    <span
+                      className={`text-sm font-semibold ${
+                        endTime ? 'text-gray-900' : 'text-gray-400'
+                      }`}
+                    >
+                      {endTime || '--:--'}
+                    </span>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
           {/* Bouton Rechercher + Reset */}
-          <div className="px-4 py-4 flex items-center gap-3">
+          <div className="px-3 py-2 md:px-4 md:py-3 flex items-center gap-2 md:gap-3 justify-end">
             <Button
               onClick={onSearch}
               disabled={searching}
-              className="bg-gradient-lagoon hover:opacity-90 text-white rounded-2xl px-8 py-4 font-bold shadow-lagoon hover:shadow-2xl transition-all duration-300 disabled:opacity-50 flex items-center justify-center min-h-[60px] text-lg"
+              className="bg-gradient-lagoon hover:opacity-90 text-white rounded-2xl px-5 md:px-6 py-3 md:py-3 font-semibold shadow-lagoon hover:shadow-2xl transition-all duration-300 disabled:opacity-50 flex items-center justify-center min-h-[48px] md:min-h-[54px] text-sm md:text-base"
             >
-              <Search className="h-5 w-5 mr-3" />
-              {searching ? "Recherche..." : "Rechercher"}
+              <Search className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+              {searching ? 'Recherche...' : t('common.search', 'Rechercher')}
             </Button>
-            
-            {/* Bouton Reset - Icône flottante élégante qui apparaît seulement si des critères sont sélectionnés */}
-            {(searchText || startDate || endDate || startTime !== "06:30" || endTime !== "06:00") && onResetSearch && (
-              <Button
-                onClick={onResetSearch}
-                variant="ghost"
-                size="icon"
-                className="h-[60px] w-[60px] text-primary hover:text-white hover:bg-red-500 hover:shadow-lg transition-all duration-300 group bg-transparent border-none shadow-none hover:shadow-lg"
-                title="Réinitialiser tous les critères"
-              >
-                <RotateCcw className="h-5 w-5 group-hover:rotate-180 transition-transform duration-300" />
-              </Button>
-            )}
+
+            {/* Bouton Reset - apparaît seulement si des critères sont sélectionnés */}
+            {(searchText || startDate || endDate || startTime !== '06:30' || endTime !== '06:00') &&
+              onResetSearch && (
+                <Button
+                  onClick={onResetSearch}
+                  variant="ghost"
+                  size="icon"
+                  className="h-[48px] w-[48px] md:h-[54px] md:w-[54px] text-primary hover:text-white hover:bg-red-500 hover:shadow-lg transition-all duration-300 group bg-transparent border-none shadow-none"
+                  title={t('common.rinitialiser', 'Réinitialiser')}
+                >
+                  <RotateCcw className="h-4 w-4 md:h-5 md:w-5 group-hover:rotate-180 transition-transform duration-300" />
+                </Button>
+              )}
           </div>
         </div>
       </div>
@@ -309,7 +369,9 @@ export function SearchBarAirbnb({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-4xl max-h-[90vh] overflow-auto">
                 <div className="flex items-center justify-center mb-4 relative">
-                  <h3 className="text-xl font-bold text-gray-900">{t('common.slectionner_les_dates')}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {t("common.selectDates", "Sélectionner des dates")}
+                  </h3>
                   <button
                     onClick={() => setShowDatePicker(false)}
                     className="absolute right-0 text-gray-500 hover:text-gray-700"
@@ -335,7 +397,7 @@ export function SearchBarAirbnb({
               selectsRange
               minDate={new Date()}
               dateFormat="d MMM"
-              locale={fr}
+              locale={dateLocale}
               monthsShown={2}
               inline
               className="airbnb-calendar-modal"
@@ -348,6 +410,13 @@ export function SearchBarAirbnb({
                   onClick={() => {
                     setShowDatePicker(false);
                     setActiveField(null);
+                    // Après validation des dates, ouvrir automatiquement la modale des heures
+                    // ou respecter la demande explicite d'ouverture après les dates
+                    if (openTimeAfterDates || true) {
+                      setShowTimePicker(true);
+                      setActiveField('travelers');
+                    }
+                    setOpenTimeAfterDates(false);
                   }}
                   className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-8 py-3 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >{t('common.valider_mes_dates')}</Button>

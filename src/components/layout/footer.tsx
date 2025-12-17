@@ -17,13 +17,22 @@ export function Footer() {
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-lagoon rounded-2xl shadow-lagoon">
                 <Car className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">{t('common.maycar')}</span>
+              <span className="text-xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
+                {t("footer.brand", "RENTANOO")}
+              </span>
             </div>
-            <p className="text-muted-foreground text-sm mb-4 max-w-md">{t('common.la_plateforme_dautopartage_de_mayotte_louez_et_par')}</p>
+            <p className="text-muted-foreground text-sm mb-4 max-w-md">
+              {t(
+                "footer.description",
+                "Agence de location de scooters à Nosy Be. Réservation 100 % en ligne, rapide et simple."
+              )}
+            </p>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <div className="flex items-center space-x-1">
                 <MapPin className="h-4 w-4" />
-                <span>{t('common.mayotte_france')}</span>
+                <span>
+                  {t("footer.location", "Nosy Be, Madagascar")}
+                </span>
               </div>
             </div>
           </div>
@@ -63,9 +72,19 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="text-sm text-muted-foreground">{t('common.2024_maycar_tous_droits_rservs_une_initiative_pour')}</div>
+          <div className="text-sm text-muted-foreground">
+            {t(
+              "footer.copyright",
+              "© 2025 RENTANOO. Tous droits réservés."
+            )}
+          </div>
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <div className="text-xs text-muted-foreground">{t('common.made_with_pour_le_101me_dpartement_franais')}</div>
+            <div className="text-xs text-muted-foreground">
+              {t(
+                "footer.madeWith",
+                "Made with ❤️ in Nosy Be"
+              )}
+            </div>
           </div>
         </div>
       </div>

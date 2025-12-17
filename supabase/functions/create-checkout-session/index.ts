@@ -4,10 +4,10 @@
  * Variables d'environnement requises :
  * - STRIPE_SECRET_KEY : Clé secrète Stripe (ex: sk_test_xxx)
  * - STRIPE_SUCCESS_URL : URL de redirection après paiement réussi
- *   ⚠️ EN DEV LOCAL : DOIT être http://localhost:3000/success
- *   ⚠️ NE PAS utiliser :3002, /, ou autre port
+ *   ⚠️ EN DEV LOCAL : Utiliser http://localhost:3012/success (tenant) ou http://localhost:3013/success (owner)
+ *   ⚠️ Configurer selon l'instance utilisée (tenant sur 3012, owner sur 3013)
  * - STRIPE_CANCEL_URL : URL de redirection après annulation
- *   ⚠️ EN DEV LOCAL : DOIT être http://localhost:3000/cancel
+ *   ⚠️ EN DEV LOCAL : Utiliser http://localhost:3012/cancel (tenant) ou http://localhost:3013/cancel (owner)
  * 
  * Payload attendu (POST JSON) :
  * {

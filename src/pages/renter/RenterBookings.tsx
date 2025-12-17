@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import RenterBookingCard from "@/components/RenterBookingCard";
 import { PaymentFlowModal, type ReservationPayment } from "@/components/PaymentFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
+import { useTranslation } from "react-i18next";
 
 interface BookingWithDetails extends Booking {
   vehicle?: Vehicle;
@@ -55,6 +56,7 @@ function isBookingPaid(booking: BookingWithDetails): boolean {
 }
 
 export default function RenterBookings() {
+  const { t } = useTranslation("common");
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -706,21 +708,21 @@ export default function RenterBookings() {
 
   const getFilterLabel = (filter: BookingFilter) => {
     switch (filter) {
-      case 'pending':
-        return 'En attente';
-      case 'active':
-        return 'En cours';
-      case 'upcoming':
-        return 'À venir';
-      case 'past':
-        return 'Terminées';
-      case 'cancelled':
-        return 'Annulées';
-      case 'refused':
-        return 'Refusées';
-      case 'all':
+      case "pending":
+        return t("bookings.filters.pending", "En attente");
+      case "active":
+        return t("bookings.filters.active", "En cours");
+      case "upcoming":
+        return t("bookings.filters.upcoming", "À venir");
+      case "past":
+        return t("bookings.filters.past", "Terminées");
+      case "cancelled":
+        return t("bookings.filters.cancelled", "Annulées");
+      case "refused":
+        return t("bookings.filters.refused", "Refusées");
+      case "all":
       default:
-        return 'Toutes';
+        return t("bookings.filters.all", "Toutes");
     }
   };
 
@@ -738,10 +740,13 @@ export default function RenterBookings() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                Mes réservations
+                {t("bookings.header.title", "Mes réservations")}
               </h1>
               <p className="text-muted-foreground">
-                Gérez vos locations de véhicules
+                {t(
+                  "bookings.header.subtitle",
+                  "Gérez vos locations de véhicules"
+                )}
               </p>
             </div>
             <Button
@@ -749,7 +754,7 @@ export default function RenterBookings() {
               className="mt-4 sm:mt-0 bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Nouvelle réservation
+              {t("bookings.header.newBooking", "Nouvelle réservation")}
             </Button>
           </div>
 
@@ -872,16 +877,21 @@ export default function RenterBookings() {
             <Card className="text-center py-12">
               <CardContent>
                 <Car className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <CardTitle className="mb-2">Aucune réservation</CardTitle>
+                <CardTitle className="mb-2">
+                  {t("bookings.empty.title", "Aucune réservation")}
+                </CardTitle>
                 <CardDescription className="mb-6">
-                  Vous n'avez pas encore effectué de réservation. Découvrez nos véhicules disponibles !
+                  {t(
+                    "bookings.empty.description",
+                    "Vous n'avez pas encore effectué de réservation. Découvrez nos véhicules disponibles !"
+                  )}
                 </CardDescription>
                 <Button 
                   onClick={() => navigate("/")}
                   className="bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Faire une réservation
+                  {t("bookings.empty.cta", "Faire une réservation")}
                 </Button>
               </CardContent>
             </Card>
@@ -889,9 +899,18 @@ export default function RenterBookings() {
             <Card className="text-center py-12">
               <CardContent>
                 {getFilterIcon(activeFilter)}
-                <CardTitle className="mb-2 mt-4">Aucune réservation {getFilterLabel(activeFilter).toLowerCase()}</CardTitle>
+                <CardTitle className="mb-2 mt-4">
+                  {t(
+                    "bookings.emptyFiltered.title",
+                    "Aucune réservation {{filter}}",
+                    { filter: getFilterLabel(activeFilter).toLowerCase() }
+                  )}
+                </CardTitle>
                 <CardDescription className="mb-6">
-                  Aucune réservation ne correspond au filtre sélectionné. Essayez un autre filtre.
+                  {t(
+                    "bookings.emptyFiltered.description",
+                    "Aucune réservation ne correspond au filtre sélectionné. Essayez un autre filtre."
+                  )}
                 </CardDescription>
                 <Button 
                   onClick={() => setActiveFilter('all')}
@@ -899,7 +918,10 @@ export default function RenterBookings() {
                   className="hover:bg-primary-soft hover:text-primary"
                 >
                   <Filter className="h-4 w-4 mr-2" />
-                  Voir toutes les réservations
+                  {t(
+                    "bookings.emptyFiltered.reset",
+                    "Voir toutes les réservations"
+                  )}
                 </Button>
               </CardContent>
             </Card>

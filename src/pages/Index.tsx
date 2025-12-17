@@ -22,13 +22,16 @@ import { SingleLocationModal } from "@/components/ui/single-location-modal";
 import { VehiclesService, PhotosService } from "@/services";
 import { Vehicle, Photo, VehicleFilters, RentalCalculation, VehicleRentalInfo } from "@/types";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
+import { PhotoService } from "@/services/supabase/photos";
 import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
+import { FEATURES } from "@/config/features";
 
 
 const Index = () => {
   const {
-    t: t,
+    t,
+    i18n,
   } = useTranslation('common');
 
   const [vehicles, setVehicles] = useState<SupabaseVehicle[]>([]);
@@ -138,6 +141,60 @@ const Index = () => {
     loadVehicles();
   }, []);
 
+  // Charger les photos principales (covers) pour les véhicules affichés
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadPrimaryPhotos = async () => {
+      try {
+        // IDs des véhicules qui n'ont pas encore de cover en mémoire
+        const vehicleIdsToFetch = vehicles
+          .map((v) => v.id)
+          .filter((id) => id && !photos[id]);
+
+        if (vehicleIdsToFetch.length === 0) {
+          return;
+        }
+
+        const { data, error } = await PhotoService.getPrimaryPhotosForVehicles(vehicleIdsToFetch);
+
+        if (error) {
+          console.error("Erreur lors du chargement des photos principales:", error);
+          return;
+        }
+
+        if (isCancelled || !data) return;
+
+        const mapped: Record<string, Photo> = {};
+
+        Object.entries(data).forEach(([vehicleId, uploaded]) => {
+          mapped[vehicleId] = {
+            id: uploaded.id,
+            vehicleId: uploaded.vehicleId,
+            url: uploaded.url,
+            angle: (uploaded.photoType === "frontLeft" ? "front" : "other") as any,
+            position: uploaded.position ?? 1,
+            isPrimary: uploaded.isPrimary,
+            createdAt: new Date().toISOString(),
+          };
+        });
+
+        setPhotos((prev) => ({
+          ...prev,
+          ...mapped,
+        }));
+      } catch (error) {
+        console.error("Erreur inattendue lors du chargement des photos principales:", error);
+      }
+    };
+
+    loadPrimaryPhotos();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [vehicles, photos]);
+
   // Restaurer les critères de recherche depuis localStorage au montage
   useEffect(() => {
     // Nettoyer les critères expirés (> 7 jours)
@@ -182,8 +239,11 @@ const Index = () => {
       }, 300); // Délai pour la synchronisation des états React
       
       toast({
-        title: "Recherche restaurée",
-        description: "Vos critères de recherche ont été rechargés et la recherche relancée.",
+        title: t("home.toasts.searchRestored.title", "Recherche restaurée"),
+        description: t(
+          "home.toasts.searchRestored.description",
+          "Vos critères de recherche ont été rechargés et la recherche relancée."
+        ),
       });
     }
   }, []); // Exécuter une seule fois au montage
@@ -199,7 +259,8 @@ const Index = () => {
         categories: criteria.selectedCategories || []
       };
 
-      if (criteria.searchText?.trim()) {
+      // MVP: pickup disabled → do not pass location filter when feature is off
+      if (FEATURES.pickupLocationEnabled && criteria.searchText?.trim()) {
         searchFilters.location = criteria.searchText.trim();
       }
 
@@ -218,20 +279,28 @@ const Index = () => {
       
       if (results.length === 0) {
         toast({
-          title: "Aucun résultat",
-          description: "Aucun véhicule disponible pour ces critères",
+          title: t("home.toasts.noResults.title", "Aucun résultat"),
+          description: t(
+            "home.toasts.noResults.description",
+            "Aucun véhicule disponible pour ces critères"
+          ),
         });
       } else {
         toast({
-          title: "Recherche restaurée",
-          description: `${results.length} véhicule${results.length > 1 ? 's' : ''} trouvé${results.length > 1 ? 's' : ''}`,
+          title: t("home.toasts.searchRestored.title", "Recherche restaurée"),
+          description: t("home.toasts.resultsFound", "{{count}} véhicule trouvé", {
+            count: results.length,
+          }),
         });
       }
     } catch (error) {
       console.error('Erreur lors de la recherche automatique:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible d'effectuer la recherche automatique",
+        title: t("home.toasts.errorSearchAuto.title", "Erreur"),
+        description: t(
+          "home.toasts.errorSearchAuto.description",
+          "Impossible d'effectuer la recherche automatique"
+        ),
         variant: "destructive",
       });
     } finally {
@@ -243,8 +312,11 @@ const Index = () => {
     // Validation : au moins un critère requis
     if (!searchText.trim() && !startDate && !endDate) {
       toast({
-        title: "Champs requis",
-        description: "Veuillez renseigner au moins un critère de recherche",
+        title: t("home.toasts.requiredFields.title", "Champs requis"),
+        description: t(
+          "home.toasts.requiredFields.description",
+          "Veuillez renseigner au moins un critère de recherche"
+        ),
         variant: "destructive",
       });
       return;
@@ -253,8 +325,11 @@ const Index = () => {
     // Validation : dates complètes
     if ((startDate && !endDate) || (!startDate && endDate)) {
       toast({
-        title: "Dates incomplètes",
-        description: "Veuillez sélectionner une date de début ET une date de fin",
+        title: t("home.toasts.incompleteDates.title", "Dates incomplètes"),
+        description: t(
+          "home.toasts.incompleteDates.description",
+          "Veuillez sélectionner une date de début ET une date de fin"
+        ),
         variant: "destructive",
       });
       return;
@@ -263,8 +338,11 @@ const Index = () => {
     // Validation : date de début < date de fin
     if (startDate && endDate && startDate > endDate) {
       toast({
-        title: "Dates invalides",
-        description: "La date de début doit être antérieure à la date de fin",
+        title: t("home.toasts.invalidDates.title", "Dates invalides"),
+        description: t(
+          "home.toasts.invalidDates.description",
+          "La date de début doit être antérieure à la date de fin"
+        ),
         variant: "destructive",
       });
       return;
@@ -278,7 +356,8 @@ const Index = () => {
         endDate?: string;
       } = {};
 
-      if (searchText.trim()) {
+      // MVP: pickup disabled → do not pass location filter when feature is off
+      if (FEATURES.pickupLocationEnabled && searchText.trim()) {
         searchFilters.location = searchText.trim();
       }
 
@@ -295,20 +374,30 @@ const Index = () => {
       
       if (results.length === 0) {
         toast({
-          title: "Aucun résultat",
-          description: "Aucun véhicule disponible pour ces critères",
+          title: t("home.toasts.noResults.title", "Aucun résultat"),
+          description: t(
+            "home.toasts.noResults.description",
+            "Aucun véhicule disponible pour ces critères"
+          ),
         });
       } else {
         toast({
-          title: "Recherche effectuée",
-          description: `${results.length} véhicule${results.length > 1 ? 's' : ''} trouvé${results.length > 1 ? 's' : ''}`,
+          title: t("home.toasts.searchDone.title", "Recherche effectuée"),
+          description: t(
+            "home.toasts.resultsFound",
+            "{{count}} véhicule trouvé",
+            { count: results.length }
+          ),
         });
       }
     } catch (error) {
       console.error('Erreur lors de la recherche:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible d'effectuer la recherche",
+        title: t("home.toasts.errorSearch.title", "Erreur"),
+        description: t(
+          "home.toasts.errorSearch.description",
+          "Impossible d'effectuer la recherche"
+        ),
         variant: "destructive",
       });
     } finally {
@@ -341,8 +430,11 @@ const Index = () => {
     console.log("🔄 [RESET] États réinitialisés");
     
     toast({
-      title: "Critères réinitialisés",
-      description: "Tous vos critères de recherche ont été effacés.",
+      title: t("home.toasts.criteriaReset.title", "Critères réinitialisés"),
+      description: t(
+        "home.toasts.criteriaReset.description",
+        "Tous vos critères de recherche ont été effacés."
+      ),
     });
   };
 
@@ -430,16 +522,17 @@ const Index = () => {
     const license = vehicle.id.substring(0, 8).toUpperCase();
     
     // Passer les informations de location via le state de navigation
-    navigate(`/vehicle/${license}`, {
-      state: {
-        rentalCalculation: rentalCalculation || undefined,
-        startDate: startDate?.toISOString(),
-        endDate: endDate?.toISOString(),
-        startTime,
-        endTime,
-        pickupLocation: searchText || undefined // Zone de prise en charge depuis la recherche
-      }
-    });
+        navigate(`/vehicle/${license}`, {
+          state: {
+            rentalCalculation: rentalCalculation || undefined,
+            startDate: startDate?.toISOString(),
+            endDate: endDate?.toISOString(),
+            startTime,
+            endTime,
+            // MVP: pickup disabled → only propagate pickupLocation when feature is active
+            pickupLocation: FEATURES.pickupLocationEnabled ? (searchText || undefined) : undefined,
+          }
+        });
   };
 
   return (
@@ -449,8 +542,18 @@ const Index = () => {
         {/* Hero Section */}
         <section className="bg-gradient-lagoon text-white py-16 lg:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">{t('common.partagez_la_route_mayotte')}</h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto font-medium">{t('common.louez_des_vhicules_entre_particuliers_dans_le_plus')}</p>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
+              {t(
+                "home.heroTitle",
+                "Louez votre scooter à Nosy Be en quelques clics"
+              )}
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto font-medium">
+              {t(
+                "home.heroSubtitle",
+                "RENTANOO, la première plateforme de location de scooters 100 % en ligne"
+              )}
+            </p>
             
             {/* 🎨 Nouvelle SearchBar style Airbnb */}
             <SearchBarAirbnb
@@ -616,12 +719,7 @@ const Index = () => {
                           createdAt: vehicle.created_at || new Date().toISOString(),
                           updatedAt: vehicle.updated_at || new Date().toISOString(),
                         }}
-                        primaryPhoto={vehicle.image_url ? {
-                          id: `photo-${vehicle.id}`,
-                          vehicleId: vehicle.id,
-                          url: vehicle.image_url,
-                          isPrimary: true
-                        } : null}
+                        primaryPhoto={photos[vehicle.id] ?? null}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}
                       />
@@ -633,7 +731,7 @@ const Index = () => {
                   <p className="text-muted-foreground mb-4">
                     {filteredVehicles.length === 0 && vehicles.length > 0 
                       ? "Aucun véhicule ne correspond à vos critères."
-                      : "Aucun véhicule disponible pour le moment."}
+                      : t('common.aucun_vhicule_disponible_pour_le_moment', 'Aucun véhicule disponible pour le moment.')}
                   </p>
                   {filteredVehicles.length === 0 && vehicles.length > 0 ? (
                     <Button variant="outline" onClick={() => {

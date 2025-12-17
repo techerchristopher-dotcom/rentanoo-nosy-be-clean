@@ -98,8 +98,7 @@ export const SupabaseVehiclesService = {
       let query = supabase
         .from('vehicles')
         .select('*')
-        .eq('available', true)
-        .eq('status', 'active');
+        .eq('available', true);
 
       // Appliquer les filtres si fournis
       if (filters?.vehicleCategories?.length) {
@@ -174,11 +173,13 @@ export const SupabaseVehiclesService = {
     description?: string;
     image_url?: string;
     location?: string;
+    pickup_zones?: string[] | null;
     seats?: number;
     doors?: number;
     transmission?: string;
     fuel_type?: string;
     engine_capacity?: string;
+    vehicle_category?: string;
     has_ac?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
@@ -189,6 +190,40 @@ export const SupabaseVehiclesService = {
     high_season_surcharge?: number;
     long_duration_discount_14?: number;
     long_duration_discount_60?: number;
+    airport_pickup_service?: boolean | null;
+    airport_pickup_retrieval?: boolean | null;
+    airport_pickup_retrieval_free?: boolean | null;
+    airport_pickup_retrieval_price?: number | null;
+    airport_pickup_return?: boolean | null;
+    airport_pickup_return_free?: boolean | null;
+    airport_pickup_return_price?: number | null;
+    barge_petite_terre_service?: boolean | null;
+    barge_petite_terre_retrieval?: boolean | null;
+    barge_petite_terre_retrieval_free?: boolean | null;
+    barge_petite_terre_retrieval_price?: number | null;
+    barge_petite_terre_return?: boolean | null;
+    barge_petite_terre_return_free?: boolean | null;
+    barge_petite_terre_return_price?: number | null;
+    barge_grande_terre_service?: boolean | null;
+    barge_grande_terre_retrieval?: boolean | null;
+    barge_grande_terre_retrieval_free?: boolean | null;
+    barge_grande_terre_retrieval_price?: number | null;
+    barge_grande_terre_return?: boolean | null;
+    barge_grande_terre_return_free?: boolean | null;
+    barge_grande_terre_return_price?: number | null;
+    home_delivery_service?: boolean | null;
+    home_delivery_pickup?: boolean | null;
+    home_delivery_pickup_free?: boolean | null;
+    home_delivery_pickup_price?: number | null;
+    home_delivery_return?: boolean | null;
+    home_delivery_return_free?: boolean | null;
+    home_delivery_return_price?: number | null;
+    baby_seat_service?: boolean | null;
+    baby_seat_free?: boolean | null;
+    baby_seat_price?: number | null;
+    additional_driver_service?: boolean | null;
+    additional_driver_free?: boolean | null;
+    additional_driver_price?: number | null;
     available?: boolean;
     status?: 'active' | 'inactive' | 'review';
   }): Promise<{ data: Vehicle | null; error: string | null }> {
@@ -196,8 +231,23 @@ export const SupabaseVehiclesService = {
       const { data, error } = await supabase
         .from('vehicles')
         .insert({
-          ...vehicleData,
-          available: true
+          owner_id: vehicleData.owner_id,
+          brand: vehicleData.brand,
+          model: vehicleData.model,
+          year: vehicleData.year,
+          mileage: vehicleData.mileage,
+          fuel_type: vehicleData.fuel_type,
+          transmission: vehicleData.transmission,
+          seats: vehicleData.seats,
+          price_per_day: vehicleData.price_per_day,
+          // Champs optionnels existants dans la table réelle
+          color: vehicleData.color ?? null,
+          license_plate: vehicleData.license_plate ?? null,
+          vehicle_category: vehicleData.vehicle_category ?? null,
+          pickup_zones: vehicleData.pickup_zones ?? null,
+          description: vehicleData.description ?? null,
+          engine_capacity: vehicleData.engine_capacity ?? null,
+          available: vehicleData.available ?? true,
         })
         .select()
         .single();
@@ -357,12 +407,11 @@ export const SupabaseVehiclesService = {
     endDate?: string;
   }): Promise<Vehicle[]> {
     try {
-      // 1. Récupérer les véhicules ACTIFS uniquement
+      // 1. Récupérer les véhicules disponibles uniquement
       let query = supabase
         .from('vehicles')
         .select('*')
-        .eq('available', true)
-        .eq('status', 'active');
+        .eq('available', true);
 
       const { data: vehiclesData, error: vehiclesError } = await query
         .order('created_at', { ascending: false });

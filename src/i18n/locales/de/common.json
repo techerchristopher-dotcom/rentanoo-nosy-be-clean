@@ -1,71 +1,630 @@
 {
   "common": {
-    "2024_maycar_tous_droits_rservs_une_initiative_pour": "__STRING_NOT_TRANSLATED__",
-    "actualiser_la_page": "__STRING_NOT_TRANSLATED__",
-    "annuler": "__STRING_NOT_TRANSLATED__",
-    "automatique": "__STRING_NOT_TRANSLATED__",
-    "berline": "__STRING_NOT_TRANSLATED__",
-    "break_sw": "__STRING_NOT_TRANSLATED__",
-    "cabriolet": "__STRING_NOT_TRANSLATED__",
-    "citadine": "__STRING_NOT_TRANSLATED__",
-    "communes": "__STRING_NOT_TRANSLATED__",
-    "conditions_dutilisation": "__STRING_NOT_TRANSLATED__",
-    "connexion": "__STRING_NOT_TRANSLATED__",
-    "coup": "__STRING_NOT_TRANSLATED__",
-    "crossover": "__STRING_NOT_TRANSLATED__",
-    "dates": "__STRING_NOT_TRANSLATED__",
-    "demandes_de_location": "__STRING_NOT_TRANSLATED__",
-    "devenir_loueur": "__STRING_NOT_TRANSLATED__",
-    "devenir_propritaire": "__STRING_NOT_TRANSLATED__",
-    "diesel": "__STRING_NOT_TRANSLATED__",
-    "dpart": "__STRING_NOT_TRANSLATED__",
+    "2024_maycar_tous_droits_rservs_une_initiative_pour": "© 2024 MayCar. Alle Rechte vorbehalten. Eine Initiative für Mayotte.",
+    "actualiser_la_page": "Seite aktualisieren",
+    "annuler": "Abbrechen",
+    "automatique": "Automatik",
+    "berline": "Limousine",
+    "break_sw": "Kombi",
+    "cabriolet": "Cabrio",
+    "citadine": "Stadtauto",
+    "communes": "Gemeinden",
+    "conditions_dutilisation": "Nutzungsbedingungen",
+    "connexion": "Anmeldung",
+    "coup": "Coupé",
+    "crossover": "Crossover",
+    "dates": "Daten",
+    "demandes_de_location": "Mietanfragen",
+    "devenir_loueur": "Werde Host",
+    "devenir_propritaire": "Werde Eigentümer",
+    "diesel": "Diesel",
+    "dpart": "Abfahrt",
     "error": "Fehler",
-    "essence": "__STRING_NOT_TRANSLATED__",
-    "filtres": "__STRING_NOT_TRANSLATED__",
-    "heure_de_dpart": "__STRING_NOT_TRANSLATED__",
-    "heure_de_retour": "__STRING_NOT_TRANSLATED__",
-    "heures": "__STRING_NOT_TRANSLATED__",
-    "hybride": "__STRING_NOT_TRANSLATED__",
-    "inscription": "__STRING_NOT_TRANSLATED__",
-    "la_plateforme_dautopartage_de_mayotte_louez_et_par": "__STRING_NOT_TRANSLATED__",
-    "lectrique": "__STRING_NOT_TRANSLATED__",
-    "lgal": "__STRING_NOT_TRANSLATED__",
-    "lieu_de_prise_en_charge": "__STRING_NOT_TRANSLATED__",
+    "essence": "Benzin",
+    "filtres": "Filter:",
+    "heure_de_dpart": "Abfahrtszeit",
+    "heure_de_retour": "Rückgabezeit",
+    "heures": "Zeiten",
+    "hybride": "Hybrid",
+    "inscription": "Registrierung",
+    "la_plateforme_dautopartage_de_mayotte_louez_et_par": "Die Carsharing-Plattform von Mayotte. Mieten und teilen Sie Ihre Fahrzeuge sicher in der Lagune von Mayotte.",
+    "lectrique": "Elektrisch",
+    "lgal": "Rechtliches",
+    "lieu_de_prise_en_charge": "Abholort",
     "loading": "Laden...",
-    "louez_des_vhicules_entre_particuliers_dans_le_plus": "__STRING_NOT_TRANSLATED__",
-    "made_with_pour_le_101me_dpartement_franais": "__STRING_NOT_TRANSLATED__",
-    "manuelle": "__STRING_NOT_TRANSLATED__",
-    "maycar": "__STRING_NOT_TRANSLATED__",
-    "mayotte": "__STRING_NOT_TRANSLATED__",
-    "mayotte_france": "__STRING_NOT_TRANSLATED__",
-    "mentions_lgales": "__STRING_NOT_TRANSLATED__",
-    "mes_rservations": "__STRING_NOT_TRANSLATED__",
-    "mes_vhicules": "__STRING_NOT_TRANSLATED__",
-    "minibus": "__STRING_NOT_TRANSLATED__",
-    "monospace": "__STRING_NOT_TRANSLATED__",
-    "navigation": "__STRING_NOT_TRANSLATED__",
-    "par_jour": "__STRING_NOT_TRANSLATED__",
-    "partagez_la_route_mayotte": "__STRING_NOT_TRANSLATED__",
-    "pickup": "__STRING_NOT_TRANSLATED__",
-    "points_stratgiques": "__STRING_NOT_TRANSLATED__",
-    "politique_de_confidentialit": "__STRING_NOT_TRANSLATED__",
-    "rechercher_un_vhicule": "__STRING_NOT_TRANSLATED__",
-    "retour": "__STRING_NOT_TRANSLATED__",
-    "rinitialiser": "__STRING_NOT_TRANSLATED__",
-    "rinitialiser_les_filtres": "__STRING_NOT_TRANSLATED__",
-    "roadster": "__STRING_NOT_TRANSLATED__",
-    "se_connecter": "__STRING_NOT_TRANSLATED__",
+    "louez_des_vhicules_entre_particuliers_dans_le_plus": "Mieten Sie Fahrzeuge direkt von Einheimischen in der schönsten Lagune der Welt.",
+    "made_with_pour_le_101me_dpartement_franais": "Mit ❤️ gemacht für das 101. französische Überseegebiet.",
+    "manuelle": "Manuell",
+    "maycar": "MayCar",
+    "mayotte": "Mayotte",
+    "mayotte_france": "Mayotte, Frankreich",
+    "mentions_lgales": "Impressum",
+    "mes_rservations": "Meine Buchungen",
+    "mes_vhicules": "Meine Fahrzeuge",
+    "minibus": "Minibus",
+    "monospace": "Van",
+    "navigation": "Navigation",
+    "par_jour": "pro Tag",
+    "partagez_la_route_mayotte": "Teilen Sie die Straße auf Mayotte",
+    "pickup": "Pick-up",
+    "points_stratgiques": "Strategische Punkte",
+    "politique_de_confidentialit": "Datenschutzerklärung",
+    "rechercher_un_vhicule": "Fahrzeug suchen",
+    "retour": "Rückgabe",
+    "rinitialiser": "Zurücksetzen",
+    "rinitialiser_les_filtres": "Filter zurücksetzen",
+    "roadster": "Roadster",
+    "se_connecter": "Anmelden",
     "search": "Suchen",
-    "slectionner_les_dates": "__STRING_NOT_TRANSLATED__",
-    "slectionner_les_heures": "__STRING_NOT_TRANSLATED__",
-    "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "__STRING_NOT_TRANSLATED__",
-    "suv": "__STRING_NOT_TRANSLATED__",
-    "utilisateur_connect": "__STRING_NOT_TRANSLATED__",
-    "valider": "__STRING_NOT_TRANSLATED__",
-    "valider_mes_dates": "__STRING_NOT_TRANSLATED__",
-    "valider_mes_heures": "__STRING_NOT_TRANSLATED__",
-    "vhicules_disponibles": "__STRING_NOT_TRANSLATED__",
-    "voir_la_fiche": "__STRING_NOT_TRANSLATED__"
+    "slectionner_les_dates": "Daten auswählen",
+    "slectionner_les_heures": "Zeiten auswählen",
+    "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "Wählen Sie den Ort aus, an dem Sie Ihr Fahrzeug abholen möchten",
+    "suv": "SUV",
+    "utilisateur_connect": "Angemeldeter Benutzer",
+    "modifier_mon_profil": "Mein Profil bearbeiten",
+    "mon_dashboard": "Mein Dashboard",
+    "se_dconnecter": "Abmelden",
+    "valider": "Bestätigen",
+    "valider_mes_dates": "Meine Daten bestätigen",
+    "valider_mes_heures": "Meine Zeiten bestätigen",
+    "vhicules_disponibles": "Verfügbare Fahrzeuge",
+    "voir_la_fiche": "Details anzeigen",
+    "rechercher_une_ville_de_prise_en_charge": "Nach einem Abholort suchen",
+    "aucun_vhicule_disponible_pour_le_moment": "Derzeit sind keine Fahrzeuge verfügbar.",
+    "addDates": "Daten hinzufügen",
+    "selectDates": "Daten auswählen",
+    "comingSoon": "Bald verfügbar",
+    "searchBar": {
+      "departure": "Abfahrt",
+      "return": "Rückgabe",
+      "date": "Datum",
+      "time": "Uhrzeit"
+    }
+  },
+  "home": {
+    "heroTitle": "Mieten Sie Ihren Roller in Nosy Be mit nur wenigen Klicks",
+    "heroSubtitle": "RENTANOO, die erste 100 % online Scooter-Vermietungsplattform",
+    "toasts": {
+      "requiredFields": {
+        "title": "Pflichtfelder",
+        "description": "Bitte gib mindestens ein Suchkriterium an"
+      },
+      "incompleteDates": {
+        "title": "Unvollständige Daten",
+        "description": "Bitte wähle sowohl ein Start- als auch ein Enddatum"
+      },
+      "invalidDates": {
+        "title": "Ungültige Daten",
+        "description": "Das Startdatum muss vor dem Enddatum liegen"
+      },
+      "errorSearchAuto": {
+        "title": "Fehler",
+        "description": "Die automatische Suche konnte nicht ausgeführt werden"
+      },
+      "errorSearch": {
+        "title": "Fehler",
+        "description": "Die Suche konnte nicht ausgeführt werden"
+      },
+      "noResults": {
+        "title": "Keine Ergebnisse",
+        "description": "Für diese Kriterien sind keine Fahrzeuge verfügbar"
+      },
+      "criteriaReset": {
+        "title": "Kriterien zurückgesetzt",
+        "description": "Alle Suchkriterien wurden gelöscht."
+      },
+      "searchRestored": {
+        "title": "Suche wiederhergestellt",
+        "description": "Deine gespeicherten Suchkriterien wurden wiederhergestellt und die Suche wurde erneut ausgeführt."
+      },
+      "searchDone": {
+        "title": "Suche abgeschlossen"
+      },
+      "resultsFound_one": "{{count}} Fahrzeug gefunden",
+      "resultsFound_other": "{{count}} Fahrzeuge gefunden"
+    }
+  },
+  "footer": {
+    "brand": "RENTANOO",
+    "description": "Scootervermietung in Nosy Be. 100 % online buchen – schnell und einfach.",
+    "location": "Nosy Be, Madagaskar",
+    "copyright": "© 2025 RENTANOO. Alle Rechte vorbehalten.",
+    "madeWith": "Mit ❤️ in Nosy Be gemacht"
+  },
+  "profile": {
+    "hero": {
+      "back": "Zurück zur Startseite",
+      "title": "Mein Profil",
+      "subtitle": "Verwalten Sie Ihre persönlichen Daten und personalisieren Sie Ihr Erlebnis"
+    },
+    "completion": {
+      "full": "Profil vollständig ✓",
+      "partial": "Profil zu {{percent}}% ausgefüllt"
+    },
+    "tabs": {
+      "basic": "Basisinformationen",
+      "address": "Adresse",
+      "license": "Führerschein"
+    },
+    "sections": {
+      "basic": {
+        "title": "Persönliche Daten",
+        "step": "Schritt 1/3",
+        "subtitle": "Ihre Basisinformationen zur Personalisierung Ihres Erlebnisses",
+        "identity": { "title": "Identität" },
+        "contact": { "title": "Kontakt" },
+        "personal": { "title": "Persönliche Daten" },
+        "bio": { "title": "Persönliche Vorstellung" },
+        "phone": { "title": "Telefon" },
+        "status": { "title": "Kontostatus" },
+        "saved": "Gespeichert"
+      },
+      "address": {
+        "title": "Adresse",
+        "step": "Schritt 2/3",
+        "subtitle": "Ihre Adresse für Lieferungen und Standort",
+        "saved": "Gespeichert"
+      },
+      "license": {
+        "title": "Führerschein",
+        "step": "Schritt 3/3",
+        "subtitle": "Ihr Führerschein, um Fahrzeuge sicher zu mieten",
+        "saved": "Gespeichert"
+      }
+    },
+    "form": {
+      "optional": "(optional)",
+      "firstName": {
+        "label": "Vorname",
+        "placeholder": "Ihr Vorname"
+      },
+      "lastName": {
+        "label": "Nachname",
+        "placeholder": "Ihr Nachname"
+      },
+      "email": {
+        "label": "E-Mail",
+        "placeholder": "ihre.email@beispiel.de",
+        "helper": "Die E-Mail-Adresse kann nicht geändert werden"
+      },
+      "birthDate": {
+        "label": "Geburtsdatum",
+        "placeholder": "Datum auswählen",
+        "day": { "placeholder": "Tag" },
+        "month": { "placeholder": "Monat" },
+        "year": { "placeholder": "Jahr" }
+      },
+      "birthPlace": {
+        "label": "Geburtsort",
+        "placeholder": "Stadt, Land"
+      },
+      "bio": {
+        "label": "Stellen Sie sich in wenigen Worten vor",
+        "placeholder": "Erzählen Sie uns von sich, Ihren Leidenschaften und Ihrem Fahrstil... So können andere Nutzer Sie besser kennenlernen!",
+        "counter": "{{count}}/500 Zeichen"
+      },
+      "phone": {
+        "label": "Telefonnummer",
+        "placeholder": "Telefonnummer"
+      },
+      "avatar": {
+        "loading": "Upload läuft...",
+        "helper": "Zulässige Formate: JPG, PNG. Max. Größe: 5MB"
+      },
+      "address": {
+        "street": {
+          "label": "Adresse",
+          "placeholder": "Straßennummer und -name"
+        },
+        "city": {
+          "label": "Stadt",
+          "placeholder": "Saint-Denis"
+        },
+        "postalCode": {
+          "label": "Postleitzahl",
+          "placeholder": "97400"
+        },
+        "country": {
+          "label": "Land",
+          "placeholder": "Land auswählen"
+        }
+      },
+      "license": {
+        "number": {
+          "label": "Führerscheinnummer",
+          "placeholder": "z. B. 121075012XXX",
+          "helper": "Bei einem europäischen Führerschein die in Feld 5 angegebene Nummer."
+        },
+        "country": {
+          "label": "Ausstellungsland",
+          "placeholder": "Land auswählen"
+        },
+        "document": {
+          "label": "Führerscheindokument",
+          "type": {
+            "pdf": "PDF-Dokument",
+            "image": "Bild"
+          },
+          "uploaded": "✓ Führerscheindatei erfolgreich hochgeladen",
+          "empty": {
+            "title": "Klicken Sie, um Ihren Führerschein hochzuladen",
+            "helper": "Zulässige Formate: PDF, JPG, PNG. Max. Größe: 10MB"
+          }
+        },
+        "issueDate": {
+          "label": "Ausstellungsdatum",
+          "placeholder": "Datum auswählen",
+          "day": { "placeholder": "Tag" },
+          "month": { "placeholder": "Monat" },
+          "year": { "placeholder": "Jahr" },
+          "helper": "Bei einem europäischen Führerschein das Beginn-Datum der Gültigkeit für Kategorie-B-Fahrzeuge."
+        },
+        "category": {
+          "label": "Führerscheinklasse",
+          "placeholder": "z. B. B",
+          "helper": "Führerscheinklasse (Standard: B für Auto)"
+        },
+        "expirationDate": {
+          "label": "Ablaufdatum",
+          "placeholder": "Datum auswählen"
+        }
+      }
+    },
+    "countries": {
+      "france": "Frankreich",
+      "reunion": "La Réunion",
+      "mayotte": "Mayotte",
+      "guadeloupe": "Guadeloupe",
+      "martinique": "Martinique",
+      "guyane": "Französisch-Guayana",
+      "belgium": "Belgien",
+      "switzerland": "Schweiz",
+      "germany": "Deutschland",
+      "spain": "Spanien",
+      "italy": "Italien"
+    },
+    "badges": {
+      "role": {
+        "admin": "⚙️ Administrator",
+        "owner": "🏠 Eigentümer",
+        "renter": "👤 Mieter"
+      },
+      "kyc": {
+        "verified": "✅ Verifiziert",
+        "pending": "⏳ Ausstehend",
+        "unverified": "❌ Nicht verifiziert"
+      }
+    },
+    "buttons": {
+      "saving": "Speichern...",
+      "saveSection": "Diesen Abschnitt speichern",
+      "saveBasicChanges": "Meine Änderungen speichern",
+      "saveBasicInfo": "Meine Informationen speichern",
+      "saveAddressChanges": "Meine Änderungen speichern",
+      "saveAddress": "Meine Adresse speichern",
+      "saveLicenseChanges": "Meine Änderungen speichern",
+      "saveLicense": "Meine Führerscheindaten speichern",
+      "uploading": "Wird hochgeladen...",
+      "saveAll": "Gesamtes Profil speichern",
+      "license": {
+        "change": "Ändern",
+        "delete": "Löschen",
+        "choose": "Datei auswählen"
+      }
+    },
+    "toasts": {
+      "loadError": {
+        "title": "Fehler",
+        "description": "Profil konnte nicht geladen werden: {{error}}"
+      },
+      "unexpectedLoadError": {
+        "title": "Fehler",
+        "description": "Beim Laden des Profils ist ein Fehler aufgetreten."
+      },
+      "licenseFileTooLarge": {
+        "title": "Fehler",
+        "description": "Die Datei darf 10MB nicht überschreiten."
+      },
+      "licenseFileTypeError": {
+        "title": "Fehler",
+        "description": "Bitte wählen Sie eine PDF-, JPG- oder PNG-Datei."
+      },
+      "licenseUploadError": {
+        "title": "Fehler",
+        "description": "Fehler beim Hochladen: {{error}}"
+      },
+      "licenseUpdateError": {
+        "title": "Fehler",
+        "description": "Fehler beim Aktualisieren: {{error}}"
+      },
+      "licenseUploadSuccess": {
+        "title": "Erfolg",
+        "description": "Führerscheindatei erfolgreich hochgeladen."
+      },
+      "licenseUploadUnexpectedError": {
+        "title": "Fehler",
+        "description": "Beim Hochladen der Datei ist ein Fehler aufgetreten."
+      },
+      "licenseRemoveError": {
+        "title": "Fehler",
+        "description": "Fehler beim Löschen: {{error}}"
+      },
+      "licenseRemoveSuccess": {
+        "title": "Erfolg",
+        "description": "Führerscheindatei erfolgreich gelöscht."
+      },
+      "licenseRemoveUnexpectedError": {
+        "title": "Fehler",
+        "description": "Beim Löschen der Datei ist ein Fehler aufgetreten."
+      },
+      "avatarTooLarge": {
+        "title": "Fehler",
+        "description": "Das Bild darf 5MB nicht überschreiten."
+      },
+      "avatarTypeError": {
+        "title": "Fehler",
+        "description": "Bitte wählen Sie eine gültige Bilddatei."
+      },
+      "avatarUploadError": {
+        "title": "Fehler",
+        "description": "Fehler beim Hochladen: {{error}}"
+      },
+      "avatarUpdateError": {
+        "title": "Fehler",
+        "description": "Fehler beim Aktualisieren: {{error}}"
+      },
+      "avatarUploadSuccess": {
+        "title": "Erfolg",
+        "description": "Profilbild erfolgreich aktualisiert."
+      },
+      "avatarUploadUnexpectedError": {
+        "title": "Fehler",
+        "description": "Beim Hochladen des Bildes ist ein Fehler aufgetreten."
+      },
+      "sectionSaveError": {
+        "title": "Fehler",
+        "description": "Fehler beim Speichern: {{error}}"
+      },
+      "sectionSaveSuccess": {
+        "title": "Abschnitt gespeichert",
+        "basic": "Ihre Basisinformationen wurden gespeichert.",
+        "address": "Ihre Adressinformationen wurden gespeichert.",
+        "license": "Ihre Führerscheininformationen wurden gespeichert."
+      },
+      "sectionSaveUnexpectedError": {
+        "title": "Fehler",
+        "description": "Fehler beim Speichern: {{error}}"
+      },
+      "profileUpdateError": {
+        "title": "Fehler",
+        "description": "Fehler beim Aktualisieren: {{error}}"
+      },
+      "profileUpdateSuccess": {
+        "title": "Profil aktualisiert",
+        "description": "Alle Ihre Informationen wurden erfolgreich gespeichert."
+      },
+      "profileUpdateUnexpectedError": {
+        "title": "Fehler",
+        "description": "Fehler bei der Aktualisierung des Profils: {{error}}"
+      },
+      "globalError": {
+        "title": "Fehler",
+        "description": "Es ist ein unerwarteter Fehler aufgetreten. Bitte laden Sie die Seite neu."
+      },
+      "globalSaveError": {
+        "title": "Fehler",
+        "description": "Beim Speichern ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+      },
+      "javascriptError": {
+        "title": "Fehler",
+        "description": "Es ist ein unerwarteter Fehler aufgetreten. Bitte laden Sie die Seite neu."
+      }
+    },
+    "error": {
+      "title": "Fehler",
+      "description": "Beim Laden des Profils ist ein Fehler aufgetreten.",
+      "reload": "Seite neu laden"
+    },
+    "loading": "Ihr Profil wird geladen...",
+    "banner": {
+      "title": "Profil zu {{percent}}% ausgefüllt",
+      "description": "{{percent}}% des Profils ausgefüllt. Klicken Sie, um alle Änderungen zu speichern."
+    },
+    "modal": {
+      "licensePreview": {
+        "title": "Führerschein-Vorschau",
+        "alt": "Führerschein",
+        "errorTitle": "Bild kann nicht geladen werden",
+        "errorDescription": "Stellen Sie sicher, dass die Datei korrekt hochgeladen und zugänglich ist."
+      }
+    },
+    "common": {
+      "learnMore": "Mehr erfahren..."
+    },
+    "months": {
+      "january": "Januar",
+      "february": "Februar",
+      "march": "März",
+      "april": "April",
+      "may": "Mai",
+      "june": "Juni",
+      "july": "Juli",
+      "august": "August",
+      "september": "September",
+      "october": "Oktober",
+      "november": "November",
+      "december": "Dezember"
+    }
+  },
+  "bookings": {
+    "header": {
+      "title": "Meine Buchungen",
+      "subtitle": "Verwalten Sie Ihre Fahrzeugmieten",
+      "newBooking": "Neue Buchung"
+    },
+    "filters": {
+      "all": "Alle",
+      "pending": "Ausstehend",
+      "active": "Laufend",
+      "upcoming": "Bevorstehend",
+      "past": "Abgeschlossen",
+      "cancelled": "Storniert",
+      "refused": "Abgelehnt"
+    },
+    "empty": {
+      "title": "Keine Buchung",
+      "description": "Sie haben noch keine Buchung vorgenommen. Entdecken Sie unsere verfügbaren Fahrzeuge!",
+      "cta": "Eine Buchung vornehmen"
+    },
+    "emptyFiltered": {
+      "title": "Keine {{filter}} Buchungen",
+      "description": "Keine Buchung entspricht dem ausgewählten Filter. Versuchen Sie einen anderen Filter.",
+      "reset": "Alle Buchungen anzeigen"
+    }
+  },
+  "ownerVehicles": {
+    "loading": "Wird geladen...",
+    "header": {
+      "title": "Meine Fahrzeuge",
+      "subtitle": "Verwalten Sie Ihre Fahrzeuge und Ihre Buchungen"
+    },
+    "kycRequired": {
+      "title": "KYC-Verifizierung erforderlich",
+      "description": "Um Ihre Fahrzeuge zu veröffentlichen, müssen Sie Ihre Identitätsprüfung abschließen."
+    },
+    "empty": {
+      "title": "Keine Fahrzeuge",
+      "description": "Fügen Sie zunächst Ihr erstes Fahrzeug zur Plattform hinzu."
+    },
+      "vehicleTypeModal": {
+        "title": "Welchen Fahrzeugtyp möchten Sie hinzufügen?",
+        "description": "Wählen Sie den Fahrzeugtyp, den Sie auf der Plattform veröffentlichen möchten.",
+        "carLabel": "Auto",
+        "motoLabel": "Motorrad / Roller",
+        "cancel": "Abbrechen"
+      },
+    "card": {
+      "pricePerDay": "Preis/Tag",
+      "year": "Jahr",
+      "fuel": "Kraftstoff",
+      "actions": {
+        "manage": "Fahrzeug verwalten",
+        "viewPublic": "Öffentliches Profil anzeigen"
+      }
+    },
+    "addCard": {
+      "title": "Fahrzeug hinzufügen",
+      "description": "Klicken Sie hier, um ein neues Fahrzeug zu Ihrer Flotte hinzuzufügen und es zu vermieten",
+      "badge": "Neues Fahrzeug"
+      },
+      "motoPlaceholder": {
+        "title": "Motorrad / Roller",
+        "description": "Das Formular zum Hinzufügen eines Motorrads oder Rollers wird in Kürze verfügbar sein.",
+        "backToVehicles": "Zurück zu meinen Fahrzeugen"
+      },
+      "motoForm": {
+        "title": "Motorrad / Roller hinzufügen",
+        "brand": "Marke",
+        "brandPlaceholder": "Z. B. Honda",
+        "model": "Modell",
+        "modelPlaceholder": "Z. B. PCX 125",
+        "year": "Baujahr",
+        "mileage": "Kilometerstand (ca.)",
+        "kind": "Typ",
+        "kindPlaceholder": "Auswählen",
+        "kindMoto": "Motorrad",
+        "kindScooter": "Roller",
+        "engineCapacity": "Hubraum (ccm)",
+        "licensePlate": "Kennzeichen (optional)",
+        "seats": "Anzahl der Plätze",
+        "fuel": "Kraftstoff",
+        "fuelPlaceholder": "Auswählen",
+        "transmission": "Getriebe",
+        "transmissionPlaceholder": "Auswählen",
+        "dailyPrice": "Preis pro Tag (€)",
+        "description": "Beschreibung (optional)",
+        "descriptionPlaceholder": "Beschreiben Sie den Zustand des Fahrzeugs und die enthaltene Ausstattung (Helm, Topcase usw.)...",
+        "cancel": "Abbrechen",
+        "submit": "Fahrzeug erstellen",
+        "saving": "Wird erstellt...",
+        "successTitle": "Motorrad / Roller erfolgreich hinzugefügt",
+        "successDescription": "Ihr Fahrzeug wurde erstellt. Sie können es jetzt in Ihrer Fahrzeugliste verwalten.",
+        "errors": {
+          "required": "Bitte geben Sie mindestens Marke, Modell, Baujahr und Tagespreis an.",
+          "year": "Bitte geben Sie ein gültiges Baujahr ein.",
+          "price": "Bitte geben Sie einen gültigen Tagespreis ein.",
+          "generic": "Das Fahrzeug konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
+        },
+        "photos": {
+          "sectionTitle": "Fahrzeugfotos",
+          "sectionSubtitle": "Fügen Sie mindestens ein Foto Ihres Motorrads oder Rollers hinzu, um mehr Mieter anzusprechen.",
+          "primaryLabel": "Hauptfoto",
+          "primaryHint": "Vorne links – empfohlener Winkel, um Ihr Motorrad/Roller hervorzuheben",
+          "profileLabel": "Seitenansicht",
+          "profileHint": "Seitenansicht, um das Profil des Fahrzeugs gut zu zeigen",
+          "interiorLabel": "Details / Ausstattung",
+          "interiorHint": "Zum Beispiel: Armaturenbrett, Sitz, Topcase, Staufächer...",
+          "addMore": "Weitere Fotos hinzufügen",
+          "addMoreLimit": "Limit erreicht (3 zusätzliche Fotos)",
+          "slotLabel": "Foto {{index}}",
+          "slotOptional": "Optional",
+          "changePhoto": "Foto ändern",
+          "deletePhoto": "Löschen",
+          "invalidType": "Bitte wählen Sie eine gültige Bilddatei aus.",
+          "tooLarge": "Das Foto darf nicht größer als 10MB sein.",
+          "minRequired": "Bitte fügen Sie mindestens ein Foto Ihres Motorrads oder Rollers hinzu.",
+          "added": "Foto hinzugefügt",
+          "addedTitle": "Foto hinzugefügt",
+          "addedDescription": "Ihr Foto wurde erfolgreich hinzugefügt.",
+          "additionalAdded": "Zusätzliches Foto hinzugefügt",
+          "additionalAddedDescription": "Ihr zusätzliches Foto wurde erfolgreich hinzugefügt.",
+          "removed": "Foto gelöscht",
+          "removedTitle": "Foto gelöscht",
+          "removedDescription": "Das Foto wurde erfolgreich gelöscht."
+        }
+    },
+    "availabilityDialog": {
+      "title": "Änderung der Verfügbarkeit bestätigen",
+      "intro": "Wenn Sie die Verfügbarkeit Ihres Fahrzeugs deaktivieren:",
+      "point1": "Wird es nicht mehr in den Suchergebnissen angezeigt",
+      "point2": "Können Kunden keine neuen Buchungen mehr vornehmen",
+      "point3": "Bleiben bestehende Buchungen gültig",
+      "confirmQuestion": "Sind Sie sicher, dass Sie fortfahren möchten?",
+      "cancel": "Abbrechen",
+      "confirm": "Deaktivierung bestätigen"
+    },
+    "accessDenied": {
+      "title": "Zugriff verweigert",
+      "description": "Sie müssen angemeldet sein, um auf diese Seite zuzugreifen.",
+      "login": "Anmelden"
+    },
+    "toasts": {
+      "cannotDisable": {
+        "title": "Deaktivierung nicht möglich",
+        "description": "Dieses Fahrzeug hat aktive oder zukünftige Buchungen. Stornieren Sie diese Buchungen zuerst."
+      },
+      "saveStatusError": {
+        "title": "Fehler",
+        "description": "Status konnte nicht gespeichert werden: {{message}}"
+      },
+      "statusUpdated": {
+        "title": "Status aktualisiert",
+        "available": "Das Fahrzeug ist jetzt verfügbar",
+        "unavailable": "Das Fahrzeug ist jetzt nicht verfügbar"
+      },
+      "genericError": {
+        "title": "Fehler",
+        "description": "Beim Speichern ist ein Fehler aufgetreten."
+      },
+      "mustBeLoggedIn": {
+        "title": "Fehler",
+        "description": "Sie müssen angemeldet sein, um auf diese Seite zuzugreifen"
+      },
+      "loadVehiclesError": {
+        "title": "Fehler",
+        "description": "Ihre Fahrzeuge konnten nicht geladen werden"
+      }
+    }
   },
   "dictionary": {
     "back": "Zurück zum Wörterbuch",

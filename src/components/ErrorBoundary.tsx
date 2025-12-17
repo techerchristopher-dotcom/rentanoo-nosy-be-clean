@@ -102,6 +102,13 @@ export class ErrorBoundary extends Component<Props, State> {
         console.error('[ErrorBoundary] 📦 Message:', event.message);
         console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+        // ⚠️ Cas particulier des images :
+        // Une image 404 ne doit PAS faire crasher toute l'application.
+        // On loggue simplement l'erreur, le composant d'image gère le fallback (placeholder).
+        if (tagName === 'img') {
+          return;
+        }
+
         // Créer une erreur spécifique pour les ressources manquantes
         const error = new Error(
           `Ressource non trouvée (404): ${tagName.toUpperCase()} - ${src || 'URL inconnue'}`

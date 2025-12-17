@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
@@ -23,6 +24,7 @@ import OwnerBookingRequests from "./pages/owner/OwnerBookingRequests";
 import OwnerBookingDiscussion from "./pages/owner/OwnerBookingDiscussion";
 import ManageVehicle from "./pages/owner/ManageVehicle";
 import AddVehicle from "./pages/owner/AddVehicle";
+import AddMotoPlaceholder from "./pages/owner/AddMotoPlaceholder";
 import Dashboard from "./pages/owner/Dashboard";
 import RentMyCarLanding from "./pages/owner/RentMyCarLanding";
 import RentMyCarRegister from "./pages/owner/RentMyCarRegister";
@@ -47,7 +49,13 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
+            {/* Wrapper to allow a fixed dev language switcher on all pages */}
+            <div className="relative">
+              {/* Dev-only floating language switcher, visible on all pages */}
+              <div className="fixed bottom-4 right-4 z-50">
+                <LanguageSwitcher />
+              </div>
+              <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
@@ -70,6 +78,7 @@ const App = () => (
             <Route path="/me/owner/requests" element={<OwnerBookingRequests />} />
             <Route path="/me/owner/requests/:conversationId/discussion" element={<OwnerBookingDiscussion />} />
             <Route path="/me/owner/vehicles/add" element={<AddVehicle />} />
+            <Route path="/me/owner/vehicles/add-moto" element={<AddMotoPlaceholder />} />
             <Route path="/me/owner/vehicles/:vehicleId/manage" element={<ManageVehicle />} />
             <Route path="/rent-my-car" element={<RentMyCarLanding />} />
             <Route path="/rent-my-car/register" element={<RentMyCarRegister />} />
@@ -84,7 +93,8 @@ const App = () => (
             <Route path="/checkin-return/:bookingId" element={<CheckinReturnPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+            </div>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

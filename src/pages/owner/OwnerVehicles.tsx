@@ -14,14 +14,18 @@ import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { Vehicle, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
+import { VehicleTypeModal } from "@/components/owner/VehicleTypeModal";
 
 const OwnerVehicles = () => {
+  const { t } = useTranslation("common");
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
   const [pendingAvailabilityChange, setPendingAvailabilityChange] = useState<{vehicleId: string, newValue: boolean} | null>(null);
   const [updatingVehicle, setUpdatingVehicle] = useState<string | null>(null);
+  const [showVehicleTypeModal, setShowVehicleTypeModal] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -65,8 +69,14 @@ const OwnerVehicles = () => {
       
       if (hasActive) {
         toast({
-          title: "Impossible de désactiver",
-          description: "Ce véhicule a des réservations actives ou futures. Annulez d'abord les réservations.",
+          title: t(
+            "ownerVehicles.toasts.cannotDisable.title",
+            "Impossible de désactiver"
+          ),
+          description: t(
+            "ownerVehicles.toasts.cannotDisable.description",
+            "Ce véhicule a des réservations actives ou futures. Annulez d'abord les réservations."
+          ),
           variant: "destructive",
         });
         return;
@@ -92,8 +102,12 @@ const OwnerVehicles = () => {
       if (error) {
         console.error("Erreur lors de la sauvegarde du statut:", error);
         toast({
-          title: "Erreur",
-          description: `Impossible de sauvegarder le statut: ${error.message}`,
+          title: t("ownerVehicles.toasts.saveStatusError.title", "Erreur"),
+          description: t(
+            "ownerVehicles.toasts.saveStatusError.description",
+            "Impossible de sauvegarder le statut : {{message}}",
+            { message: error.message }
+          ),
           variant: "destructive",
         });
         return;
@@ -107,14 +121,27 @@ const OwnerVehicles = () => {
       ));
 
       toast({
-        title: "Statut mis à jour",
-        description: `Le véhicule est maintenant ${isAvailable ? 'disponible' : 'indisponible'}`,
+        title: t(
+          "ownerVehicles.toasts.statusUpdated.title",
+          "Statut mis à jour"
+        ),
+        description: t(
+          isAvailable
+            ? "ownerVehicles.toasts.statusUpdated.available"
+            : "ownerVehicles.toasts.statusUpdated.unavailable",
+          isAvailable
+            ? "Le véhicule est maintenant disponible"
+            : "Le véhicule est maintenant indisponible"
+        ),
       });
     } catch (error) {
       console.error("Erreur lors de la sauvegarde du statut:", error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la sauvegarde.",
+        title: t("ownerVehicles.toasts.genericError.title", "Erreur"),
+        description: t(
+          "ownerVehicles.toasts.genericError.description",
+          "Une erreur est survenue lors de la sauvegarde."
+        ),
         variant: "destructive",
       });
     } finally {
@@ -135,9 +162,21 @@ const OwnerVehicles = () => {
     setPendingAvailabilityChange(null);
   };
 
-  const handleAddVehicle = () => {
-    // Rediriger vers le formulaire complet avec paramètre pour propriétaire existant
+  // Ouvre la modal de choix du type de véhicule
+  const handleAddVehicleClick = () => {
+    setShowVehicleTypeModal(true);
+  };
+
+  // Navigation vers le formulaire voiture existant
+  const handleSelectCar = () => {
+    setShowVehicleTypeModal(false);
     navigate("/rent-my-car/register?existingOwner=true");
+  };
+
+  // Navigation vers la future page moto / scooter (placeholder)
+  const handleSelectMoto = () => {
+    setShowVehicleTypeModal(false);
+    navigate("/me/owner/vehicles/add-moto");
   };
 
   const loadData = async () => {
@@ -145,8 +184,11 @@ const OwnerVehicles = () => {
       const userResult = await ProfileService.getCurrentUserProfile();
       if (!userResult.data) {
         toast({
-          title: "Erreur",
-          description: "Vous devez être connecté pour accéder à cette page",
+          title: t("ownerVehicles.toasts.mustBeLoggedIn.title", "Erreur"),
+          description: t(
+            "ownerVehicles.toasts.mustBeLoggedIn.description",
+            "Vous devez être connecté pour accéder à cette page"
+          ),
           variant: "destructive",
         });
         return;
@@ -157,8 +199,14 @@ const OwnerVehicles = () => {
       const vehiclesResult = await SupabaseVehiclesService.getOwnerVehicles(userResult.data.id);
       if (vehiclesResult.error) {
         toast({
-          title: "Erreur",
-          description: vehiclesResult.error,
+          title: t("ownerVehicles.toasts.loadVehiclesError.title", "Erreur"),
+          description:
+            typeof vehiclesResult.error === "string"
+              ? vehiclesResult.error
+              : t(
+                  "ownerVehicles.toasts.loadVehiclesError.description",
+                  "Impossible de charger vos véhicules"
+                ),
           variant: "destructive",
         });
         setVehicles([]);
@@ -190,8 +238,11 @@ const OwnerVehicles = () => {
       }
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de charger vos véhicules",
+        title: t("ownerVehicles.toasts.loadVehiclesError.title", "Erreur"),
+        description: t(
+          "ownerVehicles.toasts.loadVehiclesError.description",
+          "Impossible de charger vos véhicules"
+        ),
         variant: "destructive",
       });
     } finally {
@@ -207,7 +258,9 @@ const OwnerVehicles = () => {
           <div className="container mx-auto px-4 py-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Chargement...</p>
+              <p className="mt-4 text-muted-foreground">
+                {t("ownerVehicles.loading", "Chargement...")}
+              </p>
             </div>
           </div>
         </div>
@@ -224,12 +277,27 @@ const OwnerVehicles = () => {
           <div className="container mx-auto px-4 py-8">
             <Card className="max-w-md mx-auto">
               <CardHeader>
-                <CardTitle className="text-center">Accès refusé</CardTitle>
+                <CardTitle className="text-center">
+                  {t(
+                    "ownerVehicles.accessDenied.title",
+                    "Accès refusé"
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="mb-4">Vous devez être connecté pour accéder à cette page.</p>
+                <p className="mb-4">
+                  {t(
+                    "ownerVehicles.accessDenied.description",
+                    "Vous devez être connecté pour accéder à cette page."
+                  )}
+                </p>
                 <Link to="/auth/login">
-                  <Button>Se connecter</Button>
+                  <Button>
+                    {t(
+                      "ownerVehicles.accessDenied.login",
+                      "Se connecter"
+                    )}
+                  </Button>
                 </Link>
               </CardContent>
             </Card>
@@ -247,9 +315,14 @@ const OwnerVehicles = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Mes véhicules</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                {t("ownerVehicles.header.title", "Mes véhicules")}
+              </h1>
               <p className="text-muted-foreground">
-                Gérez vos véhicules et vos réservations
+                {t(
+                  "ownerVehicles.header.subtitle",
+                  "Gérez vos véhicules et vos réservations"
+                )}
               </p>
             </div>
           </div>
@@ -261,10 +334,16 @@ const OwnerVehicles = () => {
                   <Settings className="h-5 w-5 text-amber-600" />
                   <div>
                     <h3 className="font-medium text-amber-800 dark:text-amber-200">
-                      Vérification KYC requise
+                      {t(
+                        "ownerVehicles.kycRequired.title",
+                        "Vérification KYC requise"
+                      )}
                     </h3>
                     <p className="text-sm text-amber-700 dark:text-amber-300">
-                      Pour publier vos véhicules, vous devez compléter votre vérification d'identité.
+                      {t(
+                        "ownerVehicles.kycRequired.description",
+                        "Pour publier vos véhicules, vous devez compléter votre vérification d'identité."
+                      )}
                     </p>
                   </div>
                 </div>
@@ -276,10 +355,28 @@ const OwnerVehicles = () => {
             <Card className="max-w-lg mx-auto text-center">
               <CardContent className="pt-12 pb-12">
                 <Car className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Aucun véhicule</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  {t("ownerVehicles.empty.title", "Aucun véhicule")}
+                </h3>
                 <p className="text-muted-foreground mb-6">
-                  Commencez par ajouter votre premier véhicule à la plateforme.
+                  {t(
+                    "ownerVehicles.empty.description",
+                    "Commencez par ajouter votre premier véhicule à la plateforme."
+                  )}
                 </p>
+
+                {/* CTA d'ajout de véhicule même lorsque la liste est vide */}
+                <Button
+                  type="button"
+                  onClick={handleAddVehicleClick}
+                  className="mt-2 inline-flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  {t(
+                    "ownerVehicles.empty.addFirstVehicle",
+                    "Ajouter mon premier véhicule"
+                  )}
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -332,11 +429,21 @@ const OwnerVehicles = () => {
                     {/* Informations du véhicule */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm border border-white/50">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Prix/jour</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">
+                          {t(
+                            "ownerVehicles.card.pricePerDay",
+                            "Prix/jour"
+                          )}
+                        </p>
                         <p className="text-lg font-bold text-gray-900">{vehicle.dailyPrice} {vehicle.currency}</p>
                       </div>
                       <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm border border-white/50">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Année</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">
+                          {t(
+                            "ownerVehicles.card.year",
+                            "Année"
+                          )}
+                        </p>
                         <p className="text-lg font-bold text-gray-900">{vehicle.year}</p>
                       </div>
                     </div>
@@ -344,7 +451,12 @@ const OwnerVehicles = () => {
                     {/* Carburant */}
                     <div className="mb-6">
                       <div className="bg-white/60 rounded-lg p-3 backdrop-blur-sm border border-white/50">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Carburant</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">
+                          {t(
+                            "ownerVehicles.card.fuel",
+                            "Carburant"
+                          )}
+                        </p>
                         <p className="text-sm font-medium text-gray-900 capitalize">{vehicle.fuel}</p>
                       </div>
                     </div>
@@ -357,15 +469,21 @@ const OwnerVehicles = () => {
                           className="w-full bg-white/90 hover:bg-white border-gray-300 hover:border-gray-400 hover:shadow-md transition-all duration-200 font-medium"
                         >
                           <Settings className="h-4 w-4 mr-2" />
-                          Gérer le véhicule
+                          {t(
+                            "ownerVehicles.card.actions.manage",
+                            "Gérer le véhicule"
+                          )}
                         </Button>
                       </Link>
                       <Link to={`/vehicle/${vehicle.license}`}>
                         <Button 
-                          variant="ghost" 
+                          variant="ghost"
                           className="w-full bg-white/70 hover:bg-white/90 text-gray-700 hover:text-gray-900 hover:shadow-sm transition-all duration-200"
                         >
-                          Voir la fiche publique
+                          {t(
+                            "ownerVehicles.card.actions.viewPublic",
+                            "Voir la fiche publique"
+                          )}
                         </Button>
                       </Link>
                     </div>
@@ -376,7 +494,7 @@ const OwnerVehicles = () => {
               {/* Carte d'ajout de véhicule */}
               <Card 
                 className="hover:shadow-xl hover:scale-105 transition-all duration-300 relative overflow-hidden group border-2 border-dashed border-gray-300 hover:border-primary/50 bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer"
-                onClick={handleAddVehicle}
+                onClick={handleAddVehicleClick}
               >
                 <div className="relative z-10 p-6 h-full flex flex-col items-center justify-center text-center min-h-[400px]">
                   <div className="bg-white/80 rounded-full p-6 mb-4 group-hover:bg-white/90 transition-all duration-300">
@@ -384,17 +502,28 @@ const OwnerVehicles = () => {
                   </div>
                   
                   <h3 className="text-xl font-bold text-gray-700 mb-2 group-hover:text-gray-900 transition-colors">
-                    Ajouter un véhicule
+                    {t(
+                      "ownerVehicles.addCard.title",
+                      "Ajouter un véhicule"
+                    )}
                   </h3>
                   
                   <p className="text-sm text-gray-500 mb-6 group-hover:text-gray-600 transition-colors max-w-xs">
-                    Cliquez ici pour ajouter un nouveau véhicule à votre flotte et commencer à le louer
+                    {t(
+                      "ownerVehicles.addCard.description",
+                      "Cliquez ici pour ajouter un nouveau véhicule à votre flotte et commencer à le louer"
+                    )}
                   </p>
                   
                   <div className="bg-white/60 rounded-lg p-4 backdrop-blur-sm border border-white/50 w-full">
                     <div className="flex items-center justify-center space-x-2 text-gray-600">
                       <Car className="h-4 w-4" />
-                      <span className="text-sm font-medium">Nouveau véhicule</span>
+                      <span className="text-sm font-medium">
+                        {t(
+                          "ownerVehicles.addCard.badge",
+                          "Nouveau véhicule"
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -408,35 +537,72 @@ const OwnerVehicles = () => {
       <AlertDialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la modification de disponibilité</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t(
+                "ownerVehicles.availabilityDialog.title",
+                "Confirmer la modification de disponibilité"
+              )}
+            </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                En désactivant la disponibilité de votre véhicule :
+                {t(
+                  "ownerVehicles.availabilityDialog.intro",
+                  "En désactivant la disponibilité de votre véhicule :"
+                )}
               </p>
               <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Il ne sera plus visible dans les résultats de recherche</li>
-                <li>Les clients ne pourront plus effectuer de nouvelles réservations</li>
-                <li>Les réservations existantes restent valides</li>
+                <li>
+                  {t(
+                    "ownerVehicles.availabilityDialog.point1",
+                    "Il ne sera plus visible dans les résultats de recherche"
+                  )}
+                </li>
+                <li>
+                  {t(
+                    "ownerVehicles.availabilityDialog.point2",
+                    "Les clients ne pourront plus effectuer de nouvelles réservations"
+                  )}
+                </li>
+                <li>
+                  {t(
+                    "ownerVehicles.availabilityDialog.point3",
+                    "Les réservations existantes restent valides"
+                  )}
+                </li>
               </ul>
               <p className="font-medium">
-                Êtes-vous sûr de vouloir continuer ?
+                {t(
+                  "ownerVehicles.availabilityDialog.confirmQuestion",
+                  "Êtes-vous sûr de vouloir continuer ?"
+                )}
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={cancelAvailabilityChange}>
-              Annuler
+              {t("ownerVehicles.availabilityDialog.cancel", "Annuler")}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmAvailabilityChange}
               className="bg-red-600 hover:bg-red-700"
             >
-              Confirmer la désactivation
+              {t(
+                "ownerVehicles.availabilityDialog.confirm",
+                "Confirmer la désactivation"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       
+      {/* Modal de sélection du type de véhicule */}
+      <VehicleTypeModal
+        open={showVehicleTypeModal}
+        onOpenChange={setShowVehicleTypeModal}
+        onSelectCar={handleSelectCar}
+        onSelectMoto={handleSelectMoto}
+      />
+
       <Footer />
     </>
   );

@@ -62,8 +62,12 @@ export function Navbar() {
     navigate("/");
   };
 
+  // Vérifier les rôles de l'utilisateur
+  const isOwner = !!userProfile && userProfile.roles.includes("owner");
+  const isRenter = !!userProfile && userProfile.roles.includes("renter");
+
   // Vérifier si l'utilisateur est un locataire (peut devenir loueur)
-  const canBecomeOwner = userProfile && userProfile.roles.includes("renter") && !userProfile.roles.includes("owner");
+  const canBecomeOwner = isRenter && !isOwner;
 
 
   return (
@@ -97,7 +101,7 @@ export function Navbar() {
             {user ? (
               <>
                 {/* Lien Mes réservations pour locataire */}
-                {userProfile?.roles.includes('renter') && (
+                {isRenter && (
                   <Link 
                     to="/me/renter/bookings" 
                     className="text-foreground hover:text-primary transition-colors"
@@ -106,8 +110,8 @@ export function Navbar() {
                   </Link>
                 )}
                 
-                {/* Lien Mes réservations pour propriétaire */}
-                {userProfile?.roles.includes('owner') && (
+                {/* Lien Demandes de location pour propriétaire */}
+                {isOwner && (
                   <Link 
                     to="/me/owner/bookings" 
                     className="text-foreground hover:text-primary transition-colors"
@@ -117,7 +121,7 @@ export function Navbar() {
                 )}
                 
                 {/* Lien Mes véhicules pour propriétaire */}
-                {userProfile?.roles.includes('owner') && (
+                {isOwner && (
                   <Link 
                     to="/me/owner/vehicles" 
                     className="text-foreground hover:text-primary transition-colors"
@@ -150,45 +154,49 @@ export function Navbar() {
                   <DropdownMenuContent className="w-56" align="end">
                     <div className="px-3 py-2">
                       <p className="text-sm font-medium">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">Utilisateur connecté</p>
+                      <p className="text-xs text-muted-foreground">{t('common.utilisateur_connect', 'Utilisateur connecté')}</p>
                     </div>
                     <DropdownMenuSeparator />
                     
                     {/* Dashboard uniquement pour propriétaires */}
-                    {userProfile?.roles.includes('owner') && (
+                    {isOwner && (
                       <DropdownMenuItem onClick={() => navigate("/me/dashboard")}>
                         <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Mon Dashboard
+                        {t('common.mon_dashboard', 'Mon Dashboard')}
                       </DropdownMenuItem>
                     )}
                     
                     <DropdownMenuItem onClick={() => navigate("/profile")}>
                       <User className="mr-2 h-4 w-4" />
-                      Modifier mon profil
+                      {t('common.modifier_mon_profil', 'Modifier mon profil')}
                     </DropdownMenuItem>
                     
-                     <DropdownMenuItem asChild>
-                       <Link to="/me/renter/bookings">
-                         <User className="mr-2 h-4 w-4" />
-                         Mes réservations
-                       </Link>
-                     </DropdownMenuItem>
-                     
-                     <DropdownMenuItem onClick={() => navigate("/me/owner/vehicles")}>
-                       <Car className="mr-2 h-4 w-4" />
-                       Mes véhicules
-                     </DropdownMenuItem>
-                     
-                     <DropdownMenuItem onClick={() => navigate("/me/owner/bookings")}>
-                       <User className="mr-2 h-4 w-4" />
-                       Demandes de location
-                     </DropdownMenuItem>
-                    
+                    {/* Mes réservations (locataire) */}
+                    <DropdownMenuItem asChild>
+                      <Link to="/me/renter/bookings">
+                        <User className="mr-2 h-4 w-4" />
+                        {t('common.mes_rservations', 'Mes réservations')}
+                      </Link>
+                    </DropdownMenuItem>
+
+                    {/* Items Owner-only */}
+                    {isOwner && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate("/me/owner/vehicles")}>
+                          <Car className="mr-2 h-4 w-4" />
+                          {t('common.mes_vhicules', 'Mes véhicules')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/me/owner/bookings")}>
+                          <User className="mr-2 h-4 w-4" />
+                          {t('common.demandes_de_location', 'Demandes de location')}
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Se déconnecter
+                      {t('common.se_dconnecter', 'Se déconnecter')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -206,15 +214,26 @@ export function Navbar() {
               </div>
             )}
             
-            {/* CTA - Devenir loueur (visible uniquement pour les locataires) */}
+            {/* CTA - Devenir loueur (désactivé pour les locataires, badge \"Bientôt disponible\") */}
             {canBecomeOwner && (
-              <Link to="/rent-my-car">
-                <Button 
-                  className="bg-gradient-lagoon text-white hover:opacity-90 shadow-lagoon transition-all duration-300 font-medium"
+              <div className="inline-flex flex-col items-center gap-0.5">
+                <div className="text-[11px] font-medium text-primary/80">
+                  {t('common.comingSoon', 'Bientôt disponible')}
+                </div>
+                <Button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  tabIndex={-1}
+                  className="bg-gradient-lagoon text-white shadow-lagoon/70 transition-all duration-300 font-medium opacity-70 cursor-not-allowed"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
-                  ⭐ Devenir loueur
+                  ⭐ {t('common.devenir_loueur', 'Devenir loueur')}
                 </Button>
-              </Link>
+              </div>
             )}
           </div>
 
@@ -256,15 +275,26 @@ export function Navbar() {
                 <LanguageSwitcher />
               </div>
               
-              {/* CTA Mobile - Devenir loueur (visible uniquement pour les locataires) */}
+              {/* CTA Mobile - Devenir loueur (désactivé pour les locataires, badge \"Bientôt disponible\") */}
               {canBecomeOwner && (
-                <Link to="/rent-my-car" onClick={() => setIsOpen(false)}>
+                <div className="space-y-1">
+                  <div className="inline-flex items-center justify-center rounded-full bg-primary-soft/20 text-primary text-[11px] font-medium px-3 py-0.5">
+                    {t('common.comingSoon', 'Bientôt disponible')}
+                  </div>
                   <Button 
-                    className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon text-white font-medium"
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    className="w-full bg-gradient-lagoon shadow-lagoon/70 text-white font-medium opacity-70 cursor-not-allowed"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   >
-                    ⭐ Devenir loueur
+                    ⭐ {t('common.devenir_loueur', 'Devenir loueur')}
                   </Button>
-                </Link>
+                </div>
               )}
               
               {user ? (
@@ -274,27 +304,29 @@ export function Navbar() {
                     className="text-foreground hover:text-primary transition-colors"
                     onClick={() => setIsOpen(false)}
                   >
-                    Mes réservations
+                    {t('common.mes_rservations', 'Mes réservations')}
                   </Link>
-                  <Link 
-                    to="/me/owner/vehicles" 
-                    className="text-foreground hover:text-primary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Mes véhicules
-                  </Link>
+                  {isOwner && (
+                    <Link 
+                      to="/me/owner/vehicles" 
+                      className="text-foreground hover:text-primary transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {t('common.mes_vhicules', 'Mes véhicules')}
+                    </Link>
+                  )}
                   
                   <div className="pt-3 border-t space-y-3">
                     <div>
                       <p className="text-sm font-medium">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">Utilisateur connecté</p>
+                      <p className="text-xs text-muted-foreground">{t('common.utilisateur_connect', 'Utilisateur connecté')}</p>
                     </div>
                     {/* Dashboard uniquement pour propriétaires */}
                     {userProfile?.roles.includes('owner') && (
                       <Link to="/me/dashboard" onClick={() => setIsOpen(false)}>
                         <Button variant="ghost" className="w-full justify-start">
                           <LayoutDashboard className="mr-2 h-4 w-4" />
-                          Mon Dashboard
+                          {t('common.mon_dashboard', 'Mon Dashboard')}
                         </Button>
                       </Link>
                     )}
@@ -302,7 +334,7 @@ export function Navbar() {
                     <Link to="/profile" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">
                         <User className="mr-2 h-4 w-4" />
-                        Modifier mon profil
+                        {t('common.modifier_mon_profil', 'Modifier mon profil')}
                       </Button>
                     </Link>
                     <Button 
@@ -311,7 +343,7 @@ export function Navbar() {
                       className="w-full justify-start text-destructive"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      Se déconnecter
+                      {t('common.se_dconnecter', 'Se déconnecter')}
                     </Button>
                   </div>
                 </>

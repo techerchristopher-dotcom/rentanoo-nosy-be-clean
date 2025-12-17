@@ -1,71 +1,630 @@
 {
   "common": {
-    "2024_maycar_tous_droits_rservs_une_initiative_pour": "__STRING_NOT_TRANSLATED__",
-    "actualiser_la_page": "__STRING_NOT_TRANSLATED__",
-    "annuler": "__STRING_NOT_TRANSLATED__",
-    "automatique": "__STRING_NOT_TRANSLATED__",
-    "berline": "__STRING_NOT_TRANSLATED__",
-    "break_sw": "__STRING_NOT_TRANSLATED__",
-    "cabriolet": "__STRING_NOT_TRANSLATED__",
-    "citadine": "__STRING_NOT_TRANSLATED__",
-    "communes": "__STRING_NOT_TRANSLATED__",
-    "conditions_dutilisation": "__STRING_NOT_TRANSLATED__",
-    "connexion": "__STRING_NOT_TRANSLATED__",
-    "coup": "__STRING_NOT_TRANSLATED__",
-    "crossover": "__STRING_NOT_TRANSLATED__",
-    "dates": "__STRING_NOT_TRANSLATED__",
-    "demandes_de_location": "__STRING_NOT_TRANSLATED__",
-    "devenir_loueur": "__STRING_NOT_TRANSLATED__",
-    "devenir_propritaire": "__STRING_NOT_TRANSLATED__",
-    "diesel": "__STRING_NOT_TRANSLATED__",
-    "dpart": "__STRING_NOT_TRANSLATED__",
+    "2024_maycar_tous_droits_rservs_une_initiative_pour": "© 2024 MayCar. Tutti i diritti riservati. Un'iniziativa per Mayotte.",
+    "actualiser_la_page": "Aggiorna la pagina",
+    "annuler": "Annulla",
+    "automatique": "Automatica",
+    "berline": "Berlina",
+    "break_sw": "Station wagon",
+    "cabriolet": "Cabriolet",
+    "citadine": "Utilitaria",
+    "communes": "Comuni",
+    "conditions_dutilisation": "Condizioni d'uso",
+    "connexion": "Accesso",
+    "coup": "Coupé",
+    "crossover": "Crossover",
+    "dates": "Date",
+    "demandes_de_location": "Richieste di noleggio",
+    "devenir_loueur": "Diventa host",
+    "devenir_propritaire": "Diventa proprietario",
+    "diesel": "Diesel",
+    "dpart": "Partenza",
     "error": "Errore",
-    "essence": "__STRING_NOT_TRANSLATED__",
-    "filtres": "__STRING_NOT_TRANSLATED__",
-    "heure_de_dpart": "__STRING_NOT_TRANSLATED__",
-    "heure_de_retour": "__STRING_NOT_TRANSLATED__",
-    "heures": "__STRING_NOT_TRANSLATED__",
-    "hybride": "__STRING_NOT_TRANSLATED__",
-    "inscription": "__STRING_NOT_TRANSLATED__",
-    "la_plateforme_dautopartage_de_mayotte_louez_et_par": "__STRING_NOT_TRANSLATED__",
-    "lectrique": "__STRING_NOT_TRANSLATED__",
-    "lgal": "__STRING_NOT_TRANSLATED__",
-    "lieu_de_prise_en_charge": "__STRING_NOT_TRANSLATED__",
+    "essence": "Benzina",
+    "filtres": "Filtri:",
+    "heure_de_dpart": "Orario di partenza",
+    "heure_de_retour": "Orario di ritorno",
+    "heures": "Orari",
+    "hybride": "Ibrida",
+    "inscription": "Registrazione",
+    "la_plateforme_dautopartage_de_mayotte_louez_et_par": "La piattaforma di car sharing di Mayotte. Noleggia e condividi i tuoi veicoli in tutta sicurezza nella laguna di Mayotte.",
+    "lectrique": "Elettrica",
+    "lgal": "Legale",
+    "lieu_de_prise_en_charge": "Luogo di ritiro",
     "loading": "Caricamento...",
-    "louez_des_vhicules_entre_particuliers_dans_le_plus": "__STRING_NOT_TRANSLATED__",
-    "made_with_pour_le_101me_dpartement_franais": "__STRING_NOT_TRANSLATED__",
-    "manuelle": "__STRING_NOT_TRANSLATED__",
-    "maycar": "__STRING_NOT_TRANSLATED__",
-    "mayotte": "__STRING_NOT_TRANSLATED__",
-    "mayotte_france": "__STRING_NOT_TRANSLATED__",
-    "mentions_lgales": "__STRING_NOT_TRANSLATED__",
-    "mes_rservations": "__STRING_NOT_TRANSLATED__",
-    "mes_vhicules": "__STRING_NOT_TRANSLATED__",
-    "minibus": "__STRING_NOT_TRANSLATED__",
-    "monospace": "__STRING_NOT_TRANSLATED__",
-    "navigation": "__STRING_NOT_TRANSLATED__",
-    "par_jour": "__STRING_NOT_TRANSLATED__",
-    "partagez_la_route_mayotte": "__STRING_NOT_TRANSLATED__",
-    "pickup": "__STRING_NOT_TRANSLATED__",
-    "points_stratgiques": "__STRING_NOT_TRANSLATED__",
-    "politique_de_confidentialit": "__STRING_NOT_TRANSLATED__",
-    "rechercher_un_vhicule": "__STRING_NOT_TRANSLATED__",
-    "retour": "__STRING_NOT_TRANSLATED__",
-    "rinitialiser": "__STRING_NOT_TRANSLATED__",
-    "rinitialiser_les_filtres": "__STRING_NOT_TRANSLATED__",
-    "roadster": "__STRING_NOT_TRANSLATED__",
-    "se_connecter": "__STRING_NOT_TRANSLATED__",
+    "louez_des_vhicules_entre_particuliers_dans_le_plus": "Noleggia veicoli direttamente dai residenti nella laguna più bella del mondo.",
+    "made_with_pour_le_101me_dpartement_franais": "Realizzato con ❤️ per il 101° dipartimento francese.",
+    "manuelle": "Manuale",
+    "maycar": "MayCar",
+    "mayotte": "Mayotte",
+    "mayotte_france": "Mayotte, Francia",
+    "mentions_lgales": "Note legali",
+    "mes_rservations": "Le mie prenotazioni",
+    "mes_vhicules": "I miei veicoli",
+    "minibus": "Minibus",
+    "monospace": "Monovolume",
+    "navigation": "Navigazione",
+    "par_jour": "al giorno",
+    "partagez_la_route_mayotte": "Condividi la strada a Mayotte",
+    "pickup": "Pick-up",
+    "points_stratgiques": "Punti strategici",
+    "politique_de_confidentialit": "Informativa sulla privacy",
+    "rechercher_un_vhicule": "Cerca un veicolo",
+    "retour": "Ritorno",
+    "rinitialiser": "Reimposta",
+    "rinitialiser_les_filtres": "Reimposta filtri",
+    "roadster": "Roadster",
+    "se_connecter": "Accedi",
     "search": "Cerca",
-    "slectionner_les_dates": "__STRING_NOT_TRANSLATED__",
-    "slectionner_les_heures": "__STRING_NOT_TRANSLATED__",
-    "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "__STRING_NOT_TRANSLATED__",
-    "suv": "__STRING_NOT_TRANSLATED__",
-    "utilisateur_connect": "__STRING_NOT_TRANSLATED__",
-    "valider": "__STRING_NOT_TRANSLATED__",
-    "valider_mes_dates": "__STRING_NOT_TRANSLATED__",
-    "valider_mes_heures": "__STRING_NOT_TRANSLATED__",
-    "vhicules_disponibles": "__STRING_NOT_TRANSLATED__",
-    "voir_la_fiche": "__STRING_NOT_TRANSLATED__"
+    "slectionner_les_dates": "Seleziona le date",
+    "slectionner_les_heures": "Seleziona gli orari",
+    "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "Seleziona il luogo in cui desideri ritirare il veicolo",
+    "suv": "SUV",
+    "utilisateur_connect": "Utente connesso",
+    "modifier_mon_profil": "Modifica il mio profilo",
+    "mon_dashboard": "La mia dashboard",
+    "se_dconnecter": "Disconnettersi",
+    "valider": "Conferma",
+    "valider_mes_dates": "Conferma le mie date",
+    "valider_mes_heures": "Conferma gli orari",
+    "vhicules_disponibles": "Veicoli disponibili",
+    "voir_la_fiche": "Vedi scheda",
+    "rechercher_une_ville_de_prise_en_charge": "Cerca un luogo di ritiro",
+    "aucun_vhicule_disponible_pour_le_moment": "Nessun veicolo disponibile al momento.",
+    "addDates": "Aggiungi le date",
+    "selectDates": "Seleziona le date",
+    "comingSoon": "Disponibile a breve",
+    "searchBar": {
+      "departure": "Partenza",
+      "return": "Ritorno",
+      "date": "Data",
+      "time": "Ora"
+    }
+  },
+  "home": {
+    "heroTitle": "Noleggia il tuo scooter a Nosy Be in pochi clic",
+    "heroSubtitle": "RENTANOO, la prima piattaforma di noleggio scooter 100% online",
+    "toasts": {
+      "requiredFields": {
+        "title": "Campi obbligatori",
+        "description": "Inserisci almeno un criterio di ricerca"
+      },
+      "incompleteDates": {
+        "title": "Date incomplete",
+        "description": "Seleziona sia una data di inizio che una data di fine"
+      },
+      "invalidDates": {
+        "title": "Date non valide",
+        "description": "La data di inizio deve essere precedente alla data di fine"
+      },
+      "errorSearchAuto": {
+        "title": "Errore",
+        "description": "Impossibile eseguire la ricerca automatica"
+      },
+      "errorSearch": {
+        "title": "Errore",
+        "description": "Impossibile eseguire la ricerca"
+      },
+      "noResults": {
+        "title": "Nessun risultato",
+        "description": "Nessun veicolo disponibile per questi criteri"
+      },
+      "criteriaReset": {
+        "title": "Criteri reimpostati",
+        "description": "Tutti i criteri di ricerca sono stati cancellati."
+      },
+      "searchRestored": {
+        "title": "Ricerca ripristinata",
+        "description": "I criteri salvati sono stati ripristinati e la ricerca è stata rieseguita."
+      },
+      "searchDone": {
+        "title": "Ricerca completata"
+      },
+      "resultsFound_one": "{{count}} veicolo trovato",
+      "resultsFound_other": "{{count}} veicoli trovati"
+    }
+  },
+  "footer": {
+    "brand": "RENTANOO",
+    "description": "Agenzia di noleggio scooter a Nosy Be. Prenotazione 100% online, facile e veloce.",
+    "location": "Nosy Be, Madagascar",
+    "copyright": "© 2025 RENTANOO. Tutti i diritti riservati.",
+    "madeWith": "Realizzato con ❤️ a Nosy Be"
+  },
+  "profile": {
+    "hero": {
+      "back": "Torna alla home",
+      "title": "Il mio profilo",
+      "subtitle": "Gestisci le tue informazioni personali e personalizza la tua esperienza"
+    },
+    "completion": {
+      "full": "Profilo completo ✓",
+      "partial": "Profilo completato al {{percent}}%"
+    },
+    "tabs": {
+      "basic": "Informazioni di base",
+      "address": "Indirizzo",
+      "license": "Patente di guida"
+    },
+    "sections": {
+      "basic": {
+        "title": "Informazioni personali",
+        "step": "Passo 1/3",
+        "subtitle": "Le tue informazioni di base per personalizzare la tua esperienza",
+        "identity": { "title": "Identità" },
+        "contact": { "title": "Contatti" },
+        "personal": { "title": "Informazioni personali" },
+        "bio": { "title": "Presentazione personale" },
+        "phone": { "title": "Telefono" },
+        "status": { "title": "Stato dell'account" },
+        "saved": "Salvato"
+      },
+      "address": {
+        "title": "Indirizzo",
+        "step": "Passo 2/3",
+        "subtitle": "Il tuo indirizzo per consegne e localizzazione",
+        "saved": "Salvato"
+      },
+      "license": {
+        "title": "Patente di guida",
+        "step": "Passo 3/3",
+        "subtitle": "La tua patente per noleggiare veicoli in sicurezza",
+        "saved": "Salvato"
+      }
+    },
+    "form": {
+      "optional": "(opzionale)",
+      "firstName": {
+        "label": "Nome",
+        "placeholder": "Il tuo nome"
+      },
+      "lastName": {
+        "label": "Cognome",
+        "placeholder": "Il tuo cognome"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "tua.email@esempio.com",
+        "helper": "L'email non può essere modificata"
+      },
+      "birthDate": {
+        "label": "Data di nascita",
+        "placeholder": "Seleziona una data",
+        "day": { "placeholder": "Giorno" },
+        "month": { "placeholder": "Mese" },
+        "year": { "placeholder": "Anno" }
+      },
+      "birthPlace": {
+        "label": "Luogo di nascita",
+        "placeholder": "Città, Paese"
+      },
+      "bio": {
+        "label": "Presentati in poche parole",
+        "placeholder": "Parlaci di te, delle tue passioni, del tuo stile di guida... Aiuterà gli altri utenti a conoscerti meglio!",
+        "counter": "{{count}}/500 caratteri"
+      },
+      "phone": {
+        "label": "Numero di telefono",
+        "placeholder": "Numero di telefono"
+      },
+      "avatar": {
+        "loading": "Caricamento in corso...",
+        "helper": "Formati accettati: JPG, PNG. Dimensione max: 5MB"
+      },
+      "address": {
+        "street": {
+          "label": "Indirizzo",
+          "placeholder": "Numero civico e nome della via"
+        },
+        "city": {
+          "label": "Città",
+          "placeholder": "Saint-Denis"
+        },
+        "postalCode": {
+          "label": "CAP",
+          "placeholder": "97400"
+        },
+        "country": {
+          "label": "Paese",
+          "placeholder": "Seleziona un paese"
+        }
+      },
+      "license": {
+        "number": {
+          "label": "Numero della patente",
+          "placeholder": "es: 121075012XXX",
+          "helper": "Per una patente europea, il numero indicato nella sezione 5."
+        },
+        "country": {
+          "label": "Paese di emissione",
+          "placeholder": "Seleziona un paese"
+        },
+        "document": {
+          "label": "Documento della patente",
+          "type": {
+            "pdf": "Documento PDF",
+            "image": "Immagine"
+          },
+          "uploaded": "✓ File della patente caricato con successo",
+          "empty": {
+            "title": "Clicca per caricare la tua patente di guida",
+            "helper": "Formati accettati: PDF, JPG, PNG. Dimensione max: 10MB"
+          }
+        },
+        "issueDate": {
+          "label": "Data di rilascio",
+          "placeholder": "Seleziona una data",
+          "day": { "placeholder": "Giorno" },
+          "month": { "placeholder": "Mese" },
+          "year": { "placeholder": "Anno" },
+          "helper": "Per una patente europea, la data di inizio validità per i veicoli di categoria B."
+        },
+        "category": {
+          "label": "Categoria della patente",
+          "placeholder": "Es: B",
+          "helper": "Categoria della patente (predefinita: B per auto)"
+        },
+        "expirationDate": {
+          "label": "Data di scadenza",
+          "placeholder": "Seleziona una data"
+        }
+      }
+    },
+    "countries": {
+      "france": "Francia",
+      "reunion": "La Réunion",
+      "mayotte": "Mayotte",
+      "guadeloupe": "Guadalupa",
+      "martinique": "Martinica",
+      "guyane": "Guyana francese",
+      "belgium": "Belgio",
+      "switzerland": "Svizzera",
+      "germany": "Germania",
+      "spain": "Spagna",
+      "italy": "Italia"
+    },
+    "badges": {
+      "role": {
+        "admin": "⚙️ Amministratore",
+        "owner": "🏠 Proprietario",
+        "renter": "👤 Locatario"
+      },
+      "kyc": {
+        "verified": "✅ Verificato",
+        "pending": "⏳ In attesa",
+        "unverified": "❌ Non verificato"
+      }
+    },
+    "buttons": {
+      "saving": "Salvataggio...",
+      "saveSection": "Salva questa sezione",
+      "saveBasicChanges": "Salva le mie modifiche",
+      "saveBasicInfo": "Salva le mie informazioni",
+      "saveAddressChanges": "Salva le mie modifiche",
+      "saveAddress": "Salva il mio indirizzo",
+      "saveLicenseChanges": "Salva le mie modifiche",
+      "saveLicense": "Salva i dati della mia patente",
+      "uploading": "Caricamento...",
+      "saveAll": "Salva l'intero profilo",
+      "license": {
+        "change": "Modifica",
+        "delete": "Elimina",
+        "choose": "Scegli un file"
+      }
+    },
+    "toasts": {
+      "loadError": {
+        "title": "Errore",
+        "description": "Impossibile caricare il profilo: {{error}}"
+      },
+      "unexpectedLoadError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore durante il caricamento del profilo."
+      },
+      "licenseFileTooLarge": {
+        "title": "Errore",
+        "description": "Il file non deve superare i 10MB."
+      },
+      "licenseFileTypeError": {
+        "title": "Errore",
+        "description": "Seleziona un file PDF, JPG o PNG."
+      },
+      "licenseUploadError": {
+        "title": "Errore",
+        "description": "Errore durante il caricamento: {{error}}"
+      },
+      "licenseUpdateError": {
+        "title": "Errore",
+        "description": "Errore durante l'aggiornamento: {{error}}"
+      },
+      "licenseUploadSuccess": {
+        "title": "Successo",
+        "description": "File della patente caricato con successo."
+      },
+      "licenseUploadUnexpectedError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore durante il caricamento del file."
+      },
+      "licenseRemoveError": {
+        "title": "Errore",
+        "description": "Errore durante l'eliminazione: {{error}}"
+      },
+      "licenseRemoveSuccess": {
+        "title": "Successo",
+        "description": "File della patente eliminato con successo."
+      },
+      "licenseRemoveUnexpectedError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore durante l'eliminazione."
+      },
+      "avatarTooLarge": {
+        "title": "Errore",
+        "description": "L'immagine non deve superare i 5MB."
+      },
+      "avatarTypeError": {
+        "title": "Errore",
+        "description": "Seleziona un file immagine valido."
+      },
+      "avatarUploadError": {
+        "title": "Errore",
+        "description": "Errore durante il caricamento: {{error}}"
+      },
+      "avatarUpdateError": {
+        "title": "Errore",
+        "description": "Errore durante l'aggiornamento: {{error}}"
+      },
+      "avatarUploadSuccess": {
+        "title": "Successo",
+        "description": "Foto profilo aggiornata con successo."
+      },
+      "avatarUploadUnexpectedError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore durante il caricamento dell'immagine."
+      },
+      "sectionSaveError": {
+        "title": "Errore",
+        "description": "Errore durante il salvataggio: {{error}}"
+      },
+      "sectionSaveSuccess": {
+        "title": "Sezione salvata",
+        "basic": "Le tue informazioni di base sono state salvate.",
+        "address": "Le informazioni di indirizzo sono state salvate.",
+        "license": "Le informazioni della patente sono state salvate."
+      },
+      "sectionSaveUnexpectedError": {
+        "title": "Errore",
+        "description": "Errore durante il salvataggio: {{error}}"
+      },
+      "profileUpdateError": {
+        "title": "Errore",
+        "description": "Errore durante l'aggiornamento: {{error}}"
+      },
+      "profileUpdateSuccess": {
+        "title": "Profilo aggiornato",
+        "description": "Tutte le tue informazioni sono state salvate con successo."
+      },
+      "profileUpdateUnexpectedError": {
+        "title": "Errore",
+        "description": "Errore durante l'aggiornamento del profilo: {{error}}"
+      },
+      "globalError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore imprevisto. Ricarica la pagina."
+      },
+      "globalSaveError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore di salvataggio. Riprova."
+      },
+      "javascriptError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore imprevisto. Ricarica la pagina."
+      }
+    },
+    "error": {
+      "title": "Errore",
+      "description": "Si è verificato un errore durante il caricamento del profilo.",
+      "reload": "Ricarica la pagina"
+    },
+    "loading": "Caricamento del tuo profilo...",
+    "banner": {
+      "title": "Profilo completato al {{percent}}%",
+      "description": "{{percent}}% del profilo completato. Clicca per salvare tutte le modifiche."
+    },
+    "modal": {
+      "licensePreview": {
+        "title": "Anteprima della patente di guida",
+        "alt": "Patente di guida",
+        "errorTitle": "Impossibile caricare l'immagine",
+        "errorDescription": "Verifica che il file sia stato caricato correttamente e sia accessibile."
+      }
+    },
+    "common": {
+      "learnMore": "Scopri di più..."
+    },
+    "months": {
+      "january": "gennaio",
+      "february": "febbraio",
+      "march": "marzo",
+      "april": "aprile",
+      "may": "maggio",
+      "june": "giugno",
+      "july": "luglio",
+      "august": "agosto",
+      "september": "settembre",
+      "october": "ottobre",
+      "november": "novembre",
+      "december": "dicembre"
+    }
+  },
+  "bookings": {
+    "header": {
+      "title": "Le mie prenotazioni",
+      "subtitle": "Gestisci i tuoi noleggi di veicoli",
+      "newBooking": "Nuova prenotazione"
+    },
+    "filters": {
+      "all": "Tutte",
+      "pending": "In attesa",
+      "active": "In corso",
+      "upcoming": "In arrivo",
+      "past": "Concluse",
+      "cancelled": "Annullate",
+      "refused": "Rifiutate"
+    },
+    "empty": {
+      "title": "Nessuna prenotazione",
+      "description": "Non hai ancora effettuato prenotazioni. Scopri i nostri veicoli disponibili!",
+      "cta": "Effettua una prenotazione"
+    },
+    "emptyFiltered": {
+      "title": "Nessuna prenotazione {{filter}}",
+      "description": "Nessuna prenotazione corrisponde al filtro selezionato. Prova un altro filtro.",
+      "reset": "Vedi tutte le prenotazioni"
+    }
+  },
+  "ownerVehicles": {
+    "loading": "Caricamento...",
+    "header": {
+      "title": "I miei veicoli",
+      "subtitle": "Gestisci i tuoi veicoli e le tue prenotazioni"
+    },
+    "kycRequired": {
+      "title": "Verifica KYC richiesta",
+      "description": "Per pubblicare i tuoi veicoli, devi completare la verifica della tua identità."
+    },
+    "empty": {
+      "title": "Nessun veicolo",
+      "description": "Inizia aggiungendo il tuo primo veicolo alla piattaforma."
+    },
+      "vehicleTypeModal": {
+        "title": "Che tipo di veicolo desideri aggiungere?",
+        "description": "Scegli il tipo di veicolo che vuoi pubblicare sulla piattaforma.",
+        "carLabel": "Auto",
+        "motoLabel": "Moto / Scooter",
+        "cancel": "Annulla"
+      },
+    "card": {
+      "pricePerDay": "Prezzo/giorno",
+      "year": "Anno",
+      "fuel": "Carburante",
+      "actions": {
+        "manage": "Gestisci veicolo",
+        "viewPublic": "Vedi scheda pubblica"
+      }
+    },
+    "addCard": {
+      "title": "Aggiungi un veicolo",
+      "description": "Clicca qui per aggiungere un nuovo veicolo alla tua flotta e iniziare a noleggiarlo",
+      "badge": "Nuovo veicolo"
+      },
+      "motoPlaceholder": {
+        "title": "Moto / Scooter",
+        "description": "Il modulo per aggiungere una moto o uno scooter sarà disponibile a breve.",
+        "backToVehicles": "Torna ai miei veicoli"
+      },
+      "motoForm": {
+        "title": "Aggiungi una moto / scooter",
+        "brand": "Marca",
+        "brandPlaceholder": "Es: Honda",
+        "model": "Modello",
+        "modelPlaceholder": "Es: PCX 125",
+        "year": "Anno",
+        "mileage": "Chilometraggio (approx.)",
+        "kind": "Tipo",
+        "kindPlaceholder": "Seleziona",
+        "kindMoto": "Moto",
+        "kindScooter": "Scooter",
+        "engineCapacity": "Cilindrata (cc)",
+        "licensePlate": "Targa (opzionale)",
+        "seats": "Numero di posti",
+        "fuel": "Carburante",
+        "fuelPlaceholder": "Seleziona",
+        "transmission": "Cambio",
+        "transmissionPlaceholder": "Seleziona",
+        "dailyPrice": "Prezzo al giorno (€)",
+        "description": "Descrizione (opzionale)",
+        "descriptionPlaceholder": "Descrivi lo stato della moto, le dotazioni incluse (casco, top case, ecc.)...",
+        "cancel": "Annulla",
+        "submit": "Crea veicolo",
+        "saving": "Creazione in corso...",
+        "successTitle": "Moto / scooter aggiunto con successo",
+        "successDescription": "Il tuo veicolo è stato creato. Ora puoi gestirlo nell'elenco dei tuoi veicoli.",
+        "errors": {
+          "required": "Compila almeno marca, modello, anno e prezzo al giorno.",
+          "year": "Inserisci un anno valido.",
+          "price": "Inserisci un prezzo al giorno valido.",
+          "generic": "Impossibile creare il veicolo. Riprova."
+        },
+        "photos": {
+          "sectionTitle": "Foto del veicolo",
+          "sectionSubtitle": "Aggiungi almeno una foto della tua moto o scooter per attirare più locatari.",
+          "primaryLabel": "Foto principale",
+          "primaryHint": "Anteriore sinistra – angolo consigliato per valorizzare la moto/scooter",
+          "profileLabel": "Profilo sinistro",
+          "profileHint": "Vista laterale per mostrare bene la linea della moto/scooter",
+          "interiorLabel": "Dettagli / Dotazioni",
+          "interiorHint": "Ad esempio: cruscotto, sella, top case, vani portaoggetti...",
+          "addMore": "Aggiungi foto",
+          "addMoreLimit": "Limite raggiunto (3 foto aggiuntive)",
+          "slotLabel": "Foto {{index}}",
+          "slotOptional": "Opzionale",
+          "changePhoto": "Cambia foto",
+          "deletePhoto": "Elimina",
+          "invalidType": "Seleziona un file immagine valido.",
+          "tooLarge": "La foto deve essere inferiore a 10MB.",
+          "minRequired": "Aggiungi almeno una foto della tua moto o scooter.",
+          "added": "Foto aggiunta",
+          "addedTitle": "Foto aggiunta",
+          "addedDescription": "La tua foto è stata aggiunta con successo.",
+          "additionalAdded": "Foto aggiuntiva aggiunta",
+          "additionalAddedDescription": "La tua foto aggiuntiva è stata aggiunta con successo.",
+          "removed": "Foto eliminata",
+          "removedTitle": "Foto eliminata",
+          "removedDescription": "La foto è stata eliminata con successo."
+        }
+    },
+    "availabilityDialog": {
+      "title": "Conferma modifica disponibilità",
+      "intro": "Disattivando la disponibilità del tuo veicolo:",
+      "point1": "Non sarà più visibile nei risultati di ricerca",
+      "point2": "I clienti non potranno più effettuare nuove prenotazioni",
+      "point3": "Le prenotazioni esistenti restano valide",
+      "confirmQuestion": "Sei sicuro di voler continuare?",
+      "cancel": "Annulla",
+      "confirm": "Conferma disattivazione"
+    },
+    "accessDenied": {
+      "title": "Accesso negato",
+      "description": "Devi essere connesso per accedere a questa pagina.",
+      "login": "Accedi"
+    },
+    "toasts": {
+      "cannotDisable": {
+        "title": "Impossibile disattivare",
+        "description": "Questo veicolo ha prenotazioni attive o future. Annulla prima tali prenotazioni."
+      },
+      "saveStatusError": {
+        "title": "Errore",
+        "description": "Impossibile salvare lo stato: {{message}}"
+      },
+      "statusUpdated": {
+        "title": "Stato aggiornato",
+        "available": "Il veicolo è ora disponibile",
+        "unavailable": "Il veicolo è ora non disponibile"
+      },
+      "genericError": {
+        "title": "Errore",
+        "description": "Si è verificato un errore durante il salvataggio."
+      },
+      "mustBeLoggedIn": {
+        "title": "Errore",
+        "description": "Devi essere connesso per accedere a questa pagina"
+      },
+      "loadVehiclesError": {
+        "title": "Errore",
+        "description": "Impossibile caricare i tuoi veicoli"
+      }
+    }
   },
   "dictionary": {
     "back": "Torna al dizionario",

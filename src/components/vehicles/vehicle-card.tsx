@@ -1,3 +1,4 @@
+import React, { useState, useRef } from "react";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
+import { PhotoService } from "@/services/supabase/photos";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -43,6 +45,9 @@ const transmissionLabels = {
   automatic: "Automatique"
 };
 
+const PLACEHOLDER_URL =
+  "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop";
+
 // Fonction pour obtenir l'icône appropriée selon la zone
 const getLocationIcon = (zone: string) => {
   switch (zone) {
@@ -63,6 +68,61 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
 
   const FuelIcon = fuelIcons[vehicle.fuel] || Fuel;
 
+  // State pour stocker l'URL de fallback (photo suivante ou placeholder)
+  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
+  const isFetchingFallback = useRef(false);
+
+  const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    
+    // Si on est déjà sur le placeholder, ne rien faire
+    if (img.src === PLACEHOLDER_URL) {
+      return;
+    }
+
+    // Si on a déjà un fallback en mémoire, l'utiliser
+    if (fallbackImageUrl) {
+      img.src = fallbackImageUrl;
+      return;
+    }
+
+    // Éviter les appels multiples simultanés
+    if (isFetchingFallback.current) {
+      img.src = PLACEHOLDER_URL;
+      return;
+    }
+
+    isFetchingFallback.current = true;
+
+    try {
+      // Plan B : Récupérer toutes les photos disponibles dans le Storage
+      const { data: availablePhotos, error } = await PhotoService.getVehiclePhotos(vehicle.id);
+
+      if (error || !availablePhotos || availablePhotos.length === 0) {
+        // Aucune photo disponible → placeholder
+        setFallbackImageUrl(PLACEHOLDER_URL);
+        img.src = PLACEHOLDER_URL;
+        return;
+      }
+
+      // Prendre la première photo disponible (qui existe vraiment dans le Storage)
+      const firstValidPhoto = availablePhotos[0];
+      if (firstValidPhoto && firstValidPhoto.url) {
+        setFallbackImageUrl(firstValidPhoto.url);
+        img.src = firstValidPhoto.url;
+      } else {
+        setFallbackImageUrl(PLACEHOLDER_URL);
+        img.src = PLACEHOLDER_URL;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des photos de fallback:', error);
+      setFallbackImageUrl(PLACEHOLDER_URL);
+      img.src = PLACEHOLDER_URL;
+    } finally {
+      isFetchingFallback.current = false;
+    }
+  };
+
   // Formater l'affichage du prix (avec ou sans calcul de location)
   const displayPrice = rentalInfo?.formattedPrice || `${vehicle.dailyPrice}€ par jour`;
 
@@ -77,9 +137,10 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
       {/* Image */}
       <div className="aspect-[4/3] relative overflow-hidden">
         <img
-          src={primaryPhoto?.url || "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop"}
+          src={primaryPhoto?.url || PLACEHOLDER_URL}
           alt={`${vehicle.brand} ${vehicle.model}`}
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          onError={handleImageError}
         />
         <div className="absolute top-3 left-3">
           <Badge variant="secondary" className="bg-card/90 backdrop-blur-sm">

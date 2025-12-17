@@ -29,12 +29,6 @@ export class SupabaseVehiclesService {
       .from('vehicles')
       .select(`
         *,
-        vehicle_photos (
-          id,
-          photo_url,
-          is_primary,
-          display_order
-        ),
         profiles (
           id,
           full_name,
@@ -61,13 +55,6 @@ export class SupabaseVehiclesService {
       .from('vehicles')
       .select(`
         *,
-        vehicle_photos (
-          id,
-          photo_url,
-          is_primary,
-          display_order,
-          storage_path
-        ),
         profiles (
           id,
           full_name,
@@ -106,11 +93,11 @@ export class SupabaseVehiclesService {
       .from('vehicles')
       .select(`
         *,
-        vehicle_photos (
+        profiles (
           id,
-          photo_url,
-          is_primary,
-          display_order
+          full_name,
+          avatar_url,
+          email
         )
       `)
       .eq('owner_id', ownerId)
@@ -139,12 +126,6 @@ export class SupabaseVehiclesService {
       .from('vehicles')
       .select(`
         *,
-        vehicle_photos (
-          id,
-          photo_url,
-          is_primary,
-          display_order
-        ),
         profiles (
           id,
           full_name,

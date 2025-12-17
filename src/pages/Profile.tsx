@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
 import { useMobileBreakpoint } from "@/hooks/use-mobile-breakpoint";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { User as UserType } from "@/types";
 import { ProfileService } from "@/services/supabase/profile";
 import PhoneInput from 'react-phone-number-input';
@@ -22,8 +23,10 @@ import 'react-phone-number-input/style.css';
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/config/features";
 
 export default function Profile() {
+  const { t } = useTranslation("common");
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -41,6 +44,9 @@ export default function Profile() {
 
   // Fonction pour gérer le changement de section avec vérification du permis
   const handleSectionChange = (newSection: 'basic' | 'address' | 'license') => {
+    // Désactiver l'accès aux sections non disponibles en MVP
+    if (newSection === 'address' && !FEATURES.profileAddressEnabled) return;
+    if (newSection === 'license' && !FEATURES.profileDrivingLicenseEnabled) return;
     // Si on est dans la section permis et qu'on veut changer de section
     if (activeSection === 'license' && newSection !== 'license') {
       // Vérifier si l'utilisateur n'a pas de document de permis
@@ -73,25 +79,35 @@ export default function Profile() {
   // Fonction pour calculer le pourcentage de completion du profil
   const calculateProfileCompletion = () => {
     try {
-      const fields = [
+      const fields: string[] = [
         // Section informations de base
         firstName,
         lastName,
-        phone,
+        phone || '',
         birthDate ? format(birthDate, 'yyyy-MM-dd') : '',
         placeOfBirth,
         bio, // Champ de présentation (optionnel mais recommandé)
-        // Section adresse
-        addressLine1,
-        postalCode,
-        city,
-        country,
-        // Section permis
-        driverLicenseNumber,
-        driverLicenseIssueDate ? format(driverLicenseIssueDate, 'yyyy-MM-dd') : '',
-        driverLicenseCategory, // Toujours rempli par défaut avec "B"
-        driverLicenseCountry,
       ];
+
+      // Inclure l'adresse seulement si la section est activée
+      if (FEATURES.profileAddressEnabled) {
+        fields.push(
+          addressLine1,
+          postalCode,
+          city,
+          country,
+        );
+      }
+
+      // Inclure le permis seulement si la section est activée
+      if (FEATURES.profileDrivingLicenseEnabled) {
+        fields.push(
+          driverLicenseNumber,
+          driverLicenseIssueDate ? format(driverLicenseIssueDate, 'yyyy-MM-dd') : '',
+          driverLicenseCategory, // Toujours rempli par défaut avec "B"
+          driverLicenseCountry,
+        );
+      }
 
       const completedFields = fields.filter(field => field && field.trim() !== '').length;
       const totalFields = fields.length;
@@ -132,6 +148,19 @@ export default function Profile() {
   const [showLicenseAlert, setShowLicenseAlert] = useState(false); // State pour l'alerte du permis
   const [pendingSectionChange, setPendingSectionChange] = useState<'basic' | 'address' | null>(null); // Section vers laquelle l'utilisateur veut aller
   const { toast } = useToast();
+
+  // Liste des mois localisée (utilisée pour les selects de dates)
+  const monthKeys = useMemo(
+    () => ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"],
+    []
+  );
+  const months = useMemo(
+    () =>
+      monthKeys.map((key, index) =>
+        t(`profile.months.${key}`, new Date(0, index).toLocaleDateString("fr-FR", { month: "long" }))
+      ),
+    [t, monthKeys]
+  );
 
   // Fonction pour vérifier si des modifications ont été apportées à une section
   const hasSectionChanges = (section: 'basic' | 'address' | 'license') => {
@@ -198,11 +227,15 @@ export default function Profile() {
       try {
         const { data, error } = await ProfileService.getCurrentUserProfile();
         if (error) {
-          toast({
-            title: "Erreur",
-            description: `Impossible de charger le profil: ${error}`,
-            variant: "destructive",
-          });
+        toast({
+          title: t("profile.toasts.loadError.title", "Erreur"),
+          description: t(
+            "profile.toasts.loadError.description",
+            "Impossible de charger le profil : {{error}}",
+            { error: String(error) }
+          ),
+          variant: "destructive",
+        });
         } else if (data) {
           // S'assurer que les rôles sont toujours définis
           const userWithRoles = {
@@ -272,8 +305,11 @@ export default function Profile() {
       } catch (error) {
         console.error("Error loading user:", error);
         toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors du chargement du profil.",
+          title: t("profile.toasts.unexpectedLoadError.title", "Erreur"),
+          description: t(
+            "profile.toasts.unexpectedLoadError.description",
+            "Une erreur est survenue lors du chargement du profil.",
+          ),
           variant: "destructive",
         });
       }
@@ -286,8 +322,11 @@ export default function Profile() {
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
         toast({
-          title: "Erreur",
-          description: "Le fichier ne doit pas dépasser 10MB.",
+          title: t("profile.toasts.licenseFileTooLarge.title", "Erreur"),
+          description: t(
+            "profile.toasts.licenseFileTooLarge.description",
+            "Le fichier ne doit pas dépasser 10MB."
+          ),
           variant: "destructive",
         });
         return;
@@ -296,8 +335,11 @@ export default function Profile() {
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
       if (!allowedTypes.includes(file.type)) {
         toast({
-          title: "Erreur",
-          description: "Veuillez sélectionner un fichier PDF, JPG ou PNG.",
+          title: t("profile.toasts.licenseFileTypeError.title", "Erreur"),
+          description: t(
+            "profile.toasts.licenseFileTypeError.description",
+            "Veuillez sélectionner un fichier PDF, JPG ou PNG."
+          ),
           variant: "destructive",
         });
         return;
@@ -314,8 +356,12 @@ export default function Profile() {
         
         if (error) {
           toast({
-            title: "Erreur",
-            description: `Erreur lors de l'upload: ${error}`,
+            title: t("profile.toasts.licenseUploadError.title", "Erreur"),
+            description: t(
+              "profile.toasts.licenseUploadError.description",
+              "Erreur lors de l'upload : {{error}}",
+              { error: String(error) }
+            ),
             variant: "destructive",
           });
           // En cas d'erreur, réinitialiser l'aperçu
@@ -328,8 +374,12 @@ export default function Profile() {
 
           if (updateError) {
             toast({
-              title: "Erreur",
-              description: `Erreur lors de la mise à jour: ${updateError}`,
+              title: t("profile.toasts.licenseUpdateError.title", "Erreur"),
+              description: t(
+                "profile.toasts.licenseUpdateError.description",
+                "Erreur lors de la mise à jour : {{error}}",
+                { error: String(updateError) }
+              ),
               variant: "destructive",
             });
             // En cas d'erreur, réinitialiser l'aperçu
@@ -347,16 +397,22 @@ export default function Profile() {
             setHasUploadedFile(false); // Réinitialiser le flag après upload réussi
             
             toast({
-              title: "Succès",
-              description: "Fichier permis uploadé avec succès.",
+              title: t("profile.toasts.licenseUploadSuccess.title", "Succès"),
+              description: t(
+                "profile.toasts.licenseUploadSuccess.description",
+                "Fichier permis uploadé avec succès."
+              ),
             });
               }
         }
       } catch (error) {
         console.error("Error uploading driver license file:", error);
         toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors de l'upload du fichier.",
+          title: t("profile.toasts.licenseUploadUnexpectedError.title", "Erreur"),
+          description: t(
+            "profile.toasts.licenseUploadUnexpectedError.description",
+            "Une erreur est survenue lors de l'upload du fichier."
+          ),
           variant: "destructive",
         });
         // En cas d'erreur, réinitialiser l'aperçu
@@ -378,8 +434,12 @@ export default function Profile() {
 
       if (error) {
         toast({
-          title: "Erreur",
-          description: `Erreur lors de la suppression: ${error}`,
+          title: t("profile.toasts.licenseRemoveError.title", "Erreur"),
+          description: t(
+            "profile.toasts.licenseRemoveError.description",
+            "Erreur lors de la suppression : {{error}}",
+            { error: String(error) }
+          ),
           variant: "destructive",
         });
           } else if (updatedUser) {
@@ -394,15 +454,21 @@ export default function Profile() {
             }));
             
             toast({
-              title: "Succès",
-              description: "Fichier permis supprimé avec succès.",
+              title: t("profile.toasts.licenseRemoveSuccess.title", "Succès"),
+              description: t(
+                "profile.toasts.licenseRemoveSuccess.description",
+                "Fichier permis supprimé avec succès."
+              ),
             });
           }
     } catch (error) {
       console.error("Error removing driver license file:", error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la suppression.",
+        title: t("profile.toasts.licenseRemoveUnexpectedError.title", "Erreur"),
+        description: t(
+          "profile.toasts.licenseRemoveUnexpectedError.description",
+          "Une erreur est survenue lors de la suppression."
+        ),
         variant: "destructive",
       });
     } finally {
@@ -417,8 +483,11 @@ export default function Profile() {
       // Vérifier la taille du fichier (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "Erreur",
-          description: "L'image ne doit pas dépasser 5MB.",
+          title: t("profile.toasts.avatarTooLarge.title", "Erreur"),
+          description: t(
+            "profile.toasts.avatarTooLarge.description",
+            "L'image ne doit pas dépasser 5MB."
+          ),
           variant: "destructive",
         });
         return;
@@ -427,8 +496,11 @@ export default function Profile() {
       // Vérifier le type de fichier
       if (!file.type.startsWith('image/')) {
         toast({
-          title: "Erreur",
-          description: "Veuillez sélectionner un fichier image valide.",
+          title: t("profile.toasts.avatarTypeError.title", "Erreur"),
+          description: t(
+            "profile.toasts.avatarTypeError.description",
+            "Veuillez sélectionner un fichier image valide."
+          ),
           variant: "destructive",
         });
         return;
@@ -442,8 +514,12 @@ export default function Profile() {
         if (error) {
           console.error("Erreur upload:", error);
           toast({
-            title: "Erreur",
-            description: `Erreur lors de l'upload: ${error}`,
+            title: t("profile.toasts.avatarUploadError.title", "Erreur"),
+            description: t(
+              "profile.toasts.avatarUploadError.description",
+              "Erreur lors de l'upload : {{error}}",
+              { error: String(error) }
+            ),
             variant: "destructive",
           });
         } else if (imageUrl) {
@@ -455,24 +531,34 @@ export default function Profile() {
           if (updateError) {
             console.error("Erreur mise à jour:", updateError);
             toast({
-              title: "Erreur",
-              description: `Erreur lors de la mise à jour: ${updateError}`,
+              title: t("profile.toasts.avatarUpdateError.title", "Erreur"),
+              description: t(
+                "profile.toasts.avatarUpdateError.description",
+                "Erreur lors de la mise à jour : {{error}}",
+                { error: String(updateError) }
+              ),
               variant: "destructive",
             });
           } else if (updatedUser) {
             setCurrentUser(updatedUser);
             setProfileImage(imageUrl);
             toast({
-              title: "Succès",
-              description: "Photo de profil mise à jour avec succès.",
+              title: t("profile.toasts.avatarUploadSuccess.title", "Succès"),
+              description: t(
+                "profile.toasts.avatarUploadSuccess.description",
+                "Photo de profil mise à jour avec succès."
+              ),
             });
           }
         }
       } catch (error) {
         console.error("Error uploading image:", error);
         toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors de l'upload de l'image.",
+          title: t("profile.toasts.avatarUploadUnexpectedError.title", "Erreur"),
+          description: t(
+            "profile.toasts.avatarUploadUnexpectedError.description",
+            "Une erreur est survenue lors de l'upload de l'image."
+          ),
           variant: "destructive",
         });
       } finally {
@@ -518,10 +604,14 @@ export default function Profile() {
 
           const { data: updatedUser, error } = await ProfileService.updateProfile(updateData);
 
-          if (error) {
+        if (error) {
             toast({
-              title: "Erreur",
-              description: `Erreur lors de la sauvegarde: ${error}`,
+              title: t("profile.toasts.sectionSaveError.title", "Erreur"),
+              description: t(
+                "profile.toasts.sectionSaveError.description",
+                "Erreur lors de la sauvegarde : {{error}}",
+                { error: String(error) }
+              ),
               variant: "destructive",
             });
           } else if (updatedUser) {
@@ -555,15 +645,30 @@ export default function Profile() {
             }
             
             toast({
-              title: "Section sauvegardée",
-              description: `Vos informations ${section === 'basic' ? 'de base' : section === 'address' ? 'd\'adresse' : 'de permis'} ont été sauvegardées.`,
+              title: t("profile.toasts.sectionSaveSuccess.title", "Section sauvegardée"),
+              description: t(
+                section === 'basic'
+                  ? "profile.toasts.sectionSaveSuccess.basic"
+                  : section === 'address'
+                  ? "profile.toasts.sectionSaveSuccess.address"
+                  : "profile.toasts.sectionSaveSuccess.license",
+                section === 'basic'
+                  ? "Vos informations de base ont été sauvegardées."
+                  : section === 'address'
+                  ? "Vos informations d'adresse ont été sauvegardées."
+                  : "Vos informations de permis ont été sauvegardées."
+              ),
             });
           }
         } catch (error) {
           console.error("Error saving section:", error);
           toast({
-            title: "Erreur",
-            description: `Erreur lors de la sauvegarde: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+            title: t("profile.toasts.sectionSaveUnexpectedError.title", "Erreur"),
+            description: t(
+              "profile.toasts.sectionSaveUnexpectedError.description",
+              "Erreur lors de la sauvegarde : {{error}}",
+              { error: error instanceof Error ? error.message : 'Erreur inconnue' }
+            ),
             variant: "destructive",
           });
         } finally {
@@ -603,23 +708,34 @@ export default function Profile() {
 
           if (error) {
       toast({
-              title: "Erreur",
-              description: `Erreur lors de la mise à jour: ${error}`,
+              title: t("profile.toasts.profileUpdateError.title", "Erreur"),
+              description: t(
+                "profile.toasts.profileUpdateError.description",
+                "Erreur lors de la mise à jour : {{error}}",
+                { error: String(error) }
+              ),
               variant: "destructive",
             });
           } else if (updatedUser) {
             setCurrentUser(updatedUser);
             setCompletedSections(new Set(['basic', 'address', 'license']));
             toast({
-              title: "Profil complet mis à jour",
-              description: "Toutes vos informations ont été sauvegardées avec succès.",
+              title: t("profile.toasts.profileUpdateSuccess.title", "Profil complet mis à jour"),
+              description: t(
+                "profile.toasts.profileUpdateSuccess.description",
+                "Toutes vos informations ont été sauvegardées avec succès."
+              ),
             });
           }
     } catch (error) {
           console.error("Error updating profile:", error);
       toast({
-        title: "Erreur",
-        description: `Erreur lors de la mise à jour du profil: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        title: t("profile.toasts.profileUpdateUnexpectedError.title", "Erreur"),
+        description: t(
+          "profile.toasts.profileUpdateUnexpectedError.description",
+          "Erreur lors de la mise à jour du profil : {{error}}",
+          { error: error instanceof Error ? error.message : 'Erreur inconnue' }
+        ),
         variant: "destructive",
       });
     } finally {
@@ -632,8 +748,11 @@ export default function Profile() {
     const handleError = (error: ErrorEvent) => {
       console.error('Erreur globale capturée:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur inattendue s'est produite. Veuillez recharger la page.",
+        title: t("profile.toasts.globalError.title", "Erreur"),
+        description: t(
+          "profile.toasts.globalError.description",
+          "Une erreur inattendue s'est produite. Veuillez recharger la page."
+        ),
         variant: "destructive",
       });
     };
@@ -641,8 +760,11 @@ export default function Profile() {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('Promesse rejetée non gérée:', event.reason);
       toast({
-        title: "Erreur",
-        description: "Une erreur de sauvegarde s'est produite. Veuillez réessayer.",
+        title: t("profile.toasts.globalSaveError.title", "Erreur"),
+        description: t(
+          "profile.toasts.globalSaveError.description",
+          "Une erreur de sauvegarde s'est produite. Veuillez réessayer."
+        ),
         variant: "destructive",
       });
     };
@@ -662,8 +784,11 @@ export default function Profile() {
       console.error('Erreur JavaScript capturée:', error);
       setHasError(true);
       toast({
-        title: "Erreur",
-        description: "Une erreur inattendue s'est produite. Veuillez recharger la page.",
+        title: t("profile.toasts.javascriptError.title", "Erreur"),
+        description: t(
+          "profile.toasts.javascriptError.description",
+          "Une erreur inattendue s'est produite. Veuillez recharger la page."
+        ),
         variant: "destructive",
       });
     };
@@ -677,10 +802,14 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center p-8">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Erreur</h1>
-          <p className="text-gray-600 mb-6">Une erreur s'est produite lors du chargement du profil.</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            {t("profile.error.title", "Erreur")}
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {t("profile.error.description", "Une erreur s'est produite lors du chargement du profil.")}
+          </p>
           <Button onClick={() => window.location.reload()}>
-            Recharger la page
+            {t("profile.error.reload", "Recharger la page")}
           </Button>
         </div>
       </div>
@@ -691,7 +820,9 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-lg">Chargement de votre profil...</p>
+          <p className="text-lg">
+            {t("profile.loading", "Chargement de votre profil...")}
+          </p>
         </div>
       </div>
     );
@@ -705,14 +836,17 @@ export default function Profile() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <Link to="/" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour à l'accueil
-          </Link>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t("profile.hero.back", "Retour à l'accueil")}
+            </Link>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-              Mon Profil
+              {t("profile.hero.title", "Mon Profil")}
             </h1>
             <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto">
-              Gérez vos informations personnelles et personnalisez votre expérience
+              {t(
+                "profile.hero.subtitle",
+                "Gérez vos informations personnelles et personnalisez votre expérience"
+              )}
             </p>
           </div>
         </div>
@@ -734,16 +868,24 @@ export default function Profile() {
                 {calculateProfileCompletion() === 100 ? (
                   <>
                     <span className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse"></span>
-                    Profil complet ✓
+                    {t("profile.completion.full", "Profil complet ✓")}
                   </>
                 ) : (
                   <>
-                    <span className={`w-2 h-2 rounded-full mr-2 ${
-                      calculateProfileCompletion() >= 75 ? 'bg-primary animate-pulse' :
-                      calculateProfileCompletion() >= 50 ? 'bg-warning animate-pulse' :
-                      'bg-muted-foreground'
-                    }`}></span>
-                    Profil {calculateProfileCompletion()}% complété
+                    <span
+                      className={`w-2 h-2 rounded-full mr-2 ${
+                        calculateProfileCompletion() >= 75
+                          ? "bg-primary animate-pulse"
+                          : calculateProfileCompletion() >= 50
+                          ? "bg-warning animate-pulse"
+                          : "bg-muted-foreground"
+                      }`}
+                    ></span>
+                    {t(
+                      "profile.completion.partial",
+                      "Profil {{percent}}% complété",
+                      { percent: calculateProfileCompletion() }
+                    )}
                   </>
                 )}
               </div>
@@ -786,16 +928,26 @@ export default function Profile() {
                 {/* Badges de statut */}
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-6">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-soft text-primary">
-                    {currentUser.roles?.includes('admin') ? 'Administrateur' : currentUser.roles?.includes('owner') ? 'Propriétaire' : 'Locataire'}
+                    {currentUser.roles?.includes("admin")
+                      ? t("profile.badges.role.admin", "⚙️ Administrateur")
+                      : currentUser.roles?.includes("owner")
+                      ? t("profile.badges.role.owner", "🏠 Propriétaire")
+                      : t("profile.badges.role.renter", "👤 Locataire")}
                   </span>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    currentUser.kycStatus === 'verified' 
-                      ? 'bg-success-soft text-success' 
-                      : currentUser.kycStatus === 'pending'
-                      ? 'bg-warning-soft text-warning'
-                      : 'bg-muted text-muted-foreground'
-                  }`}>
-                    KYC {currentUser.kycStatus === 'verified' ? 'Vérifié' : currentUser.kycStatus === 'pending' ? 'En attente' : 'Non vérifié'}
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      currentUser.kycStatus === "verified"
+                        ? "bg-success-soft text-success"
+                        : currentUser.kycStatus === "pending"
+                        ? "bg-warning-soft text-warning"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {currentUser.kycStatus === "verified"
+                      ? t("profile.badges.kyc.verified", "✅ Vérifié")
+                      : currentUser.kycStatus === "pending"
+                      ? t("profile.badges.kyc.pending", "⏳ En attente")
+                      : t("profile.badges.kyc.unverified", "❌ Non vérifié")}
                   </span>
                 </div>
                 
@@ -824,19 +976,27 @@ export default function Profile() {
                         {isUploadingImage ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Upload en cours...
+                            {t("profile.buttons.uploading", "Upload en cours...")}
                           </>
                         ) : (
                           <>
-                        <Camera className="h-4 w-4 mr-2" />
-                        Changer la photo
+                            <Camera className="h-4 w-4 mr-2" />
+                            {t("profile.buttons.avatar.changePhoto", "Changer la photo")}
                           </>
                         )}
                       </span>
                     </Button>
                   </Label>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {isUploadingImage ? "Téléchargement en cours..." : "Formats acceptés : JPG, PNG. Taille max : 5MB"}
+                    {isUploadingImage
+                      ? t(
+                          "profile.form.avatar.loading",
+                          "Téléchargement en cours..."
+                        )
+                      : t(
+                          "profile.form.avatar.helper",
+                          "Formats acceptés : JPG, PNG. Taille max : 5MB"
+                        )}
                   </p>
                 </div>
               </div>
@@ -844,7 +1004,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Navigation par onglets pour organiser les sections */}
+            {/* Navigation par onglets pour organiser les sections */}
         <div className="mb-8">
           <div className="flex flex-wrap gap-2 justify-center mb-4">
               <button
@@ -856,30 +1016,34 @@ export default function Profile() {
                     : 'bg-white/80 text-primary border border-primary-soft/30 hover:bg-primary-soft/10'
                 }`}
               >
-                📝 Informations de base
+                📝 {t("profile.tabs.basic", "Informations de base")}
               </button>
-              <button
-                type="button"
-                onClick={() => handleSectionChange('address')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  activeSection === 'address'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-white/80 text-primary border border-primary-soft/30 hover:bg-primary-soft/10'
-                }`}
-              >
-                🏠 Adresse
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSectionChange('license')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  activeSection === 'license'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-white/80 text-primary border border-primary-soft/30 hover:bg-primary-soft/10'
-                }`}
-              >
-                🚗 Permis de conduire
-              </button>
+              {FEATURES.profileAddressEnabled && (
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('address')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    activeSection === 'address'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-white/80 text-primary border border-primary-soft/30 hover:bg-primary-soft/10'
+                  }`}
+                >
+                  🏠 {t("profile.tabs.address", "Adresse")}
+                </button>
+              )}
+              {FEATURES.profileDrivingLicenseEnabled && (
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('license')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    activeSection === 'license'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-white/80 text-primary border border-primary-soft/30 hover:bg-primary-soft/10'
+                  }`}
+                >
+                  🚗 {t("profile.tabs.license", "Permis de conduire")}
+                </button>
+              )}
           </div>
           
         </div>
@@ -895,14 +1059,20 @@ export default function Profile() {
                   <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-4">
                     <span className="text-primary text-lg">👤</span>
                   </div>
-                  Informations personnelles
+                  {t("profile.sections.basic.title", "Informations personnelles")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground bg-white/60 px-3 py-1 rounded-full">
-                  Étape 1/3
+                  {t(
+                    "profile.sections.basic.step",
+                    `Étape 1/${1 + (FEATURES.profileAddressEnabled ? 1 : 0) + (FEATURES.profileDrivingLicenseEnabled ? 1 : 0)}`
+                  )}
                 </div>
               </div>
               <p className="text-muted-foreground mt-2 ml-12">
-                Vos informations de base pour personnaliser votre expérience
+                {t(
+                  "profile.sections.basic.subtitle",
+                  "Vos informations de base pour personnaliser votre expérience"
+                )}
               </p>
             </CardHeader>
             <CardContent className="space-y-8 p-8">
@@ -912,12 +1082,14 @@ export default function Profile() {
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-3">
                     <span className="text-primary text-sm">🆔</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground">Identité</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("profile.sections.basic.identity.title", "Identité")}
+                  </h3>
                 </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                   <Label htmlFor="firstName" className="text-sm font-medium text-muted-foreground flex items-center">
-                    Prénom
+                    {t("profile.form.firstName.label", "Prénom")}
                     {firstName && firstName.trim() !== '' && (
                       <span className="ml-2 w-2 h-2 bg-success rounded-full"></span>
                     )}
@@ -927,20 +1099,20 @@ export default function Profile() {
                     name="firstName"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Votre prénom"
+                    placeholder={t("profile.form.firstName.placeholder", "Votre prénom")}
                       className="h-11 bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg"
                   />
                 </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName" className="text-sm font-medium text-muted-foreground">
-                      Nom
+                      {t("profile.form.lastName.label", "Nom")}
                     </Label>
                   <Input
                     id="lastName"
                     name="lastName"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Votre nom"
+                    placeholder={t("profile.form.lastName.placeholder", "Votre nom")}
                       className="h-11 bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg"
                   />
                   </div>
@@ -953,23 +1125,33 @@ export default function Profile() {
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-3">
                     <span className="text-primary text-sm">📧</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground">Contact</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("profile.sections.basic.contact.title", "Contact")}
+                  </h3>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
-                      Email
+                      {t("profile.form.email.label", "Email")}
                     </Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   defaultValue={currentUser.email}
-                  placeholder="votre.email@exemple.com"
+                  placeholder={t(
+                    "profile.form.email.placeholder",
+                    "votre.email@exemple.com"
+                  )}
                       className="h-11 bg-muted/20 border-primary-soft/20 text-muted-foreground rounded-lg"
                       disabled
                 />
-                    <p className="text-xs text-muted-foreground">L'email ne peut pas être modifié</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t(
+                        "profile.form.email.helper",
+                        "L'email ne peut pas être modifié"
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -980,12 +1162,14 @@ export default function Profile() {
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-3">
                     <span className="text-primary text-sm">🎂</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground">Informations personnelles</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("profile.sections.basic.personal.title", "Informations personnelles")}
+                  </h3>
                 </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">
-                      Date de naissance
+                      {t("profile.form.birthDate.label", "Date de naissance")}
                     </Label>
                 <div>
                     {isMobile ? (
@@ -999,7 +1183,10 @@ export default function Profile() {
                             setBirthYear(date.getFullYear().toString());
                           }
                         }}
-                        placeholder="Sélectionner une date"
+                        placeholder={t(
+                          "profile.form.birthDate.placeholder",
+                          "Sélectionner une date"
+                        )}
                       />
                     ) : (
                       <div className="grid grid-cols-3 gap-2">
@@ -1008,7 +1195,9 @@ export default function Profile() {
                           updateBirthDate(value, birthMonth, birthYear);
                         }}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Jour" />
+                            <SelectValue
+                              placeholder={t("profile.form.birthDate.day.placeholder", "Jour")}
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {Array.from({ length: 31 }, (_, i) => (
@@ -1024,12 +1213,14 @@ export default function Profile() {
                           updateBirthDate(birthDay, value, birthYear);
                         }}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Mois" />
+                            <SelectValue
+                              placeholder={t("profile.form.birthDate.month.placeholder", "Mois")}
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {Array.from({ length: 12 }, (_, i) => (
                               <SelectItem key={i + 1} value={(i + 1).toString().padStart(2, '0')}>
-                                {new Date(0, i).toLocaleDateString('fr-FR', { month: 'long' })}
+                                {months[i]}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1040,7 +1231,9 @@ export default function Profile() {
                           updateBirthDate(birthDay, birthMonth, value);
                         }}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Année" />
+                            <SelectValue
+                              placeholder={t("profile.form.birthDate.year.placeholder", "Année")}
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {Array.from({ length: 125 }, (_, i) => {
@@ -1059,14 +1252,14 @@ export default function Profile() {
                 </div>
                   <div className="space-y-2">
                     <Label htmlFor="birthPlace" className="text-sm font-medium text-muted-foreground">
-                      Lieu de naissance
+                      {t("profile.form.birthPlace.label", "Lieu de naissance")}
                     </Label>
                   <Input
                     id="birthPlace"
                     name="birthPlace"
                       value={placeOfBirth}
                       onChange={(e) => setPlaceOfBirth(e.target.value)}
-                    placeholder="Ville, Pays"
+                    placeholder={t("profile.form.birthPlace.placeholder", "Ville, Pays")}
                       className="h-11 bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg"
                   />
                   </div>
@@ -1077,7 +1270,7 @@ export default function Profile() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-primary flex items-center">
                   <span className="mr-2">💬</span>
-                  Présentation personnelle
+                  {t("profile.sections.basic.bio.title", "Présentation personnelle")}
                 </h3>
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
@@ -1086,20 +1279,27 @@ export default function Profile() {
                       className="text-sm font-medium text-slate-600 flex items-center"
                     >
                       <span className="mr-2">📝</span>
-                      Présentez-vous en quelques mots
-                      <span className="text-xs text-muted-foreground ml-2">(optionnel)</span>
+                      {t("profile.form.bio.label", "Présentez-vous en quelques mots")}
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {t("profile.form.optional", "(optionnel)")}
+                      </span>
                     </Label>
                     <Textarea
                       id="bio"
                       name="bio"
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
-                      placeholder="Parlez-nous de vous, de vos passions, de votre style de conduite... Cela aidera les autres utilisateurs à mieux vous connaître !"
+                      placeholder={t(
+                        "profile.form.bio.placeholder",
+                        "Parlez-nous de vous, de vos passions, de votre style de conduite... Cela aidera les autres utilisateurs à mieux vous connaître !"
+                      )}
                       className="min-h-[100px] bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg resize-none"
                       maxLength={500}
                     />
                     <div className="text-xs text-muted-foreground text-right">
-                      {bio.length}/500 caractères
+                      {t("profile.form.bio.counter", "{{count}}/500 caractères", {
+                        count: bio.length,
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1111,14 +1311,19 @@ export default function Profile() {
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-3">
                     <span className="text-primary text-sm">📱</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground">Téléphone</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("profile.sections.basic.phone.title", "Téléphone")}
+                  </h3>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm font-medium text-muted-foreground">
-                    Numéro de téléphone
+                    {t("profile.form.phone.label", "Numéro de téléphone")}
                   </Label>
                   <PhoneInput
-                    placeholder="Numéro de téléphone"
+                    placeholder={t(
+                      "profile.form.phone.placeholder",
+                      "Numéro de téléphone"
+                    )}
                     value={phone}
                     onChange={setPhone}
                     defaultCountry="FR"
@@ -1135,12 +1340,18 @@ export default function Profile() {
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-3">
                     <span className="text-primary text-sm">✅</span>
                 </div>
-                  <h3 className="text-lg font-semibold text-foreground">Statut de votre compte</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {t("profile.sections.basic.status.title", "Statut de votre compte")}
+                  </h3>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <div className="flex items-center px-4 py-2 bg-primary-soft/10 border border-primary-soft/20 rounded-full">
                     <span className="text-sm font-medium text-primary">
-                      {currentUser.roles?.includes('admin') ? '⚙️ Administrateur' : currentUser.roles?.includes('owner') ? '🏠 Propriétaire' : '👤 Locataire'}
+                    {currentUser.roles?.includes('admin')
+                      ? t("profile.badges.role.admin", "⚙️ Administrateur")
+                      : currentUser.roles?.includes('owner')
+                      ? t("profile.badges.role.owner", "🏠 Propriétaire")
+                      : t("profile.badges.role.renter", "👤 Locataire")}
                     </span>
                   </div>
                   <div className={`flex items-center px-4 py-2 rounded-full border ${
@@ -1151,7 +1362,11 @@ export default function Profile() {
                       : 'bg-muted/20 border-muted/30 text-muted-foreground'
                   }`}>
                     <span className="text-sm font-medium">
-                      {currentUser.kycStatus === 'verified' ? '✅ Vérifié' : currentUser.kycStatus === 'pending' ? '⏳ En attente' : '❌ Non vérifié'}
+                      {currentUser.kycStatus === 'verified'
+                        ? t("profile.badges.kyc.verified", "✅ Vérifié")
+                        : currentUser.kycStatus === 'pending'
+                        ? t("profile.badges.kyc.pending", "⏳ En attente")
+                        : t("profile.badges.kyc.unverified", "❌ Non vérifié")}
                     </span>
                   </div>
                 </div>
@@ -1165,7 +1380,7 @@ export default function Profile() {
                   {completedSections.has('basic') && (
                     <span className="text-xs text-success font-medium flex items-center">
                       <span className="w-2 h-2 bg-success rounded-full mr-2"></span>
-                      Sauvegardé
+                      {t("profile.sections.basic.saved", "Sauvegardé")}
                     </span>
                   )}
                 </div>
@@ -1182,12 +1397,14 @@ export default function Profile() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Sauvegarde...
+                      {t("profile.buttons.saving", "Sauvegarde...")}
                     </>
                   ) : (
                     hasSectionChanges('basic') 
-                      ? (completedSections.has('basic') ? 'Sauvegarder mes modifications' : 'Sauvegarder mes informations')
-                      : 'Sauvegarder cette section'
+                      ? (completedSections.has('basic')
+                          ? t("profile.buttons.saveBasicChanges", "Sauvegarder mes modifications")
+                          : t("profile.buttons.saveBasicInfo", "Sauvegarder mes informations"))
+                      : t("profile.buttons.saveSection", "Sauvegarder cette section")
                   )}
                 </Button>
               </div>
@@ -1196,7 +1413,7 @@ export default function Profile() {
           )}
 
           {/* Address Information */}
-          {activeSection === 'address' && (
+          {FEATURES.profileAddressEnabled && activeSection === 'address' && (
             <Card className="bg-white/90 backdrop-blur-sm border-primary-soft/20 shadow-soft hover:shadow-lg transition-all duration-300 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
             <CardHeader className="bg-gradient-to-r from-primary-soft/20 via-primary-soft/10 to-transparent border-b border-primary-soft/10 p-6">
               <div className="flex items-center justify-between">
@@ -1204,41 +1421,50 @@ export default function Profile() {
                   <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-4">
                     <span className="text-primary text-lg">🏠</span>
                   </div>
-                  Adresse
+                  {t("profile.sections.address.title", "Adresse")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground bg-white/60 px-3 py-1 rounded-full">
-                  Étape 2/3
+                  {t("profile.sections.address.step", "Étape 2/3")}
                 </div>
               </div>
               <p className="text-muted-foreground mt-2 ml-12">
-                Votre adresse pour les livraisons et la localisation
+                {t(
+                  "profile.sections.address.subtitle",
+                  "Votre adresse pour les livraisons et la localisation"
+                )}
               </p>
             </CardHeader>
             <CardContent className="space-y-6 p-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="street" className="text-sm font-medium text-muted-foreground">
-                    Adresse
+                    {t("profile.form.address.street.label", "Adresse")}
                   </Label>
                 <Input
                   id="street"
                   name="street"
                     value={addressLine1}
                     onChange={(e) => setAddressLine1(e.target.value)}
-                  placeholder="Numéro et nom de rue"
+                  placeholder={t(
+                    "profile.form.address.street.placeholder",
+                    "Numéro et nom de rue"
+                  )}
                     className="h-11 bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg"
                 />
               </div>
                 <div className="space-y-2">
                   <Label htmlFor="city" className="text-sm font-medium text-muted-foreground">
-                    Ville
+                    {t("profile.form.address.city.label", "Ville")}
                   </Label>
                   <Input
                     id="city"
                     name="city"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="Saint-Denis"
+                    placeholder={t(
+                      "profile.form.address.city.placeholder",
+                      "Saint-Denis"
+                    )}
                     className="h-11 bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg"
                   />
                 </div>
@@ -1247,32 +1473,40 @@ export default function Profile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="postalCode" className="text-sm font-medium text-muted-foreground">
-                    Code postal
+                    {t("profile.form.address.postalCode.label", "Code postal")}
                   </Label>
                   <Input
                     id="postalCode"
                     name="postalCode"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    placeholder="97400"
+                    placeholder={t(
+                      "profile.form.address.postalCode.placeholder",
+                      "97400"
+                    )}
                     className="h-11 bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="country" className="text-sm font-medium text-muted-foreground">
-                    Pays
+                    {t("profile.form.address.country.label", "Pays")}
                   </Label>
                   <Select value={country} onValueChange={setCountry}>
                     <SelectTrigger className="h-11 bg-background/30 border-primary-soft/20 focus:border-primary focus:ring-primary/10 transition-all duration-200 rounded-lg">
-                    <SelectValue placeholder="Sélectionner un pays" />
+                    <SelectValue
+                      placeholder={t(
+                        "profile.form.address.country.placeholder",
+                        "Sélectionner un pays"
+                      )}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                      <SelectItem value="France">France</SelectItem>
-                      <SelectItem value="La Réunion">La Réunion</SelectItem>
-                      <SelectItem value="Mayotte">Mayotte</SelectItem>
-                      <SelectItem value="Guadeloupe">Guadeloupe</SelectItem>
-                      <SelectItem value="Martinique">Martinique</SelectItem>
-                      <SelectItem value="Guyane">Guyane</SelectItem>
+                      <SelectItem value="France">{t("profile.countries.france", "France")}</SelectItem>
+                      <SelectItem value="La Réunion">{t("profile.countries.reunion", "La Réunion")}</SelectItem>
+                      <SelectItem value="Mayotte">{t("profile.countries.mayotte", "Mayotte")}</SelectItem>
+                      <SelectItem value="Guadeloupe">{t("profile.countries.guadeloupe", "Guadeloupe")}</SelectItem>
+                      <SelectItem value="Martinique">{t("profile.countries.martinique", "Martinique")}</SelectItem>
+                      <SelectItem value="Guyane">{t("profile.countries.guyane", "Guyane")}</SelectItem>
                   </SelectContent>
                 </Select>
                 </div>
@@ -1286,7 +1520,7 @@ export default function Profile() {
                   {completedSections.has('address') && (
                     <span className="text-xs text-success font-medium flex items-center">
                       <span className="w-2 h-2 bg-success rounded-full mr-2"></span>
-                      Sauvegardé
+                      {t("profile.sections.address.saved", "Sauvegardé")}
                     </span>
                   )}
                 </div>
@@ -1303,12 +1537,14 @@ export default function Profile() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Sauvegarde...
+                      {t("profile.buttons.saving", "Sauvegarde...")}
                     </>
                   ) : (
                     hasSectionChanges('address') 
-                      ? (completedSections.has('address') ? 'Sauvegarder mes modifications' : 'Sauvegarder mon adresse')
-                      : 'Sauvegarder cette section'
+                      ? (completedSections.has('address')
+                          ? t("profile.buttons.saveAddressChanges", "Sauvegarder mes modifications")
+                          : t("profile.buttons.saveAddress", "Sauvegarder mon adresse"))
+                      : t("profile.buttons.saveSection", "Sauvegarder cette section")
                   )}
                 </Button>
               </div>
@@ -1317,7 +1553,7 @@ export default function Profile() {
           )}
 
           {/* Driver License */}
-          {activeSection === 'license' && (
+          {FEATURES.profileDrivingLicenseEnabled && activeSection === 'license' && (
             <Card className="bg-white/90 backdrop-blur-sm border-primary-soft/20 shadow-soft hover:shadow-lg transition-all duration-300 rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
             <CardHeader className="bg-gradient-to-r from-primary-soft/20 via-primary-soft/10 to-transparent border-b border-primary-soft/10 p-6">
               <div className="flex items-center justify-between">
@@ -1704,10 +1940,18 @@ export default function Profile() {
               <div className="bg-gradient-to-r from-primary-soft/20 to-primary-soft/10 rounded-2xl p-6 border border-primary-soft/30">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-primary mb-2">
-                    Profil {calculateProfileCompletion()}% complété
+                    {t(
+                      "profile.banner.title",
+                      "Profil {{percent}}% complété",
+                      { percent: calculateProfileCompletion() }
+                    )}
                   </h3>
                   <p className="text-sm text-muted-foreground mb-6">
-                    {calculateProfileCompletion()}% du profil complété. Cliquez pour sauvegarder toutes les modifications.
+                    {t(
+                      "profile.banner.description",
+                      "{{percent}}% du profil complété. Cliquez pour sauvegarder toutes les modifications.",
+                      { percent: calculateProfileCompletion() }
+                    )}
                   </p>
             <Button
               type="submit"
@@ -1717,10 +1961,16 @@ export default function Profile() {
                     {isLoading ? (
                       <>
                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        Sauvegarde en cours...
+                        {t(
+                          "profile.buttons.saving",
+                          "Sauvegarde en cours..."
+                        )}
                       </>
                     ) : (
-                      'Sauvegarder tout le profil'
+                      t(
+                        "profile.buttons.saveAll",
+                        "Sauvegarder tout le profil"
+                      )
                     )}
             </Button>
           </div>
@@ -1733,13 +1983,21 @@ export default function Profile() {
         <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
             <DialogHeader>
-              <DialogTitle>Aperçu du permis de conduire</DialogTitle>
+              <DialogTitle>
+                {t(
+                  "profile.modal.licensePreview.title",
+                  "Aperçu du permis de conduire"
+                )}
+              </DialogTitle>
             </DialogHeader>
             <div className="flex justify-center items-center p-4">
               {currentUser?.driverLicenseFilePath ? (
                 <img 
                   src={currentUser.driverLicenseFilePath} 
-                  alt="Permis de conduire"
+                  alt={t(
+                    "profile.modal.licensePreview.alt",
+                    "Permis de conduire"
+                  )}
                   className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -1753,7 +2011,10 @@ export default function Profile() {
               ) : driverLicenseFile ? (
                 <img 
                   src={URL.createObjectURL(driverLicenseFile)} 
-                  alt="Permis de conduire"
+                  alt={t(
+                    "profile.modal.licensePreview.alt",
+                    "Permis de conduire"
+                  )}
                   className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
                 />
               ) : null}
@@ -1766,9 +2027,17 @@ export default function Profile() {
                 <svg className="w-16 h-16 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <p className="text-muted-foreground mb-2">Impossible de charger l'image</p>
+                <p className="text-muted-foreground mb-2">
+                  {t(
+                    "profile.modal.licensePreview.errorTitle",
+                    "Impossible de charger l'image"
+                  )}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  Vérifiez que le fichier est bien uploadé et accessible
+                  {t(
+                    "profile.modal.licensePreview.errorDescription",
+                    "Vérifiez que le fichier est bien uploadé et accessible"
+                  )}
                 </p>
               </div>
             </div>

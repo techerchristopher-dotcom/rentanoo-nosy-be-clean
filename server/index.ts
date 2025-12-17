@@ -486,7 +486,7 @@ if (process.env.NODE_ENV === "production") {
     }
   });
 } else {
-  console.log(`🔧 Serveur en mode DÉVELOPPEMENT - Frontend sur port 3000 (Vite)`);
+  console.log(`🔧 Serveur en mode DÉVELOPPEMENT - Frontend sur ports 3012 (tenant) ou 3013 (owner) (Vite)`);
 }
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;

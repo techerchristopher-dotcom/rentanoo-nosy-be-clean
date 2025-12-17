@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "vite",
     "dev:renter": "vite --port 3000",
+    "dev:tenant": "cross-env VITE_APP_CONTEXT=tenant vite --port 3012",
+    "dev:owner": "cross-env VITE_APP_CONTEXT=owner vite --port 3013",
     "dev:3002": "vite --port 3002",
     "dev:3012": "vite --port 3012",
     "build": "vite build",
@@ -103,6 +105,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
     "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
     "dotenv": "^17.2.3",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",

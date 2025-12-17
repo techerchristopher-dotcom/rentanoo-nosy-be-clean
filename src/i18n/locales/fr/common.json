@@ -53,6 +53,7 @@
     "retour": "Retour",
     "rinitialiser": "Réinitialiser",
     "rinitialiser_les_filtres": "Réinitialiser les filtres",
+    "rechercher_une_ville_de_prise_en_charge": "Rechercher une ville de prise en charge",
     "roadster": "Roadster",
     "se_connecter": "Se connecter",
     "search": "Rechercher",
@@ -61,11 +62,572 @@
     "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "Sélectionnez le lieu où vous souhaitez récupérer votre véhicule",
     "suv": "SUV",
     "utilisateur_connect": "Utilisateur connecté",
+    "modifier_mon_profil": "Modifier mon profil",
+    "mon_dashboard": "Mon Dashboard",
+    "se_dconnecter": "Se déconnecter",
     "valider": "Valider",
     "valider_mes_dates": "Valider mes dates",
     "valider_mes_heures": "Valider mes heures",
     "vhicules_disponibles": "Véhicules disponibles",
-    "voir_la_fiche": "Voir la fiche"
+    "aucun_vhicule_disponible_pour_le_moment": "Aucun véhicule disponible pour le moment.",
+    "voir_la_fiche": "Voir la fiche",
+    "addDates": "Ajouter des dates",
+    "selectDates": "Sélectionner des dates",
+    "comingSoon": "Bientôt disponible",
+    "searchBar": {
+      "departure": "Départ",
+      "return": "Retour",
+      "date": "Date",
+      "time": "Heure"
+    }
+  },
+  "home": {
+    "heroTitle": "Louez votre scooter à Nosy Be en quelques clics",
+    "heroSubtitle": "RENTANOO, la première plateforme de location de scooters 100 % en ligne",
+    "toasts": {
+      "requiredFields": {
+        "title": "Champs requis",
+        "description": "Veuillez renseigner au moins un critère de recherche"
+      },
+      "incompleteDates": {
+        "title": "Dates incomplètes",
+        "description": "Veuillez sélectionner une date de début ET une date de fin"
+      },
+      "invalidDates": {
+        "title": "Dates invalides",
+        "description": "La date de début doit être antérieure à la date de fin"
+      },
+      "errorSearchAuto": {
+        "title": "Erreur",
+        "description": "Impossible d'effectuer la recherche automatique"
+      },
+      "errorSearch": {
+        "title": "Erreur",
+        "description": "Impossible d'effectuer la recherche"
+      },
+      "noResults": {
+        "title": "Aucun résultat",
+        "description": "Aucun véhicule disponible pour ces critères"
+      },
+      "criteriaReset": {
+        "title": "Critères réinitialisés",
+        "description": "Tous vos critères de recherche ont été effacés."
+      },
+      "searchRestored": {
+        "title": "Recherche restaurée",
+        "description": "Vos critères de recherche ont été rechargés et la recherche relancée."
+      },
+      "searchDone": {
+        "title": "Recherche effectuée"
+      },
+      "resultsFound_one": "{{count}} véhicule trouvé",
+      "resultsFound_other": "{{count}} véhicules trouvés"
+    }
+  },
+  "footer": {
+    "brand": "RENTANOO",
+    "description": "Agence de location de scooters à Nosy Be. Réservation 100 % en ligne, rapide et simple.",
+    "location": "Nosy Be, Madagascar",
+    "copyright": "© 2025 RENTANOO. Tous droits réservés.",
+    "madeWith": "Made with ❤️ in Nosy Be"
+  },
+  "profile": {
+    "hero": {
+      "back": "Retour à l'accueil",
+      "title": "Mon Profil",
+      "subtitle": "Gérez vos informations personnelles et personnalisez votre expérience"
+    },
+    "completion": {
+      "full": "Profil complet ✓",
+      "partial": "Profil {{percent}}% complété"
+    },
+    "tabs": {
+      "basic": "Informations de base",
+      "address": "Adresse",
+      "license": "Permis de conduire"
+    },
+    "sections": {
+      "basic": {
+        "title": "Informations personnelles",
+        "step": "Étape 1/3",
+        "subtitle": "Vos informations de base pour personnaliser votre expérience",
+        "identity": { "title": "Identité" },
+        "contact": { "title": "Contact" },
+        "personal": { "title": "Informations personnelles" },
+        "bio": { "title": "Présentation personnelle" },
+        "phone": { "title": "Téléphone" },
+        "status": { "title": "Statut de votre compte" },
+        "saved": "Sauvegardé"
+      },
+      "address": {
+        "title": "Adresse",
+        "step": "Étape 2/3",
+        "subtitle": "Votre adresse pour les livraisons et la localisation",
+        "saved": "Sauvegardé"
+      },
+      "license": {
+        "title": "Permis de conduire",
+        "step": "Étape 3/3",
+        "subtitle": "Votre permis pour louer des véhicules en toute sécurité",
+        "saved": "Sauvegardé"
+      }
+    },
+    "form": {
+      "optional": "(optionnel)",
+      "firstName": {
+        "label": "Prénom",
+        "placeholder": "Votre prénom"
+      },
+      "lastName": {
+        "label": "Nom",
+        "placeholder": "Votre nom"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "votre.email@exemple.com",
+        "helper": "L'email ne peut pas être modifié"
+      },
+      "birthDate": {
+        "label": "Date de naissance",
+        "placeholder": "Sélectionner une date",
+        "day": { "placeholder": "Jour" },
+        "month": { "placeholder": "Mois" },
+        "year": { "placeholder": "Année" }
+      },
+      "birthPlace": {
+        "label": "Lieu de naissance",
+        "placeholder": "Ville, Pays"
+      },
+      "bio": {
+        "label": "Présentez-vous en quelques mots",
+        "placeholder": "Parlez-nous de vous, de vos passions, de votre style de conduite... Cela aidera les autres utilisateurs à mieux vous connaître !",
+        "counter": "{{count}}/500 caractères"
+      },
+      "phone": {
+        "label": "Numéro de téléphone",
+        "placeholder": "Numéro de téléphone"
+      },
+      "avatar": {
+        "loading": "Téléchargement en cours...",
+        "helper": "Formats acceptés : JPG, PNG. Taille max : 5MB"
+      },
+      "address": {
+        "street": {
+          "label": "Adresse",
+          "placeholder": "Numéro et nom de rue"
+        },
+        "city": {
+          "label": "Ville",
+          "placeholder": "Saint-Denis"
+        },
+        "postalCode": {
+          "label": "Code postal",
+          "placeholder": "97400"
+        },
+        "country": {
+          "label": "Pays",
+          "placeholder": "Sélectionner un pays"
+        }
+      },
+      "license": {
+        "number": {
+          "label": "Numéro de permis",
+          "placeholder": "ex : 121075012XXX",
+          "helper": "Pour un permis européen, le numéro indiqué dans la section 5."
+        },
+        "country": {
+          "label": "Pays d'émission",
+          "placeholder": "Sélectionner un pays"
+        },
+        "document": {
+          "label": "Document du permis",
+          "type": {
+            "pdf": "Document PDF",
+            "image": "Image"
+          },
+          "uploaded": "✓ Fichier uploadé avec succès",
+          "empty": {
+            "title": "Cliquez pour uploader votre permis de conduire",
+            "helper": "Formats acceptés : PDF, JPG, PNG. Taille max : 10MB"
+          }
+        },
+        "issueDate": {
+          "label": "Date d'obtention",
+          "placeholder": "Sélectionner une date",
+          "day": { "placeholder": "Jour" },
+          "month": { "placeholder": "Mois" },
+          "year": { "placeholder": "Année" },
+          "helper": "Pour un permis européen, sa date de début de validité pour les véhicules de catégorie B."
+        },
+        "category": {
+          "label": "Catégorie du permis",
+          "placeholder": "Ex: B",
+          "helper": "Catégorie du permis (par défaut : B pour voiture)"
+        },
+        "expirationDate": {
+          "label": "Date d'expiration",
+          "placeholder": "Sélectionner une date"
+        }
+      }
+    },
+    "countries": {
+      "france": "France",
+      "reunion": "La Réunion",
+      "mayotte": "Mayotte",
+      "guadeloupe": "Guadeloupe",
+      "martinique": "Martinique",
+      "guyane": "Guyane",
+      "belgium": "Belgique",
+      "switzerland": "Suisse",
+      "germany": "Allemagne",
+      "spain": "Espagne",
+      "italy": "Italie"
+    },
+    "badges": {
+      "role": {
+        "admin": "⚙️ Administrateur",
+        "owner": "🏠 Propriétaire",
+        "renter": "👤 Locataire"
+      },
+      "kyc": {
+        "verified": "✅ Vérifié",
+        "pending": "⏳ En attente",
+        "unverified": "❌ Non vérifié"
+      }
+    },
+    "buttons": {
+      "saving": "Sauvegarde...",
+      "saveSection": "Sauvegarder cette section",
+      "saveBasicChanges": "Sauvegarder mes modifications",
+      "saveBasicInfo": "Sauvegarder mes informations",
+      "saveAddressChanges": "Sauvegarder mes modifications",
+      "saveAddress": "Sauvegarder mon adresse",
+      "saveLicenseChanges": "Sauvegarder mes modifications",
+      "saveLicense": "Sauvegarder mes infos du permis",
+      "uploading": "Upload en cours...",
+      "saveAll": "Sauvegarder tout le profil",
+      "avatar": {
+        "changePhoto": "Changer la photo"
+      },
+      "license": {
+        "change": "Changer",
+        "delete": "Supprimer",
+        "choose": "Choisir un fichier"
+      }
+    },
+    "toasts": {
+      "loadError": {
+        "title": "Erreur",
+        "description": "Impossible de charger le profil : {{error}}"
+      },
+      "unexpectedLoadError": {
+        "title": "Erreur",
+        "description": "Une erreur est survenue lors du chargement du profil."
+      },
+      "licenseFileTooLarge": {
+        "title": "Erreur",
+        "description": "Le fichier ne doit pas dépasser 10MB."
+      },
+      "licenseFileTypeError": {
+        "title": "Erreur",
+        "description": "Veuillez sélectionner un fichier PDF, JPG ou PNG."
+      },
+      "licenseUploadError": {
+        "title": "Erreur",
+        "description": "Erreur lors de l'upload : {{error}}"
+      },
+      "licenseUpdateError": {
+        "title": "Erreur",
+        "description": "Erreur lors de la mise à jour : {{error}}"
+      },
+      "licenseUploadSuccess": {
+        "title": "Succès",
+        "description": "Fichier permis uploadé avec succès."
+      },
+      "licenseUploadUnexpectedError": {
+        "title": "Erreur",
+        "description": "Une erreur est survenue lors de l'upload du fichier."
+      },
+      "licenseRemoveError": {
+        "title": "Erreur",
+        "description": "Erreur lors de la suppression : {{error}}"
+      },
+      "licenseRemoveSuccess": {
+        "title": "Succès",
+        "description": "Fichier permis supprimé avec succès."
+      },
+      "licenseRemoveUnexpectedError": {
+        "title": "Erreur",
+        "description": "Une erreur est survenue lors de la suppression."
+      },
+      "avatarTooLarge": {
+        "title": "Erreur",
+        "description": "L'image ne doit pas dépasser 5MB."
+      },
+      "avatarTypeError": {
+        "title": "Erreur",
+        "description": "Veuillez sélectionner un fichier image valide."
+      },
+      "avatarUploadError": {
+        "title": "Erreur",
+        "description": "Erreur lors de l'upload : {{error}}"
+      },
+      "avatarUpdateError": {
+        "title": "Erreur",
+        "description": "Erreur lors de la mise à jour : {{error}}"
+      },
+      "avatarUploadSuccess": {
+        "title": "Succès",
+        "description": "Photo de profil mise à jour avec succès."
+      },
+      "avatarUploadUnexpectedError": {
+        "title": "Erreur",
+        "description": "Une erreur est survenue lors de l'upload de l'image."
+      },
+      "sectionSaveError": {
+        "title": "Erreur",
+        "description": "Erreur lors de la sauvegarde : {{error}}"
+      },
+      "sectionSaveSuccess": {
+        "title": "Section sauvegardée",
+        "basic": "Vos informations de base ont été sauvegardées.",
+        "address": "Vos informations d'adresse ont été sauvegardées.",
+        "license": "Vos informations de permis ont été sauvegardées."
+      },
+      "sectionSaveUnexpectedError": {
+        "title": "Erreur",
+        "description": "Erreur lors de la sauvegarde : {{error}}"
+      },
+      "profileUpdateError": {
+        "title": "Erreur",
+        "description": "Erreur lors de la mise à jour : {{error}}"
+      },
+      "profileUpdateSuccess": {
+        "title": "Profil complet mis à jour",
+        "description": "Toutes vos informations ont été sauvegardées avec succès."
+      },
+      "profileUpdateUnexpectedError": {
+        "title": "Erreur",
+        "description": "Erreur lors de la mise à jour du profil : {{error}}"
+      },
+      "globalError": {
+        "title": "Erreur",
+        "description": "Une erreur inattendue s'est produite. Veuillez recharger la page."
+      },
+      "globalSaveError": {
+        "title": "Erreur",
+        "description": "Une erreur de sauvegarde s'est produite. Veuillez réessayer."
+      },
+      "javascriptError": {
+        "title": "Erreur",
+        "description": "Une erreur inattendue s'est produite. Veuillez recharger la page."
+      }
+    },
+    "error": {
+      "title": "Erreur",
+      "description": "Une erreur s'est produite lors du chargement du profil.",
+      "reload": "Recharger la page"
+    },
+    "loading": "Chargement de votre profil...",
+    "banner": {
+      "title": "Profil {{percent}}% complété",
+      "description": "{{percent}}% du profil complété. Cliquez pour sauvegarder toutes les modifications."
+    },
+    "modal": {
+      "licensePreview": {
+        "title": "Aperçu du permis de conduire",
+        "alt": "Permis de conduire",
+        "errorTitle": "Impossible de charger l'image",
+        "errorDescription": "Vérifiez que le fichier est bien uploadé et accessible"
+      }
+    },
+    "common": {
+      "learnMore": "En savoir plus..."
+    },
+    "months": {
+      "january": "janvier",
+      "february": "février",
+      "march": "mars",
+      "april": "avril",
+      "may": "mai",
+      "june": "juin",
+      "july": "juillet",
+      "august": "août",
+      "september": "septembre",
+      "october": "octobre",
+      "november": "novembre",
+      "december": "décembre"
+    }
+  },
+  "bookings": {
+    "header": {
+      "title": "Mes réservations",
+      "subtitle": "Gérez vos locations de véhicules",
+      "newBooking": "Nouvelle réservation"
+    },
+    "filters": {
+      "all": "Toutes",
+      "pending": "En attente",
+      "active": "En cours",
+      "upcoming": "À venir",
+      "past": "Terminées",
+      "cancelled": "Annulées",
+      "refused": "Refusées"
+    },
+    "empty": {
+      "title": "Aucune réservation",
+      "description": "Vous n'avez pas encore effectué de réservation. Découvrez nos véhicules disponibles !",
+      "cta": "Faire une réservation"
+    },
+    "emptyFiltered": {
+      "title": "Aucune réservation {{filter}}",
+      "description": "Aucune réservation ne correspond au filtre sélectionné. Essayez un autre filtre.",
+      "reset": "Voir toutes les réservations"
+    }
+  },
+    "ownerVehicles": {
+    "loading": "Chargement...",
+    "header": {
+      "title": "Mes véhicules",
+      "subtitle": "Gérez vos véhicules et vos réservations"
+    },
+    "kycRequired": {
+      "title": "Vérification KYC requise",
+      "description": "Pour publier vos véhicules, vous devez compléter votre vérification d'identité."
+    },
+    "empty": {
+      "title": "Aucun véhicule",
+      "description": "Commencez par ajouter votre premier véhicule à la plateforme."
+    },
+      "vehicleTypeModal": {
+        "title": "Quel type de véhicule souhaitez-vous ajouter ?",
+        "description": "Choisissez le type de véhicule que vous voulez publier sur la plateforme.",
+        "carLabel": "Voiture",
+        "motoLabel": "Moto / Scooter",
+        "cancel": "Annuler"
+      },
+    "card": {
+      "pricePerDay": "Prix/jour",
+      "year": "Année",
+      "fuel": "Carburant",
+      "actions": {
+        "manage": "Gérer le véhicule",
+        "viewPublic": "Voir la fiche publique"
+      }
+    },
+    "addCard": {
+      "title": "Ajouter un véhicule",
+      "description": "Cliquez ici pour ajouter un nouveau véhicule à votre flotte et commencer à le louer",
+      "badge": "Nouveau véhicule"
+      },
+      "motoPlaceholder": {
+        "title": "Moto / Scooter",
+        "description": "Le formulaire pour ajouter une moto ou un scooter sera bientôt disponible.",
+        "backToVehicles": "Retour à mes véhicules"
+      },
+      "motoForm": {
+        "title": "Ajouter une moto / scooter",
+        "brand": "Marque",
+        "brandPlaceholder": "Ex : Honda",
+        "model": "Modèle",
+        "modelPlaceholder": "Ex : PCX 125",
+        "year": "Année",
+        "mileage": "Kilométrage (approx.)",
+        "kind": "Type",
+        "kindPlaceholder": "Sélectionner",
+        "kindMoto": "Moto",
+        "kindScooter": "Scooter",
+        "engineCapacity": "Cylindrée (cc)",
+        "licensePlate": "Immatriculation (optionnel)",
+        "seats": "Nombre de places",
+        "fuel": "Carburant",
+        "fuelPlaceholder": "Sélectionner",
+        "transmission": "Boîte",
+        "transmissionPlaceholder": "Sélectionner",
+        "dailyPrice": "Prix par jour (€)",
+        "description": "Description (optionnel)",
+        "descriptionPlaceholder": "Décrivez l'état de la moto, les équipements fournis (casque, top case, etc.)...",
+        "cancel": "Annuler",
+        "submit": "Créer le véhicule",
+        "saving": "Création en cours...",
+        "successTitle": "Moto / scooter ajouté avec succès",
+        "successDescription": "Votre véhicule a été créé. Vous pouvez maintenant le gérer dans la liste de vos véhicules.",
+        "errors": {
+          "required": "Merci de renseigner au minimum la marque, le modèle, l'année et le prix par jour.",
+          "year": "Merci de saisir une année valide.",
+          "price": "Merci de saisir un prix par jour valide.",
+          "generic": "Impossible de créer le véhicule. Veuillez réessayer."
+        },
+        "photos": {
+          "sectionTitle": "Photos du véhicule",
+          "sectionSubtitle": "Ajoutez au moins une photo de votre moto ou scooter pour donner envie aux locataires.",
+          "primaryLabel": "Photo principale",
+          "primaryHint": "Avant gauche – angle recommandé pour mettre en valeur votre moto/scooter",
+          "profileLabel": "Profil gauche",
+          "profileHint": "Vue de côté pour bien voir la ligne de la moto/scooter",
+          "interiorLabel": "Détails / Équipements",
+          "interiorHint": "Par exemple : compteur, selle, top case, rangements...",
+          "addMore": "Ajouter des photos",
+          "addMoreLimit": "Limite atteinte (3 photos supplémentaires)",
+          "slotLabel": "Photo {{index}}",
+          "slotOptional": "Optionnel",
+          "changePhoto": "Changer ma photo",
+          "deletePhoto": "Supprimer",
+          "invalidType": "Veuillez sélectionner un fichier image valide.",
+          "tooLarge": "La photo doit faire moins de 10MB.",
+          "minRequired": "Veuillez ajouter au moins une photo de votre moto ou scooter.",
+          "added": "Photo ajoutée",
+          "addedTitle": "Photo ajoutée",
+          "addedDescription": "Votre photo a été ajoutée avec succès.",
+          "additionalAdded": "Photo supplémentaire ajoutée",
+          "additionalAddedDescription": "Votre photo supplémentaire a été ajoutée avec succès.",
+          "removed": "Photo supprimée",
+          "removedTitle": "Photo supprimée",
+          "removedDescription": "La photo a été supprimée avec succès."
+        }
+    },
+    "availabilityDialog": {
+      "title": "Confirmer la modification de disponibilité",
+      "intro": "En désactivant la disponibilité de votre véhicule :",
+      "point1": "Il ne sera plus visible dans les résultats de recherche",
+      "point2": "Les clients ne pourront plus effectuer de nouvelles réservations",
+      "point3": "Les réservations existantes restent valides",
+      "confirmQuestion": "Êtes-vous sûr de vouloir continuer ?",
+      "cancel": "Annuler",
+      "confirm": "Confirmer la désactivation"
+    },
+    "accessDenied": {
+      "title": "Accès refusé",
+      "description": "Vous devez être connecté pour accéder à cette page.",
+      "login": "Se connecter"
+    },
+    "toasts": {
+      "cannotDisable": {
+        "title": "Impossible de désactiver",
+        "description": "Ce véhicule a des réservations actives ou futures. Annulez d'abord les réservations."
+      },
+      "saveStatusError": {
+        "title": "Erreur",
+        "description": "Impossible de sauvegarder le statut : {{message}}"
+      },
+      "statusUpdated": {
+        "title": "Statut mis à jour",
+        "available": "Le véhicule est maintenant disponible",
+        "unavailable": "Le véhicule est maintenant indisponible"
+      },
+      "genericError": {
+        "title": "Erreur",
+        "description": "Une erreur est survenue lors de la sauvegarde."
+      },
+      "mustBeLoggedIn": {
+        "title": "Erreur",
+        "description": "Vous devez être connecté pour accéder à cette page"
+      },
+      "loadVehiclesError": {
+        "title": "Erreur",
+        "description": "Impossible de charger vos véhicules"
+      }
+    }
   },
   "dictionary": {
     "back": "Retour au dictionnaire",

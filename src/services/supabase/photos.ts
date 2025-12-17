@@ -14,6 +14,8 @@ export interface UploadedPhoto {
   photoType: string;
   position: number;
   isPrimary: boolean;
+  // Chemin exact dans le bucket (ex: `${vehicleId}/frontLeft_...jpg`)
+  storagePath?: string;
 }
 
 export class PhotoService {
@@ -56,13 +58,34 @@ export class PhotoService {
         .from(this.BUCKET_NAME)
         .getPublicUrl(fileName);
 
+      const publicUrl = urlData.publicUrl;
+
+      // Insertion dans la table vehicle_photos pour garder une trace en DB
+      // La policy RLS côté DB vérifie que le vehicle_id appartient bien à auth.uid()
+      const { error: dbError } = await supabase
+        .from('vehicle_photos')
+        .insert({
+          vehicle_id: vehicleId,
+          photo_url: publicUrl,
+          storage_path: fileName,
+          is_primary: photoType === 'frontLeft',
+          display_order: position ?? 1,
+        });
+
+      if (dbError) {
+        console.error('Erreur lors de l\'insertion dans vehicle_photos:', dbError);
+        // On considère l'opération comme échouée pour que l'appelant puisse afficher une erreur utilisateur
+        return { data: null, error: dbError.message };
+      }
+
       const uploadedPhoto: UploadedPhoto = {
         id: `photo_${Date.now()}_${Math.random().toString(36).substring(2)}`,
         vehicleId,
-        url: urlData.publicUrl,
+        url: publicUrl,
         photoType,
         position,
-        isPrimary: photoType === 'frontLeft'
+        isPrimary: photoType === 'frontLeft',
+        storagePath: fileName,
       };
 
       return { data: uploadedPhoto, error: null };
@@ -178,6 +201,89 @@ export class PhotoService {
     } catch (error) {
       console.error('📸 [PhotoService] Erreur lors de la récupération des photos:', error);
       return { data: [], error: 'Erreur lors de la récupération des photos' };
+    }
+  }
+
+  /**
+   * Récupère, en une seule requête, la photo de couverture (principale) pour une liste de véhicules.
+   *
+   * Règles de sélection par véhicule :
+   * 1. On privilégie `is_primary = true` s'il existe
+   * 2. Sinon, on prend la plus petite valeur de `display_order`
+   * 3. Sinon, la première photo trouvée
+   */
+  static async getPrimaryPhotosForVehicles(
+    vehicleIds: string[]
+  ): Promise<{ data: Record<string, UploadedPhoto>; error: string | null }> {
+    try {
+      if (!vehicleIds || vehicleIds.length === 0) {
+        return { data: {}, error: null };
+      }
+
+      // Requête batch sur la table vehicle_photos
+      const { data, error } = await supabase
+        .from('vehicle_photos')
+        .select('id, vehicle_id, photo_url, storage_path, is_primary, display_order')
+        .in('vehicle_id', vehicleIds);
+
+      if (error) {
+        console.error('📸 [PhotoService] Erreur getPrimaryPhotosForVehicles:', error);
+        return { data: {}, error: error.message };
+      }
+
+      if (!data || data.length === 0) {
+        return { data: {}, error: null };
+      }
+
+      // Regrouper par vehicle_id
+      const byVehicle: Record<string, any[]> = {};
+      for (const row of data) {
+        const vid = row.vehicle_id as string;
+        if (!byVehicle[vid]) {
+          byVehicle[vid] = [];
+        }
+        byVehicle[vid].push(row);
+      }
+
+      const result: Record<string, UploadedPhoto> = {};
+
+      for (const [vehicleId, rows] of Object.entries(byVehicle)) {
+        // 1) Essayer de trouver une photo marquée principale
+        let chosen = rows.find((r) => r.is_primary) as any | undefined;
+
+        // 2) Sinon, prendre la plus petite display_order
+        if (!chosen) {
+          rows.sort((a, b) => {
+            const da = a.display_order ?? Number.MAX_SAFE_INTEGER;
+            const db = b.display_order ?? Number.MAX_SAFE_INTEGER;
+            return da - db;
+          });
+          chosen = rows[0];
+        }
+
+        if (!chosen) continue;
+
+        // Construire un UploadedPhoto cohérent avec le reste du service
+        const uploaded: UploadedPhoto = {
+          id: chosen.id,
+          vehicleId,
+          url: chosen.photo_url,
+          photoType:
+            typeof chosen.storage_path === 'string' && chosen.storage_path.includes('frontLeft')
+              ? 'frontLeft'
+              : 'additional',
+          position: chosen.display_order ?? 1,
+          isPrimary: !!chosen.is_primary,
+          storagePath: chosen.storage_path ?? undefined,
+        };
+
+        result[vehicleId] = uploaded;
+      }
+
+      return { data: result, error: null };
+    } catch (error) {
+      console.error('📸 [PhotoService] Erreur getPrimaryPhotosForVehicles:', error);
+      return { data: {}, error: 'Erreur lors de la récupération des photos principales' };
     }
   }
 }
