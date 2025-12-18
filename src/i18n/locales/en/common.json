@@ -132,6 +132,126 @@
   "pricing": {
     "total_for_duration": "total {{total}} ({{duration}})"
   },
+  "booking": {
+    "baseRateLabel": "Base rate*:",
+    "excludingFeesNote": "* Excluding options and service fees",
+    "reserve": "Reserve",
+    "freeCancellation": "Free cancellation",
+    "includedInPrice": "Included in the price",
+    "included": {
+      "insurance": "Comprehensive insurance",
+      "roadside": "24/7 roadside assistance",
+      "extraDrivers": "Free additional drivers"
+    }
+  },
+  "motoDetails": {
+    "back": "Back",
+    "loading": "Loading vehicle...",
+    "descriptionTitle": "Motorbike description",
+    "technicalTitle": "Technical specifications",
+    "technical": {
+      "fuel": "Fuel",
+      "transmission": "Transmission",
+      "seats": "Seats",
+      "engine": "Engine capacity",
+      "mileage": "Mileage",
+      "color": "Color"
+    },
+    "freeHotelDelivery": "Free delivery to your hotel",
+    "owner": {
+      "title": "Owner",
+      "verified": "Verified",
+      "pending": "Pending",
+      "memberSince": "Member since {{date}}",
+      "stats": {
+        "vehicles": "Vehicles",
+        "rentals": "Rentals",
+        "thisCar": "This car",
+        "thisMoto": "This motorbike"
+      },
+      "keyHandover": "Key pickup: Directly from {{ownerName}} to get all the advice.",
+      "howItWorks": "How does it work?",
+      "loadError": "Unable to load owner information"
+    },
+    "errors": {
+      "vehicleIncompatible": {
+        "title": "Incompatible vehicle",
+        "description": "This page is reserved for motorcycles. Redirecting to home."
+      },
+      "vehicleNotFound": {
+        "title": "Vehicle not found",
+        "description": "This vehicle does not exist or is no longer available."
+      },
+      "loadError": {
+        "title": "Error",
+        "description": "Unable to load vehicle information."
+      },
+      "loginRequired": {
+        "title": "Login required",
+        "description": "You must be logged in to book a vehicle."
+      },
+      "missingInfo": {
+        "title": "Missing information",
+        "description": "Please select rental dates."
+      },
+      "bookingError": {
+        "title": "Booking error",
+        "description": "Unable to create the booking"
+      },
+      "unexpectedError": {
+        "title": "Unexpected error",
+        "description": "An error occurred while creating the booking"
+      }
+    },
+    "notSpecified": "Not specified",
+    "reviews": {
+      "title": "Reviews",
+      "sample1": {
+        "meta": "2 weeks ago • 3-day rental",
+        "text": "Vehicle in perfect condition, very clean. Pierre is a caring and available host. Highly recommended!"
+      },
+      "sample2": {
+        "meta": "1 month ago • 5-day rental",
+        "text": "Excellent vehicle to explore the island. Economical and reliable. Perfect communication with the owner."
+      }
+    },
+    "insurance": {
+      "title": "Included insurance",
+      "items": {
+        "axa": "Comprehensive insurance provided by AXA",
+        "roadside": "24/7 roadside assistance"
+      },
+      "coverageTitle": "What the insurance covers:",
+      "coverage": {
+        "collision": "Collision damage",
+        "theft": "Theft and vandalism",
+        "glass": "Glass breakage",
+        "fire": "Fire"
+      },
+      "conditionsTitle": "Conditions:",
+      "conditions": {
+        "minAge": "Minimum age: 21",
+        "licenseYears": "Driving license held for 2 years",
+        "deductible": "Excess: €800",
+        "deposit": "Deposit: €1000"
+      }
+    },
+    "benefits": {
+      "title": "Benefits with every rental",
+      "items": {
+        "extension": "Easy extension",
+        "lateReturn": "30 minutes grace period for late returns",
+        "support": "Customer support 7 days a week"
+      }
+    },
+    "legal": {
+      "title": "Pre-contractual information",
+      "paragraph1": "In accordance with Article L.221-18 of the French Consumer Code, you have a 14-day withdrawal period from the conclusion of the contract.",
+      "paragraph2": "In case of dispute, you can use consumer mediation or take the matter to the competent court.",
+      "ctaConditions": "Terms and conditions",
+      "ctaMore": "Learn more"
+    }
+  },
   "home": {
     "heroTitle": "Rent your scooter in Nosy Be in just a few clicks",
     "heroSubtitle": "RENTANOO, the first 100% online scooter rental platform",

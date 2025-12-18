@@ -106,7 +106,7 @@ export default function MotoVehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
 
   console.log("🏍️ [DEBUG] License from useParams:", license);
   console.log("🏍️ [DEBUG] Navigate function:", typeof navigate);
@@ -225,9 +225,8 @@ export default function MotoVehicleDetails() {
             supabaseVehicle.vehicle_type
           );
           toast({
-            title: "Véhicule incompatible",
-            description:
-              "Cette page est réservée aux motos. Redirection vers l'accueil.",
+            title: t("motoDetails.errors.vehicleIncompatible.title"),
+            description: t("motoDetails.errors.vehicleIncompatible.description"),
             variant: "destructive",
           });
           navigate("/");
@@ -290,8 +289,8 @@ export default function MotoVehicleDetails() {
         }
       } else {
         toast({
-          title: "Véhicule non trouvé",
-          description: "Ce véhicule n'existe pas ou n'est plus disponible.",
+          title: t("motoDetails.errors.vehicleNotFound.title"),
+          description: t("motoDetails.errors.vehicleNotFound.description"),
           variant: "destructive",
         });
         navigate("/");
@@ -299,8 +298,8 @@ export default function MotoVehicleDetails() {
     } catch (error) {
       console.error("Erreur lors du chargement du véhicule (moto):", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les informations du véhicule.",
+        title: t("motoDetails.errors.loadError.title"),
+        description: t("motoDetails.errors.loadError.description"),
         variant: "destructive",
       });
       navigate("/");
@@ -337,8 +336,8 @@ export default function MotoVehicleDetails() {
         "❌ [DEBUG] Utilisateur non connecté, redirection vers login (moto)"
       );
       toast({
-        title: "Connexion requise",
-        description: "Vous devez être connecté pour réserver un véhicule.",
+        title: t("motoDetails.errors.loginRequired.title"),
+        description: t("motoDetails.errors.loginRequired.description"),
       });
       navigate("/auth/login");
       return;
@@ -346,8 +345,8 @@ export default function MotoVehicleDetails() {
 
     if (!vehicle || !navigationState?.rentalCalculation) {
       toast({
-        title: "Informations manquantes",
-        description: "Veuillez sélectionner des dates de location.",
+        title: t("motoDetails.errors.missingInfo.title"),
+        description: t("motoDetails.errors.missingInfo.description"),
         variant: "destructive",
       });
       return;
@@ -367,7 +366,7 @@ export default function MotoVehicleDetails() {
           year: vehicle.year,
           imageUrl: photos.length > 0 ? photos[0].url : undefined,
         },
-        navigationState.pickupLocation || "Non spécifié",
+        navigationState.pickupLocation || t("motoDetails.notSpecified"),
         navigationState.rentalCalculation,
         vehicle.dailyPrice,
         vehicleRentalInfo?.totalCost || 0
@@ -386,7 +385,7 @@ export default function MotoVehicleDetails() {
         vehicleModel: vehicle.model,
         vehicleYear: vehicle.year,
         vehicleImageUrl: photos.length > 0 ? photos[0].url : undefined,
-        pickupLocation: navigationState.pickupLocation || "Non spécifié",
+        pickupLocation: navigationState.pickupLocation || t("motoDetails.notSpecified"),
         startDate: navigationState.rentalCalculation.startDate.toISOString(),
         endDate: navigationState.rentalCalculation.endDate.toISOString(),
         startTime: navigationState.rentalCalculation.startTime,
@@ -549,9 +548,9 @@ export default function MotoVehicleDetails() {
         navigate(url);
       } else if (bookingResult.error) {
         toast({
-          title: "Erreur de réservation",
+          title: t("motoDetails.errors.bookingError.title"),
           description:
-            bookingResult.error || "Impossible de créer la réservation",
+            bookingResult.error || t("motoDetails.errors.bookingError.description"),
           variant: "destructive",
         });
         return;
@@ -562,8 +561,8 @@ export default function MotoVehicleDetails() {
         error
       );
       toast({
-        title: "Erreur inattendue",
-        description: "Une erreur est survenue lors de la création de la réservation",
+        title: t("motoDetails.errors.unexpectedError.title"),
+        description: t("motoDetails.errors.unexpectedError.description"),
         variant: "destructive",
       });
       return;
@@ -611,7 +610,9 @@ export default function MotoVehicleDetails() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Chargement du véhicule...</p>
+            <p className="text-muted-foreground">
+              {t("motoDetails.loading")}
+            </p>
           </div>
         </main>
       </div>
@@ -648,11 +649,15 @@ export default function MotoVehicleDetails() {
                 {originalRate}€
               </span>
             </div>
-            <p className="text-muted-foreground">par jour</p>
+            <p className="text-muted-foreground">
+              {t("common.par_jour")}
+            </p>
 
             {vehicleRentalInfo && (
               <div className="mt-3 pt-3 border-t border-muted">
-                <p className="text-sm text-muted-foreground mb-1">Tarif de base* :</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {t("booking.baseRateLabel")}
+                </p>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-3xl font-bold text-primary">
                     {formatCurrency(vehicleRentalInfo.totalCost)}
@@ -662,7 +667,7 @@ export default function MotoVehicleDetails() {
                   {formatLegacyFormattedPrice(t, vehicleRentalInfo)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
-                  * Hors options et frais de service
+                  {t("booking.excludingFeesNote")}
                 </p>
               </div>
             )}
@@ -674,7 +679,7 @@ export default function MotoVehicleDetails() {
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
             <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
-            Réserver
+            {t("booking.reserve")}
           </Button>
 
           {(() => {
@@ -688,26 +693,28 @@ export default function MotoVehicleDetails() {
 
           <Badge variant="secondary" className="w-full justify-center py-1">
             <CheckCircle className="h-4 w-4 mr-1" />
-            Annulation gratuite
+            {t("booking.freeCancellation")}
           </Badge>
         </div>
 
         <Separator className="my-6" />
 
         <div>
-          <h3 className="font-semibold mb-4">Inclus dans le prix</h3>
+          <h3 className="font-semibold mb-4">
+            {t("booking.includedInPrice")}
+          </h3>
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-green-500" />
-              <span>Assurance multirisque</span>
+              <span>{t("booking.included.insurance")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-blue-500" />
-              <span>Assistance routière 24/7</span>
+              <span>{t("booking.included.roadside")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-purple-500" />
-              <span>Conducteurs additionnels gratuits</span>
+              <span>{t("booking.included.extraDrivers")}</span>
             </div>
           </div>
         </div>
@@ -727,7 +734,7 @@ export default function MotoVehicleDetails() {
             className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
+            {t("motoDetails.back")}
           </Button>
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
@@ -883,7 +890,7 @@ export default function MotoVehicleDetails() {
                 <Card className="border-primary/20 bg-primary/5">
                   <CardHeader className="pb-3 flex justify-center">
                     <CardTitle className="text-lg text-primary text-center">
-                      Livraison gratuite à votre hôtel
+                      {t("motoDetails.freeHotelDelivery")}
                     </CardTitle>
                   </CardHeader>
                 </Card>
@@ -892,7 +899,7 @@ export default function MotoVehicleDetails() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="max-w-md">
                   {vehicle && (
-                    <VehicleOwnerCard vehicleId={vehicle.id} className="w-full" />
+                    <VehicleOwnerCard vehicleId={vehicle.id} className="w-full" isMoto={true} />
                   )}
                 </div>
 
@@ -902,7 +909,7 @@ export default function MotoVehicleDetails() {
                       <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Car className="h-5 w-5 text-primary" />
-                          Description de la moto
+                          {t("motoDetails.descriptionTitle")}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 p-4">
@@ -923,7 +930,7 @@ export default function MotoVehicleDetails() {
                   <CollapsibleTrigger asChild>
                     <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                       <CardTitle className="flex items-center justify-between text-lg">
-                        Caractéristiques techniques
+                        {t("motoDetails.technicalTitle")}
                         <ChevronRight
                           className={`h-4 w-4 transition-transform ${
                             expandedSections.technical ? "rotate-90" : ""
@@ -937,7 +944,7 @@ export default function MotoVehicleDetails() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         <div className="bg-gray-50/50 p-3 rounded-lg text-center">
                           <div className="text-xs text-gray-600 mb-1">
-                            Carburant
+                            {t("motoDetails.technical.fuel")}
                           </div>
                           <div className="text-sm font-semibold text-primary">
                             {fuelLabel}
@@ -945,14 +952,16 @@ export default function MotoVehicleDetails() {
                         </div>
                         <div className="bg-gray-50/50 p-3 rounded-lg text-center">
                           <div className="text-xs text-gray-600 mb-1">
-                            Transmission
+                            {t("motoDetails.technical.transmission")}
                           </div>
                           <div className="text-sm font-semibold text-primary">
                             {transmissionLabel}
                           </div>
                         </div>
                         <div className="bg-gray-50/50 p-3 rounded-lg text-center">
-                          <div className="text-xs text-gray-600 mb-1">Places</div>
+                          <div className="text-xs text-gray-600 mb-1">
+                            {t("motoDetails.technical.seats")}
+                          </div>
                           <div className="text-sm font-semibold text-primary">
                             {seatsLabel}
                           </div>
@@ -960,7 +969,7 @@ export default function MotoVehicleDetails() {
                         {engineCapacity && (
                           <div className="bg-gray-50/50 p-3 rounded-lg text-center">
                             <div className="text-xs text-gray-600 mb-1">
-                              Cylindrée
+                              {t("motoDetails.technical.engine")}
                             </div>
                             <div className="text-sm font-semibold text-primary">
                               {engineCapacity} cc
@@ -969,7 +978,7 @@ export default function MotoVehicleDetails() {
                         )}
                         <div className="bg-gray-50/50 p-3 rounded-lg text-center">
                           <div className="text-xs text-gray-600 mb-1">
-                            Kilométrage
+                            {t("motoDetails.technical.mileage")}
                           </div>
                           <div className="text-sm font-semibold text-primary">
                             {vehicle.mileage.toLocaleString()} km
@@ -992,7 +1001,7 @@ export default function MotoVehicleDetails() {
                     <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                       <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <span>Évaluations</span>
+                          <span>{t("motoDetails.reviews.title")}</span>
                           <div className="flex items-center gap-2">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span className="text-lg font-bold">5.0</span>
@@ -1044,12 +1053,10 @@ export default function MotoVehicleDetails() {
                                 </div>
                               </div>
                               <p className="text-sm text-muted-foreground mb-1">
-                                Il y a 2 semaines • 3 jours de location
+                                {t("motoDetails.reviews.sample1.meta")}
                               </p>
                               <p className="text-sm">
-                                Véhicule en parfait état, très propre. Pierre est un
-                                hôte attentionné et disponible. Je recommande
-                                vivement !
+                                {t("motoDetails.reviews.sample1.text")}
                               </p>
                             </div>
                           </div>
@@ -1074,12 +1081,10 @@ export default function MotoVehicleDetails() {
                                 </div>
                               </div>
                               <p className="text-sm text-muted-foreground mb-1">
-                                Il y a 1 mois • 5 jours de location
+                                {t("motoDetails.reviews.sample2.meta")}
                               </p>
                               <p className="text-sm">
-                                Excellent véhicule pour découvrir l'île. Économique
-                                et fiable. Communication parfaite avec le
-                                propriétaire.
+                                {t("motoDetails.reviews.sample2.text")}
                               </p>
                             </div>
                           </div>
@@ -1100,7 +1105,7 @@ export default function MotoVehicleDetails() {
                       <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Shield className="h-5 w-5 text-primary" />
-                          Assurance incluse
+                          {t("motoDetails.insurance.title")}
                         </div>
                         <ChevronRight
                           className={`h-4 w-4 transition-transform ${
@@ -1115,11 +1120,11 @@ export default function MotoVehicleDetails() {
                       <div className="space-y-4">
                         <div className="flex items-center gap-3">
                           <CheckCircle className="h-5 w-5 text-green-500" />
-                          <span>Assurance multirisque fournie par AXA</span>
+                          <span>{t("motoDetails.insurance.items.axa")}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <CheckCircle className="h-5 w-5 text-green-500" />
-                          <span>Assistance routière 24/7</span>
+                          <span>{t("motoDetails.insurance.items.roadside")}</span>
                         </div>
 
                         <Separator />
@@ -1127,22 +1132,22 @@ export default function MotoVehicleDetails() {
                         <div className="grid md:grid-cols-2 gap-4 text-sm">
                           <div>
                             <h4 className="font-medium mb-2">
-                              Ce que prend en charge l'assurance :
+                              {t("motoDetails.insurance.coverageTitle")}
                             </h4>
                             <ul className="space-y-1 text-muted-foreground">
-                              <li>• Dommages collision</li>
-                              <li>• Vol et vandalisme</li>
-                              <li>• Bris de glace</li>
-                              <li>• Incendie</li>
+                              <li>• {t("motoDetails.insurance.coverage.collision")}</li>
+                              <li>• {t("motoDetails.insurance.coverage.theft")}</li>
+                              <li>• {t("motoDetails.insurance.coverage.glass")}</li>
+                              <li>• {t("motoDetails.insurance.coverage.fire")}</li>
                             </ul>
                           </div>
                           <div>
-                            <h4 className="font-medium mb-2">Conditions :</h4>
+                            <h4 className="font-medium mb-2">{t("motoDetails.insurance.conditionsTitle")}</h4>
                             <ul className="space-y-1 text-muted-foreground">
-                              <li>• Âge minimum : 21 ans</li>
-                              <li>• Permis depuis 2 ans</li>
-                              <li>• Franchise : 800€</li>
-                              <li>• Caution : 1000€</li>
+                              <li>• {t("motoDetails.insurance.conditions.minAge")}</li>
+                              <li>• {t("motoDetails.insurance.conditions.licenseYears")}</li>
+                              <li>• {t("motoDetails.insurance.conditions.deductible")}</li>
+                              <li>• {t("motoDetails.insurance.conditions.deposit")}</li>
                             </ul>
                           </div>
                         </div>
@@ -1160,7 +1165,7 @@ export default function MotoVehicleDetails() {
                   <CollapsibleTrigger asChild>
                     <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                       <CardTitle className="flex items-center justify-between">
-                        Avantages à chaque location
+                        {t("motoDetails.benefits.title")}
                         <ChevronRight
                           className={`h-4 w-4 transition-transform ${
                             expandedSections.benefits ? "rotate-90" : ""
@@ -1174,15 +1179,15 @@ export default function MotoVehicleDetails() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
                           <Clock className="h-4 w-4 text-blue-500" />
-                          <span>Prolongation facile</span>
+                          <span>{t("motoDetails.benefits.items.extension")}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span>30 minutes de marge pour les retours tardifs</span>
+                          <span>{t("motoDetails.benefits.items.lateReturn")}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <Phone className="h-4 w-4 text-purple-500" />
-                          <span>Support client 7j/7</span>
+                          <span>{t("motoDetails.benefits.items.support")}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -1198,7 +1203,7 @@ export default function MotoVehicleDetails() {
                   <CollapsibleTrigger asChild>
                     <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                       <CardTitle className="flex items-center justify-between">
-                        Informations précontractuelles
+                        {t("motoDetails.legal.title")}
                         <ChevronRight
                           className={`h-4 w-4 transition-transform ${
                             expandedSections.legal ? "rotate-90" : ""
@@ -1211,26 +1216,23 @@ export default function MotoVehicleDetails() {
                     <CardContent className="pt-0">
                       <div className="space-y-3 text-sm text-muted-foreground">
                         <p>
-                          Conformément à l'article L.221-18 du Code de la
-                          consommation, vous disposez d'un droit de rétractation de
-                          14 jours à compter de la conclusion du contrat.
+                          {t("motoDetails.legal.paragraph1")}
                         </p>
                         <p>
-                          En cas de litige, vous pouvez recourir à la médiation de
-                          la consommation ou saisir le tribunal compétent.
+                          {t("motoDetails.legal.paragraph2")}
                         </p>
                         <div className="flex gap-4">
                           <Button
                             variant="link"
                             className="p-0 h-auto text-primary"
                           >
-                            Conditions générales
+                            {t("motoDetails.legal.ctaConditions")}
                           </Button>
                           <Button
                             variant="link"
                             className="p-0 h-auto text-primary"
                           >
-                            En savoir plus
+                            {t("motoDetails.legal.ctaMore")}
                           </Button>
                         </div>
                       </div>
@@ -1268,7 +1270,7 @@ export default function MotoVehicleDetails() {
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {dailyRate}€/jour • Hors options
+                    {dailyRate}€/{t("common.par_jour")} • {t("booking.excludingFeesNote")}
                   </div>
                 </>
               ) : (
@@ -1279,7 +1281,9 @@ export default function MotoVehicleDetails() {
                   <span className="text-sm text-muted-foreground line-through">
                     {originalRate}€
                   </span>
-                  <span className="text-sm text-muted-foreground">par jour</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t("common.par_jour")}
+                  </span>
                 </div>
               )}
             </div>
@@ -1289,11 +1293,13 @@ export default function MotoVehicleDetails() {
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >
               <Zap className="h-4 w-4 mr-2 text-yellow-400" fill="currentColor" />
-              Réserver
+              {t("booking.reserve")}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Panneau debug i18n - DEV uniquement */}
 
       <Footer />
 
@@ -1309,7 +1315,7 @@ export default function MotoVehicleDetails() {
             imageUrl: photos.length > 0 ? photos[0].url : undefined,
           }}
           rentalInfo={{
-            pickupLocation: navigationState.pickupLocation || "Non spécifié",
+            pickupLocation: navigationState.pickupLocation || t("motoDetails.notSpecified"),
             startDate: new Date(navigationState.startDate!),
             endDate: new Date(navigationState.endDate!),
             startTime: navigationState.startTime!,

@@ -148,6 +148,114 @@
       "resultsFound_other": "{{count}} Fahrzeuge gefunden"
     }
   },
+  "motoDetails": {
+    "back": "Zurück",
+    "loading": "Fahrzeug wird geladen...",
+    "descriptionTitle": "Beschreibung des Rollers",
+    "technicalTitle": "Technische Daten",
+    "technical": {
+      "fuel": "Kraftstoff",
+      "transmission": "Getriebe",
+      "seats": "Sitzplätze",
+      "engine": "Hubraum",
+      "mileage": "Kilometerstand",
+      "color": "Farbe"
+    },
+    "freeHotelDelivery": "Kostenlose Lieferung zu Ihrem Hotel",
+    "owner": {
+      "title": "Vermieter",
+      "verified": "Verifiziert",
+      "pending": "Ausstehend",
+      "memberSince": "Mitglied seit {{date}}",
+      "stats": {
+        "vehicles": "Fahrzeuge",
+        "rentals": "Mieten",
+        "thisCar": "Dieses Auto",
+        "thisMoto": "Dieses Motorrad"
+      },
+      "keyHandover": "Schlüsselübergabe: Direkt von {{ownerName}}, um alle Ratschläge zu erhalten.",
+      "howItWorks": "Wie funktioniert das?",
+      "loadError": "Vermieterinformationen konnten nicht geladen werden"
+    },
+    "errors": {
+      "vehicleIncompatible": {
+        "title": "Inkompatibles Fahrzeug",
+        "description": "Diese Seite ist für Motorräder reserviert. Weiterleitung zur Startseite."
+      },
+      "vehicleNotFound": {
+        "title": "Fahrzeug nicht gefunden",
+        "description": "Dieses Fahrzeug existiert nicht oder ist nicht mehr verfügbar."
+      },
+      "loadError": {
+        "title": "Fehler",
+        "description": "Fahrzeuginformationen konnten nicht geladen werden."
+      },
+      "loginRequired": {
+        "title": "Anmeldung erforderlich",
+        "description": "Sie müssen angemeldet sein, um ein Fahrzeug zu buchen."
+      },
+      "missingInfo": {
+        "title": "Fehlende Informationen",
+        "description": "Bitte wählen Sie Mietdaten aus."
+      },
+      "bookingError": {
+        "title": "Buchungsfehler",
+        "description": "Buchung konnte nicht erstellt werden"
+      },
+      "unexpectedError": {
+        "title": "Unerwarteter Fehler",
+        "description": "Beim Erstellen der Buchung ist ein Fehler aufgetreten"
+      }
+    },
+    "notSpecified": "Nicht angegeben",
+    "reviews": {
+      "title": "Bewertungen",
+      "sample1": {
+        "meta": "Vor 2 Wochen • 3 Tage Miete",
+        "text": "Fahrzeug in einwandfreiem Zustand, sehr sauber. Pierre ist ein aufmerksamer und verfügbarer Gastgeber. Sehr zu empfehlen!"
+      },
+      "sample2": {
+        "meta": "Vor 1 Monat • 5 Tage Miete",
+        "text": "Ausgezeichnetes Fahrzeug, um die Insel zu entdecken. Sparsam und zuverlässig. Perfekte Kommunikation mit dem Eigentümer."
+      }
+    },
+    "insurance": {
+      "title": "Inklusive Versicherung",
+      "items": {
+        "axa": "Vollkaskoversicherung von AXA",
+        "roadside": "Pannenhilfe rund um die Uhr"
+      },
+      "coverageTitle": "Was die Versicherung abdeckt:",
+      "coverage": {
+        "collision": "Kollisionsschäden",
+        "theft": "Diebstahl und Vandalismus",
+        "glass": "Glasschäden",
+        "fire": "Brand"
+      },
+      "conditionsTitle": "Bedingungen:",
+      "conditions": {
+        "minAge": "Mindestalter: 21 Jahre",
+        "licenseYears": "Führerschein seit 2 Jahren",
+        "deductible": "Selbstbeteiligung: 800€",
+        "deposit": "Kaution: 1000€"
+      }
+    },
+    "benefits": {
+      "title": "Vorteile bei jeder Miete",
+      "items": {
+        "extension": "Einfache Verlängerung",
+        "lateReturn": "30 Minuten Kulanz bei verspäteter Rückgabe",
+        "support": "Kundensupport 7 Tage die Woche"
+      }
+    },
+    "legal": {
+      "title": "Vorvertragliche Informationen",
+      "paragraph1": "Gemäß Artikel L.221-18 des französischen Verbrauchergesetzbuchs haben Sie ein Widerrufsrecht von 14 Tagen ab Vertragsabschluss.",
+      "paragraph2": "Im Streitfall können Sie eine Verbraucherschlichtung in Anspruch nehmen oder das zuständige Gericht anrufen.",
+      "ctaConditions": "Allgemeine Geschäftsbedingungen",
+      "ctaMore": "Mehr erfahren"
+    }
+  },
   "footer": {
     "brand": "RENTANOO",
     "description": "Scootervermietung in Nosy Be. 100 % online buchen – schnell und einfach.",
@@ -648,6 +756,18 @@
         "title": "Fehler",
         "description": "Ihre Fahrzeuge konnten nicht geladen werden"
       }
+    }
+  },
+  "booking": {
+    "baseRateLabel": "Grundpreis*:",
+    "excludingFeesNote": "* Ohne Optionen und Servicegebühren",
+    "reserve": "Buchen",
+    "freeCancellation": "Kostenlose Stornierung",
+    "includedInPrice": "Im Preis enthalten",
+    "included": {
+      "insurance": "Vollkaskoversicherung",
+      "roadside": "24/7 Pannenhilfe",
+      "extraDrivers": "Kostenlose zusätzliche Fahrer"
     }
   },
   "dictionary": {

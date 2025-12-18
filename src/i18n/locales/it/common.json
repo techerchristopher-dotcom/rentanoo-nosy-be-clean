@@ -148,6 +148,114 @@
       "resultsFound_other": "{{count}} veicoli trovati"
     }
   },
+  "motoDetails": {
+    "back": "Indietro",
+    "loading": "Caricamento del veicolo...",
+    "descriptionTitle": "Descrizione della moto",
+    "technicalTitle": "Caratteristiche tecniche",
+    "technical": {
+      "fuel": "Carburante",
+      "transmission": "Cambio",
+      "seats": "Posti",
+      "engine": "Cilindrata",
+      "mileage": "Chilometraggio",
+      "color": "Colore"
+    },
+    "freeHotelDelivery": "Consegna gratuita al tuo hotel",
+    "owner": {
+      "title": "Proprietario",
+      "verified": "Verificato",
+      "pending": "In attesa",
+      "memberSince": "Membro da {{date}}",
+      "stats": {
+        "vehicles": "Veicoli",
+        "rentals": "Noleggi",
+        "thisCar": "Questa auto",
+        "thisMoto": "Questa moto"
+      },
+      "keyHandover": "Consegna delle chiavi: Direttamente da {{ownerName}} per ottenere tutti i consigli.",
+      "howItWorks": "Come funziona?",
+      "loadError": "Impossibile caricare le informazioni del proprietario"
+    },
+    "errors": {
+      "vehicleIncompatible": {
+        "title": "Veicolo incompatibile",
+        "description": "Questa pagina è riservata alle moto. Reindirizzamento alla home."
+      },
+      "vehicleNotFound": {
+        "title": "Veicolo non trovato",
+        "description": "Questo veicolo non esiste o non è più disponibile."
+      },
+      "loadError": {
+        "title": "Errore",
+        "description": "Impossibile caricare le informazioni del veicolo."
+      },
+      "loginRequired": {
+        "title": "Accesso richiesto",
+        "description": "Devi essere connesso per prenotare un veicolo."
+      },
+      "missingInfo": {
+        "title": "Informazioni mancanti",
+        "description": "Seleziona le date di noleggio."
+      },
+      "bookingError": {
+        "title": "Errore di prenotazione",
+        "description": "Impossibile creare la prenotazione"
+      },
+      "unexpectedError": {
+        "title": "Errore imprevisto",
+        "description": "Si è verificato un errore durante la creazione della prenotazione"
+      }
+    },
+    "notSpecified": "Non specificato",
+    "reviews": {
+      "title": "Valutazioni",
+      "sample1": {
+        "meta": "2 settimane fa • 3 giorni di noleggio",
+        "text": "Veicolo in perfette condizioni, molto pulito. Pierre è un host premuroso e disponibile. Consigliatissimo!"
+      },
+      "sample2": {
+        "meta": "1 mese fa • 5 giorni di noleggio",
+        "text": "Ottimo veicolo per scoprire l'isola. Economico e affidabile. Comunicazione perfetta con il proprietario."
+      }
+    },
+    "insurance": {
+      "title": "Assicurazione inclusa",
+      "items": {
+        "axa": "Assicurazione completa fornita da AXA",
+        "roadside": "Assistenza stradale 24/7"
+      },
+      "coverageTitle": "Cosa copre l'assicurazione:",
+      "coverage": {
+        "collision": "Danni da collisione",
+        "theft": "Furto e atti vandalici",
+        "glass": "Rottura dei vetri",
+        "fire": "Incendio"
+      },
+      "conditionsTitle": "Condizioni:",
+      "conditions": {
+        "minAge": "Età minima: 21 anni",
+        "licenseYears": "Patente da almeno 2 anni",
+        "deductible": "Franchigia: 800€",
+        "deposit": "Deposito cauzionale: 1000€"
+      }
+    },
+    "benefits": {
+      "title": "Vantaggi per ogni noleggio",
+      "items": {
+        "extension": "Prolungamento facile",
+        "lateReturn": "30 minuti di tolleranza per i ritardi",
+        "support": "Assistenza clienti 7 giorni su 7"
+      }
+    },
+    "legal": {
+      "title": "Informazioni precontrattuali",
+      "paragraph1": "Ai sensi dell'articolo L.221-18 del Codice del consumo francese, hai un diritto di recesso di 14 giorni dalla conclusione del contratto.",
+      "paragraph2": "In caso di controversia puoi ricorrere alla mediazione del consumo o rivolgerti al tribunale competente.",
+      "ctaConditions": "Condizioni generali",
+      "ctaMore": "Scopri di più"
+    }
+  },
   "footer": {
     "brand": "RENTANOO",
     "description": "Agenzia di noleggio scooter a Nosy Be. Prenotazione 100% online, facile e veloce.",
@@ -648,6 +756,18 @@
         "title": "Errore",
         "description": "Impossibile caricare i tuoi veicoli"
       }
+    }
+  },
+  "booking": {
+    "baseRateLabel": "Tariffa base*:",
+    "excludingFeesNote": "* Escluse opzioni e commissioni di servizio",
+    "reserve": "Prenota",
+    "freeCancellation": "Cancellazione gratuita",
+    "includedInPrice": "Incluso nel prezzo",
+    "included": {
+      "insurance": "Assicurazione completa",
+      "roadside": "Assistenza stradale 24/7",
+      "extraDrivers": "Conducenti aggiuntivi gratuiti"
     }
   },
   "dictionary": {

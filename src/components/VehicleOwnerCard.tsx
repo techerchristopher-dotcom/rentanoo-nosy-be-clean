@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { User, Calendar, Car, Star, Shield } from "lucide-react";
 import { VehicleOwnerService, VehicleWithOwner } from "@/services/supabase/vehicleOwner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface VehicleOwnerCardProps {
   vehicleId: string;
   className?: string;
+  isMoto?: boolean;
 }
 
-export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerCardProps) {
+export default function VehicleOwnerCard({ vehicleId, className, isMoto = false }: VehicleOwnerCardProps) {
+  const { t, i18n } = useTranslation("common");
   const [ownerData, setOwnerData] = useState<VehicleWithOwner | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +35,7 @@ export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerC
         }
       } catch (err) {
         console.error('Erreur lors du chargement des données du propriétaire:', err);
-        setError('Erreur lors du chargement des informations');
+        setError(t("motoDetails.owner.loadError"));
       } finally {
         setLoading(false);
       }
@@ -64,7 +67,7 @@ export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerC
       <Card className={cn("bg-white/90 backdrop-blur-sm border-red-200 shadow-soft", className)}>
         <CardContent className="p-6">
           <div className="text-center text-red-600">
-            <p>Impossible de charger les informations du propriétaire</p>
+            <p>{t("motoDetails.owner.loadError")}</p>
             <p className="text-sm text-gray-500 mt-1">{error}</p>
           </div>
         </CardContent>
@@ -79,7 +82,7 @@ export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerC
       <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
         <CardTitle className="flex items-center text-lg font-semibold text-primary">
           <User className="w-5 h-5 mr-2" />
-          Propriétaire
+          {t("motoDetails.owner.title")}
         </CardTitle>
       </CardHeader>
       
@@ -112,13 +115,13 @@ export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerC
                 )}
               >
                 <Shield className="w-3 h-3 mr-1" />
-                {owner.kycStatus === 'verified' ? 'Vérifié' : 'En attente'}
+                {owner.kycStatus === 'verified' ? t("motoDetails.owner.verified") : t("motoDetails.owner.pending")}
               </Badge>
             </div>
             
             <div className="flex items-center text-xs text-gray-500 mt-1">
               <Calendar className="w-3 h-3 mr-1" />
-              Membre depuis {owner.memberSince}
+              {t("motoDetails.owner.memberSince", { date: owner.memberSince })}
             </div>
           </div>
         </div>
@@ -128,19 +131,19 @@ export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerC
           <div className="text-center p-2 bg-gray-50/50 rounded-lg">
             <Car className="w-4 h-4 text-primary mx-auto mb-1" />
             <div className="text-sm font-bold text-primary">{owner.totalVehicles}</div>
-            <div className="text-xs text-gray-600">Véhicules</div>
+            <div className="text-xs text-gray-600">{t("motoDetails.owner.stats.vehicles")}</div>
           </div>
           
           <div className="text-center p-2 bg-gray-50/50 rounded-lg">
             <Star className="w-4 h-4 text-primary mx-auto mb-1" />
             <div className="text-sm font-bold text-primary">{owner.totalRentals}</div>
-            <div className="text-xs text-gray-600">Locations</div>
+            <div className="text-xs text-gray-600">{t("motoDetails.owner.stats.rentals")}</div>
           </div>
 
           <div className="text-center p-2 bg-primary-soft/20 rounded-lg">
             <Car className="w-4 h-4 text-primary mx-auto mb-1" />
             <div className="text-sm font-bold text-primary">{vehicle.rental_count}</div>
-            <div className="text-xs text-gray-600">Cette voiture</div>
+            <div className="text-xs text-gray-600">{isMoto ? t("motoDetails.owner.stats.thisMoto") : t("motoDetails.owner.stats.thisCar")}</div>
           </div>
         </div>
 
@@ -156,7 +159,7 @@ export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerC
         {/* Message d'accueil compact */}
         <div className="text-xs text-gray-600 bg-blue-50/30 p-2 rounded-lg">
           <p>
-            <strong>Récupération des clés :</strong> Directement auprès de {owner.firstName} pour obtenir tous les conseils.
+            {t("motoDetails.owner.keyHandover", { ownerName: owner.firstName })}
           </p>
         </div>
 
@@ -166,7 +169,7 @@ export default function VehicleOwnerCard({ vehicleId, className }: VehicleOwnerC
           size="sm" 
           className="w-full text-xs border-primary-soft text-primary hover:bg-primary-soft/20 h-8"
         >
-          Comment ça marche ?
+          {t("motoDetails.owner.howItWorks")}
         </Button>
       </CardContent>
     </Card>

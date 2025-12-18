@@ -132,6 +132,126 @@
   "pricing": {
     "total_for_duration": "soit {{total}} ({{duration}})"
   },
+  "booking": {
+    "baseRateLabel": "Tarif de base* :",
+    "excludingFeesNote": "* Hors options et frais de service",
+    "reserve": "Réserver",
+    "freeCancellation": "Annulation gratuite",
+    "includedInPrice": "Inclus dans le prix",
+    "included": {
+      "insurance": "Assurance multirisque",
+      "roadside": "Assistance routière 24/7",
+      "extraDrivers": "Conducteurs additionnels gratuits"
+    }
+  },
+  "motoDetails": {
+    "back": "Retour",
+    "loading": "Chargement du véhicule...",
+    "descriptionTitle": "Description de la moto",
+    "technicalTitle": "Caractéristiques techniques",
+    "technical": {
+      "fuel": "Carburant",
+      "transmission": "Transmission",
+      "seats": "Places",
+      "engine": "Cylindrée",
+      "mileage": "Kilométrage",
+      "color": "Couleur"
+    },
+    "freeHotelDelivery": "Livraison gratuite à votre hôtel",
+    "owner": {
+      "title": "Propriétaire",
+      "verified": "Vérifié",
+      "pending": "En attente",
+      "memberSince": "Membre depuis {{date}}",
+      "stats": {
+        "vehicles": "Véhicules",
+        "rentals": "Locations",
+        "thisCar": "Cette voiture",
+        "thisMoto": "Cette moto"
+      },
+      "keyHandover": "Récupération des clés : Directement auprès de {{ownerName}} pour obtenir tous les conseils.",
+      "howItWorks": "Comment ça marche ?",
+      "loadError": "Impossible de charger les informations du propriétaire"
+    },
+    "errors": {
+      "vehicleIncompatible": {
+        "title": "Véhicule incompatible",
+        "description": "Cette page est réservée aux motos. Redirection vers l'accueil."
+      },
+      "vehicleNotFound": {
+        "title": "Véhicule non trouvé",
+        "description": "Ce véhicule n'existe pas ou n'est plus disponible."
+      },
+      "loadError": {
+        "title": "Erreur",
+        "description": "Impossible de charger les informations du véhicule."
+      },
+      "loginRequired": {
+        "title": "Connexion requise",
+        "description": "Vous devez être connecté pour réserver un véhicule."
+      },
+      "missingInfo": {
+        "title": "Informations manquantes",
+        "description": "Veuillez sélectionner des dates de location."
+      },
+      "bookingError": {
+        "title": "Erreur de réservation",
+        "description": "Impossible de créer la réservation"
+      },
+      "unexpectedError": {
+        "title": "Erreur inattendue",
+        "description": "Une erreur est survenue lors de la création de la réservation"
+      }
+    },
+    "notSpecified": "Non spécifié",
+    "reviews": {
+      "title": "Évaluations",
+      "sample1": {
+        "meta": "Il y a 2 semaines • 3 jours de location",
+        "text": "Véhicule en parfait état, très propre. Pierre est un hôte attentionné et disponible. Je recommande vivement !"
+      },
+      "sample2": {
+        "meta": "Il y a 1 mois • 5 jours de location",
+        "text": "Excellent véhicule pour découvrir l'île. Économique et fiable. Communication parfaite avec le propriétaire."
+      }
+    },
+    "insurance": {
+      "title": "Assurance incluse",
+      "items": {
+        "axa": "Assurance multirisque fournie par AXA",
+        "roadside": "Assistance routière 24/7"
+      },
+      "coverageTitle": "Ce que prend en charge l'assurance :",
+      "coverage": {
+        "collision": "Dommages collision",
+        "theft": "Vol et vandalisme",
+        "glass": "Bris de glace",
+        "fire": "Incendie"
+      },
+      "conditionsTitle": "Conditions :",
+      "conditions": {
+        "minAge": "Âge minimum : 21 ans",
+        "licenseYears": "Permis depuis 2 ans",
+        "deductible": "Franchise : 800€",
+        "deposit": "Caution : 1000€"
+      }
+    },
+    "benefits": {
+      "title": "Avantages à chaque location",
+      "items": {
+        "extension": "Prolongation facile",
+        "lateReturn": "30 minutes de marge pour les retours tardifs",
+        "support": "Support client 7j/7"
+      }
+    },
+    "legal": {
+      "title": "Informations précontractuelles",
+      "paragraph1": "Conformément à l'article L.221-18 du Code de la consommation, vous disposez d'un droit de rétractation de 14 jours à compter de la conclusion du contrat.",
+      "paragraph2": "En cas de litige, vous pouvez recourir à la médiation de la consommation ou saisir le tribunal compétent.",
+      "ctaConditions": "Conditions générales",
+      "ctaMore": "En savoir plus"
+    }
+  },
   "home": {
     "heroTitle": "Louez votre scooter à Nosy Be en quelques clics",
     "heroSubtitle": "RENTANOO, la première plateforme de location de scooters 100 % en ligne",
