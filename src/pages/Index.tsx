@@ -18,6 +18,7 @@ import {
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
+import { MotoVehicleCard } from "@/components/vehicles/moto-vehicle-card";
 import { SingleLocationModal } from "@/components/ui/single-location-modal";
 import { VehiclesService, PhotosService } from "@/services";
 import { Vehicle, Photo, VehicleFilters, RentalCalculation, VehicleRentalInfo } from "@/types";
@@ -26,6 +27,8 @@ import { PhotoService } from "@/services/supabase/photos";
 import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
 import { FEATURES } from "@/config/features";
+import { isMoto } from "@/utils/vehicleType";
+import { mapToCarVehicle, mapToMotoVehicle } from "@/mappers/vehicleMappers";
 
 
 const Index = () => {
@@ -521,8 +524,12 @@ const Index = () => {
     // Utiliser la license générée temporairement pour la navigation
     const license = vehicle.id.substring(0, 8).toUpperCase();
     
+    // Déterminer la route selon le type de véhicule
+    const isMotoVehicle = isMoto(vehicle);
+    const route = isMotoVehicle ? `/moto/${license}` : `/vehicle/${license}`;
+    
     // Passer les informations de location via le state de navigation
-        navigate(`/vehicle/${license}`, {
+        navigate(route, {
           state: {
             rentalCalculation: rentalCalculation || undefined,
             startDate: startDate?.toISOString(),
@@ -691,34 +698,24 @@ const Index = () => {
                     const vehicleRentalInfo = rentalCalculation 
                       ? getVehicleRentalInfo(vehicle.id, vehicle.price_per_day)
                       : undefined;
-                    
-                    return (
+
+                    const isMotoVehicle = isMoto(vehicle);
+                    const mappedVehicle: Vehicle = isMotoVehicle
+                      ? mapToMotoVehicle(vehicle)
+                      : mapToCarVehicle(vehicle);
+
+                    return isMotoVehicle ? (
+                      <MotoVehicleCard
+                        key={vehicle.id}
+                        vehicle={mappedVehicle}
+                        primaryPhoto={photos[vehicle.id] ?? null}
+                        rentalInfo={vehicleRentalInfo}
+                        onClick={() => handleVehicleClick(vehicle)}
+                      />
+                    ) : (
                       <VehicleCard
                         key={vehicle.id}
-                        vehicle={{
-                          id: vehicle.id,
-                          ownerId: vehicle.owner_id || "",
-                          license: vehicle.id.substring(0, 8).toUpperCase(), // Temporaire
-                          brand: vehicle.brand,
-                          model: vehicle.model,
-                          color: "Non spécifié", // À ajouter dans la DB plus tard
-                          fuel: (vehicle.fuel_type as any) || "gasoline",
-                          year: vehicle.year,
-                          hasAC: true, // À ajouter dans la DB plus tard
-                          doors: vehicle.seats || 5,
-                          transmission: (vehicle.transmission as any) || "manual",
-                          mileage: 0, // À ajouter dans la DB plus tard
-                          dailyPrice: vehicle.price_per_day,
-                          currency: "EUR",
-                          latitude: 0, // À ajouter dans la DB plus tard
-                          longitude: 0, // À ajouter dans la DB plus tard
-                          status: "available" as any,
-                          location: vehicle.pickup_zones && vehicle.pickup_zones.length > 0 
-                            ? vehicle.pickup_zones.join(', ') 
-                            : "Mamoudzou, Mayotte", // Utiliser les zones de prise en charge
-                          createdAt: vehicle.created_at || new Date().toISOString(),
-                          updatedAt: vehicle.updated_at || new Date().toISOString(),
-                        }}
+                        vehicle={mappedVehicle}
                         primaryPhoto={photos[vehicle.id] ?? null}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}

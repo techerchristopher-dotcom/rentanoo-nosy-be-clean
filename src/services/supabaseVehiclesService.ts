@@ -28,6 +28,8 @@ export interface Vehicle {
   has_carplay: boolean | null;
   has_audio_input: boolean | null;
   vehicle_category: string | null;
+  // Type explicite de véhicule (car, moto, scooter)
+  vehicle_type?: 'car' | 'moto' | 'scooter' | null;
   // Nouveaux champs de remises
   low_season_discount: number | null;
   high_season_surcharge: number | null;
@@ -180,6 +182,7 @@ export const SupabaseVehiclesService = {
     fuel_type?: string;
     engine_capacity?: string;
     vehicle_category?: string;
+    vehicle_type?: 'car' | 'moto' | 'scooter';
     has_ac?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
@@ -244,6 +247,7 @@ export const SupabaseVehiclesService = {
           color: vehicleData.color ?? null,
           license_plate: vehicleData.license_plate ?? null,
           vehicle_category: vehicleData.vehicle_category ?? null,
+          vehicle_type: vehicleData.vehicle_type ?? null,
           pickup_zones: vehicleData.pickup_zones ?? null,
           description: vehicleData.description ?? null,
           engine_capacity: vehicleData.engine_capacity ?? null,
@@ -372,9 +376,14 @@ export const SupabaseVehiclesService = {
 
       console.log('SupabaseVehiclesService.updateVehicle - Données finales:', finalUpdateData);
 
+      // La colonne 'location' n'existe pas dans la table 'vehicles' :
+      // on la retire du payload pour éviter l'erreur de schema cache.
+      // La localisation est gérée via pickup_zones ou d'autres champs.
+      const { location, ...safeUpdateData } = finalUpdateData as any;
+
       const { data, error } = await supabase
         .from('vehicles')
-        .update(finalUpdateData)
+        .update(safeUpdateData)
         .eq('id', vehicleId)
         .select()
         .single();

@@ -74,6 +74,30 @@
     "addDates": "Aggiungi le date",
     "selectDates": "Seleziona le date",
     "comingSoon": "Disponibile a breve",
+    "vehicle": {
+      "fuel": {
+        "gasoline": "Benzina",
+        "diesel": "Diesel",
+        "electric": "Elettrico",
+        "hybrid": "Ibrido"
+      },
+      "transmission": {
+        "manual": "Manuale",
+        "automatic": "Automatico"
+      },
+      "places_one": "{{count}} posto",
+      "places_other": "{{count}} posti"
+    },
+    "duration": {
+      "days_one": "{{count}} giorno",
+      "days_other": "{{count}} giorni",
+      "hours_one": "{{count}} ora",
+      "hours_other": "{{count}} ore",
+      "joiner": " + "
+    },
+    "pricing": {
+      "total_for_duration": "totale {{total}}€ ({{duration}})"
+    },
     "searchBar": {
       "departure": "Partenza",
       "return": "Ritorno",

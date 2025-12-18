@@ -60,6 +60,8 @@ export interface VehicleRentalInfo {
   pricePerDay: number;
   totalCost: number;
   formattedPrice: string;
+  days: number;
+  hours: number;
 }
 
 // Core entities
@@ -109,6 +111,8 @@ export interface Vehicle {
   status: VehicleStatus;
   description?: string; // Description du véhicule
   location?: string; // Localisation du véhicule
+  seats?: number; // Nombre de places (utile pour moto)
+  engineCapacity?: string; // Cylindrée (cc) pour moto
   
   // 🆕 Services supplémentaires configurés par le propriétaire
   // 🛩️ Services Aéroport

@@ -315,6 +315,7 @@ export default function AddMotoPlaceholder() {
         transmission: (transmission || "manual") as any,
         fuel_type: (fuelType || "gasoline") as any,
         engine_capacity: engineCapacity || undefined,
+        vehicle_type: 'moto',
         has_ac: false,
         has_gps: false,
         has_cruise_control: false,

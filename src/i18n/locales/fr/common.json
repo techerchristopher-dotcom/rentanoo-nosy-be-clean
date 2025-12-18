@@ -74,12 +74,63 @@
     "addDates": "Ajouter des dates",
     "selectDates": "Sélectionner des dates",
     "comingSoon": "Bientôt disponible",
+    "default_location": "Nosy Be, Madagascar",
     "searchBar": {
       "departure": "Départ",
       "return": "Retour",
       "date": "Date",
       "time": "Heure"
+    },
+    "vehicle": {
+      "places": "{{count}} places",
+      "fuel": {
+        "gasoline": "Essence",
+        "diesel": "Diesel",
+        "electric": "Électrique",
+        "hybrid": "Hybride"
+      },
+      "transmission": {
+        "manual": "Manuelle",
+        "automatic": "Automatique"
+      },
+      "places_one": "{{count}} place",
+      "places_other": "{{count}} places"
+    },
+    "duration": {
+      "days_one": "{{count}} jour",
+      "days_other": "{{count}} jours",
+      "hours_one": "{{count}} heure",
+      "hours_other": "{{count}} heures",
+      "joiner": " + "
+    },
+    "pricing": {
+      "total_for_duration": "soit {{total}} ({{duration}})"
     }
+  },
+  "vehicle": {
+    "places": "{{count}} places",
+    "fuel": {
+      "gasoline": "Essence",
+      "diesel": "Diesel",
+      "electric": "Électrique",
+      "hybrid": "Hybride"
+    },
+    "transmission": {
+      "manual": "Manuelle",
+      "automatic": "Automatique"
+    },
+    "places_one": "{{count}} place",
+    "places_other": "{{count}} places"
+  },
+  "duration": {
+    "days_one": "{{count}} jour",
+    "days_other": "{{count}} jours",
+    "hours_one": "{{count}} heure",
+    "hours_other": "{{count}} heures",
+    "joiner": " + "
+  },
+  "pricing": {
+    "total_for_duration": "soit {{total}} ({{duration}})"
   },
   "home": {
     "heroTitle": "Louez votre scooter à Nosy Be en quelques clics",

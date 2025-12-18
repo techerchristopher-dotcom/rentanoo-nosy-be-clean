@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { 
   Car, 
@@ -54,6 +55,8 @@ import { ProfileService } from "@/services/supabase/profile";
 import { Photo, User, RentalCalculation, VehicleRentalInfo } from "@/types";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import { createVehicleRentalInfo } from "@/lib/utils";
+import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
+import { formatCurrency } from "@/utils/currency";
 import { createBookingDraft, getBookingDraft, clearBookingDraft, saveBookingDraft } from "@/services/localStorage/bookingStorage";
 import { markPageRefresh } from "@/services/localStorage/searchStorage";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
@@ -94,6 +97,7 @@ export default function VehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation("common");
   
   console.log('🎯 [DEBUG] License from useParams:', license);
   console.log('🎯 [DEBUG] Navigate function:', typeof navigate);
@@ -723,11 +727,11 @@ export default function VehicleDetails() {
                 </p>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-3xl font-bold text-primary">
-                    {vehicleRentalInfo.totalCost}€
+                    {formatCurrency(vehicleRentalInfo.totalCost)}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {dailyRate}€/jour × {vehicleRentalInfo.formattedPrice.match(/\((.*?)\)/)?.[1]}
+                  {formatLegacyFormattedPrice(t, vehicleRentalInfo)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   * Hors options et frais de service

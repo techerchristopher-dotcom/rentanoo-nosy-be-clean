@@ -38,6 +38,7 @@ import DictionaryEntryPage from "./pages/dictionary/DictionaryEntry";
 import NotFound from "./pages/NotFound";
 import Checking from "./pages/Checking";
 import CheckinReturnPage from "./pages/checkin-return/[bookingId]";
+import MotoVehicleDetails from "./pages/vehicles/MotoVehicleDetails";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,8 @@ const App = () => (
             <Route path="/profile-test" element={<ProfileTest />} />
             <Route path="/vehicle/:license" element={<VehicleDetails />} />
             <Route path="/vehicle/:license/booking/discussion" element={<BookingDiscussion />} />
+            <Route path="/moto/:license" element={<MotoVehicleDetails />} />
+            <Route path="/moto/:license/booking/discussion" element={<BookingDiscussion />} />
             <Route path="/booking/message" element={<MessageToOwners />} />
             <Route path="/me/dashboard" element={<Dashboard />} />
             <Route path="/me/renter/bookings" element={<RenterBookings />} />

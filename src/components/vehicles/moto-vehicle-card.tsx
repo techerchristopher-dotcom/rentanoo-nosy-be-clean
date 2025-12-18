@@ -1,54 +1,35 @@
 import React, { useState, useRef } from "react";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Car, 
-  Fuel, 
-  Settings, 
-  Wind, 
-  MapPin, 
+import {
+  Fuel,
+  Settings,
+  MapPin,
   Euro,
   Users,
+  Gauge,
   Plane,
-  Ship
+  Ship,
 } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
+import { formatDuration } from "@/utils/formatDuration";
+import { formatCurrency } from "@/utils/currency";
 
-interface VehicleCardProps {
+interface MotoVehicleCardProps {
   vehicle: Vehicle;
   primaryPhoto?: Photo | null;
   onClick?: () => void;
   className?: string;
-  rentalInfo?: VehicleRentalInfo; // Informations de location (optionnel)
+  rentalInfo?: VehicleRentalInfo;
 }
-
-const fuelIcons = {
-  gasoline: Fuel,
-  diesel: Fuel,
-  electric: Car,
-  hybrid: Car
-};
-
-const fuelLabels = {
-  gasoline: "Essence",
-  diesel: "Diesel", 
-  electric: "Électrique",
-  hybrid: "Hybride"
-};
-
-const transmissionLabels = {
-  manual: "Manuelle",
-  automatic: "Automatique"
-};
 
 const PLACEHOLDER_URL =
   "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop";
 
-// Fonction pour obtenir l'icône appropriée selon la zone
 const getLocationIcon = (zone: string) => {
   switch (zone) {
     case "Aéroport":
@@ -61,32 +42,30 @@ const getLocationIcon = (zone: string) => {
   }
 };
 
-export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalInfo }: VehicleCardProps) {
-  const {
-    t: t,
-  } = useTranslation('common');
+export function MotoVehicleCard({
+  vehicle,
+  primaryPhoto,
+  onClick,
+  className,
+  rentalInfo,
+}: MotoVehicleCardProps) {
+  const { t } = useTranslation("common");
 
-  const FuelIcon = fuelIcons[vehicle.fuel] || Fuel;
-
-  // State pour stocker l'URL de fallback (photo suivante ou placeholder)
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
   const isFetchingFallback = useRef(false);
 
   const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
-    
-    // Si on est déjà sur le placeholder, ne rien faire
+
     if (img.src === PLACEHOLDER_URL) {
       return;
     }
 
-    // Si on a déjà un fallback en mémoire, l'utiliser
     if (fallbackImageUrl) {
       img.src = fallbackImageUrl;
       return;
     }
 
-    // Éviter les appels multiples simultanés
     if (isFetchingFallback.current) {
       img.src = PLACEHOLDER_URL;
       return;
@@ -95,17 +74,16 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
     isFetchingFallback.current = true;
 
     try {
-      // Plan B : Récupérer toutes les photos disponibles dans le Storage
-      const { data: availablePhotos, error } = await PhotoService.getVehiclePhotos(vehicle.id);
+      const { data: availablePhotos, error } = await PhotoService.getVehiclePhotos(
+        vehicle.id
+      );
 
       if (error || !availablePhotos || availablePhotos.length === 0) {
-        // Aucune photo disponible → placeholder
         setFallbackImageUrl(PLACEHOLDER_URL);
         img.src = PLACEHOLDER_URL;
         return;
       }
 
-      // Prendre la première photo disponible (qui existe vraiment dans le Storage)
       const firstValidPhoto = availablePhotos[0];
       if (firstValidPhoto && firstValidPhoto.url) {
         setFallbackImageUrl(firstValidPhoto.url);
@@ -115,7 +93,10 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
         img.src = PLACEHOLDER_URL;
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération des photos de fallback:', error);
+      console.error(
+        "Erreur lors de la récupération des photos de fallback (moto):",
+        error
+      );
       setFallbackImageUrl(PLACEHOLDER_URL);
       img.src = PLACEHOLDER_URL;
     } finally {
@@ -123,25 +104,18 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
     }
   };
 
-  // Construction de la durée formatée via i18n (jours/heures)
-  const buildDurationLabel = () => {
-    if (!rentalInfo) return "";
-    const parts: string[] = [];
-    if (rentalInfo.days > 0) {
-      parts.push(t("duration.days", { count: rentalInfo.days }));
-    }
-    if (rentalInfo.hours > 0) {
-      parts.push(t("duration.hours", { count: rentalInfo.hours }));
-    }
-    if (parts.length === 0) {
-      return "";
-    }
-    const joiner = t("duration.joiner");
-    return parts.join(joiner);
-  };
+  const seats = vehicle.seats;
+  const hasSeats = typeof seats === "number" && seats > 0;
+  const engineCapacity = vehicle.engineCapacity as string | undefined;
+  const fuel = vehicle.fuel as string | undefined;
+  const transmission = vehicle.transmission as string | undefined;
+  const durationLabel =
+    rentalInfo && typeof rentalInfo.days === "number" && typeof rentalInfo.hours === "number"
+      ? formatDuration(t, rentalInfo.days, rentalInfo.hours)
+      : null;
 
   return (
-    <Card 
+    <Card
       className={cn(
         "overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lagoon hover:scale-[1.02] bg-gradient-to-br from-card to-card/50",
         className
@@ -161,15 +135,8 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
             {vehicle.license}
           </Badge>
         </div>
-        <div className="absolute top-3 right-3">
-          {vehicle.hasAC && (
-            <Badge variant="secondary" className="bg-primary-soft/20 backdrop-blur-sm text-primary">
-              <Wind className="h-3 w-3 mr-1" />
-              Clim
-            </Badge>
-          )}
-        </div>
       </div>
+
       <CardContent className="p-4">
         {/* Title & Year */}
         <div className="mb-3">
@@ -183,88 +150,102 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
 
         {/* Features */}
         <div className="flex flex-wrap gap-2 mb-4">
-          <div className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
-            <FuelIcon className="h-3 w-3 mr-1" />
-            {fuelLabels[vehicle.fuel] || "Non spécifié"}
-          </div>
-          <div className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
-            <Settings className="h-3 w-3 mr-1" />
-            {transmissionLabels[vehicle.transmission] || "Non spécifié"}
-          </div>
+          {/* Places */}
           <div className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
             <Users className="h-3 w-3 mr-1" />
-            {vehicle.doors} portes
+            {hasSeats
+              ? t("vehicle.places", { count: seats })
+              : t("common.not_specified")}
+          </div>
+
+          {/* Cylindrée */}
+          {engineCapacity && (
+            <div className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
+              <Gauge className="h-3 w-3 mr-1" />
+              {engineCapacity} cc
+            </div>
+          )}
+
+          {/* Carburant */}
+          <div className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
+            <Fuel className="h-3 w-3 mr-1" />
+            {fuel
+              ? t(`vehicle.fuel.${fuel}`)
+              : t("common.not_specified")}
+          </div>
+
+          {/* Transmission */}
+          <div className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
+            <Settings className="h-3 w-3 mr-1" />
+            {transmission
+              ? t(`vehicle.transmission.${transmission}`)
+              : t("common.not_specified")}
           </div>
         </div>
 
-        {/* Zones de prise en charge & Price */}
+        {/* Location & Price */}
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            {vehicle.location && vehicle.location !== "Mamoudzou, Mayotte" ? (
-              <div className="flex flex-wrap gap-1">
-                {vehicle.location.split(', ').slice(0, 2).map((zone, index) => {
-                  const IconComponent = getLocationIcon(zone.trim());
-                  return (
-                    <div key={index} className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
-                      <IconComponent className="h-3 w-3 mr-1" />
-                      <span className="truncate">{zone.trim()}</span>
-                    </div>
-                  );
-                })}
-                {vehicle.location.split(', ').length > 2 && (
-                  <div className="flex items-center text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-1">
-                    <span>+{vehicle.location.split(', ').length - 2}</span>
+            <div className="flex items-center text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4 mr-1" />
+              <span className="truncate">
+                {vehicle.location && vehicle.location.length > 0
+                  ? vehicle.location
+                  : t("common.default_location")}
+              </span>
+            </div>
+          </div>
+
+          <div className="text-right ml-2">
+            {rentalInfo ? (
+              // Affichage avec calcul de location (aligné comme voiture)
+              <div className="flex flex-col items-end">
+                <div className="flex items-center text-2xl font-bold text-primary">
+                  <Euro className="h-5 w-5" />
+                  {vehicle.dailyPrice}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {t("common.par_jour")}
+                </div>
+                {durationLabel && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {t("pricing.total_for_duration", {
+                      total: formatCurrency(rentalInfo.totalCost),
+                      duration: durationLabel,
+                    })}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span>{t('common.mayotte')}</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="text-right ml-2">
-            {rentalInfo ? (
-              // Affichage avec calcul de location
-              (<div className="flex flex-col items-end">
-                <div className="flex items-center text-2xl font-bold text-primary">
-                  <Euro className="h-5 w-5" />
-                  {vehicle.dailyPrice}
-                </div>
-                <div className="text-xs text-muted-foreground">{t('common.par_jour')}</div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {t("pricing.total_for_duration", {
-                    total: rentalInfo.totalCost,
-                    duration: buildDurationLabel(),
-                  })}
-                </div>
-              </div>)
-            ) : (
               // Affichage par défaut sans calcul
-              (<>
+              <>
                 <div className="flex items-center text-2xl font-bold text-primary">
                   <Euro className="h-5 w-5" />
                   {vehicle.dailyPrice}
                 </div>
-                <div className="text-xs text-muted-foreground">{t('common.par_jour')}</div>
-              </>)
+                <div className="text-xs text-muted-foreground">
+                  {t("common.par_jour")}
+                </div>
+              </>
             )}
           </div>
         </div>
 
         {/* CTA Button */}
         {onClick && (
-          <Button 
+          <Button
             className="w-full mt-4 bg-gradient-lagoon hover:opacity-90 shadow-soft"
             onClick={(e) => {
               e.stopPropagation();
               onClick();
             }}
-          >{t('common.voir_la_fiche')}</Button>
+          >
+            {t("common.voir_la_fiche")}
+          </Button>
         )}
       </CardContent>
     </Card>
   );
 }
+
+

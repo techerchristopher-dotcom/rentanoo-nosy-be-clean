@@ -149,58 +149,56 @@ export function createVehicleRentalInfo(
   pricePerDay: number,
   rentalCalculation: RentalCalculation
 ): VehicleRentalInfo {
-  // Calculer la durée en heures pour l'affichage détaillé et le coût
-  let durationText = '';
+  // Calcul neutre (sans texte localisé) : total, jours, heures
   let totalCost = 0;
-  
+  let days = 0;
+  let hours = 0;
+
   if (rentalCalculation.isCalculated) {
     const startDateTime = new Date(rentalCalculation.startDate);
     const endDateTime = new Date(rentalCalculation.endDate);
-    
-    const startHour = parseInt(rentalCalculation.startTime.split(':')[0]);
-    const startMinute = parseInt(rentalCalculation.startTime.split(':')[1]);
-    const endHour = parseInt(rentalCalculation.endTime.split(':')[0]);
-    const endMinute = parseInt(rentalCalculation.endTime.split(':')[1]);
-    
+
+    const startHour = parseInt(rentalCalculation.startTime.split(":")[0]);
+    const startMinute = parseInt(rentalCalculation.startTime.split(":")[1]);
+    const endHour = parseInt(rentalCalculation.endTime.split(":")[0]);
+    const endMinute = parseInt(rentalCalculation.endTime.split(":")[1]);
+
     startDateTime.setHours(startHour, startMinute, 0, 0);
     endDateTime.setHours(endHour, endMinute, 0, 0);
-    
-    const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
+
+    const rentalHours =
+      (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
     const completeDays = Math.floor(rentalHours / 24);
     const extraHours = Math.floor(rentalHours % 24);
-    
-    // Calculer le coût total avec heures précises
+
     if (rentalHours < 24) {
-      totalCost = Math.ceil(pricePerDay); // Minimum 1 jour
-      durationText = '1 jour';
+      // Minimum 1 jour
+      totalCost = Math.ceil(pricePerDay);
+      days = 1;
+      hours = 0;
     } else if (extraHours === 0) {
-      // Pas d'heures supplémentaires → facturer seulement les jours complets
+      // Aucun dépassement horaire : uniquement des jours complets
       totalCost = completeDays * pricePerDay;
-      durationText = `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`;
+      days = completeDays;
+      hours = 0;
     } else {
-      // Toujours facturer les heures supplémentaires au prorata
-      // Peu importe si heure retour < heure départ
+      // Jours complets + heures supplémentaires au prorata
       const hourPrice = pricePerDay / 24;
-      totalCost = Math.ceil((completeDays * pricePerDay) + (extraHours * hourPrice));
-      
-      // Pour l'affichage, montrer les jours + heures
-      if (extraHours > 0) {
-        durationText = `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`;
-      } else {
-        durationText = `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`;
-      }
+      totalCost = Math.ceil(
+        completeDays * pricePerDay + extraHours * hourPrice
+      );
+      days = completeDays;
+      hours = extraHours;
     }
   }
-  
-  const formattedPrice = rentalCalculation.isCalculated
-    ? `${pricePerDay}€ par jour, soit **${totalCost}€** (${durationText})`
-    : `${pricePerDay}€ par jour`;
-  
+
   return {
     vehicleId,
     pricePerDay,
     totalCost,
-    formattedPrice
+    formattedPrice: "", // laissé pour compatibilité, non utilisé pour l'affichage
+    days,
+    hours,
   };
 }
 
