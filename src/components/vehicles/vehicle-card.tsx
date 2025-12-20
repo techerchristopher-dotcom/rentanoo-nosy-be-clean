@@ -17,6 +17,7 @@ import {
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
+import { formatDuration } from "@/utils/formatDuration";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -124,20 +125,10 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
   };
 
   // Construction de la durée formatée via i18n (jours/heures)
+  // Utiliser formatDuration() pour partager la même source avec BookingConfirmationModal
   const buildDurationLabel = () => {
     if (!rentalInfo) return "";
-    const parts: string[] = [];
-    if (rentalInfo.days > 0) {
-      parts.push(t("duration.days", { count: rentalInfo.days }));
-    }
-    if (rentalInfo.hours > 0) {
-      parts.push(t("duration.hours", { count: rentalInfo.hours }));
-    }
-    if (parts.length === 0) {
-      return "";
-    }
-    const joiner = t("duration.joiner");
-    return parts.join(joiner);
+    return formatDuration(t, rentalInfo.days, rentalInfo.hours) || "";
   };
 
   return (
@@ -233,7 +224,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
                   <Euro className="h-5 w-5" />
                   {vehicle.dailyPrice}
                 </div>
-                <div className="text-xs text-muted-foreground">{t('common.par_jour')}</div>
+                <div className="text-xs text-muted-foreground">{t('par_jour')}</div>
                 <div className="text-sm text-muted-foreground mt-1">
                   {t("pricing.total_for_duration", {
                     total: rentalInfo.totalCost,
@@ -248,7 +239,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
                   <Euro className="h-5 w-5" />
                   {vehicle.dailyPrice}
                 </div>
-                <div className="text-xs text-muted-foreground">{t('common.par_jour')}</div>
+                <div className="text-xs text-muted-foreground">{t('par_jour')}</div>
               </>)
             )}
           </div>

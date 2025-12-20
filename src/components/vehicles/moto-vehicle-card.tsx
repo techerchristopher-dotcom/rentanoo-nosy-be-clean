@@ -49,7 +49,7 @@ export function MotoVehicleCard({
   className,
   rentalInfo,
 }: MotoVehicleCardProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation();
 
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
   const isFetchingFallback = useRef(false);
@@ -191,7 +191,7 @@ export function MotoVehicleCard({
               <span className="truncate">
                 {vehicle.location && vehicle.location.length > 0
                   ? vehicle.location
-                  : t("common.default_location")}
+                  : t("default_location")}
               </span>
             </div>
           </div>
@@ -205,14 +205,11 @@ export function MotoVehicleCard({
                   {vehicle.dailyPrice}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {t("common.par_jour")}
+                  {t("par_jour")}
                 </div>
                 {durationLabel && (
                   <div className="text-sm text-muted-foreground mt-1">
-                    {t("pricing.total_for_duration", {
-                      total: formatCurrency(rentalInfo.totalCost),
-                      duration: durationLabel,
-                    })}
+                    {formatCurrency(rentalInfo.pricePerDay)}/{t("par_jour")} × {durationLabel || ""}
                   </div>
                 )}
               </div>
@@ -224,7 +221,7 @@ export function MotoVehicleCard({
                   {vehicle.dailyPrice}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {t("common.par_jour")}
+                  {t("par_jour")}
                 </div>
               </>
             )}
@@ -240,7 +237,7 @@ export function MotoVehicleCard({
               onClick();
             }}
           >
-            {t("common.voir_la_fiche")}
+            {t("voir_la_fiche")}
           </Button>
         )}
       </CardContent>

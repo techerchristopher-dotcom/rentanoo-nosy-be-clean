@@ -15,7 +15,7 @@ export function formatLegacyFormattedPrice(
 
   if (!duration) {
     // Pas de durée exploitable → afficher simplement le prix par jour
-    return `${formatCurrency(info.pricePerDay)} ${t("common.par_jour")}`;
+    return `${formatCurrency(info.pricePerDay)} ${t("par_jour")}`;
   }
 
   return t("pricing.total_for_duration", {

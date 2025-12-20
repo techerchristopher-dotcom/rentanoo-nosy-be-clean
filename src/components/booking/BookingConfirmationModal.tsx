@@ -4,9 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Clock, MapPin, Car, Euro, Zap, X } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr } from "date-fns/locale/fr";
+import { enUS } from "date-fns/locale/en-US";
+import { it as itLocale } from "date-fns/locale/it";
+import { de as deLocale } from "date-fns/locale/de";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getBookingDraft, updateBookingOptions } from "@/services/localStorage/bookingStorage";
+import { formatDuration } from "@/utils/formatDuration";
+import { formatCurrency } from "@/utils/currency";
 
 interface BookingConfirmationModalProps {
   isOpen: boolean;
@@ -43,6 +49,22 @@ export function BookingConfirmationModal({
   rentalInfo,
   selectedOptions = []
 }: BookingConfirmationModalProps) {
+  const { t, i18n } = useTranslation();
+  
+  // Locale du calendrier / formatage des dates en fonction de la langue active
+  const currentLang = i18n.language || "fr";
+  const dateLocale =
+    currentLang.startsWith("fr") ? fr :
+    currentLang.startsWith("it") ? itLocale :
+    currentLang.startsWith("de") ? deLocale :
+    enUS;
+
+  // Locale pour formatCurrency
+  const currencyLocale = 
+    currentLang.startsWith("fr") ? "fr-FR" :
+    currentLang.startsWith("it") ? "it-IT" :
+    currentLang.startsWith("de") ? "de-DE" :
+    "en-US";
   
   // État pour les options sélectionnées depuis localStorage
   const [draftOptions, setDraftOptions] = useState<Array<{
@@ -107,46 +129,38 @@ export function BookingConfirmationModal({
   // Calculer le total final
   const totalAmount = Math.round((subtotal + serviceFee) * 100) / 100;
   
-  // Formater les dates
-  const formattedStartDate = format(rentalInfo.startDate, "EEEE d MMMM yyyy", { locale: fr });
-  const formattedEndDate = format(rentalInfo.endDate, "EEEE d MMMM yyyy", { locale: fr });
+  // Formater les dates avec locale dynamique
+  const formattedStartDate = format(rentalInfo.startDate, "EEEE d MMMM yyyy", { locale: dateLocale });
+  const formattedEndDate = format(rentalInfo.endDate, "EEEE d MMMM yyyy", { locale: dateLocale });
   
-  // Calculer la durée réelle en heures pour affichage précis
-  const calculateRealDuration = () => {
-    const startDateTime = new Date(rentalInfo.startDate);
-    const endDateTime = new Date(rentalInfo.endDate);
-    
-    const startHour = parseInt(rentalInfo.startTime.split(':')[0]);
-    const startMinute = parseInt(rentalInfo.startTime.split(':')[1]);
-    const endHour = parseInt(rentalInfo.endTime.split(':')[0]);
-    const endMinute = parseInt(rentalInfo.endTime.split(':')[1]);
-    
-    startDateTime.setHours(startHour, startMinute, 0, 0);
-    endDateTime.setHours(endHour, endMinute, 0, 0);
-    
-    const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
-    const completeDays = Math.floor(rentalHours / 24);
-    const extraHours = Math.floor(rentalHours % 24);
-    
-    if (rentalHours < 24) {
-      return '1 jour';
-    } else if (extraHours === 0) {
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`;
-    } else {
-      // Toujours afficher les heures supplémentaires
-      // Peu importe si heure retour < heure départ
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`;
-    }
-  };
+  // Calculer la durée en jours et heures pour formatDuration
+  const startDateTime = new Date(rentalInfo.startDate);
+  const endDateTime = new Date(rentalInfo.endDate);
+  const startHour = parseInt(rentalInfo.startTime.split(':')[0]);
+  const startMinute = parseInt(rentalInfo.startTime.split(':')[1]);
+  const endHour = parseInt(rentalInfo.endTime.split(':')[0]);
+  const endMinute = parseInt(rentalInfo.endTime.split(':')[1]);
   
-  const realDurationText = calculateRealDuration();
+  startDateTime.setHours(startHour, startMinute, 0, 0);
+  endDateTime.setHours(endHour, endMinute, 0, 0);
   
-  // Texte pour le nombre de jours (pour rétrocompatibilité)
-  const daysText = rentalInfo.rentalDays === 1 
-    ? "jour" 
-    : rentalInfo.rentalDays % 1 === 0 
-      ? "jours" 
-      : "jours";
+  const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
+  
+  // Calculer jours et heures pour formatDuration
+  let days: number;
+  let hours: number;
+  
+  if (rentalHours < 24) {
+    // Si moins de 24h, on considère comme 1 jour
+    days = 1;
+    hours = 0;
+  } else {
+    days = Math.floor(rentalHours / 24);
+    hours = Math.floor(rentalHours % 24);
+  }
+  
+  // Utiliser formatDuration pour la durée localisée
+  const durationText = formatDuration(t, days, hours);
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // FONCTION POUR SUPPRIMER UNE OPTION DEPUIS LA MODAL
@@ -179,10 +193,10 @@ export function BookingConfirmationModal({
             </div>
           </div>
           <DialogTitle className="text-3xl font-bold text-center text-primary">
-            Confirmation de votre réservation
+            {t("booking.confirmation.title")}
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
-            Vérifiez les détails ci-dessous avant de confirmer
+            {t("booking.confirmation.subtitle")}
           </p>
         </DialogHeader>
 
@@ -204,7 +218,7 @@ export function BookingConfirmationModal({
                 {vehicle.brand} {vehicle.model}
               </h3>
               <p className="text-sm text-muted-foreground font-medium">
-                Année {vehicle.year}
+                {t("ownerVehicles.card.year", "Année")} {vehicle.year}
               </p>
             </div>
           </div>
@@ -218,9 +232,9 @@ export function BookingConfirmationModal({
                   <MapPin className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">Zone de prise en charge</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t("lieu_de_prise_en_charge")}</p>
                   <p className="text-base font-semibold text-foreground">
-                    {rentalInfo.pickupLocation}
+                    {rentalInfo.pickupLocation || t("common.not_specified")}
                   </p>
                 </div>
               </div>
@@ -234,12 +248,12 @@ export function BookingConfirmationModal({
               <div className="p-2 bg-primary-soft rounded-lg">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              <h4 className="text-sm font-semibold text-foreground">Dates de location</h4>
+              <h4 className="text-sm font-semibold text-foreground">{t("dates")}</h4>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-card rounded-lg border border-border/50 space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">Départ</p>
+                <p className="text-xs text-muted-foreground font-medium">{t("searchBar.departure")}</p>
                 <p className="text-sm font-bold text-foreground capitalize">{formattedStartDate}</p>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                   <Clock className="h-3.5 w-3.5" />
@@ -248,7 +262,7 @@ export function BookingConfirmationModal({
               </div>
 
               <div className="p-3 bg-card rounded-lg border border-border/50 space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">Retour</p>
+                <p className="text-xs text-muted-foreground font-medium">{t("searchBar.return")}</p>
                 <p className="text-sm font-bold text-foreground capitalize">{formattedEndDate}</p>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                   <Clock className="h-3.5 w-3.5" />
@@ -259,7 +273,7 @@ export function BookingConfirmationModal({
 
             <div className="flex items-center justify-center">
               <Badge variant="default" className="text-sm px-4 py-1.5 bg-primary text-white font-semibold">
-                Durée : {realDurationText}
+                {t("booking.durationLabel")} {durationText || ""}
               </Badge>
             </div>
           </div>
@@ -276,20 +290,20 @@ export function BookingConfirmationModal({
               <div className="p-2 bg-primary-soft rounded-lg">
                 <Euro className="h-4 w-4 text-primary" />
               </div>
-              <span className="text-sm font-semibold text-foreground">Tarif de base</span>
+              <span className="text-sm font-semibold text-foreground">{t("booking.baseRateLabel").replace("* :", "").trim()}</span>
             </div>
 
             <div className="bg-card rounded-lg border border-border/50 p-3 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground font-medium">
-                  Location véhicule
+                  {t("booking.vehicleRental")}
                 </span>
                 <span className="text-base font-bold text-primary">
-                  {rentalInfo.basePrice}€
+                  {formatCurrency(rentalInfo.basePrice, currencyLocale)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground pl-1">
-                {rentalInfo.pricePerDay}€/jour × {realDurationText}
+                {formatCurrency(rentalInfo.pricePerDay, currencyLocale)}/{t("par_jour")} × {durationText || ""}
               </p>
             </div>
           </div>
@@ -303,7 +317,9 @@ export function BookingConfirmationModal({
                   <div className="p-2 bg-primary-soft rounded-lg">
                     <Car className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-sm font-semibold text-foreground">Options sélectionnées</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {t("booking.selectedOptions")}
+                  </span>
                 </div>
 
                 <div className="bg-card rounded-lg border border-border/50 p-3 space-y-3">
@@ -313,7 +329,7 @@ export function BookingConfirmationModal({
                         <button
                           onClick={() => handleRemoveOption(option.id)}
                           className="opacity-70 hover:opacity-100 hover:bg-red-500/10 rounded-full p-1.5 transition-all duration-200 flex items-center justify-center hover:border-red-400 flex-shrink-0"
-                          title="Supprimer cette option"
+                          title={t("profileForm.delete")}
                         >
                           <X className="h-3.5 w-3.5 text-red-500" />
                         </button>
@@ -322,14 +338,16 @@ export function BookingConfirmationModal({
                         </span>
                       </div>
                       <span className="text-base font-bold text-primary min-w-[60px] text-right">
-                        + {option.totalPrice}€
+                        + {formatCurrency(option.totalPrice, currencyLocale)}
                       </span>
                     </div>
                   ))}
                   <div className="pt-2 border-t border-border/50 mt-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground font-medium">Sous-total options</span>
-                      <span className="text-base font-bold text-foreground">{optionsTotal}€</span>
+                      <span className="text-sm text-muted-foreground font-medium">
+                        {t("booking.optionsSubtotal")}
+                      </span>
+                      <span className="text-base font-bold text-foreground">{formatCurrency(optionsTotal, currencyLocale)}</span>
                     </div>
                   </div>
                 </div>
@@ -342,23 +360,27 @@ export function BookingConfirmationModal({
           {/* Section Total */}
           <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground font-medium">Sous-total</span>
-              <span className="text-base font-bold text-foreground min-w-[80px] text-right">{subtotal}€</span>
+              <span className="text-sm text-muted-foreground font-medium">
+                {t("booking.subtotal")}
+              </span>
+              <span className="text-base font-bold text-foreground min-w-[80px] text-right">{formatCurrency(subtotal, currencyLocale)}</span>
             </div>
 
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground font-medium">
-                Frais de service (15%)
+                {t("booking.serviceFee", { percent: 15 })}
               </span>
-              <span className="text-base font-bold text-muted-foreground min-w-[80px] text-right">+ {serviceFee}€</span>
+              <span className="text-base font-bold text-muted-foreground min-w-[80px] text-right">+ {formatCurrency(serviceFee, currencyLocale)}</span>
             </div>
 
             <Separator className="border-primary/30" />
 
             <div className="flex justify-between items-baseline pt-2">
-              <span className="text-base font-bold text-foreground">TOTAL À PAYER</span>
+              <span className="text-base font-bold text-foreground">
+                {t("booking.totalToPay")}
+              </span>
               <span className="text-3xl font-bold text-primary">
-                {totalAmount}€
+                {formatCurrency(totalAmount, currencyLocale)}
               </span>
             </div>
           </div>
@@ -374,8 +396,8 @@ export function BookingConfirmationModal({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
             <div>
-              <p className="text-xs font-bold text-blue-900">Réponse rapide</p>
-              <p className="text-[10px] text-blue-700">Sous 24h</p>
+              <p className="text-xs font-bold text-blue-900">{t("booking.benefits.quickResponse")}</p>
+              <p className="text-[10px] text-blue-700">{t("booking.benefits.quickResponseHint")}</p>
             </div>
           </div>
           
@@ -384,8 +406,8 @@ export function BookingConfirmationModal({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="text-xs font-bold text-blue-900">Paiement sûr</p>
-              <p className="text-[10px] text-blue-700">Après validation</p>
+              <p className="text-xs font-bold text-blue-900">{t("booking.benefits.safePayment")}</p>
+              <p className="text-[10px] text-blue-700">{t("booking.benefits.safePaymentHint")}</p>
             </div>
           </div>
           
@@ -394,8 +416,8 @@ export function BookingConfirmationModal({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="text-xs font-bold text-blue-900">Annulation</p>
-              <p className="text-[10px] text-blue-700">Gratuite 48h</p>
+              <p className="text-xs font-bold text-blue-900">{t("booking.freeCancellation")}</p>
+              <p className="text-[10px] text-blue-700">{t("booking.benefits.freeCancellationHint")}</p>
             </div>
           </div>
           
@@ -404,8 +426,8 @@ export function BookingConfirmationModal({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             <div>
-              <p className="text-xs font-bold text-blue-900">Confirmation</p>
-              <p className="text-[10px] text-blue-700">Rapide</p>
+              <p className="text-xs font-bold text-blue-900">{t("booking.benefits.quickConfirmation")}</p>
+              {/* TODO(i18n): subtitle "Rapide" is now redundant with quickConfirmation - consider removing */}
             </div>
           </div>
         </div>
@@ -416,16 +438,113 @@ export function BookingConfirmationModal({
             onClick={onClose}
             className="w-full sm:w-auto"
           >
-            Modifier
+            {t("common.modify")}
           </Button>
           <Button 
             onClick={onConfirm}
             className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
             <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
-            Je confirme ma demande de réservation
+            {t("booking.confirmBooking")}
           </Button>
         </DialogFooter>
+
+        {/* DEBUG PANEL - DEV ONLY */}
+        {import.meta.env.DEV && (() => {
+          const bundleTranslation = i18n.getResourceBundle(i18n.language, "translation");
+          const bundleCommon = i18n.getResourceBundle(i18n.language, "common");
+          
+          const keysTranslation = bundleTranslation ? Object.keys(bundleTranslation).slice(0, 50) : null;
+          const keysCommon = bundleCommon ? Object.keys(bundleCommon).slice(0, 50) : null;
+          
+          const resourceStoreNs = Object.keys(i18n.store?.data?.[i18n.language] ?? {});
+          
+          // Vérifications de structure exactes
+          const hasSearchBarAtRootTranslation = !!bundleTranslation?.searchBar;
+          const hasSearchBarUnderCommonTranslation = !!bundleTranslation?.common?.searchBar;
+          const hasBookingAtRootTranslation = !!bundleTranslation?.booking;
+          const hasDurationAtRootTranslation = !!bundleTranslation?.duration;
+          
+          const hasSearchBarAtRootCommon = !!bundleCommon?.searchBar;
+          const hasSearchBarUnderCommonCommon = !!bundleCommon?.common?.searchBar;
+          const hasBookingAtRootCommon = !!bundleCommon?.booking;
+          const hasDurationAtRootCommon = !!bundleCommon?.duration;
+          
+          // Log console pour vérification
+          const structureCheck = {
+            hasSearchBarAtRootTranslation,
+            hasSearchBarUnderCommonTranslation,
+            hasBookingAtRootTranslation,
+            hasDurationAtRootTranslation,
+            hasSearchBarAtRootCommon,
+            hasSearchBarUnderCommonCommon,
+            hasBookingAtRootCommon,
+            hasDurationAtRootCommon,
+          };
+          
+          if (import.meta.env.DEV) {
+            console.log("[I18N STRUCTURE CHECK]", structureCheck);
+            console.log("[I18N BUNDLE TRANSLATION]", {
+              hasBundle: !!bundleTranslation,
+              topLevelKeys: bundleTranslation ? Object.keys(bundleTranslation).slice(0, 20) : [],
+              searchBarLocation: bundleTranslation?.searchBar ? "at root" : bundleTranslation?.common?.searchBar ? "under common" : "NOT FOUND",
+              bookingLocation: bundleTranslation?.booking ? "at root" : bundleTranslation?.common?.booking ? "under common" : "NOT FOUND",
+            });
+            console.log("[I18N BUNDLE COMMON]", {
+              hasBundle: !!bundleCommon,
+              topLevelKeys: bundleCommon ? Object.keys(bundleCommon).slice(0, 20) : [],
+              searchBarLocation: bundleCommon?.searchBar ? "at root" : bundleCommon?.common?.searchBar ? "under common" : "NOT FOUND",
+              bookingLocation: bundleCommon?.booking ? "at root" : bundleCommon?.common?.booking ? "under common" : "NOT FOUND",
+            });
+          }
+          
+          return (
+            <div style={{ marginTop: 16, padding: 12, background: "#111", color: "#0f0", borderRadius: 8, overflow: "auto", fontSize: 12, fontFamily: "monospace" }}>
+              <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                {JSON.stringify(
+                  {
+                    component: "BookingConfirmationModal",
+                    lang: i18n.language,
+                    namespaces: i18n.options?.ns,
+                    defaultNS: i18n.options?.defaultNS,
+                    hasTranslationBundle: !!bundleTranslation,
+                    hasCommonBundle: !!bundleCommon,
+                    translationTopKeys: keysTranslation,
+                    commonTopKeys: keysCommon,
+                    resourceStoreNs: resourceStoreNs,
+                    bundleTranslationSize: bundleTranslation ? Object.keys(bundleTranslation).length : 0,
+                    bundleCommonSize: bundleCommon ? Object.keys(bundleCommon).length : 0,
+                    structureCheck: structureCheck,
+                    exists: {
+                      searchBarDeparture: i18n.exists("searchBar.departure"),
+                      searchBarReturn: i18n.exists("searchBar.return"),
+                      commonSearchBarDeparture: i18n.exists("common.searchBar.departure"),
+                      durationDay: i18n.exists("duration.day"),
+                      durationDayOne: i18n.exists("duration.day_one"),
+                      durationDayOther: i18n.exists("duration.day_other"),
+                      durationHour: i18n.exists("duration.hour"),
+                      durationHourOne: i18n.exists("duration.hour_one"),
+                      durationHourOther: i18n.exists("duration.hour_other"),
+                      durationSeparator: i18n.exists("duration.separator"),
+                    },
+                    tValues: {
+                      departure: t("searchBar.departure"),
+                      return: t("searchBar.return"),
+                      commonDeparture: t("common.searchBar.departure"),
+                      durationDayCount1: t("duration.day", { count: 1 }),
+                      durationDayCount4: t("duration.day", { count: 4 }),
+                      durationHourCount1: t("duration.hour", { count: 1 }),
+                      durationHourCount6: t("duration.hour", { count: 6 }),
+                      separator: t("duration.separator"),
+                    },
+                  },
+                  null,
+                  2
+                )}
+              </pre>
+            </div>
+          );
+        })()}
       </DialogContent>
     </Dialog>
   );

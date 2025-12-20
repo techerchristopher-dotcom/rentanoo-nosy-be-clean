@@ -188,7 +188,7 @@ export function SearchBarAirbnb({
                           <MapPin className="h-5 w-5" />
                         </div>
                         <span className="ml-3 text-xs font-bold text-primary uppercase tracking-wider">
-                          {t('common.lieu_de_prise_en_charge')}
+                          {t('lieu_de_prise_en_charge')}
                         </span>
                       </div>
                       <div className="flex flex-col">

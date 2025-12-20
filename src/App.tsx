@@ -39,6 +39,8 @@ import NotFound from "./pages/NotFound";
 import Checking from "./pages/Checking";
 import CheckinReturnPage from "./pages/checkin-return/[bookingId]";
 import MotoVehicleDetails from "./pages/vehicles/MotoVehicleDetails";
+// DEV ONLY - Diagnostic i18n
+import I18nDebug from "./pages/__I18nDebug";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +96,10 @@ const App = () => (
             <Route path="/dictionary/:id" element={<DictionaryEntryPage />} />
             <Route path="/checking/:bookingId" element={<Checking />} />
             <Route path="/checkin-return/:bookingId" element={<CheckinReturnPage />} />
+            {/* DEV ONLY - Diagnostic i18n */}
+            {import.meta.env.DEV && (
+              <Route path="/__i18n_debug" element={<I18nDebug />} />
+            )}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
               </Routes>

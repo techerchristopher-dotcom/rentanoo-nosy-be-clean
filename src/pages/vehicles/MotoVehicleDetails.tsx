@@ -59,6 +59,7 @@ import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle } from "@/ty
 import { createVehicleRentalInfo } from "@/lib/utils";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
 import { formatCurrency } from "@/utils/currency";
+import { formatDuration } from "@/utils/formatDuration";
 import {
   createBookingDraft,
   getBookingDraft,
@@ -106,7 +107,15 @@ export default function MotoVehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { t, i18n } = useTranslation("common");
+  const { t, i18n } = useTranslation();
+  
+  // Locale pour formatCurrency (comme dans BookingConfirmationModal)
+  const currentLang = i18n.language || "fr";
+  const currencyLocale = 
+    currentLang.startsWith("fr") ? "fr-FR" :
+    currentLang.startsWith("it") ? "it-IT" :
+    currentLang.startsWith("de") ? "de-DE" :
+    "en-US";
 
   console.log("🏍️ [DEBUG] License from useParams:", license);
   console.log("🏍️ [DEBUG] Navigate function:", typeof navigate);
@@ -325,6 +334,11 @@ export default function MotoVehicleDetails() {
           navigationState.rentalCalculation
         )
       : null;
+
+  // Utiliser formatDuration directement avec les valeurs de vehicleRentalInfo (comme BookingConfirmationModal)
+  const durationText = vehicleRentalInfo 
+    ? formatDuration(t, vehicleRentalInfo.days, vehicleRentalInfo.hours)
+    : null;
 
   const handleBooking = () => {
     console.log("🏍️ [DEBUG] Clic sur Réserver (moto)");
@@ -650,7 +664,7 @@ export default function MotoVehicleDetails() {
               </span>
             </div>
             <p className="text-muted-foreground">
-              {t("common.par_jour")}
+              {t("par_jour")}
             </p>
 
             {vehicleRentalInfo && (
@@ -1259,18 +1273,14 @@ export default function MotoVehicleDetails() {
                 <>
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-bold text-primary">
-                      {vehicleRentalInfo.totalCost}€*
+                      {formatCurrency(vehicleRentalInfo.totalCost, currencyLocale)}*
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      (
-                      {
-                        vehicleRentalInfo.formattedPrice.match(/\((.*?)\)/)?.[1]
-                      }
-                      )
+                      {formatCurrency(vehicleRentalInfo.pricePerDay, currencyLocale)}/{t("par_jour")} × {durationText || ""}
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {dailyRate}€/{t("common.par_jour")} • {t("booking.excludingFeesNote")}
+                    {formatCurrency(dailyRate, currencyLocale)}/{t("par_jour")} • {t("booking.excludingFeesNote")}
                   </div>
                 </>
               ) : (
@@ -1282,7 +1292,7 @@ export default function MotoVehicleDetails() {
                     {originalRate}€
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    {t("common.par_jour")}
+                    {t("par_jour")}
                   </span>
                 </div>
               )}
