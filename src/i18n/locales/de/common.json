@@ -61,6 +61,7 @@
     "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "Wählen Sie den Ort aus, an dem Sie Ihr Fahrzeug abholen möchten",
     "suv": "SUV",
     "utilisateur_connect": "Angemeldeter Benutzer",
+    "modify": "Ändern",
     "modifier_mon_profil": "Mein Profil bearbeiten",
     "mon_dashboard": "Mein Dashboard",
     "se_dconnecter": "Abmelden",
@@ -89,11 +90,11 @@
       "places_other": "{{count}} Sitzplätze"
     },
     "duration": {
-      "days_one": "{{count}} Tag",
-      "days_other": "{{count}} Tage",
-      "hours_one": "{{count}} Stunde",
-      "hours_other": "{{count}} Stunden",
-      "joiner": " + "
+      "day_one": "{{count}} Tag",
+      "day_other": "{{count}} Tage",
+      "hour_one": "{{count}} Stunde",
+      "hour_other": "{{count}} Stunden",
+      "separator": " + "
     },
     "pricing": {
       "total_for_duration": "gesamt {{total}}€ ({{duration}})"
@@ -768,6 +769,26 @@
       "insurance": "Vollkaskoversicherung",
       "roadside": "24/7 Pannenhilfe",
       "extraDrivers": "Kostenlose zusätzliche Fahrer"
+    },
+    "confirmation": {
+      "title": "Bestätigung Ihrer Buchung",
+      "subtitle": "Bitte überprüfen Sie die unten stehenden Details vor der Bestätigung"
+    },
+    "durationLabel": "Dauer:",
+    "vehicleRental": "Fahrzeugmiete",
+    "selectedOptions": "Ausgewählte Optionen",
+    "optionsSubtotal": "Optionen Zwischensumme",
+    "subtotal": "Zwischensumme",
+    "serviceFee": "Servicegebühr ({{percent}}%)",
+    "totalToPay": "GESAMT ZU ZAHLEN",
+    "confirmBooking": "Ich bestätige meine Buchungsanfrage",
+    "benefits": {
+      "quickResponse": "Schnelle Antwort",
+      "quickResponseHint": "Innerhalb von 24h",
+      "safePayment": "Sichere Zahlung",
+      "safePaymentHint": "Nach Validierung",
+      "quickConfirmation": "Schnelle Bestätigung",
+      "freeCancellationHint": "Kostenlos 48h"
     }
   },
   "dictionary": {

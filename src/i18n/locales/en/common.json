@@ -62,6 +62,7 @@
     "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "Select the location where you want to pick up your vehicle",
     "suv": "SUV",
     "utilisateur_connect": "Logged in user",
+    "modify": "Modify",
     "modifier_mon_profil": "Edit my profile",
     "mon_dashboard": "My dashboard",
     "se_dconnecter": "Log out",
@@ -97,11 +98,11 @@
       "places_other": "{{count}} seats"
     },
     "duration": {
-      "days_one": "{{count}} day",
-      "days_other": "{{count}} days",
-      "hours_one": "{{count}} hour",
-      "hours_other": "{{count}} hours",
-      "joiner": " + "
+      "day_one": "{{count}} day",
+      "day_other": "{{count}} days",
+      "hour_one": "{{count}} hour",
+      "hour_other": "{{count}} hours",
+      "separator": " + "
     },
     "pricing": {
       "total_for_duration": "total {{total}} ({{duration}})"
@@ -122,13 +123,6 @@
     "places_one": "{{count}} seat",
     "places_other": "{{count}} seats"
   },
-  "duration": {
-    "days_one": "{{count}} day",
-    "days_other": "{{count}} days",
-    "hours_one": "{{count}} hour",
-    "hours_other": "{{count}} hours",
-    "joiner": " + "
-  },
   "pricing": {
     "total_for_duration": "total {{total}} ({{duration}})"
   },
@@ -142,6 +136,26 @@
       "insurance": "Comprehensive insurance",
       "roadside": "24/7 roadside assistance",
       "extraDrivers": "Free additional drivers"
+    },
+    "confirmation": {
+      "title": "Confirm your booking",
+      "subtitle": "Please review the details below before confirming"
+    },
+    "durationLabel": "Duration:",
+    "vehicleRental": "Vehicle rental",
+    "selectedOptions": "Selected options",
+    "optionsSubtotal": "Options subtotal",
+    "subtotal": "Subtotal",
+    "serviceFee": "Service fee ({{percent}}%)",
+    "totalToPay": "TOTAL TO PAY",
+    "confirmBooking": "I confirm my booking request",
+    "benefits": {
+      "quickResponse": "Quick response",
+      "quickResponseHint": "Within 24h",
+      "safePayment": "Secure payment",
+      "safePaymentHint": "After validation",
+      "quickConfirmation": "Quick confirmation",
+      "freeCancellationHint": "Free 48h"
     }
   },
   "motoDetails": {

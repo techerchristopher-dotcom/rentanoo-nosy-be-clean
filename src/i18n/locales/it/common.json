@@ -61,6 +61,7 @@
     "slectionnez_le_lieu_o_vous_souhaitez_rcuprer_votre": "Seleziona il luogo in cui desideri ritirare il veicolo",
     "suv": "SUV",
     "utilisateur_connect": "Utente connesso",
+    "modify": "Modifica",
     "modifier_mon_profil": "Modifica il mio profilo",
     "mon_dashboard": "La mia dashboard",
     "se_dconnecter": "Disconnettersi",
@@ -89,11 +90,11 @@
       "places_other": "{{count}} posti"
     },
     "duration": {
-      "days_one": "{{count}} giorno",
-      "days_other": "{{count}} giorni",
-      "hours_one": "{{count}} ora",
-      "hours_other": "{{count}} ore",
-      "joiner": " + "
+      "day_one": "{{count}} giorno",
+      "day_other": "{{count}} giorni",
+      "hour_one": "{{count}} ora",
+      "hour_other": "{{count}} ore",
+      "separator": " + "
     },
     "pricing": {
       "total_for_duration": "totale {{total}}€ ({{duration}})"
@@ -768,6 +769,26 @@
       "insurance": "Assicurazione completa",
       "roadside": "Assistenza stradale 24/7",
       "extraDrivers": "Conducenti aggiuntivi gratuiti"
+    },
+    "confirmation": {
+      "title": "Conferma la tua prenotazione",
+      "subtitle": "Controlla i dettagli qui sotto prima di confermare"
+    },
+    "durationLabel": "Durata:",
+    "vehicleRental": "Noleggio veicolo",
+    "selectedOptions": "Opzioni selezionate",
+    "optionsSubtotal": "Subtotale opzioni",
+    "subtotal": "Subtotale",
+    "serviceFee": "Tariffa di servizio ({{percent}}%)",
+    "totalToPay": "TOTALE DA PAGARE",
+    "confirmBooking": "Confermo la mia richiesta di prenotazione",
+    "benefits": {
+      "quickResponse": "Risposta rapida",
+      "quickResponseHint": "Entro 24h",
+      "safePayment": "Pagamento sicuro",
+      "safePaymentHint": "Dopo la validazione",
+      "quickConfirmation": "Conferma rapida",
+      "freeCancellationHint": "Gratuita 48h"
     }
   },
   "dictionary": {
