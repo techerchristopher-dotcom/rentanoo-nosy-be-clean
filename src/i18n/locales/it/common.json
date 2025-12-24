@@ -613,6 +613,79 @@
       "title": "Nessuna prenotazione {{filter}}",
       "description": "Nessuna prenotazione corrisponde al filtro selezionato. Prova un altro filtro.",
       "reset": "Vedi tutte le prenotazioni"
+    },
+    "card": {
+      "vehicleDeleted": "Veicolo eliminato",
+      "messageButton": "Messaggio",
+      "messageTooltip": "Ciao {{ownerName}}, clicca qui per chattare con me",
+      "ownerFallback": "Proprietario",
+      "startLabel": "Inizio:",
+      "endLabel": "Fine:",
+      "totalLabel": "Totale:",
+      "servicesTitle": "Servizi aggiuntivi:",
+      "confirm": "Conferma",
+      "finalizeBooking": "Finalizza la mia prenotazione"
+    },
+    "status": {
+      "paymentConfirmed": "Pagamento confermato",
+      "depositPending": "Deposito in attesa",
+      "readyToGo": "Pronto a partire",
+      "paymentDepositValidated": "Pagamento e deposito convalidati",
+      "pending": "In attesa",
+      "pending_payment": "Pagamento in attesa",
+      "confirmed": "Confermato",
+      "rejected": "Rifiutato",
+      "declined": "Rifiutato",
+      "accepted": "Accettato",
+      "closed": "Chiuso",
+      "active": "In corso",
+      "completed": "Completato",
+      "cancelled": "Annullata"
+    },
+    "cancel": {
+      "title": "Annulla prenotazione",
+      "description": "Seleziona un motivo o scrivi il tuo messaggio.",
+      "reason": {
+        "dateChange": "Cambio data",
+        "otherOption": "Trovata un'altra opzione",
+        "personalIssue": "Imprevisto personale",
+        "bookingError": "Errore di prenotazione",
+        "custom": "Altro motivo (personalizzato)"
+      },
+      "reasonLabel": "Spiega il tuo motivo",
+      "reasonPlaceholder": "Es: Il mio programma è cambiato...",
+      "back": "Indietro",
+      "confirm": "Conferma",
+      "processing": "Annullamento..."
+    },
+    "toasts": {
+      "cancelError": "Impossibile annullare la prenotazione: {{error}}",
+      "cancelledDescription": "La tua prenotazione è stata annullata. Il proprietario sarà informato.",
+      "unexpectedError": "Si è verificato un errore",
+      "reasonRequired": "Motivo richiesto",
+      "reasonRequiredDescription": "Seleziona un motivo o inserisci un messaggio.",
+      "cancelledSimple": "La tua prenotazione è stata annullata.",
+      "comingSoon": "Funzionalità in arrivo",
+      "comingSoonDescription": "La conferma della prenotazione sarà presto disponibile"
+    },
+    "details": {
+      "title": "Dettagli della tua prenotazione",
+      "referenceNumber": "Prenotazione #{{referenceNumber}}",
+      "createdAt": "Creata il {{date}}",
+      "yearLabel": "Anno {{year}}",
+      "clientInfo": "Informazioni cliente",
+      "lastName": "Cognome",
+      "firstName": "Nome",
+      "phone": "Telefono",
+      "email": "Email",
+      "notProvided": "Non fornito",
+      "pickupZone": "Zona di ritiro",
+      "notSpecified": "Non specificata",
+      "rentalDates": "Date di noleggio",
+      "baseRate": "Tariffa base",
+      "pricePerDayFormat": "{{price}}€/giorno × {{duration}}",
+      "downloadPdf": "Scarica PDF",
+      "close": "Chiudi"
     }
   },
   "ownerVehicles": {
@@ -789,6 +862,49 @@
       "safePaymentHint": "Dopo la validazione",
       "quickConfirmation": "Conferma rapida",
       "freeCancellationHint": "Gratuita 48h"
+    },
+    "discussion": {
+      "withRenter": "Discussione con il locatario",
+      "withOwner": "Discussione con il proprietario",
+      "role": {
+        "owner": "Sei il proprietario",
+        "renter": "Sei il locatario"
+      },
+      "dateRange": "Dal {{startDate}} al {{endDate}}",
+      "viewBookingDetails": "Visualizza i dettagli della mia prenotazione",
+      "payRental": "Paga il mio noleggio",
+      "initialMessage": {
+        "renter": "Ciao! Sono interessato al noleggio del tuo veicolo. Ecco i dettagli:",
+        "owner": "Ciao! Hai una nuova richiesta di prenotazione. Ecco i dettagli:"
+      },
+      "departureTime": "Partenza alle {{startTime}}",
+      "pickupLocation": "Luogo: {{pickupLocation}}",
+      "additionalOptions": "Opzioni aggiuntive:",
+      "optionsTotal": "Inclusi {{optionsTotal}}€ di opzioni",
+      "confirmAvailability": {
+        "renter": "Puoi confermare la disponibilità? Grazie!",
+        "owner": "Conferma la tua disponibilità!"
+      },
+      "messagePlaceholder": "Scrivi il tuo messaggio...",
+      "conversationCancelled": "Non puoi più chattare. La richiesta di prenotazione è stata annullata o completata. ❌",
+      "conversationCancelledShort": "Non puoi più chattare. La richiesta di prenotazione è stata annullata.",
+      "toasts": {
+        "sendMessageError": "Impossibile inviare il messaggio",
+        "messageSent": {
+          "title": "Messaggio inviato",
+          "description": "Il tuo messaggio è stato inviato al proprietario"
+        },
+        "unexpectedError": "Si è verificato un errore",
+        "loadBookingError": "Impossibile recuperare le informazioni sulla prenotazione",
+        "bookingCancelled": {
+          "title": "Prenotazione annullata",
+          "description": "Questa prenotazione è stata eliminata dal locatario."
+        },
+        "paymentError": {
+          "title": "Errore di pagamento",
+          "description": "Impossibile avviare il pagamento"
+        }
+      }
     }
   },
   "dictionary": {

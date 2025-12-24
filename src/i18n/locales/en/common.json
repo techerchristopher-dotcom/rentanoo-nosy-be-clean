@@ -156,6 +156,49 @@
       "safePaymentHint": "After validation",
       "quickConfirmation": "Quick confirmation",
       "freeCancellationHint": "Free 48h"
+    },
+    "discussion": {
+      "withRenter": "Discussion with renter",
+      "withOwner": "Discussion with owner",
+      "role": {
+        "owner": "You are the owner",
+        "renter": "You are the renter"
+      },
+      "dateRange": "From {{startDate}} to {{endDate}}",
+      "viewBookingDetails": "View my booking details",
+      "payRental": "Pay my rental",
+      "initialMessage": {
+        "renter": "Hello! I'm interested in renting your vehicle. Here are the details:",
+        "owner": "Hello! You have a new booking request. Here are the details:"
+      },
+      "departureTime": "Departure at {{startTime}}",
+      "pickupLocation": "Location: {{pickupLocation}}",
+      "additionalOptions": "Additional options:",
+      "optionsTotal": "Including {{optionsTotal}}€ of options",
+      "confirmAvailability": {
+        "renter": "Can you confirm availability? Thank you!",
+        "owner": "Please confirm your availability!"
+      },
+      "messagePlaceholder": "Type your message...",
+      "conversationCancelled": "You can no longer chat. The booking request has been cancelled or completed. ❌",
+      "conversationCancelledShort": "You can no longer chat. The booking request has been cancelled.",
+      "toasts": {
+        "sendMessageError": "Unable to send message",
+        "messageSent": {
+          "title": "Message sent",
+          "description": "Your message has been sent to the owner"
+        },
+        "unexpectedError": "An error occurred",
+        "loadBookingError": "Unable to retrieve booking information",
+        "bookingCancelled": {
+          "title": "Booking cancelled",
+          "description": "This booking has been deleted by the renter."
+        },
+        "paymentError": {
+          "title": "Payment error",
+          "description": "Unable to start payment"
+        }
+      }
     }
   },
   "motoDetails": {
@@ -665,6 +708,79 @@
       "title": "No {{filter}} bookings",
       "description": "No bookings match the selected filter. Try another filter.",
       "reset": "View all bookings"
+    },
+    "card": {
+      "vehicleDeleted": "Vehicle deleted",
+      "messageButton": "Message",
+      "messageTooltip": "Hello {{ownerName}}, click here to chat with me",
+      "ownerFallback": "Owner",
+      "startLabel": "Start:",
+      "endLabel": "End:",
+      "totalLabel": "Total:",
+      "servicesTitle": "Additional services:",
+      "confirm": "Confirm",
+      "finalizeBooking": "Finalize my booking"
+    },
+    "status": {
+      "paymentConfirmed": "Payment confirmed",
+      "depositPending": "Deposit pending",
+      "readyToGo": "Ready to go",
+      "paymentDepositValidated": "Payment and deposit validated",
+      "pending": "Pending",
+      "pending_payment": "Pending payment",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected",
+      "declined": "Declined",
+      "accepted": "Accepted",
+      "closed": "Closed",
+      "active": "Ongoing",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "cancel": {
+      "title": "Cancel booking",
+      "description": "Select a reason or write your message.",
+      "reason": {
+        "dateChange": "Date change",
+        "otherOption": "Found another option",
+        "personalIssue": "Personal issue",
+        "bookingError": "Booking error",
+        "custom": "Other reason (custom)"
+      },
+      "reasonLabel": "Explain your reason",
+      "reasonPlaceholder": "Ex: My schedule changed...",
+      "back": "Back",
+      "confirm": "Confirm",
+      "processing": "Cancelling..."
+    },
+    "toasts": {
+      "cancelError": "Unable to cancel booking: {{error}}",
+      "cancelledDescription": "Your booking has been cancelled. The owner will be notified.",
+      "unexpectedError": "An error occurred",
+      "reasonRequired": "Reason required",
+      "reasonRequiredDescription": "Please select a reason or enter a message.",
+      "cancelledSimple": "Your booking has been cancelled.",
+      "comingSoon": "Coming soon",
+      "comingSoonDescription": "Booking confirmation will be available soon"
+    },
+    "details": {
+      "title": "Your booking details",
+      "referenceNumber": "Booking #{{referenceNumber}}",
+      "createdAt": "Created on {{date}}",
+      "yearLabel": "Year {{year}}",
+      "clientInfo": "Client information",
+      "lastName": "Last name",
+      "firstName": "First name",
+      "phone": "Phone",
+      "email": "Email",
+      "notProvided": "Not provided",
+      "pickupZone": "Pickup zone",
+      "notSpecified": "Not specified",
+      "rentalDates": "Rental dates",
+      "baseRate": "Base rate",
+      "pricePerDayFormat": "{{price}}€/day × {{duration}}",
+      "downloadPdf": "Download PDF",
+      "close": "Close"
     }
   },
   "ownerVehicles": {

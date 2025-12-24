@@ -156,6 +156,49 @@
       "safePaymentHint": "Après validation",
       "quickConfirmation": "Confirmation rapide",
       "freeCancellationHint": "Gratuite 48h"
+    },
+    "discussion": {
+      "withRenter": "Discussion avec le locataire",
+      "withOwner": "Discussion avec le propriétaire",
+      "role": {
+        "owner": "Vous êtes le propriétaire",
+        "renter": "Vous êtes le locataire"
+      },
+      "dateRange": "Du {{startDate}} au {{endDate}}",
+      "viewBookingDetails": "Voir les détails de ma réservation",
+      "payRental": "Payer ma location",
+      "initialMessage": {
+        "renter": "Bonjour ! Je suis intéressé par la location de votre véhicule. Voici les détails :",
+        "owner": "Bonjour ! Vous avez une nouvelle demande de réservation. Voici les détails :"
+      },
+      "departureTime": "Départ à {{startTime}}",
+      "pickupLocation": "Lieu : {{pickupLocation}}",
+      "additionalOptions": "Options supplémentaires :",
+      "optionsTotal": "Dont {{optionsTotal}}€ d'options",
+      "confirmAvailability": {
+        "renter": "Pouvez-vous confirmer la disponibilité ? Merci !",
+        "owner": "Merci de confirmer votre disponibilité !"
+      },
+      "messagePlaceholder": "Tapez votre message...",
+      "conversationCancelled": "Vous ne pouvez plus discuter. La demande de réservation a été annulée ou terminée. ❌",
+      "conversationCancelledShort": "Vous ne pouvez plus discuter. La demande de réservation a été annulée.",
+      "toasts": {
+        "sendMessageError": "Impossible d'envoyer le message",
+        "messageSent": {
+          "title": "Message envoyé",
+          "description": "Votre message a été envoyé au propriétaire"
+        },
+        "unexpectedError": "Une erreur est survenue",
+        "loadBookingError": "Impossible de récupérer les informations de réservation",
+        "bookingCancelled": {
+          "title": "Réservation annulée",
+          "description": "Cette réservation a été supprimée par le locataire."
+        },
+        "paymentError": {
+          "title": "Erreur paiement",
+          "description": "Impossible de démarrer le paiement"
+        }
+      }
     }
   },
   "motoDetails": {
@@ -668,6 +711,79 @@
       "title": "Aucune réservation {{filter}}",
       "description": "Aucune réservation ne correspond au filtre sélectionné. Essayez un autre filtre.",
       "reset": "Voir toutes les réservations"
+    },
+    "card": {
+      "vehicleDeleted": "Véhicule supprimé",
+      "messageButton": "Message",
+      "messageTooltip": "Bonjour {{ownerName}}, cliquez ici pour discuter avec moi",
+      "ownerFallback": "Propriétaire",
+      "startLabel": "Début:",
+      "endLabel": "Fin:",
+      "totalLabel": "Total:",
+      "servicesTitle": "Services supplémentaires:",
+      "confirm": "Confirmer",
+      "finalizeBooking": "Finaliser ma réservation"
+    },
+    "status": {
+      "paymentConfirmed": "Paiement confirmé",
+      "depositPending": "En attente de la caution",
+      "readyToGo": "Prêt à partir",
+      "paymentDepositValidated": "Paiement et caution validés",
+      "pending": "En attente",
+      "pending_payment": "En attente de paiement",
+      "confirmed": "Confirmée",
+      "rejected": "Rejetée",
+      "declined": "Refusée",
+      "accepted": "Acceptée",
+      "closed": "Clôturée",
+      "active": "En cours",
+      "completed": "Terminé",
+      "cancelled": "Annulée"
+    },
+    "cancel": {
+      "title": "Annuler la réservation",
+      "description": "Sélectionnez un motif ou rédigez votre message.",
+      "reason": {
+        "dateChange": "Changement de dates",
+        "otherOption": "Trouvé une autre option",
+        "personalIssue": "Imprévu personnel",
+        "bookingError": "Erreur de réservation",
+        "custom": "Autre raison (personnalisée)"
+      },
+      "reasonLabel": "Expliquez votre motif",
+      "reasonPlaceholder": "Ex: Mon planning a changé...",
+      "back": "Retour",
+      "confirm": "Confirmer",
+      "processing": "Annulation..."
+    },
+    "toasts": {
+      "cancelError": "Impossible d'annuler la réservation: {{error}}",
+      "cancelledDescription": "Votre réservation a été annulée. Le propriétaire sera notifié.",
+      "unexpectedError": "Une erreur est survenue",
+      "reasonRequired": "Motif requis",
+      "reasonRequiredDescription": "Veuillez sélectionner un motif ou saisir un message.",
+      "cancelledSimple": "Votre réservation a été annulée.",
+      "comingSoon": "Fonctionnalité à venir",
+      "comingSoonDescription": "La confirmation de réservation sera bientôt disponible"
+    },
+    "details": {
+      "title": "Détails de votre réservation",
+      "referenceNumber": "Réservation #{{referenceNumber}}",
+      "createdAt": "Créée le {{date}}",
+      "yearLabel": "Année {{year}}",
+      "clientInfo": "Informations client",
+      "lastName": "Nom",
+      "firstName": "Prénom",
+      "phone": "Téléphone",
+      "email": "Email",
+      "notProvided": "Non renseigné",
+      "pickupZone": "Zone de prise en charge",
+      "notSpecified": "Non spécifiée",
+      "rentalDates": "Dates de location",
+      "baseRate": "Tarif de base",
+      "pricePerDayFormat": "{{price}}€/jour × {{duration}}",
+      "downloadPdf": "Télécharger en PDF",
+      "close": "Fermer"
     }
   },
     "ownerVehicles": {

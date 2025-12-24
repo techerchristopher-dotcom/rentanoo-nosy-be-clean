@@ -613,6 +613,79 @@
       "title": "Keine {{filter}} Buchungen",
       "description": "Keine Buchung entspricht dem ausgewählten Filter. Versuchen Sie einen anderen Filter.",
       "reset": "Alle Buchungen anzeigen"
+    },
+    "card": {
+      "vehicleDeleted": "Fahrzeug gelöscht",
+      "messageButton": "Nachricht",
+      "messageTooltip": "Hallo {{ownerName}}, klicken Sie hier, um mit mir zu chatten",
+      "ownerFallback": "Eigentümer",
+      "startLabel": "Beginn:",
+      "endLabel": "Ende:",
+      "totalLabel": "Gesamt:",
+      "servicesTitle": "Zusätzliche Dienstleistungen:",
+      "confirm": "Bestätigen",
+      "finalizeBooking": "Buchung abschließen"
+    },
+    "status": {
+      "paymentConfirmed": "Zahlung bestätigt",
+      "depositPending": "Kaution ausstehend",
+      "readyToGo": "Bereit zum Start",
+      "paymentDepositValidated": "Zahlung und Kaution bestätigt",
+      "pending": "Ausstehend",
+      "pending_payment": "Zahlung ausstehend",
+      "confirmed": "Bestätigt",
+      "rejected": "Abgelehnt",
+      "declined": "Abgelehnt",
+      "accepted": "Angenommen",
+      "closed": "Geschlossen",
+      "active": "Laufend",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
+    },
+    "cancel": {
+      "title": "Buchung stornieren",
+      "description": "Wählen Sie einen Grund oder schreiben Sie Ihre Nachricht.",
+      "reason": {
+        "dateChange": "Terminänderung",
+        "otherOption": "Andere Option gefunden",
+        "personalIssue": "Persönliches Problem",
+        "bookingError": "Buchungsfehler",
+        "custom": "Anderer Grund (benutzerdefiniert)"
+      },
+      "reasonLabel": "Erklären Sie Ihren Grund",
+      "reasonPlaceholder": "Z.B.: Mein Zeitplan hat sich geändert...",
+      "back": "Zurück",
+      "confirm": "Bestätigen",
+      "processing": "Stornierung..."
+    },
+    "toasts": {
+      "cancelError": "Buchung kann nicht storniert werden: {{error}}",
+      "cancelledDescription": "Ihre Buchung wurde storniert. Der Eigentümer wird benachrichtigt.",
+      "unexpectedError": "Ein Fehler ist aufgetreten",
+      "reasonRequired": "Grund erforderlich",
+      "reasonRequiredDescription": "Bitte wählen Sie einen Grund oder geben Sie eine Nachricht ein.",
+      "cancelledSimple": "Ihre Buchung wurde storniert.",
+      "comingSoon": "Bald verfügbar",
+      "comingSoonDescription": "Die Buchungsbestätigung wird bald verfügbar sein"
+    },
+    "details": {
+      "title": "Ihre Buchungsdetails",
+      "referenceNumber": "Buchung #{{referenceNumber}}",
+      "createdAt": "Erstellt am {{date}}",
+      "yearLabel": "Jahr {{year}}",
+      "clientInfo": "Kundeninformationen",
+      "lastName": "Nachname",
+      "firstName": "Vorname",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "notProvided": "Nicht angegeben",
+      "pickupZone": "Abholzone",
+      "notSpecified": "Nicht angegeben",
+      "rentalDates": "Mietdaten",
+      "baseRate": "Grundpreis",
+      "pricePerDayFormat": "{{price}}€/Tag × {{duration}}",
+      "downloadPdf": "PDF herunterladen",
+      "close": "Schließen"
     }
   },
   "ownerVehicles": {
@@ -789,6 +862,49 @@
       "safePaymentHint": "Nach Validierung",
       "quickConfirmation": "Schnelle Bestätigung",
       "freeCancellationHint": "Kostenlos 48h"
+    },
+    "discussion": {
+      "withRenter": "Diskussion mit Mieter",
+      "withOwner": "Diskussion mit Eigentümer",
+      "role": {
+        "owner": "Sie sind der Eigentümer",
+        "renter": "Sie sind der Mieter"
+      },
+      "dateRange": "Vom {{startDate}} bis {{endDate}}",
+      "viewBookingDetails": "Details meiner Buchung anzeigen",
+      "payRental": "Meine Miete bezahlen",
+      "initialMessage": {
+        "renter": "Hallo! Ich bin an der Miete Ihres Fahrzeugs interessiert. Hier sind die Details:",
+        "owner": "Hallo! Sie haben eine neue Buchungsanfrage. Hier sind die Details:"
+      },
+      "departureTime": "Abfahrt um {{startTime}}",
+      "pickupLocation": "Ort: {{pickupLocation}}",
+      "additionalOptions": "Zusätzliche Optionen:",
+      "optionsTotal": "Einschließlich {{optionsTotal}}€ Optionen",
+      "confirmAvailability": {
+        "renter": "Können Sie die Verfügbarkeit bestätigen? Vielen Dank!",
+        "owner": "Bitte bestätigen Sie Ihre Verfügbarkeit!"
+      },
+      "messagePlaceholder": "Geben Sie Ihre Nachricht ein...",
+      "conversationCancelled": "Sie können nicht mehr chatten. Die Buchungsanfrage wurde storniert oder abgeschlossen. ❌",
+      "conversationCancelledShort": "Sie können nicht mehr chatten. Die Buchungsanfrage wurde storniert.",
+      "toasts": {
+        "sendMessageError": "Nachricht konnte nicht gesendet werden",
+        "messageSent": {
+          "title": "Nachricht gesendet",
+          "description": "Ihre Nachricht wurde an den Eigentümer gesendet"
+        },
+        "unexpectedError": "Ein Fehler ist aufgetreten",
+        "loadBookingError": "Buchungsinformationen konnten nicht abgerufen werden",
+        "bookingCancelled": {
+          "title": "Buchung storniert",
+          "description": "Diese Buchung wurde vom Mieter gelöscht."
+        },
+        "paymentError": {
+          "title": "Zahlungsfehler",
+          "description": "Zahlung konnte nicht gestartet werden"
+        }
+      }
     }
   },
   "dictionary": {
