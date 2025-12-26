@@ -24,19 +24,102 @@
 
 import Stripe from "https://esm.sh/stripe@latest";
 
+// Détecter l'environnement (DEV vs PROD)
+const isDev = !Deno.env.get("DENO_ENV") || Deno.env.get("DENO_ENV") !== "production";
+
+// ============================================
+// DIAGNOSTIC DEV-ONLY : Variables d'environnement Stripe
+// ============================================
+// Log au chargement du module (une seule fois au démarrage de la fonction)
+if (isDev) {
+  // Lister toutes les variables d'environnement liées à Stripe (sans afficher leurs valeurs)
+  const stripeEnvVars: Record<string, { exists: boolean; length?: number }> = {};
+  const stripeVarNames = [
+    "STRIPE_SECRET_KEY",
+    "STRIPE_SUCCESS_URL",
+    "STRIPE_CANCEL_URL",
+    "STRIPE_WEBHOOK_SECRET",
+    "STRIPE_PUBLISHABLE_KEY",
+  ];
+  
+  stripeVarNames.forEach((varName) => {
+    const value = Deno.env.get(varName);
+    stripeEnvVars[varName] = {
+      exists: !!value,
+      length: value ? value.length : undefined,
+    };
+  });
+  
+  // Lister aussi toutes les variables d'environnement qui commencent par STRIPE_
+  const allStripeVars: string[] = [];
+  for (const [key] of Object.entries(Deno.env.toObject())) {
+    if (key.startsWith("STRIPE_")) {
+      allStripeVars.push(key);
+    }
+  }
+  
+  console.info("🔍 [stripe-env-check] Variables d'environnement Stripe au démarrage:", {
+    stripeEnvVars,
+    allStripeVarNames: allStripeVars,
+    runtime: "edge",
+    isDev: true,
+    denoEnv: Deno.env.get("DENO_ENV") || "undefined",
+  });
+}
+
+// Whitelist des origines PROD autorisées
+// Peut être surchargée via env var CORS_ALLOWED_ORIGINS (séparées par des virgules)
+const PROD_ALLOWED_ORIGINS = Deno.env.get("CORS_ALLOWED_ORIGINS")
+  ? Deno.env.get("CORS_ALLOWED_ORIGINS")!.split(",").map(o => o.trim())
+  : [
+      "https://rentanoo.yt",
+      "https://www.rentanoo.yt",
+      "https://rentanoo.com",
+      "https://www.rentanoo.com",
+      // Ajouter d'autres domaines de production si nécessaire
+    ];
+
 // Headers CORS pour toutes les réponses
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+// En DEV: autoriser localhost:3013 (owner) et localhost:3012 (tenant)
+// En PROD: whitelist stricte des origines autorisées
+function getCorsHeaders(origin?: string | null) {
+  if (isDev) {
+    // DEV: autoriser localhost
+    const devOrigins = ["http://localhost:3013", "http://localhost:3012"];
+    const allowOrigin = origin && devOrigins.includes(origin)
+      ? origin
+      : "http://localhost:3013"; // Default en DEV
+    
+    return {
+      "Access-Control-Allow-Origin": allowOrigin,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      "Access-Control-Max-Age": "86400", // Cache preflight 24h
+    };
+  }
+
+  // PROD: whitelist stricte
+  const allowOrigin = origin && PROD_ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : null; // Rejeter les origines non autorisées
+
+  return {
+    "Access-Control-Allow-Origin": allowOrigin || PROD_ALLOWED_ORIGINS[0], // Fallback sur première origine
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Max-Age": "86400", // Cache preflight 24h
+  };
+}
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   // Gérer les requêtes OPTIONS (preflight CORS)
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: CORS_HEADERS,
+    return new Response("ok", {
+      status: 200,
+      headers: corsHeaders,
     });
   }
 
@@ -49,7 +132,7 @@ Deno.serve(async (req) => {
         status: 405,
         headers: { 
           "Content-Type": "application/json",
-          ...CORS_HEADERS
+          ...corsHeaders
         }
       }
     );
@@ -75,7 +158,7 @@ Deno.serve(async (req) => {
           status: 400,
           headers: { 
             "Content-Type": "application/json",
-            ...CORS_HEADERS
+            ...corsHeaders
           }
         }
       );
@@ -89,7 +172,7 @@ Deno.serve(async (req) => {
           status: 400,
           headers: { 
             "Content-Type": "application/json",
-            ...CORS_HEADERS
+            ...corsHeaders
           }
         }
       );
@@ -97,7 +180,31 @@ Deno.serve(async (req) => {
 
     // Vérifier les variables d'environnement
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
+    
+    // DIAGNOSTIC DEV-ONLY : Log avant vérification
+    if (isDev) {
+      console.info("🔍 [stripe-env-check] Vérification STRIPE_SECRET_KEY:", {
+        hasStripeSecretKey: !!stripeSecret,
+        keyLength: stripeSecret ? stripeSecret.length : 0,
+        keyPrefix: stripeSecret ? stripeSecret.substring(0, 7) + "..." : "N/A",
+        keySuffix: stripeSecret ? "..." + stripeSecret.substring(stripeSecret.length - 4) : "N/A",
+        runtime: "edge",
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
     if (!stripeSecret) {
+      // DIAGNOSTIC DEV-ONLY : Log détaillé si la clé est absente
+      if (isDev) {
+        console.error("❌ [stripe-env-check] STRIPE_SECRET_KEY ABSENTE - Diagnostic:", {
+          hasStripeSecretKey: false,
+          allEnvKeys: Object.keys(Deno.env.toObject()).filter(k => k.includes("STRIPE") || k.includes("stripe")),
+          denoEnvKeys: Object.keys(Deno.env.toObject()).length,
+          runtime: "edge",
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
       console.error("❌ [create-checkout-session] STRIPE_SECRET_KEY manquante");
       return new Response(
         JSON.stringify({ ok: false, error: "Configuration serveur manquante: STRIPE_SECRET_KEY" }),
@@ -105,7 +212,7 @@ Deno.serve(async (req) => {
           status: 500,
           headers: { 
             "Content-Type": "application/json",
-            ...CORS_HEADERS
+            ...corsHeaders
           }
         }
       );
@@ -128,7 +235,7 @@ Deno.serve(async (req) => {
           status: 500,
           headers: { 
             "Content-Type": "application/json",
-            ...CORS_HEADERS
+            ...corsHeaders
           }
         }
       );
@@ -177,7 +284,7 @@ Deno.serve(async (req) => {
         status: 200,
         headers: { 
           "Content-Type": "application/json",
-          ...CORS_HEADERS
+          ...corsHeaders
         }
       }
     );
@@ -195,7 +302,7 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { 
           "Content-Type": "application/json",
-          ...CORS_HEADERS
+          ...corsHeaders
         }
       }
     );
