@@ -49,9 +49,15 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { MultiVehicleModal } from "@/components/vehicles/MultiVehicleModal";
 import { BookingConfirmationModal } from "@/components/booking/BookingConfirmationModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { Loader2 } from "lucide-react";
 import { VehiclesService, PhotosService } from "@/services";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
 import { ProfileService } from "@/services/supabase/profile";
+import { calcServiceFeeRenter } from "@/utils/serviceFees";
 import { Photo, User, RentalCalculation, VehicleRentalInfo } from "@/types";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import { createVehicleRentalInfo } from "@/lib/utils";
@@ -64,18 +70,6 @@ import { PhotoService } from "@/services/supabase/photos";
 import VehicleOwnerCard from "@/components/VehicleOwnerCard";
 import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptions";
 import { useToast } from "@/hooks/use-toast";
-
-const fuelLabels = {
-  gasoline: "Essence",
-  diesel: "Diesel",
-  electric: "Électrique", 
-  hybrid: "Hybride"
-};
-
-const transmissionLabels = {
-  manual: "Manuelle",
-  automatic: "Automatique"
-};
 
 // Fonction pour obtenir l'icône appropriée selon la zone
 const getLocationIcon = (zone: string) => {
@@ -98,6 +92,18 @@ export default function VehicleDetails() {
   const location = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation("common");
+
+  const fuelLabels = {
+    gasoline: t("vehicle.fuel.gasoline"),
+    diesel: t("vehicle.fuel.diesel"),
+    electric: t("vehicle.fuel.electric"),
+    hybrid: t("vehicle.fuel.hybrid"),
+  };
+
+  const transmissionLabels = {
+    manual: t("vehicle.transmission.manual"),
+    automatic: t("vehicle.transmission.automatic"),
+  };
   
   console.log('🎯 [DEBUG] License from useParams:', license);
   console.log('🎯 [DEBUG] Navigate function:', typeof navigate);
@@ -110,6 +116,11 @@ export default function VehicleDetails() {
   const [loading, setLoading] = useState(true);
   const [showMultiVehicleModal, setShowMultiVehicleModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showPhoneRequiredModal, setShowPhoneRequiredModal] = useState(false);
+  const [phoneReturnTo, setPhoneReturnTo] = useState<string>("");
+  const [phone, setPhone] = useState<string | undefined>('');
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     owner: true,
@@ -396,6 +407,46 @@ export default function VehicleDetails() {
     setShowConfirmationModal(true);
   };
   
+  // Handler pour sauvegarder le téléphone et continuer la réservation
+  const handleSavePhoneAndContinue = async () => {
+    // Réinitialiser l'erreur
+    setPhoneError(null);
+    
+    // Validation frontend
+    if (!phone || phone.trim().length === 0) {
+      setPhoneError('Veuillez saisir un numéro de téléphone');
+      return;
+    }
+    
+    setIsSavingPhone(true);
+    
+    try {
+      // Appel API pour sauvegarder le téléphone
+      const { data: updatedUser, error } = await ProfileService.updateProfile({ phone: phone || undefined });
+      
+      if (error) {
+        // Erreur lors de la sauvegarde
+        setPhoneError(error || 'Erreur lors de la sauvegarde du téléphone');
+        setIsSavingPhone(false);
+        return;
+      }
+      
+      if (updatedUser) {
+        // Succès : fermer la modal et relancer la réservation
+        setShowPhoneRequiredModal(false);
+        setPhoneError(null);
+        setPhone('');
+        
+        // Relancer la réservation avec les dates déjà en mémoire
+        await handleConfirmBooking();
+      }
+    } catch (error: any) {
+      // Erreur inattendue
+      setPhoneError(error?.message || 'Une erreur est survenue');
+      setIsSavingPhone(false);
+    }
+  };
+  
   const handleConfirmBooking = async () => {
     console.log('✅ [DEBUG] Confirmation de la réservation');
     // Fermer la modal de confirmation
@@ -538,7 +589,7 @@ export default function VehicleDetails() {
       
       // Calculer les valeurs nécessaires
       const subtotal = basePrice + optionsTotal;
-      const serviceFee = Math.round(subtotal * 0.15 * 100) / 100;
+      const serviceFee = calcServiceFeeRenter(subtotal);
       
       const bookingResult = await SupabaseBookingsService.createBooking({
         vehicleId: vehicle.id,
@@ -557,6 +608,27 @@ export default function VehicleDetails() {
         pricePerDay: vehicle.dailyPrice,
         rentalDays: bookingData.rentalInfo.rentalDays,
       });
+      
+      // 🔒 Guard : Gérer l'erreur PHONE_REQUIRED
+      if (bookingResult.error === 'PHONE_REQUIRED') {
+        // Sauvegarder le contexte de réservation pour reprise après ajout téléphone
+        const pendingBooking = {
+          vehicleId: vehicle.id,
+          vehicleLicense: vehicle.license,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          currentRoute: `/vehicle/${vehicle.license}`,
+        };
+        sessionStorage.setItem('pendingBooking', JSON.stringify(pendingBooking));
+        
+        // Ouvrir la modal au lieu de rediriger directement
+        const returnTo = `/vehicle/${vehicle.license}`;
+        setPhoneReturnTo(returnTo);
+        setPhone(''); // Réinitialiser le champ téléphone
+        setPhoneError(null); // Réinitialiser l'erreur
+        setShowPhoneRequiredModal(true);
+        return;
+      }
       
       if (bookingResult.data) {
         console.log('✅ [DEBUG] Réservation créée avec succès:', bookingResult.data);
@@ -1367,6 +1439,64 @@ export default function VehicleDetails() {
         selectedVehicleImage={photos.length > 0 ? photos[0].url : undefined}
         selectedVehicleName={vehicle ? `${vehicle.brand} ${vehicle.model}` : undefined}
       />
+
+      {/* Phone Required Modal */}
+      <Dialog open={showPhoneRequiredModal} onOpenChange={setShowPhoneRequiredModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Numéro de téléphone requis</DialogTitle>
+            <DialogDescription>
+              Ajoutez votre numéro de téléphone pour continuer votre réservation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone-modal" className="text-sm font-medium">
+                Numéro de téléphone
+              </Label>
+              <PhoneInput
+                id="phone-modal"
+                placeholder="Numéro de téléphone"
+                value={phone}
+                onChange={setPhone}
+                defaultCountry="FR"
+                international
+                countryCallingCodeEditable={false}
+                className="flex h-11 w-full rounded-lg border border-primary-soft/20 bg-background/30 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/10 focus-visible:border-primary transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              {phoneError && (
+                <p className="text-sm text-destructive mt-1">{phoneError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPhoneRequiredModal(false);
+                setPhone('');
+                setPhoneError(null);
+              }}
+              disabled={isSavingPhone}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSavePhoneAndContinue}
+              disabled={isSavingPhone}
+            >
+              {isSavingPhone ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                'Enregistrer et poursuivre ma réservation'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

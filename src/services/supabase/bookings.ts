@@ -1,6 +1,7 @@
 // Service Supabase pour la gestion des réservations
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { ProfileService } from './profile';
 
 type SupabaseBooking = Tables<'bookings'>;
 type SupabaseBookingInsert = TablesInsert<'bookings'>;
@@ -45,7 +46,26 @@ export class SupabaseBookingsService {
     error: string | null;
   }> {
     try {
-      console.log('📝 [BookingsService] Création de la réservation...', bookingData);
+      // 🔒 Guard : Vérifier que l'utilisateur a un téléphone renseigné
+      const { data: currentUser, error: profileError } = await ProfileService.getCurrentUserProfile();
+      
+      if (profileError) {
+        // Erreur lors de la récupération du profil utilisateur
+        return { data: null, error: 'PROFILE_FETCH_FAILED' };
+      }
+
+      if (!currentUser) {
+        // Profil utilisateur non trouvé
+        return { data: null, error: 'USER_NOT_FOUND' };
+      }
+
+      // Vérifier si le téléphone est renseigné (non vide après trim)
+      const hasPhone = currentUser.phone && currentUser.phone.trim().length > 0;
+      
+      if (!hasPhone) {
+        // Téléphone manquant - réservation bloquée
+        return { data: null, error: 'PHONE_REQUIRED' };
+      }
 
       // Préparer les données pour l'insertion
       const insertData: SupabaseBookingInsert = {
@@ -68,8 +88,6 @@ export class SupabaseBookingsService {
         rental_days: bookingData.rentalDays || null,
       };
 
-      console.log('📦 [BookingsService] Données d\'insertion:', insertData);
-
       const { data, error } = await supabase
         .from('bookings')
         .insert(insertData)
@@ -77,11 +95,9 @@ export class SupabaseBookingsService {
         .single();
 
       if (error) {
-        console.error('❌ [BookingsService] Erreur lors de la création:', error);
+        // Erreur lors de l'insertion en base de données
         return { data: null, error: error.message };
       }
-
-      console.log('✅ [BookingsService] Réservation créée avec succès:', data);
 
       return {
         data: {
@@ -93,7 +109,7 @@ export class SupabaseBookingsService {
         error: null,
       };
     } catch (error: any) {
-      console.error('❌ [BookingsService] Erreur inattendue:', error);
+      // Erreur inattendue lors de la création de la réservation
       return { data: null, error: error.message || 'Erreur lors de la création de la réservation' };
     }
   }

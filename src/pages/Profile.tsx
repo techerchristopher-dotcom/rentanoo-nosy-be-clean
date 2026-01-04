@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,9 @@ import { FEATURES } from "@/config/features";
 
 export default function Profile() {
   const { t } = useTranslation("common");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const phoneSectionRef = useRef<HTMLDivElement>(null);
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -221,6 +224,47 @@ export default function Profile() {
       setDriverLicenseIssueDate(date);
     }
   };
+
+  // Parser les query params pour gérer section=phone et returnTo
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const section = searchParams.get('section');
+    
+    // Si section=phone, activer la section "Informations de base" qui contient le téléphone
+    if (section === 'phone') {
+      setActiveSection('basic');
+    }
+  }, [location.search]);
+
+  // Scroll robuste vers le champ téléphone quand section=phone ET activeSection=basic ET profil chargé
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const section = searchParams.get('section');
+    
+    // Conditions : section=phone ET activeSection=basic ET currentUser chargé
+    if (section === 'phone' && activeSection === 'basic' && currentUser) {
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      const tryScroll = () => {
+        attempts++;
+        
+        if (phoneSectionRef.current) {
+          // Ref disponible → scroll
+          phoneSectionRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        } else if (attempts < maxAttempts) {
+          // Ref pas encore disponible → retry au frame suivant
+          requestAnimationFrame(tryScroll);
+        }
+      };
+      
+      // Démarrer le scroll au prochain frame
+      requestAnimationFrame(tryScroll);
+    }
+  }, [location.search, activeSection, currentUser]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -659,6 +703,24 @@ export default function Profile() {
                   : "Vos informations de permis ont été sauvegardées."
               ),
             });
+
+            // 🔄 Gérer le retour vers la réservation si returnTo présent et téléphone renseigné
+            const searchParams = new URLSearchParams(location.search);
+            const returnTo = searchParams.get('returnTo');
+            
+            if (returnTo && updatedUser.phone && updatedUser.phone.trim().length > 0) {
+              // Vérifier si pendingBooking existe dans sessionStorage
+              const pendingBooking = sessionStorage.getItem('pendingBooking');
+              
+              if (pendingBooking) {
+                // Nettoyer sessionStorage
+                sessionStorage.removeItem('pendingBooking');
+              }
+              
+              // Décoder et rediriger vers returnTo
+              const decodedReturnTo = decodeURIComponent(returnTo);
+              navigate(decodedReturnTo);
+            }
           }
         } catch (error) {
           console.error("Error saving section:", error);
@@ -726,6 +788,24 @@ export default function Profile() {
                 "Toutes vos informations ont été sauvegardées avec succès."
               ),
             });
+
+            // 🔄 Gérer le retour vers la réservation si returnTo présent et téléphone renseigné
+            const searchParams = new URLSearchParams(location.search);
+            const returnTo = searchParams.get('returnTo');
+            
+            if (returnTo && updatedUser.phone && updatedUser.phone.trim().length > 0) {
+              // Vérifier si pendingBooking existe dans sessionStorage
+              const pendingBooking = sessionStorage.getItem('pendingBooking');
+              
+              if (pendingBooking) {
+                // Nettoyer sessionStorage
+                sessionStorage.removeItem('pendingBooking');
+              }
+              
+              // Décoder et rediriger vers returnTo
+              const decodedReturnTo = decodeURIComponent(returnTo);
+              navigate(decodedReturnTo);
+            }
           }
     } catch (error) {
           console.error("Error updating profile:", error);
@@ -1306,7 +1386,7 @@ export default function Profile() {
               </div>
               
               {/* Groupe téléphone */}
-              <div className="space-y-4">
+              <div ref={phoneSectionRef} className="space-y-4">
                 <div className="flex items-center mb-4">
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-3">
                     <span className="text-primary text-sm">📱</span>
