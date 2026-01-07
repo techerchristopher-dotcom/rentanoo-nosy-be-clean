@@ -924,5 +924,9 @@
     "dictionary": "Dizionario",
     "home": "Home",
     "login": "Accedi"
+  },
+  "whatsapp": {
+    "contactOnly": "Contatto solo WhatsApp",
+    "contactOnlyShort": "Solo WhatsApp"
   }
 }

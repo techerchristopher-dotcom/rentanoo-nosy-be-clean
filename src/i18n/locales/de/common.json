@@ -924,5 +924,9 @@
     "dictionary": "Wörterbuch",
     "home": "Startseite",
     "login": "Anmelden"
+  },
+  "whatsapp": {
+    "contactOnly": "Nur WhatsApp-Kontakt",
+    "contactOnlyShort": "Nur WhatsApp"
   }
 }
