@@ -52,6 +52,26 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_[VOTRE_CLE_STRIPE]
 # STRIPE_WEBHOOK_SECRET=whsec_[VOTRE_WEBHOOK_SECRET]
 
 # ============================================
+# EMAIL (Contact Form)
+# ============================================
+#
+# Configuration pour l'envoi d'emails depuis le formulaire de contact
+# Utilise Nodemailer avec SMTP
+#
+# EMAIL_TO=contact@rentanoo.com
+# EMAIL_FROM=noreply@rentanoo.com
+#
+# Configuration SMTP (exemple Gmail)
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
+# SMTP_USER=votre-email@gmail.com
+# SMTP_PASS=votre-mot-de-passe-app
+#
+# Note: Pour Gmail, utilisez un "App Password" (pas votre mot de passe normal)
+# Créer un App Password: https://myaccount.google.com/apppasswords
+
+# ============================================
 # NOTES
 # ============================================
 #

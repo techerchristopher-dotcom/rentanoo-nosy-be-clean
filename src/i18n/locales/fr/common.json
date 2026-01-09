@@ -950,6 +950,33 @@
   },
   "whatsapp": {
     "contactOnly": "Contact WhatsApp uniquement",
-    "contactOnlyShort": "WhatsApp uniquement"
+    "contactOnlyShort": "WhatsApp uniquement",
+    "sendEmail": "Envoyez un email"
+  },
+  "contact": {
+    "title": "Nous contacter",
+    "intro": "Vous préférez nous écrire ? Remplissez le formulaire ci-dessous.",
+    "formTitle": "Formulaire de contact",
+    "formDescription": "Tous les champs marqués d'un astérisque (*) sont obligatoires.",
+    "fullName": "Nom Prénom",
+    "fullNamePlaceholder": "Votre nom complet",
+    "email": "Adresse email",
+    "emailPlaceholder": "votre@email.com",
+    "phone": "Numéro de téléphone",
+    "phonePlaceholder": "+33 6 12 34 56 78",
+    "subject": "Objet",
+    "subjectPlaceholder": "Objet de votre message",
+    "message": "Message",
+    "messagePlaceholder": "Votre message...",
+    "attachment": "Pièce jointe",
+    "attachmentHint": "Formats acceptés: PDF, JPG, PNG, DOC, DOCX (max 10MB)",
+    "optional": "optionnel",
+    "send": "Envoyer",
+    "sending": "Envoi en cours...",
+    "success": "Message envoyé !",
+    "successDescription": "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
+    "error": "Erreur",
+    "errorGeneric": "Erreur, réessayez.",
+    "fileTooLarge": "Le fichier ne doit pas dépasser 10MB"
   }
 }

@@ -947,6 +947,33 @@
   },
   "whatsapp": {
     "contactOnly": "WhatsApp contact only",
-    "contactOnlyShort": "WhatsApp only"
+    "contactOnlyShort": "WhatsApp only",
+    "sendEmail": "Send an email"
+  },
+  "contact": {
+    "title": "Contact us",
+    "intro": "Prefer to write to us? Fill out the form below.",
+    "formTitle": "Contact form",
+    "formDescription": "All fields marked with an asterisk (*) are required.",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Your full name",
+    "email": "Email address",
+    "emailPlaceholder": "your@email.com",
+    "phone": "Phone number",
+    "phonePlaceholder": "+33 6 12 34 56 78",
+    "subject": "Subject",
+    "subjectPlaceholder": "Subject of your message",
+    "message": "Message",
+    "messagePlaceholder": "Your message...",
+    "attachment": "Attachment",
+    "attachmentHint": "Accepted formats: PDF, JPG, PNG, DOC, DOCX (max 10MB)",
+    "optional": "optional",
+    "send": "Send",
+    "sending": "Sending...",
+    "success": "Message sent!",
+    "successDescription": "Your message has been sent successfully. We will reply as soon as possible.",
+    "error": "Error",
+    "errorGeneric": "Error, please try again.",
+    "fileTooLarge": "File must not exceed 10MB"
   }
 }

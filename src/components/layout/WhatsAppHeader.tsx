@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { Mail } from "lucide-react";
 
 const WHATSAPP_NUMBER = "+33633707569"; // Format international sans espaces pour le lien
 const WHATSAPP_DISPLAY = "+33 (0) 6 33 70 75 69"; // Format affiché
@@ -28,32 +30,50 @@ export function WhatsAppHeader() {
   return (
     <div className="sticky top-0 z-[60] bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white shadow-md">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <button
-          onClick={handleWhatsAppClick}
-          className="w-full flex items-center justify-center gap-2 md:gap-3 py-2 md:py-2.5 hover:bg-[#25D366]/20 transition-colors duration-200 group"
-          aria-label={`Contacter le service client via WhatsApp: ${WHATSAPP_DISPLAY}`}
-        >
-          {/* Icône WhatsApp officielle */}
-          <WhatsAppIcon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-          
-          {/* Numéro de téléphone */}
-          <span className="font-bold text-sm md:text-base tracking-tight">
-            {WHATSAPP_DISPLAY}
-          </span>
-          
-          {/* Mention explicite */}
-          <span className="text-xs md:text-sm opacity-90 hidden sm:inline">
-            {t("whatsapp.contactOnly", "Contact WhatsApp uniquement")}
-          </span>
-          <span className="text-xs opacity-90 sm:hidden">
-            {t("whatsapp.contactOnlyShort", "WhatsApp uniquement")}
-          </span>
-          
-          {/* Indicateur visuel de clic */}
-          <span className="text-xs opacity-75 group-hover:opacity-100 transition-opacity">
-            →
-          </span>
-        </button>
+        <div className="flex items-center justify-center gap-4 md:gap-6 py-2 md:py-2.5">
+          {/* Section WhatsApp */}
+          <button
+            onClick={handleWhatsAppClick}
+            className="flex items-center gap-2 md:gap-3 hover:bg-[#25D366]/20 transition-colors duration-200 group px-2 py-1 rounded"
+            aria-label={`Contacter le service client via WhatsApp: ${WHATSAPP_DISPLAY}`}
+          >
+            {/* Icône WhatsApp officielle */}
+            <WhatsAppIcon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+            
+            {/* Numéro de téléphone */}
+            <span className="font-bold text-sm md:text-base tracking-tight">
+              {WHATSAPP_DISPLAY}
+            </span>
+            
+            {/* Mention explicite */}
+            <span className="text-xs md:text-sm opacity-90 hidden sm:inline">
+              {t("whatsapp.contactOnly", "Contact WhatsApp uniquement")}
+            </span>
+            <span className="text-xs opacity-90 sm:hidden">
+              {t("whatsapp.contactOnlyShort", "WhatsApp uniquement")}
+            </span>
+            
+            {/* Indicateur visuel de clic */}
+            <span className="text-xs opacity-75 group-hover:opacity-100 transition-opacity">
+              →
+            </span>
+          </button>
+
+          {/* Séparateur */}
+          <div className="h-4 w-px bg-white/30 hidden md:block" />
+
+          {/* Lien Email */}
+          <Link
+            to="/contact"
+            className="flex items-center gap-2 hover:bg-[#25D366]/20 transition-colors duration-200 group px-2 py-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#128C7E]"
+            aria-label={t("whatsapp.sendEmail", "Envoyez un email")}
+          >
+            <Mail className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+            <span className="text-sm md:text-base font-medium underline underline-offset-2 decoration-white/60 hover:decoration-white transition-colors">
+              {t("whatsapp.sendEmail", "Envoyez un email")}
+            </span>
+          </Link>
+        </div>
       </div>
     </div>
   );

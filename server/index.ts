@@ -2,6 +2,7 @@ import path from "path";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 
 // Charger .env.local explicitement avant d'importer Stripe
@@ -87,12 +88,23 @@ app.post(
 
         const commissionBase = Number(bookingRow?.subtotal || 0);
         // Calculs business (15% locataire + 15% propriétaire) sur subtotal
+        const { 
+          calcServiceFeeRenter, 
+          calcServiceFeeOwner, 
+          calcRenterTotal, 
+          calcOwnerPayout, 
+          calcPlatformTotalFee,
+          validateFeeCalculations
+        } = await import("../src/utils/serviceFees");
         const round2 = (n: number) => Math.round(n * 100) / 100;
-        const serviceFeeRenter = round2(commissionBase * 0.15);
-        const serviceFeeOwner = round2(commissionBase * 0.15);
-        const amountTotalPaid = round2(commissionBase + serviceFeeRenter);
-        const ownerPayoutAmount = round2(commissionBase - serviceFeeOwner);
-        const platformTotalFee = round2(serviceFeeRenter + serviceFeeOwner);
+        const serviceFeeRenter = calcServiceFeeRenter(commissionBase);
+        const serviceFeeOwner = calcServiceFeeOwner(commissionBase);
+        const amountTotalPaid = calcRenterTotal(commissionBase);
+        const ownerPayoutAmount = calcOwnerPayout(commissionBase);
+        const platformTotalFee = calcPlatformTotalFee(commissionBase);
+        
+        // Self-check DEV-only
+        validateFeeCalculations(commissionBase, serviceFeeRenter, serviceFeeOwner, platformTotalFee);
 
         // Alerte si désalignement montant Stripe vs calcul (tolérance arrondis)
         if (amountTotal && Math.abs(amountTotal - amountTotalPaid) > 0.02) {
@@ -102,22 +114,55 @@ app.post(
           });
         }
 
-        const { error: updateErr } = await supabaseAdmin
+        // Préparer le payload pour l'update
+        const updatePayload = {
+          status: "accepted",
+          paid_at: new Date().toISOString(),
+          stripe_payment_intent_id: paymentIntentId || null,
+          stripe_checkout_session_id: checkoutSessionId,
+          amount_total_paid: amountTotal || amountTotalPaid,
+          service_fee_renter: serviceFeeRenter,
+          service_fee_owner: serviceFeeOwner,
+          owner_payout_amount: ownerPayoutAmount,
+          platform_total_fee: platformTotalFee,
+          currency,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Log DEV-only avant update
+        if (process.env.NODE_ENV !== "production") {
+          console.info("[fees-webhook-write:before]", {
+            webhook: "EXPRESS_WEBHOOK",
+            bookingId,
+            status: updatePayload.status,
+            currency: updatePayload.currency,
+            paid_at: updatePayload.paid_at,
+            stripe_checkout_session_id: updatePayload.stripe_checkout_session_id,
+            stripe_payment_intent_id: updatePayload.stripe_payment_intent_id,
+            amount_total_paid: updatePayload.amount_total_paid,
+            service_fee_renter: updatePayload.service_fee_renter,
+            service_fee_owner: updatePayload.service_fee_owner,
+            owner_payout_amount: updatePayload.owner_payout_amount,
+            platform_total_fee: updatePayload.platform_total_fee,
+          });
+        }
+
+        const { data: updateData, error: updateErr } = await supabaseAdmin
           .from("bookings")
-          .update({
-            status: "accepted",
-            paid_at: new Date().toISOString(),
-            stripe_payment_intent_id: paymentIntentId || null,
-            stripe_checkout_session_id: checkoutSessionId,
-            amount_total_paid: amountTotal || amountTotalPaid,
-            service_fee_renter: serviceFeeRenter,
-            service_fee_owner: serviceFeeOwner,
-            owner_payout_amount: ownerPayoutAmount,
-            platform_total_fee: platformTotalFee,
-            currency,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", bookingId);
+          .update(updatePayload)
+          .eq("id", bookingId)
+          .select();
+
+        // Log DEV-only après update
+        if (process.env.NODE_ENV !== "production") {
+          console.info("[fees-webhook-write:after]", {
+            webhook: "EXPRESS_WEBHOOK",
+            bookingId,
+            ok: !updateErr,
+            error: updateErr?.message || null,
+            data: updateData ? "updated" : null,
+          });
+        }
 
         if (updateErr) {
           console.error("❌ Update bookings après paiement:", updateErr);
@@ -146,6 +191,151 @@ app.post(
 
 // Parser JSON global après la route webhook
 app.use(express.json());
+
+// Configuration multer pour les fichiers
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = /pdf|jpg|jpeg|png|doc|docx/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Type de fichier non autorisé. Formats acceptés: PDF, JPG, PNG, DOC, DOCX"));
+    }
+  },
+});
+
+// Route contact form
+app.post("/api/contact", upload.single("attachment"), async (req, res) => {
+  try {
+    const { fullName, email, phone, subject, message, website } = req.body;
+    const attachment = req.file;
+
+    // Vérification honeypot
+    if (website) {
+      // Bot détecté, retourner un succès factice
+      return res.status(200).json({ success: true });
+    }
+
+    // Validation des champs requis
+    if (!fullName || !email || !subject || !message) {
+      return res.status(400).json({
+        error: "Les champs nom, email, objet et message sont obligatoires",
+      });
+    }
+
+    // Validation format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: "Format d'email invalide",
+      });
+    }
+
+    // Vérifier les variables d'environnement
+    const emailTo = process.env.EMAIL_TO;
+    const emailFrom = process.env.EMAIL_FROM || email;
+
+    if (!emailTo) {
+      console.error("❌ EMAIL_TO non configuré dans les variables d'environnement");
+      return res.status(500).json({
+        error: "Configuration serveur manquante",
+      });
+    }
+
+    // Préparer le contenu de l'email
+    let emailContent = `
+Nouveau message de contact depuis le site Rentanoo
+
+Nom: ${fullName}
+Email: ${email}
+${phone ? `Téléphone: ${phone}` : ""}
+Objet: ${subject}
+
+Message:
+${message}
+`;
+
+    // Utiliser nodemailer si disponible, sinon fallback simple
+    try {
+      const nodemailer = await import("nodemailer");
+      
+      // Configuration du transporteur (SMTP)
+      const transporter = nodemailer.default.createTransport({
+        host: process.env.SMTP_HOST || "smtp.gmail.com",
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === "true", // true pour 465, false pour autres ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      const mailOptions: any = {
+        from: emailFrom,
+        to: emailTo,
+        subject: `[Rentanoo Contact] ${subject}`,
+        text: emailContent,
+        html: `
+          <h2>Nouveau message de contact</h2>
+          <p><strong>Nom:</strong> ${fullName}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          ${phone ? `<p><strong>Téléphone:</strong> ${phone}</p>` : ""}
+          <p><strong>Objet:</strong> ${subject}</p>
+          <hr>
+          <p><strong>Message:</strong></p>
+          <p>${message.replace(/\n/g, "<br>")}</p>
+        `,
+      };
+
+      // Ajouter la pièce jointe si présente
+      if (attachment) {
+        mailOptions.attachments = [
+          {
+            filename: attachment.originalname,
+            content: attachment.buffer,
+          },
+        ];
+      }
+
+      await transporter.sendMail(mailOptions);
+
+      console.log("✅ Email de contact envoyé:", { to: emailTo, from: email, subject });
+
+      return res.status(200).json({
+        success: true,
+        message: "Message envoyé avec succès",
+      });
+    } catch (emailError: any) {
+      console.error("❌ Erreur envoi email:", emailError);
+      
+      // Si nodemailer n'est pas configuré, log et retourner une erreur
+      if (emailError.code === "MODULE_NOT_FOUND" || !process.env.SMTP_USER) {
+        console.error("⚠️ Nodemailer non configuré. Veuillez configurer SMTP_USER et SMTP_PASS dans .env.local");
+        return res.status(500).json({
+          error: "Service d'envoi d'email non configuré",
+        });
+      }
+
+      return res.status(500).json({
+        error: "Erreur lors de l'envoi de l'email",
+        details: emailError.message,
+      });
+    }
+  } catch (error: any) {
+    console.error("❌ Erreur route contact:", error);
+    return res.status(500).json({
+      error: "Erreur serveur",
+      details: error.message,
+    });
+  }
+});
 
 app.get("/api/stripe-health", async (_req, res) => {
   try {

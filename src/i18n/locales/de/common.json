@@ -927,6 +927,33 @@
   },
   "whatsapp": {
     "contactOnly": "Nur WhatsApp-Kontakt",
-    "contactOnlyShort": "Nur WhatsApp"
+    "contactOnlyShort": "Nur WhatsApp",
+    "sendEmail": "E-Mail senden"
+  },
+  "contact": {
+    "title": "Kontaktieren Sie uns",
+    "intro": "Möchten Sie uns lieber schreiben? Füllen Sie das untenstehende Formular aus.",
+    "formTitle": "Kontaktformular",
+    "formDescription": "Alle mit einem Sternchen (*) markierten Felder sind Pflichtfelder.",
+    "fullName": "Vor- und Nachname",
+    "fullNamePlaceholder": "Ihr vollständiger Name",
+    "email": "E-Mail-Adresse",
+    "emailPlaceholder": "ihre@email.com",
+    "phone": "Telefonnummer",
+    "phonePlaceholder": "+33 6 12 34 56 78",
+    "subject": "Betreff",
+    "subjectPlaceholder": "Betreff Ihrer Nachricht",
+    "message": "Nachricht",
+    "messagePlaceholder": "Ihre Nachricht...",
+    "attachment": "Anhang",
+    "attachmentHint": "Akzeptierte Formate: PDF, JPG, PNG, DOC, DOCX (max 10MB)",
+    "optional": "optional",
+    "send": "Senden",
+    "sending": "Wird gesendet...",
+    "success": "Nachricht gesendet!",
+    "successDescription": "Ihre Nachricht wurde erfolgreich gesendet. Wir werden Ihnen so schnell wie möglich antworten.",
+    "error": "Fehler",
+    "errorGeneric": "Fehler, bitte versuchen Sie es erneut.",
+    "fileTooLarge": "Die Datei darf 10MB nicht überschreiten"
   }
 }

@@ -30,6 +30,7 @@ import RentMyCarLanding from "./pages/owner/RentMyCarLanding";
 import RentMyCarRegister from "./pages/owner/RentMyCarRegister";
 import Admin from "./pages/admin/Admin";
 import Legal from "./pages/legal/Legal";
+import Contact from "./pages/Contact";
 import { PickerDemo } from "./pages/PickerDemo";
 import AirportServicesDemo from "./pages/AirportServicesDemo";
 import SimpleTest from "./pages/SimpleTest";
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="/rent-my-car/register" element={<RentMyCarRegister />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/legal" element={<Legal />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/picker-demo" element={<PickerDemo />} />
             <Route path="/airport-services-demo" element={<AirportServicesDemo />} />
             <Route path="/simple-test" element={<SimpleTest />} />
