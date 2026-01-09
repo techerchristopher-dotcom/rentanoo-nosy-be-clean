@@ -95,7 +95,7 @@ app.post(
           calcOwnerPayout, 
           calcPlatformTotalFee,
           validateFeeCalculations
-        } = await import("../src/utils/serviceFees");
+        } = await import("../src/utils/serviceFees.js");
         const round2 = (n: number) => Math.round(n * 100) / 100;
         const serviceFeeRenter = calcServiceFeeRenter(commissionBase);
         const serviceFeeOwner = calcServiceFeeOwner(commissionBase);
