@@ -58,6 +58,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConversationsService } from '@/services/supabase/conversations'
 import { MessagesService } from '@/services/supabase/messages'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
+import { calcServiceFeeOwner, calcServiceFeeRenter, calcOwnerPayout, calcRenterTotal } from '@/utils/serviceFees'
 
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
@@ -235,6 +236,24 @@ export default function OwnerBookingCard({
     loadUnreadCount()
   }, [currentUser, booking.id])
 
+  // DEV-only: Diagnostic des actions propriétaire au rendu
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const shouldShowActions_pendingOnly = booking.status === 'pending'
+      const shouldShowActions_pendingOrPayment = booking.status === 'pending' || booking.status === 'pending_payment'
+      
+      console.info('[owner-actions-diag]', {
+        bookingId: booking.id,
+        status: booking.status,
+        isExpanded,
+        shouldShowActions_pendingOnly,
+        shouldShowActions_pendingOrPayment,
+        location: 'Component render',
+        inCollapsibleContent: true, // Les actions sont toujours dans CollapsibleContent
+      })
+    }
+  }, [booking.id, booking.status, isExpanded])
+
   const handleAccept = async () => {
     setIsUpdating(true)
     try {
@@ -291,9 +310,51 @@ export default function OwnerBookingCard({
             const vehicleTitle = `${booking.vehicle.brand} ${booking.vehicle.model}`
             const startTime = (booking as any).startTime || '08:00'
             const endTime = (booking as any).endTime || '10:00'
-            const totalPrice = (booking as any).totalPrice || booking.totalAmount || 0
             const formattedStartDate = formatDate(booking.startDate)
             const formattedEndDate = formatDate(booking.endDate)
+            
+            // Calculer le total TTC (avec frais de service 15%)
+            let basePrice: number
+            let optionsTotal: number
+            
+            // Essayer d'utiliser les valeurs depuis le booking si disponibles
+            if ((booking as any).base_price !== undefined && (booking as any).base_price !== null) {
+              basePrice = (booking as any).base_price
+              optionsTotal = (booking as any).options_total || 0
+            } else {
+              // Calculer le basePrice à partir des dates et heures
+              const startDateTime = new Date(booking.startDate)
+              const endDateTime = new Date(booking.endDate)
+              
+              const [startHour, startMinute] = startTime.split(':')
+              const [endHour, endMinute] = endTime.split(':')
+              startDateTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
+              endDateTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
+              
+              const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60)
+              const completeDays = Math.floor(rentalHours / 24)
+              const extraHours = Math.floor(rentalHours % 24)
+              
+              const dailyPrice = booking.vehicle?.dailyPrice || 0
+              
+              if (rentalHours < 24) {
+                basePrice = dailyPrice
+              } else if (extraHours === 0) {
+                basePrice = completeDays * dailyPrice
+              } else {
+                const hourPrice = dailyPrice / 24
+                const extraHoursPrice = extraHours * hourPrice
+                basePrice = Math.ceil((completeDays * dailyPrice) + extraHoursPrice)
+              }
+              
+              // Calculer optionsTotal depuis selectedOptions
+              optionsTotal = booking.selectedOptions?.reduce((sum, opt) => sum + (opt.totalPrice || opt.price || 0), 0) || 0
+            }
+            
+            const subtotal = basePrice + optionsTotal
+            
+            // Calculer le total TTC avec les frais de service
+            const totalPrice = calcRenterTotal(subtotal)
             
             // Construire le message selon le format exact demandé
             let messageText = `✅ Réservation confirmée !\n` +
@@ -307,7 +368,7 @@ export default function OwnerBookingCard({
               messageText += `🧩 Options supplémentaires : ${optionsLabels}\n`
             }
             
-            messageText += `💰 Total: ${totalPrice}€\n` +
+            messageText += `💰 Total: ${totalPrice.toFixed(2)}€\n` +
               `⏰ IMPORTANT: Vous avez 24 heures pour finaliser le paiement.`
             
             console.log('[handleAccept] Envoi message de confirmation', { 
@@ -941,7 +1002,13 @@ export default function OwnerBookingCard({
                         <Euro className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
                         <span className="font-medium text-foreground">Total:</span>
                         <span className="ml-2 font-bold text-primary text-lg">
-                        {(booking as any).totalPrice || booking.totalAmount || 0}€
+                        {(() => {
+                          // Calculer le total TTC (même calcul que le locataire)
+                          const subtotal = (booking as any).subtotal || 
+                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
+                          // Utiliser calcRenterTotal pour avoir le même montant que le locataire
+                          return calcRenterTotal(subtotal).toFixed(2);
+                        })()}€
                         </span>
                         <TooltipProvider>
                           <Tooltip>
@@ -952,17 +1019,40 @@ export default function OwnerBookingCard({
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs" side="top" align="start">
                               <div className="space-y-2 text-sm">
-                                <div className="font-semibold mb-2">Détail du revenu :</div>
-                                <div className="flex justify-between">
-                                  <span>Revenu (85%)</span>
-                          <span className="font-semibold text-success">
-                            {Math.round(((booking as any).totalPrice || booking.totalAmount || 0) * 0.85)}€
-                          </span>
-                        </div>
-                                <div className="flex justify-between text-muted-foreground">
-                                  <span>Commission (15%)</span>
-                                  <span>-{Math.round(((booking as any).totalPrice || booking.totalAmount || 0) * 0.15)}€</span>
-                                </div>
+                                <div className="font-semibold mb-2">Détail du prix :</div>
+                                {(() => {
+                                  // Calculer subtotal si non disponible (basePrice + optionsTotal)
+                                  const subtotal = (booking as any).subtotal || 
+                                    ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
+                                  const renterFee = calcServiceFeeRenter(subtotal);
+                                  const totalTTC = calcRenterTotal(subtotal);
+                                  const ownerFee = calcServiceFeeOwner(subtotal);
+                                  const ownerPayout = calcOwnerPayout(subtotal);
+                                  return (
+                                    <>
+                                      <div className="flex justify-between">
+                                        <span>Sous-total</span>
+                                        <span className="font-semibold">{subtotal.toFixed(2)}€</span>
+                                      </div>
+                                      <div className="flex justify-between text-muted-foreground">
+                                        <span>Frais de service locataire (15%)</span>
+                                        <span>+{renterFee.toFixed(2)}€</span>
+                                      </div>
+                                      <div className="flex justify-between border-t pt-1">
+                                        <span>Total payé par le locataire</span>
+                                        <span className="font-semibold text-success">{totalTTC.toFixed(2)}€</span>
+                                      </div>
+                                      <div className="flex justify-between text-muted-foreground mt-2">
+                                        <span>Commission propriétaire (15%)</span>
+                                        <span className="text-destructive">-{ownerFee.toFixed(2)}€</span>
+                                      </div>
+                                      <div className="flex justify-between border-t pt-1">
+                                        <span>Votre revenu (85%)</span>
+                                        <span className="font-semibold text-primary">{ownerPayout.toFixed(2)}€</span>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
                         </div>
                             </TooltipContent>
                           </Tooltip>
@@ -996,36 +1086,81 @@ export default function OwnerBookingCard({
 
                 {/* Actions supplémentaires */}
                 <div className="flex flex-wrap items-center gap-2">
+                  {(() => {
+                    // DEV-only: Diagnostic du bouton "Accepter" au rendu
+                    if (import.meta.env.DEV) {
+                      const conditionAcceptCurrent = booking.status === 'pending' || booking.status === 'pending_payment'
+                      const conditionAcceptCorrect = booking.status === 'pending'
+                      const conditionReject = booking.status === 'pending' || booking.status === 'pending_payment'
+                      
+                      console.info('[owner-accept-button-diag]', {
+                        bookingId: booking.id,
+                        status: booking.status,
+                        location: 'CollapsibleContent (ligne ~1015)',
+                        // Condition actuelle (FAUSSE)
+                        conditionAcceptCurrent: conditionAcceptCurrent,
+                        willShowAcceptCurrent: conditionAcceptCurrent,
+                        // Condition correcte attendue
+                        conditionAcceptCorrect: conditionAcceptCorrect,
+                        willShowAcceptCorrect: conditionAcceptCorrect,
+                        // Condition Refuser (correcte)
+                        conditionReject: conditionReject,
+                        willShowReject: conditionReject,
+                        // Diagnostic
+                        problem: conditionAcceptCurrent && !conditionAcceptCorrect 
+                          ? `Bouton "Accepter" affiché pour status "${booking.status}" alors qu'il devrait être masqué`
+                          : 'OK',
+                        isExpanded,
+                      })
+                    }
+                    return null
+                  })()}
+                  {/* Bouton "Accepter" — UNIQUEMENT pour pending */}
                   {booking.status === 'pending' && (
-                    <>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={(e) => {
-                          console.log('[UI] Bouton "Accepter" cliqué', { bookingId: booking.id, status: booking.status })
-                          e.stopPropagation()
-                          handleAccept()
-                        }}
-                        disabled={isUpdating}
-                        className="bg-success hover:bg-success/90 flex-1 sm:flex-none"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Accepter
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleReject()
-                        }}
-                        disabled={isUpdating}
-                        className="flex-1 sm:flex-none"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Refuser
-                      </Button>
-                    </>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={(e) => {
+                        console.log('[UI] Bouton "Accepter" cliqué', { bookingId: booking.id, status: booking.status })
+                        
+                        // DEV-only: Diagnostic enrichi au clic
+                        if (import.meta.env.DEV) {
+                          console.warn('[owner-accept-button-diag] CLICK', {
+                            bookingId: booking.id,
+                            status: booking.status,
+                            shouldNotBeVisible: booking.status === 'pending_payment',
+                            problem: booking.status === 'pending_payment' 
+                              ? 'Bouton "Accepter" cliqué alors que status = pending_payment (ne devrait pas être visible)'
+                              : 'OK',
+                          })
+                        }
+                        
+                        e.stopPropagation()
+                        handleAccept()
+                      }}
+                      disabled={isUpdating}
+                      className="bg-success hover:bg-success/90 flex-1 sm:flex-none"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Accepter
+                    </Button>
+                  )}
+
+                  {/* Bouton "Refuser" — pour pending ET pending_payment */}
+                  {(booking.status === 'pending' || booking.status === 'pending_payment') && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReject()
+                      }}
+                      disabled={isUpdating}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Refuser
+                    </Button>
                   )}
 
                   {/* Bouton État des lieux de départ : visible si status confirmed et pas encore de checkin */}
@@ -1274,10 +1409,16 @@ export default function OwnerBookingCard({
                     <div>
                       <p className="font-medium">Location véhicule</p>
                       <p className="text-sm text-muted-foreground">
-                        {(booking as any).pricePerDay || 0}€/jour x {(booking as any).rentalDays || 1} jour{((booking as any).rentalDays || 1) > 1 ? 's' : ''}
+                        {calculateRealDuration()} × {(booking as any).pricePerDay || 0}€/jour
                       </p>
                     </div>
-                    <span className="font-semibold">{(booking as any).pricePerDay * ((booking as any).rentalDays || 1) || 0}€</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        // Afficher le basePrice réel (montant facturé avec prorata heures)
+                        const basePrice = (booking as any).basePrice || (booking as any).base_price || 0;
+                        return basePrice.toFixed(2);
+                      })()}€
+                    </span>
                   </div>
 
                   {/* Services supplémentaires */}
@@ -1309,12 +1450,27 @@ export default function OwnerBookingCard({
 
                   <div className="pt-2 border-t">
                     <div className="flex justify-between mb-2">
-                      <span className="font-medium">Total réservation</span>
-                      <span className="font-semibold">{(booking as any).totalPrice || booking.totalAmount || 0}€</span>
+                      <span className="font-medium">Total réservation (TTC)</span>
+                      <span className="font-semibold">
+                        {(() => {
+                          // Calculer le total TTC (même calcul que le locataire)
+                          const subtotal = (booking as any).subtotal || 
+                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
+                          return calcRenterTotal(subtotal).toFixed(2);
+                        })()}€
+                      </span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
                       <span className="text-sm">Commission de la plateforme (15%)</span>
-                      <span className="text-sm text-destructive">- {(booking as any).serviceFee || Math.round(((booking as any).totalPrice || 0) * 0.15)}€</span>
+                      <span className="text-sm text-destructive">
+                        {(() => {
+                          // Calculer subtotal si non disponible (basePrice + optionsTotal)
+                          const subtotal = (booking as any).subtotal || 
+                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
+                          const ownerFee = (booking as any).serviceFee || calcServiceFeeOwner(subtotal);
+                          return `- ${Math.round(ownerFee)}€`;
+                        })()}
+                      </span>
                     </div>
                   </div>
 
@@ -1323,9 +1479,10 @@ export default function OwnerBookingCard({
                       <span className="font-bold text-lg text-[#004E4E]">REVENU PROPRIÉTAIRE</span>
                       <span className="font-bold text-2xl text-[#004E4E]">
                         {(() => {
-                          const total = (booking as any).totalPrice || booking.totalAmount || 0;
-                          const commission = (booking as any).serviceFee || Math.round(total * 0.15);
-                          return total - commission;
+                          // Calculer subtotal si non disponible (basePrice + optionsTotal)
+                          const subtotal = (booking as any).subtotal || 
+                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
+                          return Math.round(calcOwnerPayout(subtotal));
                         })()}€
                       </span>
                     </div>

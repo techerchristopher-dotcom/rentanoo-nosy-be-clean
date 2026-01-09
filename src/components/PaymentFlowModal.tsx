@@ -46,8 +46,8 @@ export function PaymentFlowModal({
   const shouldHighlightStep2 = highlightStep2 || isStep1ActuallyComplete;
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="w-[min(95vw,960px)] sm:max-w-3xl sm:rounded-2xl shadow-xl overflow-visible p-6 sm:p-8">
-        <div className="space-y-6">
+      <DialogContent className="w-[min(95vw,960px)] sm:max-w-3xl sm:rounded-2xl shadow-xl p-6 sm:p-8">
+        <div className="space-y-6 overflow-y-auto flex-1 min-h-0">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Confirmer et payer</DialogTitle>
           </DialogHeader>

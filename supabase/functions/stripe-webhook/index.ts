@@ -13,8 +13,8 @@
  * Variables d'environnement nécessaires :
  * - STRIPE_SECRET_KEY
  * - STRIPE_WEBHOOK_SECRET (optionnel en dev)
- * - PROJECT_URL
- * - SERVICE_ROLE_KEY
+ * - SUPABASE_URL
+ * - SUPABASE_SERVICE_ROLE_KEY
  */
 
 import Stripe from "https://esm.sh/stripe@latest";
@@ -23,14 +23,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Chargement des secrets d'environnement
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-const PROJECT_URL = Deno.env.get("PROJECT_URL");
-const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 if (!STRIPE_SECRET_KEY) {
   console.error("❌ STRIPE_SECRET_KEY manquant");
 }
-if (!PROJECT_URL || !SERVICE_ROLE_KEY) {
-  console.error("❌ PROJECT_URL ou SERVICE_ROLE_KEY manquant");
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("❌ SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquant");
 }
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -38,7 +38,7 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
 });
 
 // Client Supabase admin (service role)
-const supabaseAdmin = createClient(PROJECT_URL!, SERVICE_ROLE_KEY!, {
+const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
   auth: { persistSession: false },
 });
 
@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
       }
 
       try {
-        event = stripe.webhooks.constructEvent(
+        event = await stripe.webhooks.constructEventAsync(
           rawBody,
           sig,
           STRIPE_WEBHOOK_SECRET
@@ -158,30 +158,92 @@ Deno.serve(async (req: Request) => {
   const commissionBase = Number(bookingRow?.subtotal || 0);
 
   // 15% locataire / 15% propriétaire
-  const serviceFeeRenter = round2(commissionBase * 0.15);
-  const serviceFeeOwner = round2(commissionBase * 0.15);
-  const ownerPayoutAmount = round2(commissionBase - serviceFeeOwner);
-  const platformTotalFee = round2(serviceFeeRenter + serviceFeeOwner);
+  // Fonctions de calcul des fees (inline pour éviter import externe)
+  const SERVICE_FEE_PERCENT_RENTER = 0.15;
+  const SERVICE_FEE_PERCENT_OWNER = 0.15;
+  
+  function calcServiceFeeRenter(subtotal: number): number {
+    return Math.round(subtotal * SERVICE_FEE_PERCENT_RENTER * 100) / 100;
+  }
+  
+  function calcServiceFeeOwner(subtotal: number): number {
+    return Math.round(subtotal * SERVICE_FEE_PERCENT_OWNER * 100) / 100;
+  }
+  
+  function calcOwnerPayout(subtotal: number): number {
+    const serviceFee = calcServiceFeeOwner(subtotal);
+    return Math.round((subtotal - serviceFee) * 100) / 100;
+  }
+  
+  function calcPlatformTotalFee(subtotal: number): number {
+    const renterFee = calcServiceFeeRenter(subtotal);
+    const ownerFee = calcServiceFeeOwner(subtotal);
+    return Math.round((renterFee + ownerFee) * 100) / 100;
+  }
+  
+  const serviceFeeRenter = calcServiceFeeRenter(commissionBase);
+  const serviceFeeOwner = calcServiceFeeOwner(commissionBase);
+  const ownerPayoutAmount = calcOwnerPayout(commissionBase);
+  const platformTotalFee = calcPlatformTotalFee(commissionBase);
 
   const now = new Date().toISOString();
 
+  // Mapping status: checkout.session.completed (payment_status == 'paid') => 'confirmed'
+  const oldStatus = "accepted"; // Ancien statut invalide
+  const newStatus = "confirmed"; // Statut conforme à la contrainte DB
+  console.log(`📝 [status-mapping] checkout.session.completed → status: "${oldStatus}" → "${newStatus}"`);
+
+  // Préparer le payload pour l'update
+  const updatePayload = {
+    status: newStatus,
+    paid_at: now,
+    stripe_payment_intent_id: paymentIntentId,
+    stripe_checkout_session_id: checkoutSessionId,
+    amount_total_paid: amountTotalPaid,
+    service_fee_renter: serviceFeeRenter,
+    service_fee_owner: serviceFeeOwner,
+    owner_payout_amount: ownerPayoutAmount,
+    platform_total_fee: platformTotalFee,
+    currency,
+    updated_at: now,
+  };
+
+  // Log DEV-only avant update (Edge Function - utiliser Deno.env ou vérifier si pas en prod)
+  const isDev = !Deno.env.get("DENO_ENV") || Deno.env.get("DENO_ENV") !== "production";
+  if (isDev) {
+    console.info("[fees-webhook-write:before]", {
+      webhook: "EDGE_WEBHOOK",
+      bookingId,
+      status: updatePayload.status,
+      currency: updatePayload.currency,
+      paid_at: updatePayload.paid_at,
+      stripe_checkout_session_id: updatePayload.stripe_checkout_session_id,
+      stripe_payment_intent_id: updatePayload.stripe_payment_intent_id,
+      amount_total_paid: updatePayload.amount_total_paid,
+      service_fee_renter: updatePayload.service_fee_renter,
+      service_fee_owner: updatePayload.service_fee_owner,
+      owner_payout_amount: updatePayload.owner_payout_amount,
+      platform_total_fee: updatePayload.platform_total_fee,
+    });
+  }
+
   // 7. Mise à jour de la réservation dans Supabase
-  const { error: updateErr } = await supabaseAdmin
+  const { data: updateData, error: updateErr } = await supabaseAdmin
     .from("bookings")
-    .update({
-      status: "accepted",
-      paid_at: now,
-      stripe_payment_intent_id: paymentIntentId,
-      stripe_checkout_session_id: checkoutSessionId,
-      amount_total_paid: amountTotalPaid,
-      service_fee_renter: serviceFeeRenter,
-      service_fee_owner: serviceFeeOwner,
-      owner_payout_amount: ownerPayoutAmount,
-      platform_total_fee: platformTotalFee,
-      currency,
-      updated_at: now,
-    })
-    .eq("id", bookingId);
+    .update(updatePayload)
+    .eq("id", bookingId)
+    .select();
+
+  // Log DEV-only après update
+  if (isDev) {
+    console.info("[fees-webhook-write:after]", {
+      webhook: "EDGE_WEBHOOK",
+      bookingId,
+      ok: !updateErr,
+      error: updateErr?.message || null,
+      data: updateData ? "updated" : null,
+    });
+  }
 
   if (updateErr) {
     console.error("❌ Erreur mise à jour réservation:", updateErr);
@@ -197,7 +259,7 @@ Deno.serve(async (req: Request) => {
 
   console.log("✅ Réservation mise à jour avec succès:", {
     bookingId,
-    status: "accepted",
+    status: newStatus,
     paid_at: now,
     amount_total_paid: amountTotalPaid,
   });
@@ -207,7 +269,7 @@ Deno.serve(async (req: Request) => {
     JSON.stringify({
       ok: true,
       bookingId,
-      status: "accepted",
+      status: newStatus,
       updated: true,
     }),
     { status: 200, headers: { "Content-Type": "application/json" } }

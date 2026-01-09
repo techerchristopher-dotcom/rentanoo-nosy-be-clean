@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   ArrowLeft,
   MapPin, 
@@ -38,6 +39,8 @@ import { getBookingDraft } from "@/services/localStorage/bookingStorage";
 import { toast } from "@/hooks/use-toast";
 import { PaymentFlowModal, type ReservationPayment } from "@/components/PaymentFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
+import { formatDuration } from "@/utils/formatDuration";
+import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 
 const BookingDiscussion = () => {
   console.log('💬 [DEBUG] BookingDiscussion component rendering');
@@ -45,6 +48,89 @@ const BookingDiscussion = () => {
   const navigate = useNavigate();
   const { license } = useParams<{ license: string }>();
   const [searchParams] = useSearchParams();
+  const { t, i18n } = useTranslation();
+
+  // Mapper simple entre langue i18n et locale de formatage dates/heures
+  const getDateLocale = (lng?: string): string => {
+    const base = (lng || "en").split("-")[0];
+    switch (base) {
+      case "fr":
+        return "fr-FR";
+      case "it":
+        return "it-IT";
+      case "de":
+        return "de-DE";
+      case "en":
+      default:
+        return "en-GB";
+    }
+  };
+
+  if (import.meta.env.DEV) {
+    // Logs DEV-only pour diagnostic i18n runtime complet
+    // eslint-disable-next-line no-console
+    
+    // A. Infos i18n runtime
+    const i18nDebugInfo = {
+      language: i18n.language,
+      languages: i18n.languages,
+      resolvedLanguage: i18n.resolvedLanguage,
+      defaultNS: i18n.options?.defaultNS,
+      fallbackLng: i18n.options?.fallbackLng,
+      ns: i18n.options?.ns,
+      isInitialized: i18n.isInitialized,
+      storeDataKeys: i18n.store?.data ? Object.keys(i18n.store.data) : [],
+    };
+    
+    // B. Existence + valeur pour des clés critiques
+    const criticalKeys = [
+      "motoDetails.back",
+      "motoDetails.notSpecified",
+      "loading",
+      "error",
+      "booking.discussion.withRenter",
+      "booking.discussion.withOwner",
+      "booking.discussion.role.owner",
+      "booking.discussion.role.renter",
+      "booking.discussion.messagePlaceholder",
+      "booking.discussion.toasts.messageSent.title",
+      "booking.discussion.toasts.messageSent.description",
+    ];
+    
+    const keyDebugInfo: Record<string, any> = {};
+    criticalKeys.forEach((key) => {
+      const exists = i18n.exists(key);
+      keyDebugInfo[key] = {
+        exists,
+        value: exists ? t(key) : `[MISSING_KEY: ${key}]`,
+        valueFr: exists ? t(key, { lng: 'fr' }) : `[MISSING_KEY: ${key}]`,
+        valueEn: exists ? t(key, { lng: 'en' }) : `[MISSING_KEY: ${key}]`,
+      };
+    });
+    
+    // C. Vérif des ressources chargées (langues)
+    const resourcesDebug: Record<string, any> = {};
+    ['fr', 'en', 'it', 'de'].forEach((lang) => {
+      const langData = i18n.store?.data?.[lang];
+      resourcesDebug[lang] = {
+        exists: typeof langData !== 'undefined',
+        namespaces: langData ? Object.keys(langData) : [],
+      };
+    });
+    
+    const currentLangData = i18n.store?.data?.[i18n.language];
+    const currentLangNamespaces = currentLangData ? Object.keys(currentLangData) : [];
+    
+    console.log("[i18n DEV][BookingDiscussion] === DIAGNOSTIC RUNTIME ===");
+    console.log("[i18n DEV][BookingDiscussion] A. Infos i18n runtime:", i18nDebugInfo);
+    console.log("[i18n DEV][BookingDiscussion] B. Clés critiques:", keyDebugInfo);
+    console.log("[i18n DEV][BookingDiscussion] C. Ressources chargées:", resourcesDebug);
+    console.log("[i18n DEV][BookingDiscussion] C. Namespaces pour langue actuelle:", {
+      language: i18n.language,
+      namespaces: currentLangNamespaces,
+    });
+    console.log("[i18n DEV][BookingDiscussion] === FIN DIAGNOSTIC ===");
+  }
   
   console.log('💬 [DEBUG] License from useParams:', license);
   console.log('💬 [DEBUG] Search params:', Object.fromEntries(searchParams.entries()));
@@ -119,8 +205,9 @@ const BookingDiscussion = () => {
         const profileResult = await ProfileService.getCurrentUserProfile();
         if (profileResult.error || !profileResult.data) {
           console.log('❌ [DEBUG] Utilisateur non connecté');
+          // TODO(i18n): UNCERTAIN mapping -> motoDetails.errors.loginRequired.description (vérifier contexte)
           toast({
-            title: "Erreur",
+            title: t("error"),
             description: "Vous devez être connecté pour faire une réservation",
             variant: "destructive",
           });
@@ -143,8 +230,8 @@ const BookingDiscussion = () => {
         if (!foundVehicle) {
           console.log('❌ [DEBUG] Véhicule non trouvé, redirection vers /');
           toast({
-            title: "Véhicule non trouvé",
-            description: "Ce véhicule n'existe pas ou n'est plus disponible.",
+            title: t("motoDetails.errors.vehicleNotFound.title"),
+            description: t("motoDetails.errors.vehicleNotFound.description"),
             variant: "destructive",
           });
           navigate('/');
@@ -297,6 +384,8 @@ const BookingDiscussion = () => {
             };
             
             setVehiclePhotos({ [foundVehicle.id]: convertedPhoto });
+            // Mettre à jour vehicleImageUrl avec la photo principale
+            setVehicleImageUrl(primaryPhoto.url);
           } else {
             console.log('📸 [DEBUG] FORCE - Utilisation de la vraie photo Supabase !');
             // FORCER l'URL directe de la vraie photo Supabase (construction dynamique depuis env)
@@ -329,8 +418,8 @@ const BookingDiscussion = () => {
       } catch (error) {
         console.error('Erreur lors du chargement du véhicule:', error);
         toast({
-          title: "Erreur",
-          description: "Impossible de charger les informations du véhicule.",
+          title: t("error"),
+          description: t("motoDetails.errors.loadError.description"),
           variant: "destructive",
         });
         navigate('/');
@@ -342,10 +431,36 @@ const BookingDiscussion = () => {
     loadData();
   }, [license, navigate]);
 
-  // Scroll vers le dernier message
+  // Log DEV-only pour détecter les changements de langue
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (import.meta.env.DEV) {
+      // Stocker la langue précédente
+      let previousLanguage = i18n.language;
+      
+      const handleLanguageChanged = (lng: string) => {
+        // eslint-disable-next-line no-console
+        console.log("[i18n DEV][BookingDiscussion] === CHANGEMENT DE LANGUE ===");
+        // eslint-disable-next-line no-console
+        console.log("[i18n DEV][BookingDiscussion] Langue précédente:", previousLanguage);
+        // eslint-disable-next-line no-console
+        console.log("[i18n DEV][BookingDiscussion] Nouvelle langue:", lng);
+        // eslint-disable-next-line no-console
+        console.log("[i18n DEV][BookingDiscussion] === FIN CHANGEMENT ===");
+        previousLanguage = lng;
+      };
+      
+      i18n.on('languageChanged', handleLanguageChanged);
+      
+      return () => {
+        i18n.off('languageChanged', handleLanguageChanged);
+      };
+    }
+  }, [i18n]);
+
+  // Scroll vers le dernier message - DÉSACTIVÉ
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
   // Charger l'utilisateur connecté et créer/récupérer la conversation
   useEffect(() => {
@@ -356,8 +471,9 @@ const BookingDiscussion = () => {
         // Récupérer l'utilisateur connecté
         const userResult = await ProfileService.getCurrentUserProfile();
         if (userResult.error || !userResult.data) {
+          // TODO(i18n): UNCERTAIN mapping -> motoDetails.errors.loginRequired.title (vérifier contexte)
           toast({
-            title: "Erreur",
+            title: t("error"),
             description: "Vous devez être connecté",
             variant: "destructive",
           });
@@ -529,8 +645,8 @@ const BookingDiscussion = () => {
             if (event === 'deleted') {
               console.log('🗑️ [BookingDiscussion] Conversation supprimée en temps réel');
               toast({
-                title: 'Réservation annulée',
-                description: 'Cette réservation a été supprimée par le locataire.',
+                title: t("booking.discussion.toasts.bookingCancelled.title"),
+                description: t("booking.discussion.toasts.bookingCancelled.description"),
                 variant: 'destructive',
               });
               // Rediriger vers la page du véhicule ou les réservations
@@ -582,19 +698,47 @@ const BookingDiscussion = () => {
   }, [vehicle, navigate, currentBooking]);
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
+    const locale = getDateLocale(i18n.language);
+    const formatted = new Date(date).toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+    
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("[i18n DEV][BookingDiscussion] formatDate:", {
+        input: date,
+        localeUsed: locale,
+        i18nLanguage: i18n.language,
+        output: formatted,
+        note: `Locale calculée depuis i18n.language (i18n.language=${i18n.language})`,
+      });
+    }
+    
+    return formatted;
   };
 
   const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('fr-FR', {
+    const locale = getDateLocale(i18n.language);
+    const formatted = new Date(date).toLocaleTimeString(locale, {
       hour: '2-digit',
       minute: '2-digit'
     });
+    
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("[i18n DEV][BookingDiscussion] formatTime:", {
+        input: date,
+        localeUsed: locale,
+        i18nLanguage: i18n.language,
+        output: formatted,
+        note: `Locale calculée depuis i18n.language (i18n.language=${i18n.language})`,
+      });
+    }
+    
+    return formatted;
   };
 
   // Fonction pour formater les options supplémentaires depuis bookingData
@@ -615,20 +759,8 @@ const BookingDiscussion = () => {
     hybrid: Fuel
   };
 
-  const fuelLabels = {
-    gasoline: "Essence",
-    diesel: "Diesel", 
-    electric: "Électrique",
-    hybrid: "Hybride"
-  };
-
-  const transmissionLabels = {
-    manual: "Manuelle",
-    automatic: "Automatique"
-  };
-
   const calculateTotalPrice = () => {
-    // Recalculer le prix avec la nouvelle logique
+    // Recalculer le prix avec la nouvelle logique (TOTAL TTC avec frais de service)
     if (currentBooking && vehicle) {
       const startDateTime = new Date(currentBooking.start_date);
       const endDateTime = new Date(currentBooking.end_date);
@@ -660,16 +792,45 @@ const BookingDiscussion = () => {
       }
       
       const optionsTotal = currentBooking?.options_total || bookingData?.rentalInfo?.optionsTotal || 0;
-      return basePrice + optionsTotal;
+      const subtotal = basePrice + optionsTotal;
+      
+      // Retourner le TOTAL TTC (avec frais de service 15%)
+      return calcRenterTotal(subtotal);
     }
     
-    // Fallback: utiliser le prix de Supabase
+    // Fallback: utiliser le prix de Supabase (si c'est déjà le total TTC)
     if (currentBooking?.total_price) {
-      return Number(currentBooking.total_price);
+      // Si total_price contient déjà les frais, l'utiliser tel quel
+      // Sinon, recalculer avec les frais
+      const basePrice = currentBooking.base_price || 0;
+      const optionsTotal = currentBooking.options_total || 0;
+      const subtotal = basePrice + optionsTotal;
+      
+      // Si le total_price est significativement différent du subtotal, 
+      // c'est probablement déjà le total TTC
+      const priceDiff = Math.abs(Number(currentBooking.total_price) - subtotal);
+      if (priceDiff > subtotal * 0.1) {
+        // Probablement déjà le total TTC
+        return Number(currentBooking.total_price);
+      }
+      
+      // Sinon, recalculer avec les frais
+      return calcRenterTotal(subtotal);
     }
     
     if (bookingData?.rentalInfo?.totalPrice) {
-      return bookingData.rentalInfo.totalPrice;
+      // Si totalPrice contient déjà les frais, l'utiliser
+      // Sinon, recalculer
+      const basePrice = bookingData.rentalInfo.basePrice || 0;
+      const optionsTotal = bookingData.rentalInfo.optionsTotal || 0;
+      const subtotal = basePrice + optionsTotal;
+      
+      const priceDiff = Math.abs(bookingData.rentalInfo.totalPrice - subtotal);
+      if (priceDiff > subtotal * 0.1) {
+        return bookingData.rentalInfo.totalPrice;
+      }
+      
+      return calcRenterTotal(subtotal);
     }
     
     // Sinon, calculer de base
@@ -681,8 +842,10 @@ const BookingDiscussion = () => {
     
     const basePrice = vehicle.dailyPrice * days;
     const optionsTotal = bookingData?.rentalInfo?.optionsTotal || 0;
+    const subtotal = basePrice + optionsTotal;
     
-    return basePrice + optionsTotal;
+    // Retourner le TOTAL TTC (avec frais de service 15%)
+    return calcRenterTotal(subtotal);
   };
 
   // Calculer la durée réelle en heures pour affichage précis
@@ -712,22 +875,44 @@ const BookingDiscussion = () => {
       startDateTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
       endDateTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
     } else {
-      return '1 jour'; // Fallback
+      // Fallback: 1 jour traduit
+      return t("duration.day_one", { count: 1 });
     }
     
     const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
     const completeDays = Math.floor(rentalHours / 24);
     const extraHours = Math.floor(rentalHours % 24);
-    
+
+    let result: string | null = null;
+
     if (rentalHours < 24) {
-      return '1 jour';
+      // Moins de 24h: exprimer uniquement en heures si possible, sinon 1 jour minimum
+      const hours = Math.max(1, Math.round(rentalHours));
+      result = formatDuration(t, 0, hours) || t("duration.day_one", { count: 1 });
     } else if (extraHours === 0) {
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`;
+      // Cas simple: jours uniquement (sans heures)
+      result = formatDuration(t, completeDays, 0) || t(completeDays === 1 ? "duration.day_one" : "duration.day_other", { count: completeDays });
     } else {
-      // Toujours afficher les heures supplémentaires
-      // Peu importe si heure retour < heure départ
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`;
+      // Cas composite: jours + heures, entièrement localisé via formatDuration()
+      result = formatDuration(t, completeDays, extraHours);
     }
+
+    if (!result) {
+      // Fallback ultime en cas de problème inattendu
+      result = t("duration.day_one", { count: 1 });
+    }
+
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log("[i18n DEV][BookingDiscussion] calculateRealDuration:", {
+        rentalHours,
+        completeDays,
+        extraHours,
+        result,
+      });
+    }
+
+    return result;
   };
 
   const handleSendMessage = async () => {
@@ -743,8 +928,8 @@ const BookingDiscussion = () => {
 
       if (result.error) {
         toast({
-          title: "Erreur",
-          description: "Impossible d'envoyer le message",
+          title: t("error"),
+          description: t("booking.discussion.toasts.sendMessageError"),
           variant: "destructive",
         });
         return;
@@ -753,14 +938,14 @@ const BookingDiscussion = () => {
       setMessage("");
       
       toast({
-        title: "Message envoyé",
-        description: "Votre message a été envoyé au propriétaire",
+        title: t("booking.discussion.toasts.messageSent.title"),
+        description: t("booking.discussion.toasts.messageSent.description"),
       });
     } catch (error) {
       console.error('Erreur envoi message:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue",
+        title: t("error"),
+        description: t("booking.discussion.toasts.unexpectedError"),
         variant: "destructive",
       });
     }
@@ -780,47 +965,72 @@ const BookingDiscussion = () => {
         vehicle
       });
       toast({
-        title: "Erreur",
-        description: "Impossible de récupérer les informations de réservation",
+        title: t("error"),
+        description: t("booking.discussion.toasts.loadBookingError"),
         variant: "destructive",
       });
       return;
     }
 
-    // Calculer les valeurs nécessaires pour le paiement (copié depuis RenterBookingCard)
+    // Utiliser les valeurs DB (source de vérité) au lieu de recalculer
+    // Le booking a déjà base_price, options_total, subtotal stockés en DB
+    const base = Number(currentBooking.base_price || 0);
+    const optionsTotal = Number(currentBooking.options_total || 0);
+    const subtotalDB = Number(currentBooking.subtotal || 0);
+    
+    // Valider que subtotal est disponible (obligatoire en DB)
+    if (!subtotalDB || subtotalDB <= 0) {
+      console.error('[BookingDiscussion] handlePayNow: subtotal invalide en DB', {
+        bookingId: currentBooking.id,
+        base_price: base,
+        options_total: optionsTotal,
+        subtotal: subtotalDB
+      });
+      toast({
+        title: t("error"),
+        description: "Impossible de récupérer les informations de prix depuis la base de données.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Calculer les fees et total depuis le subtotal DB (même logique que l'Edge Function)
+    const fee = calcServiceFeeRenter(subtotalDB);
+    const total = calcRenterTotal(subtotalDB);
+    
+    // Calculer la durée pour l'affichage
     const start = new Date(currentBooking.start_date);
     const end = new Date(currentBooking.end_date);
-    const startTime = currentBooking.start_time || '06:30';
-    const endTime = currentBooking.end_time || '14:00';
-    const [sh, sm] = startTime.split(':');
-    const [eh, em] = endTime.split(':');
-    start.setHours(parseInt(sh), parseInt(sm), 0, 0);
-    end.setHours(parseInt(eh), parseInt(em), 0, 0);
     const hours = (end.getTime() - start.getTime()) / (1000*60*60);
     const days = Math.max(1, Math.ceil(hours / 24));
-    const base = vehicle.dailyPrice ? Math.ceil(days * vehicle.dailyPrice) : (currentBooking.total_price || 0);
     
-    // Extras issus des options sélectionnées
+    // Extras issus des options sélectionnées (pour affichage uniquement)
     const selectedExtras: Array<{ label: string; price: number }> = currentBooking.selected_options 
       ? JSON.parse(currentBooking.selected_options).map((opt: any) => ({ label: opt.name, price: opt.totalPrice || opt.price || 0 }))
       : [];
-    const optionsTotal = selectedExtras.reduce((s, x) => s + (x.price || 0), 0);
-    const subtotal = base + optionsTotal;
-    const fee = Math.round(subtotal * 0.15 * 100) / 100;
-    const total = Math.round((subtotal + fee) * 100) / 100;
 
     // Préparer la réservation pour la modale
+    // montantDeBase = subtotal (base_price + options_total) pour l'affichage
     const reservation: ReservationPayment = {
       id: currentBooking.id,
       voiture: `${vehicle.brand} ${vehicle.model}`,
       dateDebut: formatDate(currentBooking.start_date),
       dateFin: formatDate(currentBooking.end_date),
-      duree: days === 1 ? '1 jour' : `${days} jours`,
-      montantDeBase: base,
-      fraisService: fee,
-      totalTTC: total,
+      duree: t(days === 1 ? "duration.day_one" : "duration.day_other", { count: days }),
+      montantDeBase: subtotalDB, // subtotal = base + options (HT)
+      fraisService: fee, // 15% du subtotal
+      totalTTC: total, // subtotal + frais service (TTC)
       extras: selectedExtras,
     };
+    
+    console.debug('[BookingDiscussion] handlePayNow: Réservation préparée depuis DB', {
+      bookingId: currentBooking.id,
+      base_price_DB: base,
+      options_total_DB: optionsTotal,
+      subtotal_DB: subtotalDB,
+      service_fee: fee,
+      totalTTC: total,
+    });
 
     console.debug('[BookingDiscussion] pay button clicked', { bookingForPayment: reservation });
     
@@ -837,7 +1047,7 @@ const BookingDiscussion = () => {
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Chargement...</p>
+            <p className="text-muted-foreground">{t("loading")}</p>
           </div>
         </div>
         <Footer />
@@ -852,7 +1062,10 @@ const BookingDiscussion = () => {
         <div className="container mx-auto px-4 py-8">
           <Card className="max-w-md mx-auto text-center">
             <CardContent className="pt-6">
-              <p className="text-muted-foreground mb-4">Véhicule non trouvé</p>
+              <p className="text-muted-foreground mb-4">
+                {t("motoDetails.errors.vehicleNotFound.title")}
+              </p>
+              {/* TODO(i18n): UNCERTAIN mapping -> profile.hero.back (vérifier contexte) */}
               <Button onClick={() => navigate('/')}>
                 Retour à l'accueil
               </Button>
@@ -878,21 +1091,21 @@ const BookingDiscussion = () => {
             className="mr-4 hover:bg-slate-200"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour au véhicule
+            {t("motoDetails.back")}
           </Button>
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-slate-800">
-              {isOwner ? 'Discussion avec le locataire' : 'Discussion avec le propriétaire'}
+              {isOwner ? t("booking.discussion.withRenter") : t("booking.discussion.withOwner")}
             </h1>
             {isOwner && (
               <Badge className="mt-2 bg-blue-600">
                 <Car className="h-3 w-3 mr-1" />
-                Vous êtes le propriétaire
+                {t("booking.discussion.role.owner")}
               </Badge>
             )}
             {isRenter && (
               <Badge className="mt-2 bg-green-600">
-                👤 Vous êtes le locataire
+                👤 {t("booking.discussion.role.renter")}
               </Badge>
             )}
           </div>
@@ -907,12 +1120,17 @@ const BookingDiscussion = () => {
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
                     {(() => {
-                      // Récupérer la première photo disponible
+                      // Récupérer la photo principale (isPrimary) ou la première disponible
                       const photosArray = Object.values(vehiclePhotos);
-                      const firstPhoto = photosArray[0];
+                      const primaryPhoto = photosArray.find(p => p.isPrimary) || photosArray[0];
                       
-                      return firstPhoto?.url ? (
-                        <AvatarImage src={firstPhoto.url} />
+                      // Fallback vers vehicleImageUrl ou bookingData si pas de photos dans vehiclePhotos
+                      const imageUrl = primaryPhoto?.url 
+                        || vehicleImageUrl 
+                        || bookingData?.vehicle?.imageUrl;
+                      
+                      return imageUrl ? (
+                        <AvatarImage src={imageUrl} />
                       ) : (
                         <AvatarFallback className="bg-blue-600 text-white">
                           <Car className="h-6 w-6" />
@@ -925,10 +1143,13 @@ const BookingDiscussion = () => {
                       {vehicle.brand} {vehicle.model}
                     </h3>
                     <p className="text-sm text-slate-500">
-                      {bookingData?.rentalInfo?.pickupLocation || vehicle.location || 'Localisation non spécifiée'}
+                      {bookingData?.rentalInfo?.pickupLocation || vehicle.location || t("motoDetails.notSpecified")}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Du {bookingData?.rentalInfo?.startDate ? formatDate(bookingData.rentalInfo.startDate) : (startDate ? formatDate(startDate) : 'N/A')} au {bookingData?.rentalInfo?.endDate ? formatDate(bookingData.rentalInfo.endDate) : (endDate ? formatDate(endDate) : 'N/A')}
+                      {t("booking.discussion.dateRange", {
+                        startDate: bookingData?.rentalInfo?.startDate ? formatDate(bookingData.rentalInfo.startDate) : (startDate ? formatDate(startDate) : 'N/A'),
+                        endDate: bookingData?.rentalInfo?.endDate ? formatDate(bookingData.rentalInfo.endDate) : (endDate ? formatDate(endDate) : 'N/A')
+                      })}
                     </p>
                   </div>
                 </div>
@@ -954,7 +1175,7 @@ const BookingDiscussion = () => {
                 className="hover:bg-slate-200"
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Voir les détails de ma réservation
+                {t("booking.discussion.viewBookingDetails")}
               </Button>
               
               {(() => {
@@ -976,7 +1197,7 @@ const BookingDiscussion = () => {
                     }}
                   >
                     <CreditCard className="h-5 w-5 mr-2" />
-                    Payer ma location
+                    {t("booking.discussion.payRental")}
                     <Shield className="h-4 w-4 ml-2 opacity-75" />
                   </Button>
                 ) : null;
@@ -1005,7 +1226,7 @@ const BookingDiscussion = () => {
                   <div className="max-w-xs lg:max-w-md">
                     <div className={`${isRenter ? 'bg-green-600 text-white rounded-2xl rounded-br-md' : 'bg-gray-100 text-gray-800 rounded-2xl rounded-bl-md'} p-4 shadow-sm`}>
                       <p className="text-sm mb-3">
-                        {isRenter ? 'Bonjour ! Je suis intéressé par la location de votre véhicule. Voici les détails :' : 'Bonjour ! Vous avez une nouvelle demande de réservation. Voici les détails :'}
+                        {isRenter ? t("booking.discussion.initialMessage.renter") : t("booking.discussion.initialMessage.owner")}
                       </p>
                       
                       {/* Récapitulatif dans la bulle */}
@@ -1014,9 +1235,30 @@ const BookingDiscussion = () => {
                         <div className="flex items-center gap-3">
                           <div className={`w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 ${isRenter ? 'bg-white/20' : 'bg-gray-200'}`}>
                             <img 
-                              src={bookingData?.vehicle?.imageUrl || vehicleImageUrl || `https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=200&h=150&fit=crop&crop=center`}
+                              src={(() => {
+                                // Priorité 1: Photo depuis vehiclePhotos (Supabase)
+                                const photosArray = Object.values(vehiclePhotos);
+                                const primaryPhoto = photosArray.find(p => p.isPrimary) || photosArray[0];
+                                if (primaryPhoto?.url) return primaryPhoto.url;
+                                
+                                // Priorité 2: bookingData vehicle imageUrl
+                                if (bookingData?.vehicle?.imageUrl) return bookingData.vehicle.imageUrl;
+                                
+                                // Priorité 3: vehicleImageUrl
+                                if (vehicleImageUrl) return vehicleImageUrl;
+                                
+                                // Fallback: placeholder
+                                return `https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=200&h=150&fit=crop&crop=center`;
+                              })()}
                               alt={`${bookingData?.vehicle?.brand || vehicle.brand} ${bookingData?.vehicle?.model || vehicle.model}`}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback si l'image ne charge pas
+                                const target = e.target as HTMLImageElement;
+                                if (!target.src.includes('unsplash.com')) {
+                                  target.src = `https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=200&h=150&fit=crop&crop=center`;
+                                }
+                              }}
                             />
                           </div>
                           <div className="flex-grow">
@@ -1035,19 +1277,26 @@ const BookingDiscussion = () => {
                             <div className="flex items-center gap-2">
                               <Calendar className={`h-4 w-4 ${isRenter ? 'text-white/80' : 'text-gray-600'}`} />
                               <span className={`text-xs ${isRenter ? 'text-white/90' : 'text-gray-800'}`}>
-                                Du {bookingData?.rentalInfo?.startDate ? formatDate(bookingData.rentalInfo.startDate) : formatDate(startDate)} au {bookingData?.rentalInfo?.endDate ? formatDate(bookingData.rentalInfo.endDate) : formatDate(endDate)}
+                                {t("booking.discussion.dateRange", {
+                                  startDate: bookingData?.rentalInfo?.startDate ? formatDate(bookingData.rentalInfo.startDate) : formatDate(startDate),
+                                  endDate: bookingData?.rentalInfo?.endDate ? formatDate(bookingData.rentalInfo.endDate) : formatDate(endDate)
+                                })}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className={`h-4 w-4 ${isRenter ? 'text-white/80' : 'text-gray-600'}`} />
                               <span className={`text-xs ${isRenter ? 'text-white/90' : 'text-gray-800'}`}>
-                                Départ à {bookingData?.rentalInfo?.startTime || (startDate ? formatTime(startDate) : 'Non spécifié')}
+                                {t("booking.discussion.departureTime", {
+                                  startTime: bookingData?.rentalInfo?.startTime || (startDate ? formatTime(startDate) : t("motoDetails.notSpecified"))
+                                })}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <MapPin className={`h-4 w-4 ${isRenter ? 'text-white/80' : 'text-gray-600'}`} />
                               <span className={`text-xs ${isRenter ? 'text-white/90' : 'text-gray-800'}`}>
-                                Lieu : {bookingData?.rentalInfo?.pickupLocation || vehicle.location || 'Non spécifié'}
+                                {t("booking.discussion.pickupLocation", {
+                                  pickupLocation: bookingData?.rentalInfo?.pickupLocation || vehicle.location || t("motoDetails.notSpecified")
+                                })}
                               </span>
                             </div>
                           </div>
@@ -1057,7 +1306,7 @@ const BookingDiscussion = () => {
                         {formatSelectedServices() && (
                           <div className="space-y-2">
                             <div className={`border-t ${isRenter ? 'border-white/20' : 'border-gray-300'} pt-2`}>
-                              <span className={`text-xs font-medium ${isRenter ? 'text-white/80' : 'text-gray-700'}`}>Options supplémentaires :</span>
+                              <span className={`text-xs font-medium ${isRenter ? 'text-white/80' : 'text-gray-700'}`}>{t("booking.discussion.additionalOptions")}</span>
                               <div className={`text-xs mt-1 whitespace-pre-line ${isRenter ? 'text-white/90' : 'text-gray-800'}`}>
                                 {formatSelectedServices()}
                               </div>
@@ -1085,7 +1334,7 @@ const BookingDiscussion = () => {
                             if (optionsTotal > 0) {
                               return (
                                 <div className={`text-xs mt-1 ${isRenter ? 'text-white/70' : 'text-gray-600'}`}>
-                                  Dont {optionsTotal}€ d'options
+                                  {t("booking.discussion.optionsTotal", { optionsTotal })}
                                 </div>
                               );
                             }
@@ -1095,11 +1344,11 @@ const BookingDiscussion = () => {
                       </div>
                       
                       <p className={`${isRenter ? 'text-xs text-white/80' : 'text-xs text-gray-700'} mt-3`}>
-                        {isRenter ? 'Pouvez-vous confirmer la disponibilité ? Merci !' : 'Merci de confirmer votre disponibilité !'}
+                        {isRenter ? t("booking.discussion.confirmAvailability.renter") : t("booking.discussion.confirmAvailability.owner")}
                       </p>
                     </div>
                     <p className={`text-xs text-slate-500 mt-1 ${isRenter ? 'text-right' : 'text-left'}`}>
-                      {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      {formatTime(new Date().toISOString())}
                     </p>
                   </div>
                 </div>
@@ -1146,10 +1395,7 @@ const BookingDiscussion = () => {
                         <p className={`text-xs mt-1 ${
                           isCurrentUser ? 'text-right text-slate-500' : 'text-left text-slate-500'
                         }`}>
-                          {new Date(msg.createdAt).toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          {formatTime(msg.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -1171,7 +1417,7 @@ const BookingDiscussion = () => {
                     </Avatar>
                     <div className="flex-1 relative">
                       <Input
-                        placeholder="Tapez votre message..."
+                        placeholder={t("booking.discussion.messagePlaceholder")}
                         className="rounded-full border-0 bg-gray-100 pr-12 focus:bg-white focus:ring-2 focus:ring-green-500/20"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
@@ -1191,7 +1437,7 @@ const BookingDiscussion = () => {
               ) : (
                 <div className="border-t p-4 bg-white">
                   <div className="text-center text-sm text-red-600 bg-red-50 border border-red-200 py-3 rounded-lg">
-                    Vous ne pouvez plus discuter. La demande de réservation a été annulée ou terminée. ❌
+                    {t("booking.discussion.conversationCancelled")}
                   </div>
                 </div>
               )}
@@ -1208,7 +1454,7 @@ const BookingDiscussion = () => {
               <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-orange-900">
-                  Vous ne pouvez plus discuter. La demande de réservation a été annulée.
+                  {t("booking.discussion.conversationCancelledShort")}
                 </p>
               </div>
               <Button
@@ -1234,7 +1480,11 @@ const BookingDiscussion = () => {
             try {
               await payerLocation(rsv);
             } catch (e: any) {
-              toast({ title: "Erreur paiement", description: e?.message || "Impossible de démarrer le paiement", variant: "destructive" });
+              toast({
+                title: t("booking.discussion.toasts.paymentError.title"),
+                description: e?.message || t("booking.discussion.toasts.paymentError.description"),
+                variant: "destructive"
+              });
             }
           }}
           step1Complete={step1Complete}

@@ -150,8 +150,8 @@ module.exports = function transformer(file, api) {
     const text = onlyChild.value.trim();
     if (!shouldTranslateString(text)) return;
 
-    addUseTranslationImport();
-    const key = generateTranslationKey(text);
+      addUseTranslationImport();
+      const key = generateTranslationKey(text);
 
     // Remplacer uniquement l'enfant texte par {t("clé", "texte original")}, en préservant la balise et toutes ses props
     // Le defaultValue (texte original) garantit qu'on n'affichera jamais __STRING_NOT_TRANSLATED__ même si la traduction manque

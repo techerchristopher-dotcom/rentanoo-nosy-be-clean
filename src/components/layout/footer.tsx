@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from "react-router-dom";
-import { Car, MapPin, Mail, Phone } from "lucide-react";
+import { MapPin, Mail, Phone } from "lucide-react";
 
 export function Footer() {
   const {
@@ -9,19 +9,21 @@ export function Footer() {
 
   return (
     <footer className="bg-gradient-to-r from-primary/5 to-primary-soft/10 border-t mt-auto">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-8">
           {/* Logo & Description */}
           <div className="md:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-lagoon rounded-2xl shadow-lagoon">
-                <Car className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
-                {t("footer.brand", "RENTANOO")}
-              </span>
+            <div className="flex items-center mb-2 md:mb-4">
+              <Link to="/">
+                <img 
+                  src="/brand/rentanoo-logo.svg" 
+                  alt="Rentanoo" 
+                  className="h-6 md:h-7 w-auto"
+                  loading="lazy"
+                />
+              </Link>
             </div>
-            <p className="text-muted-foreground text-sm mb-4 max-w-md">
+            <p className="text-muted-foreground text-xs md:text-sm mb-3 md:mb-4 max-w-md">
               {t(
                 "footer.description",
                 "Agence de location de scooters à Nosy Be. Réservation 100 % en ligne, rapide et simple."
@@ -39,8 +41,8 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">{t('common.navigation')}</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="font-semibold text-foreground mb-2 md:mb-4 text-sm md:text-base">{t('common.navigation')}</h3>
+            <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
               <li>
                 <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">{t('common.rechercher_un_vhicule')}</Link>
               </li>
@@ -55,8 +57,8 @@ export function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">{t('common.lgal')}</h3>
-            <ul className="space-y-2 text-sm">
+            <h3 className="font-semibold text-foreground mb-2 md:mb-4 text-sm md:text-base">{t('common.lgal')}</h3>
+            <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
               <li>
                 <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">{t('common.conditions_dutilisation')}</Link>
               </li>
@@ -71,8 +73,8 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="text-sm text-muted-foreground">
+        <div className="border-t mt-4 md:mt-8 pt-4 md:pt-8 flex flex-col md:flex-row justify-between items-center">
+          <div className="text-xs md:text-sm text-muted-foreground">
             {t(
               "footer.copyright",
               "© 2025 RENTANOO. Tous droits réservés."

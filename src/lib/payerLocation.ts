@@ -25,6 +25,14 @@ export async function payerLocation(reservation: ReservationPayment) {
       throw new Error("Vous devez être connecté pour effectuer un paiement.");
     }
 
+    // Préparer le body exact (DB devient source de vérité, pas de calcul frontend)
+    const requestBody = {
+      bookingId: reservation.id,
+    };
+
+    // Construire l'URL complète de l'Edge Function
+    const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/create-checkout-session`;
+
     // DEV-only: log les headers (masque le token)
     if (isDev) {
       const maskedToken = session.access_token 
@@ -37,20 +45,41 @@ export async function payerLocation(reservation: ReservationPayment) {
         'hasSession': !!session,
         'userId': session.user?.id || 'N/A'
       });
+      console.log('🔍 [payerLocation DEV] Body exact envoyé:', requestBody);
+      console.log('🔍 [payerLocation DEV] URL Edge Function:', edgeFunctionUrl);
     }
 
     // Utiliser supabase.functions.invoke qui gère automatiquement l'autorisation
     const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-      body: {
-        amount: reservation.totalTTC,
-        description: `Location de ${reservation.voiture}`,
-        bookingId: reservation.id,
-      },
+      body: requestBody,
     });
 
     if (error) {
+      // Log détaillé de l'erreur (DEV-only)
+      if (isDev) {
+        console.error("[payerLocation DEV] Erreur Edge Function détaillée:", {
+          error,
+          errorName: error.name,
+          errorMessage: error.message,
+          errorStatus: (error as any).status,
+          errorContext: (error as any).context,
+          data: data || null,
+          timestamp: new Date().toISOString(),
+        });
+      }
       console.error("[payerLocation] Erreur Edge Function:", error);
       throw new Error(error.message || `Erreur lors de la création de la session: ${error.name || "Erreur inconnue"}`);
+    }
+
+    // DEV-only: log de la réponse complète
+    if (isDev) {
+      console.log('🔍 [payerLocation DEV] Réponse Edge Function:', {
+        hasData: !!data,
+        hasUrl: !!data?.url,
+        dataKeys: data ? Object.keys(data) : [],
+        urlPreview: data?.url ? data.url.substring(0, 50) + '...' : 'N/A',
+        timestamp: new Date().toISOString(),
+      });
     }
 
     if (!data || !data.url) {

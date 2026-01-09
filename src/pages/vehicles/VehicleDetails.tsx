@@ -1270,18 +1270,12 @@ export default function VehicleDetails() {
                             <h4 className="font-medium mb-2">Ce que prend en charge l'assurance :</h4>
                             <ul className="space-y-1 text-muted-foreground">
                               <li>• Dommages collision</li>
-                              <li>• Vol et vandalisme</li>
-                              <li>• Bris de glace</li>
-                              <li>• Incendie</li>
                             </ul>
                           </div>
                           <div>
                             <h4 className="font-medium mb-2">Conditions :</h4>
                             <ul className="space-y-1 text-muted-foreground">
-                              <li>• Âge minimum : 21 ans</li>
-                              <li>• Permis depuis 2 ans</li>
-                              <li>• Franchise : 800€</li>
-                              <li>• Caution : 1000€</li>
+                              <li>• Caution : 400€</li>
                             </ul>
                           </div>
                         </div>

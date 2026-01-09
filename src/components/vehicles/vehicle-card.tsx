@@ -34,18 +34,6 @@ const fuelIcons = {
   hybrid: Car
 };
 
-const fuelLabels = {
-  gasoline: "Essence",
-  diesel: "Diesel", 
-  electric: "Électrique",
-  hybrid: "Hybride"
-};
-
-const transmissionLabels = {
-  manual: "Manuelle",
-  automatic: "Automatique"
-};
-
 const PLACEHOLDER_URL =
   "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop";
 
@@ -66,6 +54,18 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
   const {
     t: t,
   } = useTranslation('common');
+
+  const fuelLabels = {
+    gasoline: t("vehicle.fuel.gasoline"),
+    diesel: t("vehicle.fuel.diesel"),
+    electric: t("vehicle.fuel.electric"),
+    hybrid: t("vehicle.fuel.hybrid"),
+  };
+
+  const transmissionLabels = {
+    manual: t("vehicle.transmission.manual"),
+    automatic: t("vehicle.transmission.automatic"),
+  };
 
   const FuelIcon = fuelIcons[vehicle.fuel] || Fuel;
 

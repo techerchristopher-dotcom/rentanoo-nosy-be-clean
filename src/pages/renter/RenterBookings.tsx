@@ -21,6 +21,7 @@ import RenterBookingCard from "@/components/RenterBookingCard";
 import { PaymentFlowModal, type ReservationPayment } from "@/components/PaymentFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
 import { useTranslation } from "react-i18next";
+import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 
 interface BookingWithDetails extends Booking {
   vehicle?: Vehicle;
@@ -105,9 +106,12 @@ export default function RenterBookings() {
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
         
         // Calculer les montants
-        const base = recentBooking.totalAmount || (days * (recentBooking.vehicle.dailyPrice || 0));
-        const fee = base * 0.15;
-        const total = base + fee;
+        // Utiliser subtotal si disponible, sinon recalculer depuis basePrice + optionsTotal
+        const basePrice = (recentBooking as any).basePrice || (days * (recentBooking.vehicle.dailyPrice || 0));
+        const optionsTotal = (recentBooking as any).optionsTotal || 0;
+        const subtotal = (recentBooking as any).subtotal || (basePrice + optionsTotal);
+        const fee = calcServiceFeeRenter(subtotal);
+        const total = calcRenterTotal(subtotal);
         
         // Extraire les services supplémentaires
         const selectedExtras = getServicesFromOptions(recentBooking.selectedOptions);
@@ -130,7 +134,7 @@ export default function RenterBookings() {
             minute: "2-digit"
           }),
           duree: days === 1 ? '1 jour' : `${days} jours`,
-          montantDeBase: base,
+          montantDeBase: subtotal,
           fraisService: fee,
           totalTTC: total,
           extras: selectedExtras,

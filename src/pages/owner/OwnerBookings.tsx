@@ -708,11 +708,14 @@ const OwnerBookings = () => {
                     (bookingDetails as any).totalPrice = bookingDetails.totalAmount;
                   }
                   
+                  // Auto-expand les cards qui nécessitent une action (pending/pending_payment)
+                  const forceExpand = booking.status === 'pending' || booking.status === 'pending_payment';
+                  
                   return (
                     <OwnerBookingCard
                       key={booking.id}
                       booking={bookingDetails as any}
-                      isExpanded={expandedBookings.has(booking.id)}
+                      isExpanded={expandedBookings.has(booking.id) || forceExpand}
                       toggleExpanded={toggleExpanded}
                       formatDate={formatDate}
                       getDuration={getDuration}

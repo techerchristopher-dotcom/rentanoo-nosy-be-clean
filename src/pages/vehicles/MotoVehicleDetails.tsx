@@ -1222,18 +1222,12 @@ export default function MotoVehicleDetails() {
                             </h4>
                             <ul className="space-y-1 text-muted-foreground">
                               <li>• {t("motoDetails.insurance.coverage.collision")}</li>
-                              <li>• {t("motoDetails.insurance.coverage.theft")}</li>
-                              <li>• {t("motoDetails.insurance.coverage.glass")}</li>
-                              <li>• {t("motoDetails.insurance.coverage.fire")}</li>
                             </ul>
                           </div>
                           <div>
                             <h4 className="font-medium mb-2">{t("motoDetails.insurance.conditionsTitle")}</h4>
                             <ul className="space-y-1 text-muted-foreground">
-                              <li>• {t("motoDetails.insurance.conditions.minAge")}</li>
-                              <li>• {t("motoDetails.insurance.conditions.licenseYears")}</li>
-                              <li>• {t("motoDetails.insurance.conditions.deductible")}</li>
-                              <li>• {t("motoDetails.insurance.conditions.deposit")}</li>
+                              <li>• Caution : 400€</li>
                             </ul>
                           </div>
                         </div>

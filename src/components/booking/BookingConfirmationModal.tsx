@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { getBookingDraft, updateBookingOptions } from "@/services/localStorage/bookingStorage";
 import { formatDuration } from "@/utils/formatDuration";
 import { formatCurrency } from "@/utils/currency";
+import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 
 interface BookingConfirmationModalProps {
   isOpen: boolean;
@@ -124,10 +125,10 @@ export function BookingConfirmationModal({
   const subtotal = rentalInfo.basePrice + optionsTotal;
   
   // Calculer les frais de service (15%)
-  const serviceFee = Math.round(subtotal * 0.15 * 100) / 100;
+  const serviceFee = calcServiceFeeRenter(subtotal);
   
   // Calculer le total final
-  const totalAmount = Math.round((subtotal + serviceFee) * 100) / 100;
+  const totalAmount = calcRenterTotal(subtotal);
   
   // Formater les dates avec locale dynamique
   const formattedStartDate = format(rentalInfo.startDate, "EEEE d MMMM yyyy", { locale: dateLocale });

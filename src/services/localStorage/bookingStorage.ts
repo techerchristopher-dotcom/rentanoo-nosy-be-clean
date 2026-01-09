@@ -4,6 +4,7 @@
  */
 
 import { RentalCalculation } from "@/types";
+import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 
 // Clé du localStorage
 const BOOKING_STORAGE_KEY = "lagon_booking_draft";
@@ -160,8 +161,8 @@ export function updateBookingOptions(options: BookingOption[]): void {
     
     // Recalculer les totaux
     const subtotal = draft.basePrice + optionsTotal;
-    const serviceFee = Math.round(subtotal * 0.15 * 100) / 100;
-    const totalAmount = Math.round((subtotal + serviceFee) * 100) / 100;
+    const serviceFee = calcServiceFeeRenter(subtotal);
+    const totalAmount = calcRenterTotal(subtotal);
     
     const updatedDraft: BookingDraft = {
       ...draft,
@@ -201,8 +202,8 @@ export function createBookingDraft(
   basePrice: number
 ): BookingDraft {
   const subtotal = basePrice;
-  const serviceFee = Math.round(subtotal * 0.15 * 100) / 100;
-  const totalAmount = Math.round((subtotal + serviceFee) * 100) / 100;
+  const serviceFee = calcServiceFeeRenter(subtotal);
+  const totalAmount = calcRenterTotal(subtotal);
   
   const draft: BookingDraft = {
     vehicleId,

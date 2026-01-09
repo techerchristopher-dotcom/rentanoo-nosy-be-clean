@@ -1,6 +1,7 @@
 // src/components/RenterBookingCard.tsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Calendar,
   Euro,
@@ -47,12 +48,17 @@ import { ConversationsService } from '@/services/supabase/conversations'
 import { supabase } from '@/integrations/supabase/client'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { fr } from 'date-fns/locale/fr'
+import { enUS } from 'date-fns/locale/en-US'
+import { it as itLocale } from 'date-fns/locale/it'
+import { de as deLocale } from 'date-fns/locale/de'
 import { Separator } from '@/components/ui/separator'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { Download } from 'lucide-react'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
+import { formatCurrency } from '@/utils/currency'
+import { calcServiceFeeRenter, calcRenterTotal } from '@/utils/serviceFees'
 
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
@@ -95,6 +101,51 @@ export default function RenterBookingCard({
 }: RenterBookingCardProps) {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t, i18n } = useTranslation() // defaultNS = "translation" où duration.* est déplié depuis common.duration.*
+  
+  // Locale du calendrier / formatage des dates en fonction de la langue active
+  const currentLang = i18n.language || "fr"
+  const dateLocale =
+    currentLang.startsWith("fr") ? fr :
+    currentLang.startsWith("it") ? itLocale :
+    currentLang.startsWith("de") ? deLocale :
+    enUS
+  
+  // Locale pour le formatage monétaire (dérivée de i18n.language)
+  const currencyLocale =
+    currentLang.startsWith("fr") ? "fr-FR" :
+    currentLang.startsWith("it") ? "it-IT" :
+    currentLang.startsWith("de") ? "de-DE" :
+    "en-US"
+  
+  // Helper pour formater les montants avec la locale dynamique
+  const formatMoney = (amount: number, currency: string = "EUR") => {
+    return formatCurrency(amount, currencyLocale, currency)
+  }
+  
+  // DEV-only: Log locale utilisée pour le formatage des dates et monnaie
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.info("[bookings-date-locale]", { 
+        lang: i18n.language, 
+        resolvedLocale: currentLang.startsWith("fr") ? "fr-FR" :
+                        currentLang.startsWith("it") ? "it-IT" :
+                        currentLang.startsWith("de") ? "de-DE" :
+                        "en-US"
+      })
+      // Log exemple de formatage monétaire (FR vs EN)
+      const exampleAmount = 62.10
+      // eslint-disable-next-line no-console
+      console.info("[bookings-currency-format]", {
+        locale: currencyLocale,
+        example: formatMoney(exampleAmount),
+        frExample: formatCurrency(exampleAmount, "fr-FR", "EUR"),
+        enExample: formatCurrency(exampleAmount, "en-US", "EUR"),
+      })
+    }
+  }, [i18n.language, currentLang, currencyLocale])
+  
   const [owner, setOwner] = useState<User | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -104,7 +155,143 @@ export default function RenterBookingCard({
   const [customCancelReason, setCustomCancelReason] = useState<string>('')
   const [unreadCount, setUnreadCount] = useState(0)
   
-  // Afficher la durée calculée depuis les heures réelles
+  // DEV-only: Debug i18n pour diagnostiquer les textes FR résiduels
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const criticalKeys = [
+        'bookings.card.startLabel',
+        'bookings.card.endLabel',
+        'bookings.card.totalLabel',
+        'bookings.status.paymentConfirmed',
+        'bookings.status.depositPending',
+        'bookings.status.readyToGo',
+        'bookings.status.active',
+        'bookings.status.completed',
+        'bookings.status.cancelled',
+        'bookings.cancel.title',
+        'common.annuler',
+      ]
+      
+      const sampleResults = criticalKeys.map(key => ({
+        key,
+        exists: i18n.exists(key),
+        t_current: t(key),
+        t_en: t(key, { lng: 'en' }),
+        t_fr: t(key, { lng: 'fr' }),
+      }))
+      
+      // eslint-disable-next-line no-console
+      console.info('[card-i18n-debug]', {
+        language: i18n.language,
+        resolvedLanguage: i18n.resolvedLanguage,
+        defaultNS: i18n.options.defaultNS,
+        fallbackLng: i18n.options.fallbackLng,
+        sample: sampleResults,
+      })
+    }
+  }, [i18n, t])
+
+  // DEV-only: Diagnostic complet i18n pour la carte de réservation
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      const resolvedLang = i18n.resolvedLanguage || i18n.language
+      const storeData = i18n.store?.data || {}
+      
+      // Calculer des exemples de dates formatées
+      const exampleDate = new Date(booking.startDate)
+      const exampleTime = (booking as any).startTime || '08:00'
+      const [hour, minute] = exampleTime.split(':')
+      exampleDate.setHours(parseInt(hour), parseInt(minute), 0, 0)
+      const startDateTimeFormatted = format(exampleDate, "d MMMM yyyy 'à' HH:mm", { locale: dateLocale })
+      
+      const exampleEndDate = new Date(booking.endDate)
+      const exampleEndTime = (booking as any).endTime || '10:00'
+      const [endHour, endMinute] = exampleEndTime.split(':')
+      exampleEndDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
+      const endDateTimeFormatted = format(exampleEndDate, "d MMMM yyyy 'à' HH:mm", { locale: dateLocale })
+      
+      // Clés critiques à tester
+      const criticalKeys = [
+        'bookings.status.depositPending', // Pour "En attente"
+        'bookings.card.durationLabel', // Pour "Durée:"
+        'duration.day_other', // Pour vérifier duration
+        'annuler', // Pour le bouton
+        'common.annuler', // Pour le bouton (ancienne clé)
+        'bookings.cancel.confirm', // Alternative possible
+      ]
+      
+      const keyTests = criticalKeys.map(key => ({
+        key,
+        exists: i18n.exists(key),
+        t_current: t(key),
+        t_en: t(key, { lng: 'en' }),
+        t_fr: t(key, { lng: 'fr' }),
+        t_de: t(key, { lng: 'de' }),
+        isRawKey: t(key) === key,
+      }))
+      
+      // eslint-disable-next-line no-console
+      console.info('[booking-card-i18n-diag]', {
+        // A) Langue et namespaces runtime
+        language: {
+          i18n_language: i18n.language,
+          i18n_resolvedLanguage: i18n.resolvedLanguage,
+          i18n_languages: i18n.languages,
+          defaultNS: i18n.options.defaultNS,
+          ns: i18n.options.ns,
+          fallbackLng: i18n.options.fallbackLng,
+        },
+        
+        // Store i18n
+        store: {
+          availableLanguages: Object.keys(storeData),
+          namespacesForResolvedLang: resolvedLang ? Object.keys(storeData[resolvedLang] || {}) : [],
+        },
+        
+        // B) Tests clés i18n critiques
+        keyTests,
+        
+        // C) Dates / locale runtime
+        dates: {
+          i18n_language: i18n.language,
+          currentLang: currentLang,
+          dateLocale_used: dateLocale === fr ? 'fr' : 
+                           dateLocale === itLocale ? 'it' :
+                           dateLocale === deLocale ? 'de' : 'enUS',
+          startDateTimeFormatted,
+          endDateTimeFormatted,
+          separator_in_string: "'à'", // Le "à" est hardcodé dans la string format
+        },
+        
+        // D) Éléments problématiques identifiés
+        problematicElements: {
+          statusBadge: {
+            source: 'src/components/ui/status-badge.tsx:15',
+            type: 'hardcoded',
+            value: 'En attente',
+          },
+          durationLabel: {
+            source: 'src/components/RenterBookingCard.tsx:960',
+            type: 'hardcoded',
+            value: 'Durée:',
+          },
+          dateSeparator: {
+            source: 'src/components/RenterBookingCard.tsx:935,950',
+            type: 'hardcoded_in_format_string',
+            value: "'à'",
+          },
+          cancelButton: {
+            source: 'src/components/RenterBookingCard.tsx:1261',
+            type: 'wrong_key_or_namespace',
+            key_used: 'common.annuler',
+            current_namespace: i18n.options.defaultNS,
+          },
+        },
+      })
+    }
+  }, [i18n, t, booking.startDate, booking.endDate, currentLang, dateLocale])
+  
+  // Afficher la durée calculée depuis les heures réelles (localisée via i18n)
   const calculateRealDuration = () => {
     const startDate = new Date(booking.startDate)
     const endDate = new Date(booking.endDate)
@@ -123,17 +310,81 @@ export default function RenterBookingCard({
     const completeDays = Math.floor(rentalHours / 24)
     const extraHours = Math.floor(rentalHours % 24)
     
-    console.log('⏱️ [RenterBookingCard] Calcul:', { rentalHours, completeDays, extraHours, startTime, endTime })
+    // Formatage localisé avec clés i18n
+    let daysText: string
+    let hoursText: string
+    let separator: string
+    let result: string
     
     if (rentalHours < 24) {
-      return '1 jour'
+      // Cas: moins de 24h -> "1 jour"
+      daysText = t('duration.day_one', { count: 1 })
+      result = daysText
     } else if (extraHours === 0) {
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`
+      // Cas: jours complets uniquement -> "X jours"
+      daysText = t('duration.day_other', { count: completeDays })
+      result = daysText
     } else {
-      // Toujours afficher les heures supplémentaires
-      // Peu importe si heure retour < heure départ
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`
+      // Cas: jours + heures supplémentaires
+      daysText = t(completeDays === 1 ? 'duration.day_one' : 'duration.day_other', { count: completeDays })
+      const hourCount = Math.floor(extraHours)
+      hoursText = t(hourCount === 1 ? 'duration.hour_one' : 'duration.hour_other', { count: hourCount })
+      separator = t('duration.separator')
+      result = `${daysText}${separator}${hoursText}`
     }
+    
+    // DEV-only: Debug complet pour diagnostiquer pourquoi duration.* ne se résout pas
+    if (import.meta.env.DEV) {
+      const resolvedLang = i18n.resolvedLanguage || i18n.language
+      const storeData = i18n.store?.data || {}
+      
+      // eslint-disable-next-line no-console
+      console.info('[duration-debug]', {
+        // 1) État de la langue
+        language: i18n.language,
+        resolvedLanguage: i18n.resolvedLanguage,
+        fallbackLng: i18n.options.fallbackLng,
+        supportedLngs: i18n.options.supportedLngs,
+        load: i18n.options.load,
+        
+        // 2) Configuration namespace
+        ns: i18n.options.ns,
+        defaultNS: i18n.options.defaultNS,
+        currentNS: 'translation', // namespace utilisé dans useTranslation() (defaultNS)
+        
+        // 3) Résultats des traductions
+        translations: {
+          'duration.day_other': t('duration.day_other', { count: 2 }),
+          'duration.separator': t('duration.separator'),
+          'duration.hour_other': t('duration.hour_other', { count: 2 }),
+          'bookings.card.startLabel': t('bookings.card.startLabel'), // comparaison avec clé qui fonctionne
+        },
+        
+        // 4) État du store i18n
+        store: {
+          availableLanguages: Object.keys(storeData),
+          currentLangData: resolvedLang ? Object.keys(storeData[resolvedLang] || {}) : [],
+          enData: Object.keys(storeData['en'] || {}),
+          enGBData: Object.keys(storeData['en-GB'] || {}),
+          commonKeys: resolvedLang && storeData[resolvedLang]?.common 
+            ? Object.keys(storeData[resolvedLang].common) 
+            : [],
+          commonDurationKeys: resolvedLang && storeData[resolvedLang]?.common?.duration
+            ? Object.keys(storeData[resolvedLang].common.duration)
+            : [],
+        },
+        
+        // 5) Vérification directe des clés dans le store
+        directStoreCheck: {
+          'en.common.duration': storeData['en']?.common?.duration ? 'EXISTS' : 'MISSING',
+          'en.translation.duration': storeData['en']?.translation?.duration ? 'EXISTS' : 'MISSING',
+          [`${resolvedLang}.common.duration`]: storeData[resolvedLang]?.common?.duration ? 'EXISTS' : 'MISSING',
+          [`${resolvedLang}.translation.duration`]: storeData[resolvedLang]?.translation?.duration ? 'EXISTS' : 'MISSING',
+        },
+      })
+    }
+    
+    return result
   }
 
   // Fonction pour générer le badge de statut enrichi et le CTA selon les règles métier (locataire)
@@ -147,20 +398,20 @@ export default function RenterBookingCard({
     // Cas A: confirmed + deposit_status pending
     if (booking.status === 'confirmed' && depositStatus === 'pending') {
       return {
-        badgeLabel: 'Paiement confirmé',
-        badgeNote: 'En attente de la caution',
+        badgeLabel: t('bookings.status.paymentConfirmed'),
+        badgeNote: t('bookings.status.depositPending'),
         badgeColorClass: 'bg-orange-100 text-orange-800 border border-orange-300 rounded-full px-3 py-1 text-sm font-medium',
         noteColorClass: 'text-orange-700 text-xs font-medium',
         showDepositCTA: true,
-        depositCTALabel: 'Finaliser ma réservation'
+        depositCTALabel: t('bookings.card.finalizeBooking')
       }
     }
 
     // Cas B: confirmed + deposit_status paid + start_date > now
     if (booking.status === 'confirmed' && depositStatus === 'paid' && startDate > now) {
       return {
-        badgeLabel: 'Prêt à partir',
-        badgeNote: 'Paiement et caution validés',
+        badgeLabel: t('bookings.status.readyToGo'),
+        badgeNote: t('bookings.status.paymentDepositValidated'),
         badgeColorClass: 'bg-green-100 text-green-800 border border-green-300 rounded-full px-3 py-1 text-sm font-medium',
         noteColorClass: 'text-green-700 text-xs font-medium',
         showDepositCTA: false
@@ -171,7 +422,7 @@ export default function RenterBookingCard({
     if (booking.status === 'active' || 
         (booking.status === 'confirmed' && depositStatus === 'paid' && startDate <= now && endDate >= now)) {
       return {
-        badgeLabel: 'En cours',
+        badgeLabel: t('bookings.status.active'),
         badgeNote: null,
         badgeColorClass: 'bg-green-100 text-green-800 border border-green-300 rounded-full px-3 py-1 text-sm font-medium',
         noteColorClass: null,
@@ -182,7 +433,7 @@ export default function RenterBookingCard({
     // Cas D: completed
     if (booking.status === 'completed') {
       return {
-        badgeLabel: 'Terminé',
+        badgeLabel: t('bookings.status.completed'),
         badgeNote: null,
         badgeColorClass: 'bg-gray-100 text-gray-700 border border-gray-300 rounded-full px-3 py-1 text-sm font-medium',
         noteColorClass: null,
@@ -193,7 +444,7 @@ export default function RenterBookingCard({
     // Cas E: cancelled, rejected, declined
     if (booking.status === 'cancelled' || booking.status === 'rejected' || booking.status === 'declined') {
       return {
-        badgeLabel: 'Annulée',
+        badgeLabel: t('bookings.status.cancelled'),
         badgeNote: null,
         badgeColorClass: 'bg-gray-100 text-gray-500 border border-gray-300 rounded-full px-3 py-1 text-sm font-medium',
         noteColorClass: null,
@@ -594,13 +845,13 @@ export default function RenterBookingCard({
                       const cancellationReason = cancellation?.reason;
                       const updatedTs = cancellation?.cancelledAt || (booking as any).updatedAt || (booking as any).updated_at;
                       const updatedText = updatedTs
-                        ? new Date(updatedTs).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                        ? (() => {
+                            const date = new Date(updatedTs)
+                            const datePart = format(date, "d MMMM yyyy", { locale: dateLocale })
+                            const timePart = format(date, "HH:mm", { locale: dateLocale })
+                            const joiner = i18n.language.startsWith("fr") ? " à " : " "
+                            return `${datePart}${joiner}${timePart}`
+                          })()
                         : undefined;
                       
                       if (booking.status === 'cancelled' && cancellationReason) {
@@ -610,6 +861,7 @@ export default function RenterBookingCard({
                               {cancellationReason}
                             </span>
                             {updatedText && (
+                              // TODO(i18n): bookings.details.updatedAt
                               <span className="text-[10px] text-muted-foreground/60">Mise à jour le : {updatedText}</span>
                             )}
                           </div>
@@ -618,9 +870,11 @@ export default function RenterBookingCard({
                         return (
                           <div className="flex flex-col items-end">
                             <span className="text-[10px] text-muted-foreground/70 italic">
+                              {/* TODO(i18n): bookings.details.bookingRefused */}
                               {cancellationReason || 'Réservation refusée'}
                             </span>
                             {updatedText && (
+                              // TODO(i18n): bookings.details.updatedAt
                               <span className="text-[10px] text-muted-foreground/60">Mise à jour le : {updatedText}</span>
                             )}
                           </div>
@@ -655,7 +909,7 @@ export default function RenterBookingCard({
                               {owner?.avatarUrl ? (
                                 <img
                                   src={owner.avatarUrl}
-                                  alt={owner.firstName || 'Propriétaire'}
+                                  alt={owner.firstName || t('bookings.card.ownerFallback')}
                                   className="w-full h-full object-cover object-center"
                                   style={{
                                     objectFit: 'cover',
@@ -695,7 +949,7 @@ export default function RenterBookingCard({
                         sideOffset={8}
                       >
                         <p className="text-sm font-medium">
-                          Bonjour {owner?.firstName || 'Propriétaire'}, cliquez ici pour discuter avec moi
+                          {t('bookings.card.messageTooltip', { ownerName: owner?.firstName || t('bookings.card.ownerFallback') })}
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -726,43 +980,33 @@ export default function RenterBookingCard({
                   <div className="space-y-3">
                     <div className="flex items-center text-sm">
                       <Calendar className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
-                      <span className="font-medium text-foreground">Début:</span>
+                      <span className="font-medium text-foreground">{t('bookings.card.startLabel')}</span>
                       <span className="ml-2 font-semibold text-primary">
                         {(() => {
-                          console.log('🔍 [RenterBookingCard] Début - booking:', booking)
-                          console.log('🔍 [RenterBookingCard] Début - startTime:', (booking as any).startTime)
                           const date = new Date(booking.startDate)
                           const time = (booking as any).startTime || '08:00'
                           const [hour, minute] = time.split(':')
                           date.setHours(parseInt(hour), parseInt(minute), 0, 0)
-                          const formatted = date.toLocaleDateString("fr-FR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit"
-                          })
-                          console.log('🔍 [RenterBookingCard] Début - formatted:', formatted)
-                          return formatted
+                          const datePart = format(date, "d MMMM yyyy", { locale: dateLocale })
+                          const timePart = format(date, "HH:mm", { locale: dateLocale })
+                          const joiner = i18n.language.startsWith("fr") ? " à " : " "
+                          return `${datePart}${joiner}${timePart}`
                         })()}
                       </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Calendar className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
-                      <span className="font-medium text-foreground">Fin:</span>
+                      <span className="font-medium text-foreground">{t('bookings.card.endLabel')}</span>
                       <span className="ml-2 font-semibold text-primary">
                         {(() => {
                           const date = new Date(booking.endDate)
                           const time = (booking as any).endTime || '10:00'
                           const [hour, minute] = time.split(':')
                           date.setHours(parseInt(hour), parseInt(minute), 0, 0)
-                          return date.toLocaleDateString("fr-FR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit"
-                          })
+                          const datePart = format(date, "d MMMM yyyy", { locale: dateLocale })
+                          const timePart = format(date, "HH:mm", { locale: dateLocale })
+                          const joiner = i18n.language.startsWith("fr") ? " à " : " "
+                          return `${datePart}${joiner}${timePart}`
                         })()}
                       </span>
                     </div>
@@ -771,16 +1015,16 @@ export default function RenterBookingCard({
                   <div className="space-y-3">
                     <div className="flex items-center text-sm">
                       <Clock className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
-                      <span className="font-medium text-foreground">Durée:</span>
+                      <span className="font-medium text-foreground">{t('booking.durationLabel')}</span>
                       <span className="ml-2 font-semibold text-primary">
                         {calculateRealDuration()}
                       </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Euro className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
-                      <span className="font-medium text-foreground">Total:</span>
+                      <span className="font-medium text-foreground">{t('bookings.card.totalLabel')}</span>
                       <span className="ml-2 font-bold text-primary text-lg">
-                        {(() => {
+                        {formatMoney((() => {
                           // Recalculer le prix avec la nouvelle logique si véhicule disponible
                           if (booking.vehicle?.dailyPrice) {
                             const startDate = new Date(booking.startDate)
@@ -815,15 +1059,15 @@ export default function RenterBookingCard({
                             const subtotal = basePrice + optionsTotal
                             
                             // Ajouter les frais de service (15%)
-                            const serviceFee = Math.round(subtotal * 0.15 * 100) / 100
+                            const serviceFee = calcServiceFeeRenter(subtotal)
                             
                             // Calculer le total final
-                            const totalAmount = Math.round((subtotal + serviceFee) * 100) / 100
+                            const totalAmount = calcRenterTotal(subtotal)
                             
                             return totalAmount
                           }
-                          return booking.totalAmount
-                        })()}€
+                          return booking.totalAmount || 0
+                        })())}
                       </span>
                       <TooltipProvider>
                         <Tooltip>
@@ -854,45 +1098,53 @@ export default function RenterBookingCard({
                                   let durationText: string;
                                   if (rentalHours < 24) {
                                     basePrice = booking.vehicle.dailyPrice
-                                    durationText = '1 jour'
+                                    durationText = t('duration.day_one', { count: 1 })
                                   } else if (extraHours === 0) {
                                     basePrice = completeDays * booking.vehicle.dailyPrice
-                                    durationText = `${completeDays} jours`
+                                    durationText = t('duration.day_other', { count: completeDays })
                                   } else {
                                     // Toujours facturer les heures supplémentaires au prorata
                                     const hourPrice = booking.vehicle.dailyPrice / 24
                                     basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + (extraHours * hourPrice))
-                                    durationText = `${completeDays} jours + ${Math.floor(extraHours)}h`
+                                    const daysText = t('duration.day_other', { count: completeDays })
+                                    const hoursText = t('duration.hour_other', { count: Math.floor(extraHours) })
+                                    const separator = t('duration.separator')
+                                    durationText = `${daysText}${separator}${hoursText}`
                                   }
                                   
                                   const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, option) => sum + option.totalPrice, 0)
                                   const subtotal = basePrice + optionsTotal
-                                  const serviceFee = Math.round(subtotal * 0.15 * 100) / 100
-                                  const totalAmount = Math.round((subtotal + serviceFee) * 100) / 100
+                                  const serviceFee = calcServiceFeeRenter(subtotal)
+                                  const totalAmount = calcRenterTotal(subtotal)
                                   
                                   return (
                                     <>
+                                      {/* TODO(i18n): bookings.details.vehicleRental */}
                                       <div className="flex justify-between">
                                         <span>Location ({durationText})</span>
-                                        <span className="font-semibold">{basePrice}€</span>
+                                        <span className="font-semibold">{formatMoney(basePrice)}</span>
                                       </div>
                                       {optionsTotal > 0 && (
                                         <div className="flex justify-between">
+                                          {/* TODO(i18n): bookings.card.servicesTitle */}
                                           <span>Options supplémentaires</span>
-                                          <span className="font-semibold">+{optionsTotal}€</span>
+                                          <span className="font-semibold">+{formatMoney(optionsTotal)}</span>
                                         </div>
                                       )}
                                       <div className="flex justify-between border-t pt-1">
+                                        {/* TODO(i18n): bookings.details.subtotal */}
                                         <span>Sous-total</span>
-                                        <span className="font-semibold">{subtotal}€</span>
+                                        <span className="font-semibold">{formatMoney(subtotal)}</span>
                                       </div>
                                       <div className="flex justify-between text-muted-foreground">
+                                        {/* TODO(i18n): bookings.details.serviceFee */}
                                         <span>Frais de service (15%)</span>
-                                        <span>+{serviceFee}€</span>
+                                        <span>+{formatMoney(serviceFee)}</span>
                                       </div>
                                       <div className="flex justify-between font-bold border-t pt-1">
+                                        {/* TODO(i18n): bookings.details.totalToPay */}
                                         <span>TOTAL</span>
-                                        <span>{totalAmount}€</span>
+                                        <span>{formatMoney(totalAmount)}</span>
                                       </div>
                                     </>
                                   )
@@ -963,8 +1215,8 @@ export default function RenterBookingCard({
                             : []
                           const optionsTotal = selectedExtras.reduce((s, x) => s + (x.price || 0), 0)
                           const subtotal = base + optionsTotal
-                          const fee = Math.round(subtotal * 0.15 * 100) / 100
-                          const total = Math.round((subtotal + fee) * 100) / 100
+                          const fee = calcServiceFeeRenter(subtotal)
+                          const total = calcRenterTotal(subtotal)
                           onRequestPay?.({
                             id: booking.id,
                             voiture: booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Véhicule',
@@ -1017,8 +1269,8 @@ export default function RenterBookingCard({
                         : []
                       const optionsTotal = selectedExtras.reduce((s, x) => s + (x.price || 0), 0)
                       const subtotal = base + optionsTotal
-                      const fee = Math.round(subtotal * 0.15 * 100) / 100
-                      const total = Math.round((subtotal + fee) * 100) / 100
+                      const fee = calcServiceFeeRenter(subtotal)
+                      const total = calcRenterTotal(subtotal)
                       onRequestPay?.({
                         id: booking.id,
                         voiture: booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Véhicule',
@@ -1037,6 +1289,7 @@ export default function RenterBookingCard({
                     
                     <div className="relative flex items-center justify-center gap-2">
                       <CreditCard className="h-5 w-5" />
+                      {/* TODO(i18n): bookings.details.payBooking */}
                       <span className="font-semibold">Payer ma location</span>
                       <Shield className="h-4 w-4 opacity-75" />
                     </div>
@@ -1063,50 +1316,50 @@ export default function RenterBookingCard({
                       onClick={(e) => { e.stopPropagation(); setShowCancelModal(true); }}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
-                      Annuler
+                      {t('annuler')}
                     </Button>
                     <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
                       <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle className="text-xl font-bold text-destructive">Annuler la réservation</DialogTitle>
-                          <DialogDescription>Sélectionnez un motif ou rédigez votre message.</DialogDescription>
+                          <DialogTitle className="text-xl font-bold text-destructive">{t('bookings.cancel.title')}</DialogTitle>
+                          <DialogDescription>{t('bookings.cancel.description')}</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-2">
                           <RadioGroup value={cancelReason} onValueChange={setCancelReason}>
                             <div className="space-y-3">
                               <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value="Changement de dates" id="cancel1" />
-                                <Label htmlFor="cancel1" className="flex-1 cursor-pointer">Changement de dates</Label>
+                                <RadioGroupItem value={t('bookings.cancel.reason.dateChange')} id="cancel1" />
+                                <Label htmlFor="cancel1" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.dateChange')}</Label>
                               </div>
                               <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value="Trouvé une autre option" id="cancel2" />
-                                <Label htmlFor="cancel2" className="flex-1 cursor-pointer">Trouvé une autre option</Label>
+                                <RadioGroupItem value={t('bookings.cancel.reason.otherOption')} id="cancel2" />
+                                <Label htmlFor="cancel2" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.otherOption')}</Label>
                               </div>
                               <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value="Imprévu personnel" id="cancel3" />
-                                <Label htmlFor="cancel3" className="flex-1 cursor-pointer">Imprévu personnel</Label>
+                                <RadioGroupItem value={t('bookings.cancel.reason.personalIssue')} id="cancel3" />
+                                <Label htmlFor="cancel3" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.personalIssue')}</Label>
                               </div>
                               <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value="Erreur de réservation" id="cancel4" />
-                                <Label htmlFor="cancel4" className="flex-1 cursor-pointer">Erreur de réservation</Label>
+                                <RadioGroupItem value={t('bookings.cancel.reason.bookingError')} id="cancel4" />
+                                <Label htmlFor="cancel4" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.bookingError')}</Label>
                               </div>
                               <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value="Autre raison (personnalisée)" id="cancel5" />
-                                <Label htmlFor="cancel5" className="flex-1 cursor-pointer">Autre raison (personnalisée)</Label>
+                                <RadioGroupItem value={t('bookings.cancel.reason.custom')} id="cancel5" />
+                                <Label htmlFor="cancel5" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.custom')}</Label>
                               </div>
                             </div>
                           </RadioGroup>
-                          {cancelReason === 'Autre raison (personnalisée)' && (
+                          {cancelReason === t('bookings.cancel.reason.custom') && (
                             <div className="space-y-2">
-                              <Label htmlFor="customCancelReason">Expliquez votre motif</Label>
-                              <Textarea id="customCancelReason" value={customCancelReason} onChange={(e) => setCustomCancelReason(e.target.value)} placeholder="Ex: Mon planning a changé..." />
+                              <Label htmlFor="customCancelReason">{t('bookings.cancel.reasonLabel')}</Label>
+                              <Textarea id="customCancelReason" value={customCancelReason} onChange={(e) => setCustomCancelReason(e.target.value)} placeholder={t('bookings.cancel.reasonPlaceholder')} />
                             </div>
                           )}
                         </div>
                         <div className="flex gap-3 pt-2">
-                          <Button variant="outline" className="flex-1" onClick={() => setShowCancelModal(false)} disabled={isDeleting}>Retour</Button>
+                          <Button variant="outline" className="flex-1" onClick={() => setShowCancelModal(false)} disabled={isDeleting}>{t('bookings.cancel.back')}</Button>
                           <Button variant="destructive" className="flex-1" onClick={handleConfirmCancel} disabled={isDeleting || (!cancelReason && !customCancelReason)}>
-                            {isDeleting ? 'Annulation...' : 'Confirmer'}
+                            {isDeleting ? t('bookings.cancel.processing') : t('bookings.cancel.confirm')}
                           </Button>
                         </div>
                       </DialogContent>
@@ -1165,15 +1418,23 @@ export default function RenterBookingCard({
               </div>
             </div>
             <DialogTitle className="text-3xl font-bold text-center text-primary">
-              Détails de votre réservation
+              {t('bookings.details.title')}
             </DialogTitle>
             <div className="flex items-center justify-center gap-2 mt-2">
               <p className="text-sm text-muted-foreground">
-                Réservation #{(booking as any).referenceNumber || booking.id.substring(0, 8)}
+                {t('bookings.details.referenceNumber', { referenceNumber: (booking as any).referenceNumber || booking.id.substring(0, 8) })}
               </p>
               <span className="text-sm text-muted-foreground">•</span>
               <p className="text-sm text-muted-foreground">
-                Créée le {format(new Date(booking.createdAt), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                {t('bookings.details.createdAt', { 
+                  date: (() => {
+                    const date = new Date(booking.createdAt)
+                    const datePart = format(date, "d MMMM yyyy", { locale: dateLocale })
+                    const timePart = format(date, "HH:mm", { locale: dateLocale })
+                    const joiner = i18n.language.startsWith("fr") ? " à " : " "
+                    return `${datePart}${joiner}${timePart}`
+                  })()
+                })}
               </p>
             </div>
           </DialogHeader>
@@ -1197,7 +1458,7 @@ export default function RenterBookingCard({
                     {booking.vehicle.brand} {booking.vehicle.model}
                   </h3>
                   <p className="text-sm text-muted-foreground font-medium">
-                    Année {booking.vehicle.year}
+                    {t('bookings.details.yearLabel', { year: booking.vehicle.year })}
                   </p>
                 </div>
               </div>
@@ -1213,25 +1474,25 @@ export default function RenterBookingCard({
                     <div className="p-2 bg-primary-soft rounded-lg">
                       <UserPlus className="h-5 w-5 text-primary" />
                     </div>
-                    <h4 className="text-sm font-semibold text-foreground">Informations client</h4>
+                    <h4 className="text-sm font-semibold text-foreground">{t('bookings.details.clientInfo')}</h4>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-card rounded-lg border border-border/50">
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Nom</p>
-                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.lastName || 'Non renseigné'}</p>
+                      <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.lastName')}</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.lastName || t('bookings.details.notProvided')}</p>
                     </div>
                     <div className="p-3 bg-card rounded-lg border border-border/50">
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Prénom</p>
-                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.firstName || 'Non renseigné'}</p>
+                      <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.firstName')}</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.firstName || t('bookings.details.notProvided')}</p>
                     </div>
                     <div className="p-3 bg-card rounded-lg border border-border/50">
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Téléphone</p>
-                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.phone || 'Non renseigné'}</p>
+                      <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.phone')}</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.phone || t('bookings.details.notProvided')}</p>
                     </div>
                     <div className="p-3 bg-card rounded-lg border border-border/50">
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Email</p>
-                      <p className="text-sm font-bold text-foreground break-all leading-tight">{currentUser.email || 'Non renseigné'}</p>
+                      <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.email')}</p>
+                      <p className="text-sm font-bold text-foreground break-all leading-tight">{currentUser.email || t('bookings.details.notProvided')}</p>
                     </div>
                   </div>
                 </div>
@@ -1245,9 +1506,9 @@ export default function RenterBookingCard({
                 <MapPin className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-muted-foreground mb-1">Zone de prise en charge</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('bookings.details.pickupZone')}</p>
                 <p className="text-base font-semibold text-foreground">
-                  {(booking as any).pickupLocation || 'Non spécifiée'}
+                  {(booking as any).pickupLocation || t('bookings.details.notSpecified')}
                 </p>
               </div>
             </div>
@@ -1260,14 +1521,15 @@ export default function RenterBookingCard({
                 <div className="p-2 bg-primary-soft rounded-lg">
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
-                <h4 className="text-sm font-semibold text-foreground">Dates de location</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t('bookings.details.rentalDates')}</h4>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-card rounded-lg border border-border/50 space-y-1">
+                  {/* TODO(i18n): bookings.details.departure */}
                   <p className="text-xs text-muted-foreground font-medium">Départ</p>
                   <p className="text-sm font-bold text-foreground">
-                    {format(new Date(booking.startDate), "EEEE d MMMM yyyy", { locale: fr })}
+                    {format(new Date(booking.startDate), "EEEE d MMMM yyyy", { locale: dateLocale })}
                   </p>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                     <Clock className="h-3.5 w-3.5" />
@@ -1276,9 +1538,10 @@ export default function RenterBookingCard({
                 </div>
 
                 <div className="p-3 bg-card rounded-lg border border-border/50 space-y-1">
+                  {/* TODO(i18n): bookings.details.return */}
                   <p className="text-xs text-muted-foreground font-medium">Retour</p>
                   <p className="text-sm font-bold text-foreground">
-                    {format(new Date(booking.endDate), "EEEE d MMMM yyyy", { locale: fr })}
+                    {format(new Date(booking.endDate), "EEEE d MMMM yyyy", { locale: dateLocale })}
                   </p>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                     <Clock className="h-3.5 w-3.5" />
@@ -1289,6 +1552,7 @@ export default function RenterBookingCard({
 
               <div className="flex items-start justify-center">
                 <Badge variant="default" className="text-sm px-4 py-1.5 bg-primary text-white font-semibold">
+                  {/* TODO(i18n): bookings.details.duration */}
                   Durée : {calculateRealDuration()}
                 </Badge>
               </div>
@@ -1304,7 +1568,7 @@ export default function RenterBookingCard({
                   <div className="p-2 bg-primary-soft rounded-lg">
                     <Euro className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="text-sm font-semibold text-foreground">Tarif de base</span>
+                  <span className="text-sm font-semibold text-foreground">{t('bookings.details.baseRate')}</span>
                 </div>
 
                 <div className="bg-card rounded-lg border border-border/50 p-3 space-y-2">
@@ -1313,7 +1577,7 @@ export default function RenterBookingCard({
                       Location véhicule
                     </span>
                     <span className="text-base font-bold text-primary">
-                      {(() => {
+                      {formatMoney((() => {
                         if (booking.vehicle?.dailyPrice) {
                           const startDate = new Date(booking.startDate)
                           const endDate = new Date(booking.endDate)
@@ -1331,24 +1595,27 @@ export default function RenterBookingCard({
                           let durationText: string;
                           if (rentalHours < 24) {
                             basePrice = booking.vehicle.dailyPrice
-                            durationText = '1 jour'
+                            durationText = t('duration.day_one', { count: 1 })
                           } else if (extraHours === 0) {
                             basePrice = completeDays * booking.vehicle.dailyPrice
-                            durationText = `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`
+                            durationText = t('duration.day_other', { count: completeDays })
                           } else {
                             const hourPrice = booking.vehicle.dailyPrice / 24
                             const extraHoursPrice = extraHours * hourPrice
                             basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + extraHoursPrice)
-                            durationText = `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`
+                            const daysText = t('duration.day_other', { count: completeDays })
+                            const hoursText = t('duration.hour_other', { count: Math.floor(extraHours) })
+                            const separator = t('duration.separator')
+                            durationText = `${daysText}${separator}${hoursText}`
                           }
                           return { price: basePrice, duration: durationText }
                         }
                         return { price: 0, duration: '' }
-                      })().price}€
+                      })().price)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground text-right">
-                    {booking.vehicle?.dailyPrice}€/jour × {(() => {
+                    {formatMoney(booking.vehicle?.dailyPrice || 0)}/jour × {(() => {
                       if (booking.vehicle?.dailyPrice) {
                         const startDate = new Date(booking.startDate)
                         const endDate = new Date(booking.endDate)
@@ -1364,11 +1631,14 @@ export default function RenterBookingCard({
                         
                         let durationText: string;
                         if (rentalHours < 24) {
-                          durationText = '1 jour'
+                          durationText = t('duration.day_one', { count: 1 })
                         } else if (extraHours === 0) {
-                          durationText = `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`
+                          durationText = t('duration.day_other', { count: completeDays })
                         } else {
-                          durationText = `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`
+                          const daysText = t('duration.day_other', { count: completeDays })
+                          const hoursText = t('duration.hour_other', { count: Math.floor(extraHours) })
+                          const separator = t('duration.separator')
+                          durationText = `${daysText}${separator}${hoursText}`
                         }
                         return durationText
                       }
@@ -1387,6 +1657,7 @@ export default function RenterBookingCard({
                       <div className="p-2 bg-primary-soft rounded-lg">
                         <Plus className="h-5 w-5 text-primary" />
                       </div>
+                      {/* TODO(i18n): bookings.details.selectedOptions */}
                       <span className="text-sm font-semibold text-foreground">Options sélectionnées</span>
                     </div>
 
@@ -1397,14 +1668,15 @@ export default function RenterBookingCard({
                             {option.name}
                           </span>
                           <span className="text-base font-bold text-primary min-w-[60px] text-right">
-                            + {option.totalPrice}€
+                            + {formatMoney(option.totalPrice)}
                           </span>
                         </div>
                       ))}
                       <div className="pt-2 border-t border-border/50 mt-2">
                         <div className="flex justify-between items-center">
+                          {/* TODO(i18n): bookings.details.optionsSubtotal */}
                           <span className="text-sm text-muted-foreground font-medium">Sous-total options</span>
-                          <span className="text-base font-bold text-foreground">{getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)}€</span>
+                          <span className="text-base font-bold text-foreground">{formatMoney(getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0))}</span>
                         </div>
                       </div>
                     </div>
@@ -1418,7 +1690,7 @@ export default function RenterBookingCard({
               <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground font-medium">Sous-total</span>
-                  <span className="text-base font-bold text-foreground min-w-[100px] text-right">{(() => {
+                  <span className="text-base font-bold text-foreground min-w-[100px] text-right">{formatMoney((() => {
                     if (booking.vehicle?.dailyPrice) {
                       const startDate = new Date(booking.startDate)
                       const endDate = new Date(booking.endDate)
@@ -1447,15 +1719,16 @@ export default function RenterBookingCard({
                       return basePrice + optionsTotal
                     }
                     return 0
-                  })()}€</span>
+                  })())}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
+                  {/* TODO(i18n): bookings.details.serviceFee */}
                   <span className="text-sm text-muted-foreground font-medium">
                     Frais de service (15%)
                   </span>
                   <span className="text-base font-bold text-muted-foreground min-w-[100px] text-right">
-                    + {(() => {
+                    + {formatMoney((() => {
                       if (booking.vehicle?.dailyPrice) {
                         const startDate = new Date(booking.startDate)
                         const endDate = new Date(booking.endDate)
@@ -1482,19 +1755,20 @@ export default function RenterBookingCard({
                         
                         const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)
                         const subtotal = basePrice + optionsTotal
-                        return Math.round(subtotal * 0.15 * 100) / 100
+                        return calcServiceFeeRenter(subtotal)
                       }
                       return 0
-                    })()}€
+                    })())}
                   </span>
                 </div>
 
                 <Separator className="border-primary/30" />
 
                 <div className="flex justify-between items-center pt-2">
+                  {/* TODO(i18n): bookings.details.totalToPay */}
                   <span className="text-lg font-bold text-foreground">TOTAL À PAYER</span>
                   <span className="text-3xl font-bold text-primary min-w-[100px] text-right">
-                    {(() => {
+                    {formatMoney((() => {
                       if (booking.vehicle?.dailyPrice) {
                         const startDate = new Date(booking.startDate)
                         const endDate = new Date(booking.endDate)
@@ -1521,11 +1795,11 @@ export default function RenterBookingCard({
                         
                         const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)
                         const subtotal = basePrice + optionsTotal
-                        const serviceFee = Math.round(subtotal * 0.15 * 100) / 100
-                        return Math.round((subtotal + serviceFee) * 100) / 100
+                        const serviceFee = calcServiceFeeRenter(subtotal)
+                        return calcRenterTotal(subtotal)
                       }
                       return 0
-                    })()}€
+                    })())}
                   </span>
                 </div>
               </div>
@@ -1541,14 +1815,14 @@ export default function RenterBookingCard({
             className="flex-1"
           >
             <Download className="h-4 w-4 mr-2" />
-            Télécharger en PDF
+            {t('bookings.details.downloadPdf')}
           </Button>
           <Button
             variant="default"
             onClick={() => setShowDetailsModal(false)}
             className="flex-1"
           >
-            Fermer
+            {t('bookings.details.close')}
           </Button>
         </div>
       </DialogContent>

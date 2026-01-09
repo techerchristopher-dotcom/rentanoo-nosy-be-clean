@@ -1,4 +1,0 @@
-# Configuration Supabase Edge Function : stripe-webhook
-[functions.stripe-webhook]
-verify_jwt = false
-
