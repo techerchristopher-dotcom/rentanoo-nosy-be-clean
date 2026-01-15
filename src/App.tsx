@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,43 +6,48 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { PageLoader } from "@/components/ui/page-loader";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
+// Routes critiques (chargées immédiatement)
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Callback from "./pages/auth/Callback";
 import Profile from "./pages/Profile";
 import ProfileTest from "./pages/ProfileTest";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import VehicleDetails from "./pages/vehicles/VehicleDetails";
 import BookingDiscussion from "./pages/booking/BookingDiscussion";
 import MessageToOwners from "./pages/booking/MessageToOwners";
-import RenterBookings from "./pages/renter/RenterBookings";
-import PaymentSuccess from "./pages/renter/PaymentSuccess";
-import PaymentCancel from "./pages/renter/PaymentCancel";
-import OwnerVehicles from "./pages/owner/OwnerVehicles";
-import OwnerBookings from "./pages/owner/OwnerBookings";
-import OwnerBookingRequests from "./pages/owner/OwnerBookingRequests";
-import OwnerBookingDiscussion from "./pages/owner/OwnerBookingDiscussion";
-import ManageVehicle from "./pages/owner/ManageVehicle";
-import AddVehicle from "./pages/owner/AddVehicle";
-import AddMotoPlaceholder from "./pages/owner/AddMotoPlaceholder";
-import Dashboard from "./pages/owner/Dashboard";
-import RentMyCarLanding from "./pages/owner/RentMyCarLanding";
-import RentMyCarRegister from "./pages/owner/RentMyCarRegister";
-import Admin from "./pages/admin/Admin";
 import Legal from "./pages/legal/Legal";
 import Contact from "./pages/Contact";
-import { PickerDemo } from "./pages/PickerDemo";
-import AirportServicesDemo from "./pages/AirportServicesDemo";
-import SimpleTest from "./pages/SimpleTest";
-import DictionaryIndex from "./pages/dictionary/DictionaryIndex";
-import DictionaryEntryPage from "./pages/dictionary/DictionaryEntry";
 import NotFound from "./pages/NotFound";
-import Checking from "./pages/Checking";
-import CheckinReturnPage from "./pages/checkin-return/[bookingId]";
-import MotoVehicleDetails from "./pages/vehicles/MotoVehicleDetails";
+
+// Routes non critiques (lazy-loaded)
+const VehicleDetails = lazy(() => import("./pages/vehicles/VehicleDetails"));
+const MotoVehicleDetails = lazy(() => import("./pages/vehicles/MotoVehicleDetails"));
+const RenterBookings = lazy(() => import("./pages/renter/RenterBookings"));
+const PaymentSuccess = lazy(() => import("./pages/renter/PaymentSuccess"));
+const PaymentCancel = lazy(() => import("./pages/renter/PaymentCancel"));
+const Dashboard = lazy(() => import("./pages/owner/Dashboard"));
+const OwnerVehicles = lazy(() => import("./pages/owner/OwnerVehicles"));
+const OwnerBookings = lazy(() => import("./pages/owner/OwnerBookings"));
+const OwnerBookingRequests = lazy(() => import("./pages/owner/OwnerBookingRequests"));
+const OwnerBookingDiscussion = lazy(() => import("./pages/owner/OwnerBookingDiscussion"));
+const ManageVehicle = lazy(() => import("./pages/owner/ManageVehicle"));
+const AddVehicle = lazy(() => import("./pages/owner/AddVehicle"));
+const AddMotoPlaceholder = lazy(() => import("./pages/owner/AddMotoPlaceholder"));
+const RentMyCarLanding = lazy(() => import("./pages/owner/RentMyCarLanding"));
+const RentMyCarRegister = lazy(() => import("./pages/owner/RentMyCarRegister"));
+const Admin = lazy(() => import("./pages/admin/Admin"));
+const Checking = lazy(() => import("./pages/Checking"));
+const CheckinReturnPage = lazy(() => import("./pages/checkin-return/[bookingId]"));
+const DictionaryIndex = lazy(() => import("./pages/dictionary/DictionaryIndex"));
+const DictionaryEntryPage = lazy(() => import("./pages/dictionary/DictionaryEntry"));
+const PickerDemo = lazy(() => import("./pages/PickerDemo").then(m => ({ default: m.PickerDemo })));
+const AirportServicesDemo = lazy(() => import("./pages/AirportServicesDemo"));
+const SimpleTest = lazy(() => import("./pages/SimpleTest"));
 // DEV ONLY - Diagnostic i18n
-import I18nDebug from "./pages/__I18nDebug";
+const I18nDebug = lazy(() => import("./pages/__I18nDebug"));
 
 const queryClient = new QueryClient();
 
@@ -60,6 +66,7 @@ const App = () => (
                 <LanguageSwitcher />
               </div>
               <Routes>
+            {/* Routes critiques (chargées immédiatement) */}
             <Route path="/" element={<Index />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
@@ -70,37 +77,135 @@ const App = () => (
               </ErrorBoundary>
             } />
             <Route path="/profile-test" element={<ProfileTest />} />
-            <Route path="/vehicle/:license" element={<VehicleDetails />} />
             <Route path="/vehicle/:license/booking/discussion" element={<BookingDiscussion />} />
-            <Route path="/moto/:license" element={<MotoVehicleDetails />} />
             <Route path="/moto/:license/booking/discussion" element={<BookingDiscussion />} />
             <Route path="/booking/message" element={<MessageToOwners />} />
-            <Route path="/me/dashboard" element={<Dashboard />} />
-            <Route path="/me/renter/bookings" element={<RenterBookings />} />
-            <Route path="/success" element={<PaymentSuccess />} />
-            <Route path="/cancel" element={<PaymentCancel />} />
-            <Route path="/me/owner/vehicles" element={<OwnerVehicles />} />
-            <Route path="/me/owner/bookings" element={<OwnerBookings />} />
-            <Route path="/me/owner/requests" element={<OwnerBookingRequests />} />
-            <Route path="/me/owner/requests/:conversationId/discussion" element={<OwnerBookingDiscussion />} />
-            <Route path="/me/owner/vehicles/add" element={<AddVehicle />} />
-            <Route path="/me/owner/vehicles/add-moto" element={<AddMotoPlaceholder />} />
-            <Route path="/me/owner/vehicles/:vehicleId/manage" element={<ManageVehicle />} />
-            <Route path="/rent-my-car" element={<RentMyCarLanding />} />
-            <Route path="/rent-my-car/register" element={<RentMyCarRegister />} />
-            <Route path="/admin" element={<Admin />} />
             <Route path="/legal" element={<Legal />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/picker-demo" element={<PickerDemo />} />
-            <Route path="/airport-services-demo" element={<AirportServicesDemo />} />
-            <Route path="/simple-test" element={<SimpleTest />} />
-            <Route path="/dictionary" element={<DictionaryIndex />} />
-            <Route path="/dictionary/:id" element={<DictionaryEntryPage />} />
-            <Route path="/checking/:bookingId" element={<Checking />} />
-            <Route path="/checkin-return/:bookingId" element={<CheckinReturnPage />} />
+            
+            {/* Routes non critiques (lazy-loaded) */}
+            <Route path="/vehicle/:license" element={
+              <Suspense fallback={<PageLoader />}>
+                <VehicleDetails />
+              </Suspense>
+            } />
+            <Route path="/moto/:license" element={
+              <Suspense fallback={<PageLoader />}>
+                <MotoVehicleDetails />
+              </Suspense>
+            } />
+            <Route path="/me/dashboard" element={
+              <Suspense fallback={<PageLoader />}>
+                <Dashboard />
+              </Suspense>
+            } />
+            <Route path="/me/renter/bookings" element={
+              <Suspense fallback={<PageLoader />}>
+                <RenterBookings />
+              </Suspense>
+            } />
+            <Route path="/success" element={
+              <Suspense fallback={<PageLoader />}>
+                <PaymentSuccess />
+              </Suspense>
+            } />
+            <Route path="/cancel" element={
+              <Suspense fallback={<PageLoader />}>
+                <PaymentCancel />
+              </Suspense>
+            } />
+            <Route path="/me/owner/vehicles" element={
+              <Suspense fallback={<PageLoader />}>
+                <OwnerVehicles />
+              </Suspense>
+            } />
+            <Route path="/me/owner/bookings" element={
+              <Suspense fallback={<PageLoader />}>
+                <OwnerBookings />
+              </Suspense>
+            } />
+            <Route path="/me/owner/requests" element={
+              <Suspense fallback={<PageLoader />}>
+                <OwnerBookingRequests />
+              </Suspense>
+            } />
+            <Route path="/me/owner/requests/:conversationId/discussion" element={
+              <Suspense fallback={<PageLoader />}>
+                <OwnerBookingDiscussion />
+              </Suspense>
+            } />
+            <Route path="/me/owner/vehicles/add" element={
+              <Suspense fallback={<PageLoader />}>
+                <AddVehicle />
+              </Suspense>
+            } />
+            <Route path="/me/owner/vehicles/add-moto" element={
+              <Suspense fallback={<PageLoader />}>
+                <AddMotoPlaceholder />
+              </Suspense>
+            } />
+            <Route path="/me/owner/vehicles/:vehicleId/manage" element={
+              <Suspense fallback={<PageLoader />}>
+                <ManageVehicle />
+              </Suspense>
+            } />
+            <Route path="/rent-my-car" element={
+              <Suspense fallback={<PageLoader />}>
+                <RentMyCarLanding />
+              </Suspense>
+            } />
+            <Route path="/rent-my-car/register" element={
+              <Suspense fallback={<PageLoader />}>
+                <RentMyCarRegister />
+              </Suspense>
+            } />
+            <Route path="/admin" element={
+              <Suspense fallback={<PageLoader />}>
+                <Admin />
+              </Suspense>
+            } />
+            <Route path="/checking/:bookingId" element={
+              <Suspense fallback={<PageLoader />}>
+                <Checking />
+              </Suspense>
+            } />
+            <Route path="/checkin-return/:bookingId" element={
+              <Suspense fallback={<PageLoader />}>
+                <CheckinReturnPage />
+              </Suspense>
+            } />
+            <Route path="/dictionary" element={
+              <Suspense fallback={<PageLoader />}>
+                <DictionaryIndex />
+              </Suspense>
+            } />
+            <Route path="/dictionary/:id" element={
+              <Suspense fallback={<PageLoader />}>
+                <DictionaryEntryPage />
+              </Suspense>
+            } />
+            <Route path="/picker-demo" element={
+              <Suspense fallback={<PageLoader />}>
+                <PickerDemo />
+              </Suspense>
+            } />
+            <Route path="/airport-services-demo" element={
+              <Suspense fallback={<PageLoader />}>
+                <AirportServicesDemo />
+              </Suspense>
+            } />
+            <Route path="/simple-test" element={
+              <Suspense fallback={<PageLoader />}>
+                <SimpleTest />
+              </Suspense>
+            } />
             {/* DEV ONLY - Diagnostic i18n */}
             {import.meta.env.DEV && (
-              <Route path="/__i18n_debug" element={<I18nDebug />} />
+              <Route path="/__i18n_debug" element={
+                <Suspense fallback={<PageLoader />}>
+                  <I18nDebug />
+                </Suspense>
+              } />
             )}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
