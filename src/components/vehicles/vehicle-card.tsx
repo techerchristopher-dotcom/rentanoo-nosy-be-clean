@@ -18,6 +18,12 @@ import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
 import { formatDuration } from "@/utils/formatDuration";
+import { 
+  getOptimizedImageUrl, 
+  generateSrcSet, 
+  IMAGE_SIZES, 
+  IMAGE_WIDTHS 
+} from "@/utils/imageOptimization";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -25,6 +31,8 @@ interface VehicleCardProps {
   onClick?: () => void;
   className?: string;
   rentalInfo?: VehicleRentalInfo; // Informations de location (optionnel)
+  /** Index dans la liste pour déterminer si lazy-load (0 = eager, autres = lazy) */
+  index?: number;
 }
 
 const fuelIcons = {
@@ -50,7 +58,7 @@ const getLocationIcon = (zone: string) => {
   }
 };
 
-export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalInfo }: VehicleCardProps) {
+export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalInfo, index = 0 }: VehicleCardProps) {
   const {
     t: t,
   } = useTranslation('common');
@@ -141,12 +149,30 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
     >
       {/* Image */}
       <div className="aspect-[4/3] relative overflow-hidden">
-        <img
-          src={primaryPhoto?.url || PLACEHOLDER_URL}
-          alt={`${vehicle.brand} ${vehicle.model}`}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-          onError={handleImageError}
-        />
+        {(() => {
+          const imageUrl = primaryPhoto?.url || PLACEHOLDER_URL;
+          const isSupabaseUrl = imageUrl.includes('supabase.co/storage');
+          const srcSet = isSupabaseUrl ? generateSrcSet(imageUrl, IMAGE_WIDTHS.CARD) : undefined;
+          const sizes = IMAGE_SIZES.CARD_GRID;
+          const optimizedSrc = isSupabaseUrl ? getOptimizedImageUrl(imageUrl, 400) : imageUrl;
+          // Lazy load sauf pour les 3 premières images (above the fold)
+          const loading = index < 3 ? 'eager' : 'lazy';
+          
+          return (
+            <img
+              src={optimizedSrc}
+              srcSet={srcSet}
+              sizes={sizes}
+              alt={`${vehicle.brand} ${vehicle.model}`}
+              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+              loading={loading}
+              decoding="async"
+              width={400}
+              height={300}
+              onError={handleImageError}
+            />
+          );
+        })()}
         <div className="absolute top-3 left-3">
           <Badge variant="secondary" className="bg-card/90 backdrop-blur-sm">
             {vehicle.license}

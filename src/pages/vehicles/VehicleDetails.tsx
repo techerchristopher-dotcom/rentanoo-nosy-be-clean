@@ -70,6 +70,12 @@ import { PhotoService } from "@/services/supabase/photos";
 import VehicleOwnerCard from "@/components/VehicleOwnerCard";
 import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptions";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  getOptimizedImageUrl, 
+  generateSrcSet, 
+  IMAGE_SIZES, 
+  IMAGE_WIDTHS 
+} from "@/utils/imageOptimization";
 
 // Fonction pour obtenir l'icône appropriée selon la zone
 const getLocationIcon = (zone: string) => {
@@ -890,11 +896,28 @@ export default function VehicleDetails() {
               {/* Photos Gallery */}
               <div className="space-y-4">
                 <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-muted">
-                  <img
-                    src={photos[selectedPhotoIndex]?.url || primaryPhoto?.url || "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop"}
-                    alt={`${vehicle.brand} ${vehicle.model}`}
-                    className="w-full h-full object-cover"
-                  />
+                  {(() => {
+                    const currentPhoto = photos[selectedPhotoIndex] || primaryPhoto;
+                    const imageUrl = currentPhoto?.url || "https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop";
+                    const isSupabaseUrl = imageUrl.includes('supabase.co/storage');
+                    const srcSet = isSupabaseUrl ? generateSrcSet(imageUrl, IMAGE_WIDTHS.DETAIL) : undefined;
+                    const sizes = IMAGE_SIZES.DETAIL_MAIN;
+                    const optimizedSrc = isSupabaseUrl ? getOptimizedImageUrl(imageUrl, 800) : imageUrl;
+                    
+                    return (
+                      <img
+                        src={optimizedSrc}
+                        srcSet={srcSet}
+                        sizes={sizes}
+                        alt={`${vehicle.brand} ${vehicle.model}`}
+                        className="w-full h-full object-cover"
+                        loading="eager"
+                        decoding="async"
+                        width={800}
+                        height={600}
+                      />
+                    );
+                  })()}
                   {photos.length > 1 && (
                     <>
                       <Button
@@ -923,23 +946,35 @@ export default function VehicleDetails() {
                 {/* Photo Thumbnails */}
                 {photos.length > 1 && (
                   <div className="grid grid-cols-6 gap-2">
-                    {photos.slice(0, 6).map((photo, index) => (
-                      <button
-                        key={photo.id}
-                        onClick={() => setSelectedPhotoIndex(index)}
-                        className={`aspect-square rounded-lg overflow-hidden transition-all ${
-                          selectedPhotoIndex === index 
-                            ? "ring-2 ring-primary" 
-                            : "hover:ring-2 hover:ring-primary/50"
-                        }`}
-                      >
-                        <img
-                          src={photo.url}
-                          alt={`Vue ${photo.angle}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
+                    {photos.slice(0, 6).map((photo, index) => {
+                      const isSupabaseUrl = photo.url.includes('supabase.co/storage');
+                      const srcSet = isSupabaseUrl ? generateSrcSet(photo.url, IMAGE_WIDTHS.THUMBNAIL) : undefined;
+                      const optimizedSrc = isSupabaseUrl ? getOptimizedImageUrl(photo.url, 150) : photo.url;
+                      
+                      return (
+                        <button
+                          key={photo.id}
+                          onClick={() => setSelectedPhotoIndex(index)}
+                          className={`aspect-square rounded-lg overflow-hidden transition-all ${
+                            selectedPhotoIndex === index 
+                              ? "ring-2 ring-primary" 
+                              : "hover:ring-2 hover:ring-primary/50"
+                          }`}
+                        >
+                          <img
+                            src={optimizedSrc}
+                            srcSet={srcSet}
+                            sizes={IMAGE_SIZES.THUMBNAIL}
+                            alt={`Vue ${photo.angle}`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                            width={150}
+                            height={150}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -711,6 +711,7 @@ const Index = () => {
                         primaryPhoto={photos[vehicle.id] ?? null}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}
+                        index={filteredVehicles.indexOf(vehicle)}
                       />
                     ) : (
                       <VehicleCard
@@ -719,6 +720,7 @@ const Index = () => {
                         primaryPhoto={photos[vehicle.id] ?? null}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}
+                        index={filteredVehicles.indexOf(vehicle)}
                       />
                     );
                   })}
