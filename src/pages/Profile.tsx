@@ -18,8 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { User as UserType } from "@/types";
 import { ProfileService } from "@/services/supabase/profile";
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
+import { LazyPhoneInput } from "@/components/ui/lazy-phone-input";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -1399,7 +1398,7 @@ export default function Profile() {
                   <Label htmlFor="phone" className="text-sm font-medium text-muted-foreground">
                     {t("profile.form.phone.label", "Numéro de téléphone")}
                   </Label>
-                  <PhoneInput
+                  <LazyPhoneInput
                     placeholder={t(
                       "profile.form.phone.placeholder",
                       "Numéro de téléphone"

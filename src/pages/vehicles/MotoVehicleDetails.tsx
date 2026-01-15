@@ -55,8 +55,7 @@ import { MultiVehicleModal } from "@/components/vehicles/MultiVehicleModal";
 import { BookingConfirmationModal } from "@/components/booking/BookingConfirmationModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
+import { LazyPhoneInput } from "@/components/ui/lazy-phone-input";
 import { Loader2 } from "lucide-react";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
 import { ProfileService } from "@/services/supabase/profile";
@@ -1428,7 +1427,7 @@ export default function MotoVehicleDetails() {
               <Label htmlFor="phone-modal" className="text-sm font-medium">
                 Numéro de téléphone
               </Label>
-              <PhoneInput
+              <LazyPhoneInput
                 id="phone-modal"
                 placeholder="Numéro de téléphone"
                 value={phone}

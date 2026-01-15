@@ -10,8 +10,7 @@ import { de as deLocale } from "date-fns/locale/de";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { LazyDatePicker } from "@/components/ui/lazy-date-picker";
 import {
   Select,
   SelectContent,
@@ -380,8 +379,8 @@ export function SearchBarAirbnb({
                   </button>
                 </div>
             
-            {/* Calendrier Airbnb avec react-datepicker */}
-            <DatePicker
+            {/* Calendrier Airbnb avec react-datepicker (lazy-loaded) */}
+            <LazyDatePicker
               selected={startDate}
               onChange={(dates) => {
                 console.log('🗓️ DatePicker onChange:', dates);

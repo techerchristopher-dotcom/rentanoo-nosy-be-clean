@@ -1,6 +1,5 @@
 import { useState, forwardRef } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { LazyDatePicker } from "@/components/ui/lazy-date-picker";
 import { Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale/fr";
@@ -68,7 +67,7 @@ export function DateRangePicker({
     <div className="flex flex-col md:flex-row gap-0 rounded-full overflow-hidden shadow-lagoon">
       {/* Date de départ */}
       <div className="flex-1">
-        <DatePicker
+        <LazyDatePicker
           selected={startDate}
           onChange={(date) => {
             onStartDateChange(date);
@@ -109,7 +108,7 @@ export function DateRangePicker({
 
       {/* Date de retour */}
       <div className="flex-1">
-        <DatePicker
+        <LazyDatePicker
           selected={endDate}
           onChange={(date) => {
             onEndDateChange(date);
