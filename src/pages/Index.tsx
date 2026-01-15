@@ -693,7 +693,7 @@ const Index = () => {
                 </div>
               ) : !loading && filteredVehicles.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredVehicles.map((vehicle) => {
+                  {filteredVehicles.map((vehicle, index) => {
                     // Calculer les informations de location pour ce véhicule
                     const vehicleRentalInfo = rentalCalculation 
                       ? getVehicleRentalInfo(vehicle.id, vehicle.price_per_day)
@@ -711,7 +711,7 @@ const Index = () => {
                         primaryPhoto={photos[vehicle.id] ?? null}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}
-                        index={filteredVehicles.indexOf(vehicle)}
+                        index={index}
                       />
                     ) : (
                       <VehicleCard
@@ -720,7 +720,7 @@ const Index = () => {
                         primaryPhoto={photos[vehicle.id] ?? null}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}
-                        index={filteredVehicles.indexOf(vehicle)}
+                        index={index}
                       />
                     );
                   })}
