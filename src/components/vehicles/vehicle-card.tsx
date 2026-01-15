@@ -84,6 +84,11 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
   const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
     
+    // Guard: éviter les boucles - si fallback déjà appliqué, ne rien faire
+    if (img.dataset.fallbackApplied === "1") {
+      return;
+    }
+
     // Si on est déjà sur le placeholder, ne rien faire
     if (img.src === PLACEHOLDER_URL) {
       return;
@@ -92,12 +97,18 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
     // Si on a déjà un fallback en mémoire, l'utiliser
     if (fallbackImageUrl) {
       img.src = fallbackImageUrl;
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.dataset.fallbackApplied = "1";
       return;
     }
 
     // Éviter les appels multiples simultanés
     if (isFetchingFallback.current) {
       img.src = PLACEHOLDER_URL;
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.dataset.fallbackApplied = "1";
       return;
     }
 
@@ -111,6 +122,9 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
         // Aucune photo disponible → placeholder
         setFallbackImageUrl(PLACEHOLDER_URL);
         img.src = PLACEHOLDER_URL;
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+        img.dataset.fallbackApplied = "1";
         return;
       }
 
@@ -119,14 +133,23 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
       if (firstValidPhoto && firstValidPhoto.url) {
         setFallbackImageUrl(firstValidPhoto.url);
         img.src = firstValidPhoto.url;
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+        img.dataset.fallbackApplied = "1";
       } else {
         setFallbackImageUrl(PLACEHOLDER_URL);
         img.src = PLACEHOLDER_URL;
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+        img.dataset.fallbackApplied = "1";
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des photos de fallback:', error);
       setFallbackImageUrl(PLACEHOLDER_URL);
       img.src = PLACEHOLDER_URL;
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.dataset.fallbackApplied = "1";
     } finally {
       isFetchingFallback.current = false;
     }

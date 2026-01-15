@@ -66,17 +66,28 @@ export function MotoVehicleCard({
   const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
 
+    // Guard: éviter les boucles - si fallback déjà appliqué, ne rien faire
+    if (img.dataset.fallbackApplied === "1") {
+      return;
+    }
+
     if (img.src === PLACEHOLDER_URL) {
       return;
     }
 
     if (fallbackImageUrl) {
       img.src = fallbackImageUrl;
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.dataset.fallbackApplied = "1";
       return;
     }
 
     if (isFetchingFallback.current) {
       img.src = PLACEHOLDER_URL;
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.dataset.fallbackApplied = "1";
       return;
     }
 
@@ -90,6 +101,9 @@ export function MotoVehicleCard({
       if (error || !availablePhotos || availablePhotos.length === 0) {
         setFallbackImageUrl(PLACEHOLDER_URL);
         img.src = PLACEHOLDER_URL;
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+        img.dataset.fallbackApplied = "1";
         return;
       }
 
@@ -97,9 +111,15 @@ export function MotoVehicleCard({
       if (firstValidPhoto && firstValidPhoto.url) {
         setFallbackImageUrl(firstValidPhoto.url);
         img.src = firstValidPhoto.url;
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+        img.dataset.fallbackApplied = "1";
       } else {
         setFallbackImageUrl(PLACEHOLDER_URL);
         img.src = PLACEHOLDER_URL;
+        img.removeAttribute("srcset");
+        img.removeAttribute("sizes");
+        img.dataset.fallbackApplied = "1";
       }
     } catch (error) {
       console.error(
@@ -108,6 +128,9 @@ export function MotoVehicleCard({
       );
       setFallbackImageUrl(PLACEHOLDER_URL);
       img.src = PLACEHOLDER_URL;
+      img.removeAttribute("srcset");
+      img.removeAttribute("sizes");
+      img.dataset.fallbackApplied = "1";
     } finally {
       isFetchingFallback.current = false;
     }
