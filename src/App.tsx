@@ -5,9 +5,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Navbar } from "@/components/layout/navbar";
 
 // Routes critiques (chargées immédiatement)
 import Index from "./pages/Index";
@@ -65,6 +66,8 @@ const App = () => (
               <div className="fixed bottom-4 right-4 z-50">
                 <LanguageSwitcher />
               </div>
+              {/* Navbar - Rendu directement pour éviter les problèmes de ErrorBoundary */}
+              <Navbar />
               <Routes>
             {/* Routes critiques (chargées immédiatement) */}
             <Route path="/" element={<Index />} />
