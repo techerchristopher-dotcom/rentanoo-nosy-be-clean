@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { MotoVehicleCard } from "@/components/vehicles/moto-vehicle-card";
@@ -544,7 +543,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft">
-      <Navbar />
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-gradient-lagoon text-white py-16 lg:py-24">

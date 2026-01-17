@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2, Mail, Send } from "lucide-react";
 
 // Schéma de validation
@@ -28,7 +28,6 @@ type ContactFormData = z.infer<typeof contactFormSchema>;
 
 export default function Contact() {
   const { t } = useTranslation("common");
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -47,7 +46,18 @@ export default function Contact() {
       return;
     }
 
-    setIsSubmitting(true);
+    // Utiliser startTransition pour éviter les re-renders synchrones
+    // qui peuvent causer des problèmes avec les composants Radix UI (DropdownMenu, etc.)
+    startTransition(() => {
+      setIsSubmitting(true);
+    });
+
+    // Déterminer l'URL de l'API selon l'environnement (déclaré avant try pour être accessible dans catch)
+    // Stratégie robuste :
+    // 1. Si VITE_API_URL est défini, l'utiliser (backend sur autre domaine)
+    // 2. Sinon, utiliser une URL relative (backend sur même domaine - fonctionne en prod et dev via proxy Vite)
+    const apiBase = import.meta.env.VITE_API_URL?.trim();
+    const apiUrl = apiBase ? `${apiBase}/api/contact` : "/api/contact";
 
     try {
       const formData = new FormData();
@@ -65,50 +75,97 @@ export default function Contact() {
         const file = data.attachment[0];
         // Vérifier la taille (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
-          toast({
-            title: t("contact.error", "Erreur"),
-            description: t("contact.fileTooLarge", "Le fichier ne doit pas dépasser 10MB"),
-            variant: "destructive",
+          startTransition(() => {
+            setIsSubmitting(false);
           });
-          setIsSubmitting(false);
+          toast.error(t("contact.fileTooLarge", "Le fichier ne doit pas dépasser 10MB"), {
+            description: t("contact.error", "Erreur"),
+          });
           return;
         }
         formData.append("attachment", file);
       }
-
-      // Déterminer l'URL de l'API selon l'environnement
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-      const response = await fetch(`${apiUrl}/api/contact`, {
+      
+      console.log("[Contact] 📡 Envoi formulaire vers:", apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: "POST",
         body: formData,
       });
 
-      const result = await response.json();
+      // Logs détaillés pour le debugging
+      console.log("[Contact] 📥 Réponse reçue:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: apiUrl,
+      });
 
-      if (!response.ok) {
-        throw new Error(result.error || t("contact.errorGeneric", "Erreur lors de l'envoi"));
+      // Lire le body même en cas d'erreur pour avoir le message
+      let result;
+      try {
+        const text = await response.text();
+        result = text ? JSON.parse(text) : {};
+        console.log("[Contact] 📄 Body réponse:", result);
+      } catch (parseError) {
+        console.error("[Contact] ❌ Erreur parsing réponse:", parseError);
+        result = { error: "Erreur de communication avec le serveur" };
       }
 
-      toast({
-        title: t("contact.success", "Message envoyé !"),
+      if (!response.ok) {
+        const errorMessage = result.error || result.message || t("contact.errorGeneric", "Erreur lors de l'envoi");
+        console.error("[Contact] ❌ Erreur HTTP:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          url: apiUrl,
+        });
+        throw new Error(errorMessage);
+      }
+
+      toast.success(t("contact.success", "Message envoyé !"), {
         description: t("contact.successDescription", "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais."),
       });
 
-      reset();
+      // Reset après un court délai pour laisser le toast s'afficher
+      // Utiliser startTransition pour éviter les re-renders synchrones
+      setTimeout(() => {
+        startTransition(() => {
+          reset();
+        });
+      }, 100);
     } catch (error: any) {
-      console.error("Erreur envoi formulaire contact:", error);
-      toast({
-        title: t("contact.error", "Erreur"),
-        description: error.message || t("contact.errorGeneric", "Erreur, réessayez."),
-        variant: "destructive",
+      console.error("[Contact] ❌ Erreur envoi formulaire contact:", {
+        error: error.message || String(error),
+        name: error.name,
+        stack: error.stack,
+        url: apiUrl || "URL non déterminée",
+      });
+      
+      // Message d'erreur plus informatif
+      let errorMessage = error.message || t("contact.errorGeneric", "Erreur, réessayez.");
+      
+      // Si c'est une erreur réseau (ERR_CONNECTION_REFUSED, etc.)
+      if (error.message?.includes("Failed to fetch") || error.name === "TypeError") {
+        errorMessage = t(
+          "contact.errorNetwork",
+          "Impossible de contacter le serveur. Vérifiez votre connexion internet."
+        );
+        console.error("[Contact] ❌ Erreur réseau détectée - URL appelée:", apiUrl);
+      }
+      
+      toast.error(t("contact.error", "Erreur"), {
+        description: errorMessage,
       });
     } finally {
-      setIsSubmitting(false);
+      startTransition(() => {
+        setIsSubmitting(false);
+      });
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-soft">
+    <div className="min-h-screen flex flex-col bg-gradient-soft" translate="no">
       <Navbar />
       
       <main className="flex-1 py-8 md:py-12">

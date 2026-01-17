@@ -977,6 +977,7 @@
     "successDescription": "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.",
     "error": "Erreur",
     "errorGeneric": "Erreur, réessayez.",
+    "errorNetwork": "Impossible de contacter le serveur. Vérifiez votre connexion internet.",
     "fileTooLarge": "Le fichier ne doit pas dépasser 10MB"
   }
 }
