@@ -87,14 +87,22 @@ export default function Contact() {
         subject: data.subject,
         message: data.message,
         timestamp: new Date().toISOString(),
+        // Toujours inclure phone, même si vide (pour n8n)
+        phone: data.phone ?? "",
       };
 
-      // Ajouter le téléphone si présent
-      if (data.phone) {
-        payload.phone = data.phone;
-      }
-
       // Note: Pièce jointe ignorée pour l'instant (comme demandé)
+
+      // Log du payload avant envoi pour debugging
+      console.log("[Contact] 📦 payload sending", {
+        fullName: payload.fullName,
+        email: payload.email,
+        phone: payload.phone,
+        phoneLength: payload.phone?.length || 0,
+        phoneIsEmpty: !payload.phone || payload.phone.trim() === "",
+        subject: payload.subject,
+        hasTimestamp: !!payload.timestamp,
+      });
 
       console.log("[Contact] 📡 ABOUT TO FETCH - Envoi requête vers:", apiUrl);
       
