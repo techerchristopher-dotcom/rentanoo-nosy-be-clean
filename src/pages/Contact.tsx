@@ -40,58 +40,81 @@ export default function Contact() {
   });
 
   const onSubmit = async (data: ContactFormData) => {
+    console.log("[Contact] 🚀 SUBMIT START - Formulaire soumis");
+    
     // Vérification honeypot
     if (data.website) {
+      console.log("[Contact] 🤖 Bot détecté (honeypot), arrêt");
       // Bot détecté, ne rien faire
       return;
     }
+
+    console.log("[Contact] 📝 Données du formulaire:", {
+      fullName: data.fullName,
+      email: data.email,
+      subject: data.subject,
+      hasPhone: !!data.phone,
+      hasAttachment: !!(data.attachment && data.attachment.length > 0),
+    });
 
     // Utiliser startTransition pour éviter les re-renders synchrones
     // qui peuvent causer des problèmes avec les composants Radix UI (DropdownMenu, etc.)
     startTransition(() => {
       setIsSubmitting(true);
     });
+    console.log("[Contact] ✅ isSubmitting mis à true");
 
-    // Déterminer l'URL de l'API selon l'environnement (déclaré avant try pour être accessible dans catch)
+    // Déterminer l'URL de l'API selon l'environnement
     // Stratégie robuste :
     // 1. Si VITE_API_URL est défini, l'utiliser (backend sur autre domaine)
     // 2. Sinon, utiliser une URL relative (backend sur même domaine - fonctionne en prod et dev via proxy Vite)
     const apiBase = import.meta.env.VITE_API_URL?.trim();
     const apiUrl = apiBase ? `${apiBase}/api/contact` : "/api/contact";
+    console.log("[Contact] 🔗 URL API déterminée:", apiUrl);
+
+    // Créer un AbortController pour gérer le timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error("[Contact] ⏱️ TIMEOUT - La requête a pris plus de 15s, annulation");
+      controller.abort();
+    }, 15000); // 15 secondes
 
     try {
-      const formData = new FormData();
-      formData.append("fullName", data.fullName);
-      formData.append("email", data.email);
-      formData.append("subject", data.subject);
-      formData.append("message", data.message);
-      
+      // Préparer le payload JSON pour n8n
+      const payload: any = {
+        fullName: data.fullName,
+        email: data.email,
+        subject: data.subject,
+        message: data.message,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Ajouter le téléphone si présent
       if (data.phone) {
-        formData.append("phone", data.phone);
+        payload.phone = data.phone;
       }
 
-      // Ajouter la pièce jointe si présente
-      if (data.attachment && data.attachment.length > 0) {
-        const file = data.attachment[0];
-        // Vérifier la taille (max 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          startTransition(() => {
-            setIsSubmitting(false);
-          });
-          toast.error(t("contact.fileTooLarge", "Le fichier ne doit pas dépasser 10MB"), {
-            description: t("contact.error", "Erreur"),
-          });
-          return;
-        }
-        formData.append("attachment", file);
-      }
-      
-      console.log("[Contact] 📡 Envoi formulaire vers:", apiUrl);
+      // Note: Pièce jointe ignorée pour l'instant (comme demandé)
+
+      console.log("[Contact] 📡 ABOUT TO FETCH - Envoi requête vers:", apiUrl);
       
       const response = await fetch(apiUrl, {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal, // Ajouter le signal pour le timeout
       });
+      
+      console.log("[Contact] ✅ FETCH RESOLVED - Réponse reçue:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+      
+      // Annuler le timeout car la réponse est arrivée
+      clearTimeout(timeoutId);
 
       // Logs détaillés pour le debugging
       console.log("[Contact] 📥 Réponse reçue:", {
@@ -104,25 +127,46 @@ export default function Contact() {
       // Lire le body même en cas d'erreur pour avoir le message
       let result;
       try {
+        console.log("[Contact] 📄 PARSING RESPONSE - Lecture du body...");
         const text = await response.text();
         result = text ? JSON.parse(text) : {};
-        console.log("[Contact] 📄 Body réponse:", result);
+        console.log("[Contact] ✅ RESPONSE PARSED - Body parsé:", result);
       } catch (parseError) {
         console.error("[Contact] ❌ Erreur parsing réponse:", parseError);
         result = { error: "Erreur de communication avec le serveur" };
       }
 
       if (!response.ok) {
-        const errorMessage = result.error || result.message || t("contact.errorGeneric", "Erreur lors de l'envoi");
+        // Extraire les détails d'erreur du backend
+        const errorCode = result.code || null;
+        const errorMessage = result.message || result.error || result.details || t("contact.errorGeneric", "Erreur lors de l'envoi");
+        const errorDetails = result.details || "";
+        
         console.error("[Contact] ❌ Erreur HTTP:", {
           status: response.status,
           statusText: response.statusText,
-          error: errorMessage,
+          error: result.error || "Erreur inconnue",
+          code: errorCode,
+          message: errorMessage,
+          details: errorDetails,
           url: apiUrl,
+          fullResult: result,
         });
-        throw new Error(errorMessage);
+        
+        // Créer un message d'erreur dev-friendly avec code et détails
+        let fullErrorMessage = errorMessage;
+        if (errorCode) {
+          fullErrorMessage = `[${errorCode}] ${errorMessage}`;
+        }
+        if (errorDetails && errorDetails !== errorMessage) {
+          fullErrorMessage = `${fullErrorMessage}: ${errorDetails}`;
+        }
+        
+        throw new Error(fullErrorMessage);
       }
 
+      console.log("[Contact] ✅ SUCCESS HANDLED - Envoi réussi, affichage toast");
+      
       toast.success(t("contact.success", "Message envoyé !"), {
         description: t("contact.successDescription", "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais."),
       });
@@ -135,18 +179,35 @@ export default function Contact() {
         });
       }, 100);
     } catch (error: any) {
-      console.error("[Contact] ❌ Erreur envoi formulaire contact:", {
+      console.error("[Contact] ❌ CATCH REACHED - Erreur capturée:", {
         error: error.message || String(error),
         name: error.name,
         stack: error.stack,
         url: apiUrl || "URL non déterminée",
       });
       
-      // Message d'erreur plus informatif
+      // Annuler le timeout si on est dans le catch (la requête a échoué)
+      clearTimeout(timeoutId);
+      
+      // Message d'erreur plus informatif avec détails du backend
       let errorMessage = error.message || t("contact.errorGeneric", "Erreur, réessayez.");
       
+      // Si le message contient un code d'erreur du backend (format [CODE] message)
+      if (error.message?.startsWith("[")) {
+        // Garder le message tel quel (il contient déjà le code et les détails du backend)
+        errorMessage = error.message;
+        console.log("[Contact] 📋 Message d'erreur du backend conservé:", errorMessage);
+      }
+      // Si c'est une erreur d'abort (timeout frontend)
+      else if (error.name === "AbortError") {
+        errorMessage = t(
+          "contact.errorTimeout",
+          "La requête a pris trop de temps. Veuillez réessayer."
+        );
+        console.error("[Contact] ⏱️ TIMEOUT détecté - La requête a été annulée");
+      }
       // Si c'est une erreur réseau (ERR_CONNECTION_REFUSED, etc.)
-      if (error.message?.includes("Failed to fetch") || error.name === "TypeError") {
+      else if (error.message?.includes("Failed to fetch") || error.name === "TypeError") {
         errorMessage = t(
           "contact.errorNetwork",
           "Impossible de contacter le serveur. Vérifiez votre connexion internet."
@@ -158,9 +219,13 @@ export default function Contact() {
         description: errorMessage,
       });
     } finally {
-      startTransition(() => {
-        setIsSubmitting(false);
-      });
+      console.log("[Contact] ✅ FINALLY REACHED - Réinitialisation isSubmitting à false");
+      // Annuler le timeout si on est dans le finally (par sécurité)
+      clearTimeout(timeoutId);
+      
+      // Utiliser directement setIsSubmitting au lieu de startTransition pour garantir l'exécution
+      setIsSubmitting(false);
+      console.log("[Contact] ✅ isSubmitting mis à false");
     }
   };
 

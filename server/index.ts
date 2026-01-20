@@ -4,6 +4,8 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
+import { ServerClient } from "postmark";
+import { sendContactEmail } from "./email/postmark";
 
 // Charger .env.local explicitement avant d'importer Stripe
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
@@ -211,22 +213,23 @@ const upload = multer({
   },
 });
 
-// Route contact form
-app.post("/api/contact", upload.single("attachment"), async (req, res) => {
+// Route contact form (JSON only, no multer)
+app.post("/api/contact", async (req, res) => {
   try {
-    const { fullName, email, phone, subject, message, website } = req.body;
-    const attachment = req.file;
+    const { fullName, email, phone, subject, message, website, timestamp } = req.body;
 
     // Vérification honeypot
     if (website) {
       // Bot détecté, retourner un succès factice
-      return res.status(200).json({ success: true });
+      return res.status(200).json({ ok: true, success: true });
     }
 
     // Validation des champs requis
     if (!fullName || !email || !subject || !message) {
       return res.status(400).json({
-        error: "Les champs nom, email, objet et message sont obligatoires",
+        ok: false,
+        error: "MISSING_FIELDS",
+        message: "Les champs nom, email, objet et message sont obligatoires",
       });
     }
 
@@ -234,105 +237,207 @@ app.post("/api/contact", upload.single("attachment"), async (req, res) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
-        error: "Format d'email invalide",
+        ok: false,
+        error: "INVALID_EMAIL",
+        message: "Format d'email invalide",
       });
     }
 
-    // Vérifier les variables d'environnement
-    const emailTo = process.env.EMAIL_TO;
-    const emailFrom = process.env.EMAIL_FROM || email;
+    console.log("[CONTACT] Using email provider: n8n");
 
-    if (!emailTo) {
-      console.error("❌ EMAIL_TO non configuré dans les variables d'environnement");
+    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+    const n8nWebhookSecret = process.env.N8N_WEBHOOK_SECRET;
+
+    if (!n8nWebhookUrl) {
+      console.error("[CONTACT] N8N_WEBHOOK_URL not configured");
       return res.status(500).json({
-        error: "Configuration serveur manquante",
+        ok: false,
+        error: "N8N_NOT_CONFIGURED",
+        message: "Configuration n8n incomplète",
       });
     }
 
-    // Préparer le contenu de l'email
-    let emailContent = `
-Nouveau message de contact depuis le site Rentanoo
+    // Préparer le payload pour n8n
+    const n8nPayload: any = {
+      fullName,
+      email,
+      subject,
+      message,
+      timestamp: timestamp || new Date().toISOString(),
+    };
 
-Nom: ${fullName}
-Email: ${email}
-${phone ? `Téléphone: ${phone}` : ""}
-Objet: ${subject}
+    if (phone) {
+      n8nPayload.phone = phone;
+    }
 
-Message:
-${message}
-`;
-
-    // Utiliser nodemailer si disponible, sinon fallback simple
+    // Appel n8n
+    const startTime = Date.now();
     try {
-      const nodemailer = await import("nodemailer");
-      
-      // Configuration du transporteur (SMTP)
-      const transporter = nodemailer.default.createTransport({
-        host: process.env.SMTP_HOST || "smtp.gmail.com",
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === "true", // true pour 465, false pour autres ports
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
+      console.log("[CONTACT] 📡 Calling n8n webhook", {
+        url: n8nWebhookUrl,
+        hasSecret: !!n8nWebhookSecret,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Créer un AbortController pour timeout explicite (10 secondes)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 10000); // 10 secondes timeout
+
+      const n8nResponse = await fetch(n8nWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(n8nWebhookSecret && { "X-Webhook-Secret": n8nWebhookSecret }),
         },
+        body: JSON.stringify(n8nPayload),
+        signal: controller.signal,
       });
 
-      const mailOptions: any = {
-        from: emailFrom,
-        to: emailTo,
-        subject: `[Rentanoo Contact] ${subject}`,
-        text: emailContent,
-        html: `
-          <h2>Nouveau message de contact</h2>
-          <p><strong>Nom:</strong> ${fullName}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          ${phone ? `<p><strong>Téléphone:</strong> ${phone}</p>` : ""}
-          <p><strong>Objet:</strong> ${subject}</p>
-          <hr>
-          <p><strong>Message:</strong></p>
-          <p>${message.replace(/\n/g, "<br>")}</p>
-        `,
-      };
-
-      // Ajouter la pièce jointe si présente
-      if (attachment) {
-        mailOptions.attachments = [
-          {
-            filename: attachment.originalname,
-            content: attachment.buffer,
-          },
-        ];
-      }
-
-      await transporter.sendMail(mailOptions);
-
-      console.log("✅ Email de contact envoyé:", { to: emailTo, from: email, subject });
-
-      return res.status(200).json({
-        success: true,
-        message: "Message envoyé avec succès",
+      clearTimeout(timeoutId);
+      const duration = Date.now() - startTime;
+      console.log("[CONTACT] ✅ n8n webhook response", {
+        status: n8nResponse.status,
+        duration: `${duration}ms`,
       });
-    } catch (emailError: any) {
-      console.error("❌ Erreur envoi email:", emailError);
-      
-      // Si nodemailer n'est pas configuré, log et retourner une erreur
-      if (emailError.code === "MODULE_NOT_FOUND" || !process.env.SMTP_USER) {
-        console.error("⚠️ Nodemailer non configuré. Veuillez configurer SMTP_USER et SMTP_PASS dans .env.local");
-        return res.status(500).json({
-          error: "Service d'envoi d'email non configuré",
+
+      if (!n8nResponse.ok) {
+        const errorText = await n8nResponse.text();
+        console.error("[CONTACT] n8n webhook error", {
+          status: n8nResponse.status,
+          statusText: n8nResponse.statusText,
+          body: errorText,
+          duration: `${duration}ms`,
+        });
+        return res.status(502).json({
+          ok: false,
+          error: "N8N_WEBHOOK_ERROR",
+          message: "Erreur lors de l'appel au webhook n8n",
         });
       }
 
-      return res.status(500).json({
-        error: "Erreur lors de l'envoi de l'email",
-        details: emailError.message,
+      console.log("[CONTACT] Email sent via n8n");
+
+      return res.status(200).json({
+        ok: true,
+        success: true,
+        message: "Message envoyé avec succès",
+      });
+    } catch (n8nError: any) {
+      const duration = Date.now() - startTime;
+      const isTimeout = n8nError?.name === "AbortError" || 
+                        n8nError?.code === "ETIMEDOUT" ||
+                        n8nError?.message?.toLowerCase().includes("timeout");
+
+      console.error("[CONTACT] n8n webhook failed", {
+        message: n8nError?.message,
+        code: n8nError?.code,
+        name: n8nError?.name,
+        errno: n8nError?.errno,
+        syscall: n8nError?.syscall,
+        hostname: n8nError?.hostname,
+        port: n8nError?.port,
+        duration: `${duration}ms`,
+        isTimeout,
+      });
+
+      // Retourner 502 avec message explicite pour timeout
+      if (isTimeout) {
+        return res.status(502).json({
+          ok: false,
+          error: "N8N_WEBHOOK_TIMEOUT",
+          message: "Le webhook n8n n'a pas répondu dans les délais (timeout 10s)",
+          details: `Durée: ${duration}ms`,
+        });
+      }
+
+      return res.status(502).json({
+        ok: false,
+        error: "N8N_WEBHOOK_ERROR",
+        message: n8nError?.message || "Erreur lors de l'appel au webhook n8n",
+        details: `Code: ${n8nError?.code || "unknown"}`,
       });
     }
   } catch (error: any) {
-    console.error("❌ Erreur route contact:", error);
+    // Log détaillé de l'erreur complète
+    console.error("[CONTACT] ❌ ERROR - Erreur route contact complète:", {
+      message: error.message,
+      code: error.code,
+      name: error.name,
+      stack: error.stack,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode,
+      errno: error.errno,
+      syscall: error.syscall,
+      hostname: error.hostname,
+      port: error.port,
+      address: error.address,
+    });
+    
+    // Retourner une réponse JSON informative avec le code d'erreur
     return res.status(500).json({
-      error: "Erreur serveur",
-      details: error.message,
+      ok: false,
+      error: "CONTACT_FAILED",
+      code: error.code || null,
+      message: error.message || "Erreur serveur",
+      // En dev, inclure plus de détails (sans secrets)
+      ...(process.env.NODE_ENV !== "production" && {
+        name: error.name,
+        details: error.stack?.split("\n")[0] || null,
+      }),
+    });
+  }
+});
+
+// Route de test Email Provider (Postmark)
+app.get("/api/health/email", async (_req, res) => {
+  try {
+    console.log("[HEALTH/EMAIL] 🔍 Test configuration Postmark...");
+
+    const apiKey = process.env.POSTMARK_API_KEY;
+    const emailTo = process.env.EMAIL_TO;
+    const emailFrom = process.env.EMAIL_FROM;
+
+    const config = {
+      hasApiKey: !!apiKey,
+      hasEmailTo: !!emailTo,
+      hasEmailFrom: !!emailFrom,
+    };
+
+    if (!apiKey || !emailTo || !emailFrom) {
+      console.error("[HEALTH/EMAIL] ❌ Postmark configuration missing", config);
+      return res.status(500).json({
+        ok: false,
+        error: "POSTMARK_NOT_CONFIGURED",
+        config,
+      });
+    }
+
+    console.log("[HEALTH/EMAIL] 🔌 Test Postmark API...");
+    const client = new ServerClient(apiKey);
+
+    // Appel minimal pour vérifier que l'API est accessible
+    await client.getServer();
+
+    console.log("[HEALTH/EMAIL] ✅ Postmark API OK");
+
+    return res.status(200).json({
+      ok: true,
+      provider: "postmark",
+    });
+  } catch (error: any) {
+    console.error("[HEALTH/EMAIL] ❌ Postmark API error", {
+      message: error?.message,
+      code: error?.code,
+      statusCode: error?.statusCode,
+    });
+
+    return res.status(502).json({
+      ok: false,
+      error: "POSTMARK_API_ERROR",
+      message: error?.message || "Erreur lors de l'appel à l'API Postmark",
     });
   }
 });
