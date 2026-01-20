@@ -4,8 +4,6 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
-import { ServerClient } from "postmark";
-import { sendContactEmail } from "./email/postmark";
 
 // Charger .env.local explicitement avant d'importer Stripe
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
@@ -243,10 +241,12 @@ app.post("/api/contact", async (req, res) => {
       });
     }
 
-    console.log("[CONTACT] Using email provider: n8n");
+    console.log("[CONTACT] 📧 Using email provider: n8n");
 
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
     const n8nWebhookSecret = process.env.N8N_WEBHOOK_SECRET;
+    
+    console.log("[CONTACT] 🔗 n8n webhook URL:", n8nWebhookUrl ? "✅ configuré" : "❌ manquant");
 
     if (!n8nWebhookUrl) {
       console.error("[CONTACT] N8N_WEBHOOK_URL not configured");
@@ -391,53 +391,65 @@ app.post("/api/contact", async (req, res) => {
   }
 });
 
-// Route de test Email Provider (Postmark)
+// Route de test Email Provider (n8n)
 app.get("/api/health/email", async (_req, res) => {
   try {
-    console.log("[HEALTH/EMAIL] 🔍 Test configuration Postmark...");
+    console.log("[HEALTH/EMAIL] 🔍 Test configuration n8n...");
 
-    const apiKey = process.env.POSTMARK_API_KEY;
-    const emailTo = process.env.EMAIL_TO;
-    const emailFrom = process.env.EMAIL_FROM;
+    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+    const n8nWebhookSecret = process.env.N8N_WEBHOOK_SECRET;
 
     const config = {
-      hasApiKey: !!apiKey,
-      hasEmailTo: !!emailTo,
-      hasEmailFrom: !!emailFrom,
+      hasWebhookUrl: !!n8nWebhookUrl,
+      hasWebhookSecret: !!n8nWebhookSecret,
     };
 
-    if (!apiKey || !emailTo || !emailFrom) {
-      console.error("[HEALTH/EMAIL] ❌ Postmark configuration missing", config);
+    if (!n8nWebhookUrl) {
+      console.error("[HEALTH/EMAIL] ❌ n8n configuration missing", config);
       return res.status(500).json({
         ok: false,
-        error: "POSTMARK_NOT_CONFIGURED",
+        error: "N8N_NOT_CONFIGURED",
         config,
+        message: "N8N_WEBHOOK_URL non configuré",
       });
     }
 
-    console.log("[HEALTH/EMAIL] 🔌 Test Postmark API...");
-    const client = new ServerClient(apiKey);
+    console.log("[HEALTH/EMAIL] 🔌 Test n8n webhook availability...");
+    
+    // Test simple de connectivité (HEAD request)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    try {
+      const testResponse = await fetch(n8nWebhookUrl, {
+        method: "HEAD",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      console.log("[HEALTH/EMAIL] ✅ n8n webhook accessible");
 
-    // Appel minimal pour vérifier que l'API est accessible
-    await client.getServer();
-
-    console.log("[HEALTH/EMAIL] ✅ Postmark API OK");
-
-    return res.status(200).json({
-      ok: true,
-      provider: "postmark",
-    });
+      return res.status(200).json({
+        ok: true,
+        provider: "n8n",
+        webhookUrl: n8nWebhookUrl,
+        hasSecret: !!n8nWebhookSecret,
+      });
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      throw fetchError;
+    }
   } catch (error: any) {
-    console.error("[HEALTH/EMAIL] ❌ Postmark API error", {
+    console.error("[HEALTH/EMAIL] ❌ n8n webhook error", {
       message: error?.message,
       code: error?.code,
-      statusCode: error?.statusCode,
+      name: error?.name,
     });
 
     return res.status(502).json({
       ok: false,
-      error: "POSTMARK_API_ERROR",
-      message: error?.message || "Erreur lors de l'appel à l'API Postmark",
+      error: "N8N_WEBHOOK_ERROR",
+      message: error?.message || "Erreur lors de l'appel au webhook n8n",
     });
   }
 });
@@ -787,6 +799,7 @@ if (process.env.NODE_ENV === "production") {
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 app.listen(PORT, () => {
   console.log(`🚀 API backend démarrée sur http://localhost:${PORT}`);
+  console.log(`📧 Email provider: n8n (webhook: ${process.env.N8N_WEBHOOK_URL ? "✅ configuré" : "❌ non configuré"})`);
   if (process.env.NODE_ENV === "production") {
     console.log(`✅ Frontend et API disponibles sur le même port: ${PORT}`);
   }
