@@ -287,6 +287,8 @@ app.post("/api/contact", async (req, res) => {
     }
 
     // Préparer le payload pour n8n
+    const incomingAttachment = (req.body as any)?.attachment;
+
     const n8nPayload: any = {
       fullName,
       email,
@@ -295,6 +297,7 @@ app.post("/api/contact", async (req, res) => {
       timestamp: timestamp || new Date().toISOString(),
       // Toujours inclure phone, même si vide (pour n8n)
       phone: phone ?? "",
+      ...(incomingAttachment && { attachment: incomingAttachment }),
     };
 
     // Appel n8n
