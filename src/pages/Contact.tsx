@@ -16,7 +16,10 @@ import { Loader2, Send } from "lucide-react";
 // Schéma de validation
 const contactFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  email: z.string().email("Adresse email invalide"),
+  email: z
+    .string()
+    .trim()
+    .email("Adresse email invalide"),
   phone: z.string().optional(),
   subject: z.string().min(3, "L'objet doit contenir au moins 3 caractères"),
   message: z.string().min(10, "Le message doit contenir au moins 10 caractères"),
@@ -60,11 +63,26 @@ export default function Contact() {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
   });
 
   const onSubmit = async (data: ContactFormData) => {
+    if (import.meta.env.DEV) {
+      const domEmailInput = document.getElementById("email") as HTMLInputElement | null;
+      const domEmail = domEmailInput?.value ?? null;
+      console.log("[Contact] 🧪 Email debug (RHF vs DOM)", {
+        dataEmail: data.email,
+        dataEmailType: typeof data.email,
+        dataEmailLength: data.email?.length ?? 0,
+        dataEmailJson: JSON.stringify(data.email),
+        domEmail,
+        domEmailType: typeof domEmail,
+        domEmailLength: domEmail?.length ?? 0,
+        domEmailJson: JSON.stringify(domEmail),
+      });
+    }
     console.log("[Contact] 🚀 SUBMIT START - Formulaire soumis");
 
     // Vérification honeypot
@@ -344,6 +362,22 @@ export default function Contact() {
     }
   };
 
+  const handleSyncAndSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+    const emailInput = document.getElementById("email") as HTMLInputElement | null;
+    if (emailInput) {
+      const value = emailInput.value;
+      if (import.meta.env.DEV) {
+        console.log("[Contact] 🧪 Sync email DOM → RHF avant validation", {
+          domEmail: value,
+          domEmailLength: value.length,
+          domEmailJson: JSON.stringify(value),
+        });
+      }
+      setValue("email", value, { shouldValidate: true, shouldDirty: true });
+    }
+    return handleSubmit(onSubmit)(event);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft" translate="no">
       <Navbar />
@@ -367,7 +401,7 @@ export default function Contact() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={handleSyncAndSubmit} className="space-y-6">
                 {/* Honeypot */}
                 <input
                   type="text"
