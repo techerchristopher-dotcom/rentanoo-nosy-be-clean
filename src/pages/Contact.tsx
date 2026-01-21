@@ -26,6 +26,246 @@ const contactFormSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
+// Helper pour convertir un File en base64 (sans préfixe data:)
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        // result = "data:...;base64,AAAA..."
+        const parts = result.split(",");
+        const base64 = parts[1] ?? "";
+        resolve(base64);
+      } else {
+        reject(new Error("FileReader result is not a string"));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(reader.error || new Error("FileReader error"));
+    };
+
+    reader.readAsDataURL(file);
+  });
+};
+
+export default function Contact() {
+  const { t } = useTranslation("common");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ContactFormData>({
+    resolver: zodResolver(contactFormSchema),
+  });
+
+  const onSubmit = async (data: ContactFormData) => {
+    console.log("[Contact] 🚀 SUBMIT START - Formulaire soumis");
+    
+    // Vérification honeypot
+    if (data.website) {
+      console.log("[Contact] 🤖 Bot détecté (honeypot), arrêt");
+      // Bot détecté, ne rien faire
+      return;
+    }
+
+    console.log("[Contact] 📝 Données du formulaire:", {
+      fullName: data.fullName,
+      email: data.email,
+      subject: data.subject,
+      hasPhone: !!data.phone,
+      hasAttachment: !!(data.attachment && data.attachment.length > 0),
+    });
+
+    // Utiliser startTransition pour éviter les re-renders synchrones
+    // qui peuvent causer des problèmes avec les composants Radix UI (DropdownMenu, etc.)
+    startTransition(() => {
+      setIsSubmitting(true);
+    });
+    console.log("[Contact] ✅ isSubmitting mis à true");
+
+    // Déterminer l'URL de l'API selon l'environnement
+    // Stratégie robuste :
+    // 1. Si VITE_API_URL est défini, l'utiliser (backend sur autre domaine)
+    // 2. Sinon, utiliser une URL relative (backend sur même domaine - fonctionne en prod et dev via proxy Vite)
+    const apiBase = import.meta.env.VITE_API_URL?.trim();
+    const apiUrl = apiBase ? `${apiBase}/api/contact` : "/api/contact";
+    console.log("[Contact] 🔗 URL API déterminée:", apiUrl);
+
+    // Créer un AbortController pour gérer le timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error("[Contact] ⏱️ TIMEOUT - La requête a pris plus de 15s, annulation");
+      controller.abort();
+    }, 15000); // 15 secondes
+
+    try {
+      // Préparer le payload JSON pour n8n
+      const payload: any = {
+        fullName: data.fullName,
+        email: data.email,
+        subject: data.subject,
+        message: data.message,
+        timestamp: new Date().toISOString(),
+        // Toujours inclure phone, même si vide (pour n8n)
+        phone: data.phone ?? "",
+      };
+
+      // Gérer la pièce jointe si présente
+      const file = data.attachment && data.attachment.length > 0 ? data.attachment[0] : null;
+
+      if (file) {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+          // Fichier trop gros → annuler l'envoi avant l'appel webhook
+          clearTimeout(timeoutId);
+          setIsSubmitting(false);
+          console.error("[Contact] ❌ Pièce jointe trop volumineuse:", {
+            filename: file.name,
+            size: file.size,
+            maxSize,
+          });
+          toast.error(t("contact.fileTooLarge", "Le fichier ne doit pas dépasser 10MB"), {
+            description: t("contact.error", "Erreur"),
+          });
+          return;
+        }
+
+        try {
+          const contentBase64 = await fileToBase64(file);
+
+          payload.attachment = {
+            filename: file.name,
+            contentType: file.type || "application/octet-stream",
+            size: file.size,
+            contentBase64,
+          };
+
+          console.log("[Contact] 📎 attachment info", {
+            filename: payload.attachment.filename,
+            contentType: payload.attachment.contentType,
+            size: payload.attachment.size,
+            base64Length: payload.attachment.contentBase64.length,
+          });
+        } catch (fileError) {
+          console.error("[Contact] ❌ Erreur conversion pièce jointe en base64:", fileError);
+          clearTimeout(timeoutId);
+          setIsSubmitting(false);
+          toast.error(t("contact.error", "Erreur"), {
+            description: t(
+              "contact.attachmentConvertError",
+              "Erreur lors de la préparation de la pièce jointe. Veuillez réessayer sans fichier ou avec un autre fichier."
+            ),
+          });
+          return;
+        }
+      }
+
+      // Log du payload avant envoi pour debugging (sans base64)
+      const payloadForLog = {
+        fullName: payload.fullName,
+        email: payload.email,
+        phone: payload.phone,
+        subject: payload.subject,
+        hasTimestamp: !!payload.timestamp,
+        hasAttachment: !!payload.attachment,
+        attachmentMeta: payload.attachment
+          ? {
+              filename: payload.attachment.filename,
+              contentType: payload.attachment.contentType,
+              size: payload.attachment.size,
+              base64Length: payload.attachment.contentBase64.length,
+            }
+          : null,
+      };
+
+      const payloadJsonForSize = JSON.stringify({
+        ...payload,
+        ...(payload.attachment && {
+          attachment: {
+            ...payload.attachment,
+            contentBase64: "[base64 omitted]",
+          },
+        }),
+      });
+
+      let payloadSizeBytes = 0;
+      try {
+        payloadSizeBytes = new TextEncoder().encode(payloadJsonForSize).length;
+      } catch {
+        payloadSizeBytes = payloadJsonForSize.length;
+      }
+
+      console.log("[Contact] 📦 payload sending", {
+        ...payloadForLog,
+        payloadSizeBytes,
+      });
+
+      console.log("[Contact] 📡 ABOUT TO FETCH - Envoi requête vers:", apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal, // Ajouter le signal pour le timeout
+      });
+
+      console.log("[Contact] ✅ FETCH RESOLVED - Réponse reçue:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
+      // Annuler le timeout car la réponse est arrivée
+      clearTimeout(timeoutId);
+
+      // Logs détaillés pour le debugging
+      console.log("[Contact] 📥 Réponse reçue:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: apiUrl,
+      });
+
+      // Lire le body même en cas d'erreur pour avoir le message
+      let result;
+      try {
+        console.log("[Contact] 📄 PARSING RESPONSE - Lecture du body...");
+import { useState, startTransition } from "react";
+import { useTranslation } from "react-i18next";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Loader2, Mail, Send } from "lucide-react";
+
+// Schéma de validation
+const contactFormSchema = z.object({
+  fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  email: z.string().email("Adresse email invalide"),
+  phone: z.string().optional(),
+  subject: z.string().min(3, "L'objet doit contenir au moins 3 caractères"),
+  message: z.string().min(10, "Le message doit contenir au moins 10 caractères"),
+  attachment: z.instanceof(FileList).optional(),
+  website: z.string().optional(), // Honeypot
+});
+
+type ContactFormData = z.infer<typeof contactFormSchema>;
+
 export default function Contact() {
   const { t } = useTranslation("common");
   const [isSubmitting, setIsSubmitting] = useState(false);
