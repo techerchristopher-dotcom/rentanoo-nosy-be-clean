@@ -189,8 +189,19 @@ app.post(
   }
 );
 
-// Parser JSON global après la route webhook
-app.use(express.json());
+// Parser JSON / URL-encoded global après la route webhook
+// Augmenter la limite pour supporter les pièces jointes encodées en base64 (contact form)
+app.use(
+  express.json({
+    limit: "20mb",
+  })
+);
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "20mb",
+  })
+);
 
 // Configuration multer pour les fichiers
 const upload = multer({
@@ -215,6 +226,22 @@ const upload = multer({
 app.post("/api/contact", async (req, res) => {
   try {
     const { fullName, email, phone, subject, message, website, timestamp } = req.body;
+
+    // Logs sur la taille de la requête et méta pièce jointe (sans contenu base64)
+    const contentLength = req.headers["content-length"];
+    const attachment = (req.body as any)?.attachment;
+    console.log("[CONTACT] 📥 Incoming request body:", {
+      contentLength,
+      hasAttachment: !!attachment,
+      attachmentMeta: attachment
+        ? {
+            filename: attachment.filename,
+            contentType: attachment.contentType,
+            size: attachment.size,
+            base64Length: typeof attachment.contentBase64 === "string" ? attachment.contentBase64.length : 0,
+          }
+        : null,
+    });
 
     // Vérification honeypot
     if (website) {
@@ -770,6 +797,29 @@ app.post("/api/checkin/saveDraft", async (req, res) => {
     });
   }
 });
+
+// Middleware global de gestion des erreurs (JSON)
+// Permet notamment de renvoyer un JSON propre sur les erreurs de type "entity.too.large" (413)
+app.use(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  (err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (err?.type === "entity.too.large" || err?.status === 413) {
+      console.error("[GLOBAL ERROR] 📦 Payload too large:", {
+        type: err.type,
+        status: err.status,
+        message: err.message,
+      });
+      return res.status(413).json({
+        ok: false,
+        error: "PAYLOAD_TOO_LARGE",
+        message: "Pièce jointe trop volumineuse",
+      });
+    }
+
+    // Pour les autres erreurs non gérées, laisser Express/route spécifique gérer
+    throw err;
+  }
+);
 
 // ⚠️ ENDPOINT OBSOLÈTE - Migré vers Supabase Edge Function
 // L'endpoint /api/create-checkout-session a été remplacé par la Supabase Edge Function
