@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -380,8 +379,6 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft" translate="no">
-      <Navbar />
-
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
           <div className="text-center mb-8">
