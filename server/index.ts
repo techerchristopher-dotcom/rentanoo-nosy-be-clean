@@ -232,6 +232,8 @@ app.post("/api/contact", async (req, res) => {
     const attachment = (req.body as any)?.attachment;
     console.log("[CONTACT] 📥 Incoming request body:", {
       contentLength,
+      keys: Object.keys(req.body || {}),
+      phone,
       hasAttachment: !!attachment,
       attachmentMeta: attachment
         ? {
@@ -291,11 +293,9 @@ app.post("/api/contact", async (req, res) => {
       subject,
       message,
       timestamp: timestamp || new Date().toISOString(),
+      // Toujours inclure phone, même si vide (pour n8n)
+      phone: phone ?? "",
     };
-
-    if (phone) {
-      n8nPayload.phone = phone;
-    }
 
     // Appel n8n
     const startTime = Date.now();
@@ -304,6 +304,8 @@ app.post("/api/contact", async (req, res) => {
         url: n8nWebhookUrl,
         hasSecret: !!n8nWebhookSecret,
         timestamp: new Date().toISOString(),
+        keys: Object.keys(n8nPayload || {}),
+        phone: n8nPayload.phone,
       });
 
       // Créer un AbortController pour timeout explicite (10 secondes)

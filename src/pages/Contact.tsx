@@ -171,6 +171,7 @@ export default function Contact() {
         fullName: payload.fullName,
         email: payload.email,
         phone: payload.phone,
+        hasPhoneKey: Object.prototype.hasOwnProperty.call(payload, "phone"),
         subject: payload.subject,
         hasTimestamp: !!payload.timestamp,
         hasAttachment: !!payload.attachment,
