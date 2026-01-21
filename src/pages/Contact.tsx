@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Mail, Send } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 
 // Schéma de validation
 const contactFormSchema = z.object({
@@ -66,7 +66,7 @@ export default function Contact() {
 
   const onSubmit = async (data: ContactFormData) => {
     console.log("[Contact] 🚀 SUBMIT START - Formulaire soumis");
-    
+
     // Vérification honeypot
     if (data.website) {
       console.log("[Contact] 🤖 Bot détecté (honeypot), arrêt");
@@ -207,7 +207,7 @@ export default function Contact() {
       });
 
       console.log("[Contact] 📡 ABOUT TO FETCH - Envoi requête vers:", apiUrl);
-      
+
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -223,144 +223,6 @@ export default function Contact() {
         ok: response.ok,
       });
 
-      // Annuler le timeout car la réponse est arrivée
-      clearTimeout(timeoutId);
-
-      // Logs détaillés pour le debugging
-      console.log("[Contact] 📥 Réponse reçue:", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        url: apiUrl,
-      });
-
-      // Lire le body même en cas d'erreur pour avoir le message
-      let result;
-      try {
-        console.log("[Contact] 📄 PARSING RESPONSE - Lecture du body...");
-import { useState, startTransition } from "react";
-import { useTranslation } from "react-i18next";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Loader2, Mail, Send } from "lucide-react";
-
-// Schéma de validation
-const contactFormSchema = z.object({
-  fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  email: z.string().email("Adresse email invalide"),
-  phone: z.string().optional(),
-  subject: z.string().min(3, "L'objet doit contenir au moins 3 caractères"),
-  message: z.string().min(10, "Le message doit contenir au moins 10 caractères"),
-  attachment: z.instanceof(FileList).optional(),
-  website: z.string().optional(), // Honeypot
-});
-
-type ContactFormData = z.infer<typeof contactFormSchema>;
-
-export default function Contact() {
-  const { t } = useTranslation("common");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<ContactFormData>({
-    resolver: zodResolver(contactFormSchema),
-  });
-
-  const onSubmit = async (data: ContactFormData) => {
-    console.log("[Contact] 🚀 SUBMIT START - Formulaire soumis");
-    
-    // Vérification honeypot
-    if (data.website) {
-      console.log("[Contact] 🤖 Bot détecté (honeypot), arrêt");
-      // Bot détecté, ne rien faire
-      return;
-    }
-
-    console.log("[Contact] 📝 Données du formulaire:", {
-      fullName: data.fullName,
-      email: data.email,
-      subject: data.subject,
-      hasPhone: !!data.phone,
-      hasAttachment: !!(data.attachment && data.attachment.length > 0),
-    });
-
-    // Utiliser startTransition pour éviter les re-renders synchrones
-    // qui peuvent causer des problèmes avec les composants Radix UI (DropdownMenu, etc.)
-    startTransition(() => {
-      setIsSubmitting(true);
-    });
-    console.log("[Contact] ✅ isSubmitting mis à true");
-
-    // Déterminer l'URL de l'API selon l'environnement
-    // Stratégie robuste :
-    // 1. Si VITE_API_URL est défini, l'utiliser (backend sur autre domaine)
-    // 2. Sinon, utiliser une URL relative (backend sur même domaine - fonctionne en prod et dev via proxy Vite)
-    const apiBase = import.meta.env.VITE_API_URL?.trim();
-    const apiUrl = apiBase ? `${apiBase}/api/contact` : "/api/contact";
-    console.log("[Contact] 🔗 URL API déterminée:", apiUrl);
-
-    // Créer un AbortController pour gérer le timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.error("[Contact] ⏱️ TIMEOUT - La requête a pris plus de 15s, annulation");
-      controller.abort();
-    }, 15000); // 15 secondes
-
-    try {
-      // Préparer le payload JSON pour n8n
-      const payload: any = {
-        fullName: data.fullName,
-        email: data.email,
-        subject: data.subject,
-        message: data.message,
-        timestamp: new Date().toISOString(),
-        // Toujours inclure phone, même si vide (pour n8n)
-        phone: data.phone ?? "",
-      };
-
-      // Note: Pièce jointe ignorée pour l'instant (comme demandé)
-
-      // Log du payload avant envoi pour debugging
-      console.log("[Contact] 📦 payload sending", {
-        fullName: payload.fullName,
-        email: payload.email,
-        phone: payload.phone,
-        phoneLength: payload.phone?.length || 0,
-        phoneIsEmpty: !payload.phone || payload.phone.trim() === "",
-        subject: payload.subject,
-        hasTimestamp: !!payload.timestamp,
-      });
-
-      console.log("[Contact] 📡 ABOUT TO FETCH - Envoi requête vers:", apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal, // Ajouter le signal pour le timeout
-      });
-      
-      console.log("[Contact] ✅ FETCH RESOLVED - Réponse reçue:", {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-      });
-      
       // Annuler le timeout car la réponse est arrivée
       clearTimeout(timeoutId);
 
@@ -387,9 +249,10 @@ export default function Contact() {
       if (!response.ok) {
         // Extraire les détails d'erreur du backend
         const errorCode = result.code || null;
-        const errorMessage = result.message || result.error || result.details || t("contact.errorGeneric", "Erreur lors de l'envoi");
+        const errorMessage =
+          result.message || result.error || result.details || t("contact.errorGeneric", "Erreur lors de l'envoi");
         const errorDetails = result.details || "";
-        
+
         console.error("[Contact] ❌ Erreur HTTP:", {
           status: response.status,
           statusText: response.statusText,
@@ -400,7 +263,7 @@ export default function Contact() {
           url: apiUrl,
           fullResult: result,
         });
-        
+
         // Créer un message d'erreur dev-friendly avec code et détails
         let fullErrorMessage = errorMessage;
         if (errorCode) {
@@ -409,14 +272,17 @@ export default function Contact() {
         if (errorDetails && errorDetails !== errorMessage) {
           fullErrorMessage = `${fullErrorMessage}: ${errorDetails}`;
         }
-        
+
         throw new Error(fullErrorMessage);
       }
 
       console.log("[Contact] ✅ SUCCESS HANDLED - Envoi réussi, affichage toast");
-      
+
       toast.success(t("contact.success", "Message envoyé !"), {
-        description: t("contact.successDescription", "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais."),
+        description: t(
+          "contact.successDescription",
+          "Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais."
+        ),
       });
 
       // Reset après un court délai pour laisser le toast s'afficher
@@ -433,13 +299,13 @@ export default function Contact() {
         stack: error.stack,
         url: apiUrl || "URL non déterminée",
       });
-      
+
       // Annuler le timeout si on est dans le catch (la requête a échoué)
       clearTimeout(timeoutId);
-      
+
       // Message d'erreur plus informatif avec détails du backend
       let errorMessage = error.message || t("contact.errorGeneric", "Erreur, réessayez.");
-      
+
       // Si le message contient un code d'erreur du backend (format [CODE] message)
       if (error.message?.startsWith("[")) {
         // Garder le message tel quel (il contient déjà le code et les détails du backend)
@@ -462,7 +328,7 @@ export default function Contact() {
         );
         console.error("[Contact] ❌ Erreur réseau détectée - URL appelée:", apiUrl);
       }
-      
+
       toast.error(t("contact.error", "Erreur"), {
         description: errorMessage,
       });
@@ -470,7 +336,7 @@ export default function Contact() {
       console.log("[Contact] ✅ FINALLY REACHED - Réinitialisation isSubmitting à false");
       // Annuler le timeout si on est dans le finally (par sécurité)
       clearTimeout(timeoutId);
-      
+
       // Utiliser directement setIsSubmitting au lieu de startTransition pour garantir l'exécution
       setIsSubmitting(false);
       console.log("[Contact] ✅ isSubmitting mis à false");
@@ -480,7 +346,7 @@ export default function Contact() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft" translate="no">
       <Navbar />
-      
+
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
           <div className="text-center mb-8">
@@ -548,7 +414,10 @@ export default function Contact() {
                 {/* Téléphone (optionnel) */}
                 <div className="space-y-2">
                   <Label htmlFor="phone">
-                    {t("contact.phone", "Numéro de téléphone")} <span className="text-muted-foreground text-xs">({t("contact.optional", "optionnel")})</span>
+                    {t("contact.phone", "Numéro de téléphone")}{" "}
+                    <span className="text-muted-foreground text-xs">
+                      ({t("contact.optional", "optionnel")})
+                    </span>
                   </Label>
                   <Input
                     id="phone"
@@ -601,7 +470,10 @@ export default function Contact() {
                 {/* Pièce jointe (optionnel) */}
                 <div className="space-y-2">
                   <Label htmlFor="attachment">
-                    {t("contact.attachment", "Pièce jointe")} <span className="text-muted-foreground text-xs">({t("contact.optional", "optionnel")})</span>
+                    {t("contact.attachment", "Pièce jointe")}{" "}
+                    <span className="text-muted-foreground text-xs">
+                      ({t("contact.optional", "optionnel")})
+                    </span>
                   </Label>
                   <Input
                     id="attachment"
@@ -612,7 +484,10 @@ export default function Contact() {
                     className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("contact.attachmentHint", "Formats acceptés: PDF, JPG, PNG, DOC, DOCX (max 10MB)")}
+                    {t(
+                      "contact.attachmentHint",
+                      "Formats acceptés: PDF, JPG, PNG, DOC, DOCX (max 10MB)"
+                    )}
                   </p>
                   {errors.attachment && (
                     <p className="text-sm text-destructive">{errors.attachment.message}</p>
@@ -647,4 +522,5 @@ export default function Contact() {
     </div>
   );
 }
+
 
