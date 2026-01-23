@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VehiclesService, PhotosService } from "@/services";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
@@ -736,8 +735,6 @@ export default function RenterBookings() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft">
-      <Navbar />
-      
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           {/* Header */}
