@@ -12,7 +12,29 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 const { stripe } = await import("../src/lib/stripe");
 
 const app = express();
+
+// Trust proxy : Railway est derrière un proxy (nécessaire pour req.hostname correct en production)
+app.set("trust proxy", true);
+
 app.use(cors());
+
+// Redirection www → non-www (canonique: https://rentanoo.com)
+// DOIT être déclaré AVANT toutes les routes pour capturer toutes les requêtes www
+app.use((req, res, next) => {
+  const host = req.hostname || req.get("host") || "";
+  
+  // Rediriger www.rentanoo.com vers rentanoo.com
+  if (host === "www.rentanoo.com") {
+    const protocol = req.protocol || "https"; // Railway termine TLS en amont
+    const canonicalUrl = `${protocol}://rentanoo.com${req.originalUrl || req.url}`;
+    
+    console.log(`🔄 [Redirect] www → non-www: ${host}${req.originalUrl} → ${canonicalUrl}`);
+    return res.redirect(301, canonicalUrl);
+  }
+  
+  // Pas de redirection nécessaire, continuer
+  next();
+});
 
 // Webhook Stripe nécessite le body RAW. On MONTE d'abord la route webhook (avec express.raw)
 // puis ensuite seulement le parser JSON global.
