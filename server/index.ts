@@ -842,7 +842,8 @@ if (process.env.NODE_ENV === "production") {
   
   // SPA fallback : toutes les routes non-API redirigent vers index.html
   // Cette route DOIT être déclarée APRÈS express.static pour capturer les routes non trouvées
-  app.get("*", (req, res, next) => {
+  // Express 5 + path-to-regexp exige un nom de paramètre pour les wildcards : "*splat" au lieu de "*"
+  app.get("*splat", (req, res, next) => {
     // Ignorer les routes API (elles sont déjà gérées plus haut)
     if (req.path.startsWith("/api")) {
       return next();
