@@ -32,7 +32,10 @@ import Stripe from "https://esm.sh/stripe@latest";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Détecter l'environnement (DEV vs PROD)
-const isDev = !Deno.env.get("DENO_ENV") || Deno.env.get("DENO_ENV") !== "production";
+// En production Supabase, DENO_ENV est généralement défini à "production"
+// En local, il n'est généralement pas défini ou vaut "development"
+const denoEnv = Deno.env.get("DENO_ENV");
+const isDev = !denoEnv || denoEnv === "development" || denoEnv === "dev";
 
 // ============================================
 // DIAGNOSTIC DEV-ONLY : Variables d'environnement Stripe
@@ -89,10 +92,10 @@ const PROD_ALLOWED_ORIGINS = Deno.env.get("CORS_ALLOWED_ORIGINS")
 // Headers CORS pour toutes les réponses
 // En DEV: autoriser localhost:3013 (owner) et localhost:3012 (tenant)
 // En PROD: whitelist stricte des origines autorisées
-function getCorsHeaders(origin?: string | null) {
+function getCorsHeaders(origin?: string | null): Record<string, string> {
   if (isDev) {
     // DEV: autoriser localhost
-    const devOrigins = ["http://localhost:3013", "http://localhost:3012"];
+    const devOrigins = ["http://localhost:3013", "http://localhost:3012", "http://localhost:3000"];
     const allowOrigin = origin && devOrigins.includes(origin)
       ? origin
       : "http://localhost:3013"; // Default en DEV
@@ -102,19 +105,34 @@ function getCorsHeaders(origin?: string | null) {
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
       "Access-Control-Max-Age": "86400", // Cache preflight 24h
+      "Vary": "Origin", // Important pour le cache du navigateur
     };
   }
 
   // PROD: whitelist stricte
-  const allowOrigin = origin && PROD_ALLOWED_ORIGINS.includes(origin)
-    ? origin
-    : null; // Rejeter les origines non autorisées
+  // Si l'origine est dans la whitelist, l'autoriser
+  // Sinon, utiliser la première origine autorisée comme fallback (pour compatibilité)
+  // MAIS loguer un avertissement si l'origine n'est pas autorisée
+  const isOriginAllowed = origin && PROD_ALLOWED_ORIGINS.includes(origin);
+  const allowOrigin = isOriginAllowed ? origin : PROD_ALLOWED_ORIGINS[0];
+  
+  // Log d'avertissement si origine non autorisée (pour debug)
+  if (origin && !isOriginAllowed) {
+    console.warn("⚠️ [CORS] Origine non autorisée:", {
+      origin,
+      allowedOrigins: PROD_ALLOWED_ORIGINS,
+      fallbackUsed: allowOrigin,
+      isDev,
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   return {
-    "Access-Control-Allow-Origin": allowOrigin || PROD_ALLOWED_ORIGINS[0], // Fallback sur première origine
+    "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Max-Age": "86400", // Cache preflight 24h
+    "Vary": "Origin", // CRITIQUE: Indique au navigateur que la réponse varie selon l'Origin
   };
 }
 
@@ -143,13 +161,19 @@ Deno.serve(async (req) => {
     authHeaderMasked: maskedAuth,
     timestamp: new Date().toISOString(),
     isDev,
+    denoEnv: Deno.env.get("DENO_ENV") || "undefined",
+    corsAllowOrigin: corsHeaders["Access-Control-Allow-Origin"],
   });
 
   // Gérer les requêtes OPTIONS (preflight CORS)
   if (req.method === "OPTIONS") {
-    console.log("✅ [create-checkout-session][OPTIONS] Preflight CORS autorisé");
-    return new Response("ok", {
-      status: 200,
+    console.log("✅ [create-checkout-session][OPTIONS] Preflight CORS autorisé", {
+      origin: origin || "N/A",
+      allowOrigin: corsHeaders["Access-Control-Allow-Origin"],
+      isDev,
+    });
+    return new Response(null, {
+      status: 204, // No Content (plus standard que 200 pour OPTIONS)
       headers: corsHeaders,
     });
   }
@@ -363,6 +387,29 @@ Deno.serve(async (req) => {
     // Vérifier les variables d'environnement
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");
     
+    // Identifier le type de clé Stripe (TEST vs LIVE) pour debug dashboard
+    const stripeKeyType = stripeSecret?.startsWith("sk_test_") ? "TEST" 
+      : stripeSecret?.startsWith("sk_live_") ? "LIVE" 
+      : "UNKNOWN";
+    const stripeKeyPrefix = stripeSecret ? stripeSecret.substring(0, 7) + "..." : "N/A";
+    
+    // Log du type de clé (toujours, pas seulement en DEV)
+    console.log("🔑 [create-checkout-session] Configuration Stripe:", {
+      keyType: stripeKeyType,
+      keyPrefix: stripeKeyPrefix,
+      keyLength: stripeSecret?.length || 0,
+      dashboardMode: stripeKeyType === "TEST" 
+        ? "TEST MODE (toggle en haut à droite du dashboard)" 
+        : stripeKeyType === "LIVE" 
+        ? "LIVE MODE" 
+        : "UNKNOWN - Vérifier la clé",
+      dashboardUrl: stripeKeyType === "TEST" 
+        ? "https://dashboard.stripe.com/test/payments" 
+        : stripeKeyType === "LIVE"
+        ? "https://dashboard.stripe.com/payments"
+        : "N/A",
+    });
+    
     // DIAGNOSTIC DEV-ONLY : Log avant vérification
     if (isDev) {
       console.info("🔍 [stripe-env-check] Vérification STRIPE_SECRET_KEY:", {
@@ -452,7 +499,7 @@ Deno.serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: successUrl,
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
       metadata: {
         bookingId: String(bookingId),
@@ -461,11 +508,21 @@ Deno.serve(async (req) => {
 
     console.log("✅ [create-checkout-session] Session créée avec succès:", {
       sessionId: session.id,
+      sessionIdPrefix: session.id.substring(0, Math.min(15, session.id.length)) + "...", // Ex: "cs_test_51..." ou "cs_live_51..."
+      paymentIntentId: session.payment_intent || "N/A",
       url: session.url?.substring(0, 50) + "...",
       bookingId,
       amountTTC_DB: amountTTC, // euros
       amountTTC_cents: unitAmountCents, // centimes
       subtotal_DB: subtotal, // euros
+      // Info pour trouver dans le dashboard Stripe
+      stripeKeyType: stripeKeyType, // TEST ou LIVE
+      dashboardUrl: stripeKeyType === "TEST" 
+        ? "https://dashboard.stripe.com/test/payments" 
+        : stripeKeyType === "LIVE"
+        ? "https://dashboard.stripe.com/payments"
+        : "N/A",
+      searchHint: `Chercher dans le dashboard Stripe (mode ${stripeKeyType}) avec session_id: ${session.id}`,
     });
 
     // Retourner l'URL de la session

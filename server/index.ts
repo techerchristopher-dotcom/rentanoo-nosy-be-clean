@@ -835,17 +835,34 @@ app.use(
 if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), "dist");
   
+  console.log(`📦 Serveur en mode PRODUCTION - Frontend servi depuis: ${distPath}`);
+  
   // Servir les fichiers statiques (CSS, JS, images, etc.)
   app.use(express.static(distPath));
   
-  console.log(`📦 Serveur en mode PRODUCTION - Frontend servi depuis: ${distPath}`);
-  
   // SPA fallback : toutes les routes non-API redirigent vers index.html
-  // Express 5 / path-to-regexp v8 : wildcard must be named
-  app.get("/*splat", (req, res) => {
-    if (!req.path.startsWith("/api")) {
-      res.sendFile(path.join(distPath, "index.html"));
+  // Cette route DOIT être déclarée APRÈS express.static pour capturer les routes non trouvées
+  app.get("*", (req, res, next) => {
+    // Ignorer les routes API (elles sont déjà gérées plus haut)
+    if (req.path.startsWith("/api")) {
+      return next();
     }
+    
+    // Vérifier si c'est une requête pour un fichier statique (extension présente)
+    const hasExtension = /\.[^/]+$/.test(req.path);
+    if (hasExtension) {
+      // C'est une requête pour un fichier statique qui n'existe pas → 404
+      return res.status(404).send("File not found");
+    }
+    
+    // Sinon, c'est une route SPA → servir index.html
+    console.log(`🔄 [SPA Fallback] Route SPA détectée: ${req.path} → index.html`);
+    res.sendFile(path.join(distPath, "index.html"), (err) => {
+      if (err) {
+        console.error("❌ [SPA Fallback] Erreur servage index.html:", err);
+        res.status(500).send("Erreur serveur");
+      }
+    });
   });
 } else {
   console.log(`🔧 Serveur en mode DÉVELOPPEMENT - Frontend sur ports 3012 (tenant) ou 3013 (owner) (Vite)`);

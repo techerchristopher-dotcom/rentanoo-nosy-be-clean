@@ -94,9 +94,10 @@ export default function RenterBookings() {
   // Auto-remplir la modale quand on revient après paiement Stripe (une fois les bookings chargés)
   useEffect(() => {
     if (comingFromStripeSuccess && bookings.length > 0 && !reservationCourante) {
-      // Trouver la réservation la plus récente avec status "accepted" (payée) ou "pending_payment"
+      // Trouver la réservation la plus récente avec status "accepted", "confirmed" (payée) ou "pending_payment"
+      // Note: Le webhook met le status à "confirmed" après paiement réussi
       const recentBooking = bookings
-        .filter(b => b.status === 'accepted' || b.status === 'pending_payment')
+        .filter(b => b.status === 'accepted' || b.status === 'pending_payment' || b.status === 'confirmed')
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
       
       if (recentBooking && recentBooking.vehicle) {
