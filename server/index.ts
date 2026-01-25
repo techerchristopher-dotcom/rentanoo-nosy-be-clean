@@ -4,12 +4,27 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
+import { getStripe, isStripeConfigured, getStripeKeyType } from "./lib/stripe";
 
-// Charger .env.local explicitement avant d'importer Stripe
-dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+// Charger .env.local en développement uniquement (si fichier existe)
+// En production Railway, les variables sont dans process.env directement
+if (process.env.NODE_ENV !== "production") {
+  const envLocalPath = path.resolve(process.cwd(), ".env.local");
+  try {
+    dotenv.config({ path: envLocalPath });
+    console.log(`📁 [Config] .env.local chargé depuis ${envLocalPath}`);
+  } catch (err) {
+    // Ignorer si .env.local n'existe pas (normal en production)
+  }
+}
 
-// Import dynamique pour garantir que les variables d'env sont chargées
-const { stripe } = await import("../src/lib/stripe");
+// Log de configuration Stripe au boot (sans initialiser l'instance)
+const stripeConfigured = isStripeConfigured();
+const stripeKeyType = getStripeKeyType();
+console.log(`🔑 [Stripe] Configuration: ${stripeConfigured ? `✅ Présente (mode ${stripeKeyType})` : "❌ Manquante"}`);
+if (!stripeConfigured) {
+  console.warn("⚠️ [Stripe] STRIPE_SECRET_KEY non configurée. Les routes Stripe ne fonctionneront pas.");
+}
 
 const app = express();
 
@@ -510,6 +525,7 @@ app.get("/api/health/email", async (_req, res) => {
 
 app.get("/api/stripe-health", async (_req, res) => {
   try {
+    const stripe = getStripe(); // Lazy initialization
     const account = await stripe.accounts.retrieve();
     res.status(200).json({
       ok: true,
