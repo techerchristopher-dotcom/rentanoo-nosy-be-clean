@@ -552,13 +552,14 @@ function normalizePhotoUrl(photo: any): string {
 
 type PhotoItem = { label: string; url: string };
 
-function buildExteriorPhotoItems(exterior: any): PhotoItem[] {
+function buildExteriorPhotoItems(exterior: any, isMoto: boolean = false): PhotoItem[] {
   const zones = [
     { label: 'Avant', photos: exterior?.photos?.avant || [] },
     { label: 'Droite', photos: exterior?.photos?.droit || [] },
     { label: 'Arrière', photos: exterior?.photos?.arriere || [] },
     { label: 'Gauche', photos: exterior?.photos?.gauche || [] },
-    { label: 'Coffre', photos: exterior?.photos?.coffre || [] },
+    // ⭐ Exclure "Coffre" pour moto
+    ...(isMoto ? [] : [{ label: 'Coffre', photos: exterior?.photos?.coffre || [] }]),
     { label: 'Jantes', photos: [
       ...(exterior?.photos?.janteAvDroit || []),
       ...(exterior?.photos?.janteArDroit || []),
@@ -769,7 +770,7 @@ function createPDFTemplateHTML(
     <body>
       ${generatePage1(snapshot, checkin)}
       ${generatePage2(snapshot, checkin)}
-      ${generatePage3(snapshot, checkin)}
+      ${snapshot.interior ? generatePage3(snapshot, checkin) : ''}
       ${generatePage4(snapshot, checkin)}
       ${generatePage5(snapshot, checkin)}
     </body>
@@ -946,11 +947,12 @@ function generatePage1(snapshot: CheckinLegalSnapshot, checkin: CheckinDepart): 
 function generatePage2(snapshot: CheckinLegalSnapshot, checkin: CheckinDepart): string {
   const exterior = snapshot.exterior;
   const vehicle = snapshot.vehicle;
+  const isMoto = vehicle.type_normalized === 'moto';
 
   // Limiter les photos à 2 par zone maximum
   const photoLimit = 2;
 
-  const exteriorPhotos = buildExteriorPhotoItems(exterior);
+  const exteriorPhotos = buildExteriorPhotoItems(exterior, isMoto);
 
   return `
     <div class="page">
@@ -974,6 +976,7 @@ function generatePage2(snapshot: CheckinLegalSnapshot, checkin: CheckinDepart): 
         </div>
       </div>
 
+      ${!isMoto ? `
       <div class="section">
         <div class="section-title">Équipements du coffre</div>
         <div class="card">
@@ -995,6 +998,7 @@ function generatePage2(snapshot: CheckinLegalSnapshot, checkin: CheckinDepart): 
           </div>
         </div>
       </div>
+      ` : ''}
 
       <div class="section">
         <div class="section-title">Dégâts extérieurs relevés</div>
@@ -1043,6 +1047,11 @@ function generatePage2(snapshot: CheckinLegalSnapshot, checkin: CheckinDepart): 
  * Génère la page 3 : État du véhicule – Intérieur
  */
 function generatePage3(snapshot: CheckinLegalSnapshot, checkin: CheckinDepart): string {
+  // ⭐ Défense en profondeur : ne pas générer la page si interior est null (moto)
+  if (!snapshot.interior) {
+    return '';
+  }
+
   const interior = snapshot.interior;
 
   const interiorPhotos = buildInteriorPhotoItems(interior);

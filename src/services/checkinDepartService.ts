@@ -1200,3 +1200,212 @@ export async function finalizeCheckinDepart(params: {
   }
 }
 
+// ============================================================================
+// ⭐ SAUVEGARDE MOTO - ÉTAPE 3 (Extérieur Moto)
+// ============================================================================
+
+import type { Step3MotoData } from '@/modules/etatDesLieuxDepartMoto/types/step3Moto';
+
+/**
+ * Arguments pour sauvegarder un brouillon d'étape 3 moto
+ */
+interface SaveStep3DraftMotoArgs {
+  bookingId: string;
+  ownerId: string | null;
+  renterId: string | null;
+  checkinId?: string | null;
+  step3: Step3MotoData;
+}
+
+/**
+ * ⭐ SAUVEGARDE DE L'ÉTAPE 3 MOTO (Extérieur Moto)
+ * 
+ * ✅ Appel DIRECT à Supabase (même pattern que Step3 voiture)
+ * ⚠️ IMPORTANT : Force step4 = null pour cohérence DB moto
+ * 
+ * Mapping photos :
+ * - zones extérieures (avant, cote_droit, arriere, cote_gauche) → photos_exterieur
+ * - jantes → photos_jantes
+ * 
+ * @returns SaveDraftResponse ou throw Error
+ */
+export async function saveStep3DraftMoto({
+  bookingId,
+  ownerId,
+  renterId,
+  checkinId,
+  step3,
+}: SaveStep3DraftMotoArgs): Promise<SaveDraftResponse> {
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("[CHECKIN_SERVICE] 🏍️ Sauvegarde Étape 3 MOTO (DIRECT Supabase)");
+  console.log("[CHECKIN_SERVICE] 📊 Context:", {
+    bookingId,
+    hasCheckinId: !!checkinId,
+    action: checkinId ? "UPDATE" : "INSERT",
+  });
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  // Adapter la structure moto pour compatibilité avec l'extraction automatique du service
+  // Le service attend : zonesPhotos.avant, zonesPhotos.droit, zonesPhotos.gauche, zonesPhotos.arriere
+  // Moto utilise : zonesPhotos.avant, zonesPhotos.cote_droit, zonesPhotos.cote_gauche, zonesPhotos.arriere
+  const adaptedZonesPhotos: any = {};
+  
+  // Mapper les zones moto vers le format attendu par le service
+  if (step3.zonesPhotos) {
+    if (step3.zonesPhotos.avant) adaptedZonesPhotos.avant = step3.zonesPhotos.avant;
+    if (step3.zonesPhotos.cote_droit) adaptedZonesPhotos.droit = step3.zonesPhotos.cote_droit;
+    if (step3.zonesPhotos.arriere) adaptedZonesPhotos.arriere = step3.zonesPhotos.arriere;
+    if (step3.zonesPhotos.cote_gauche) adaptedZonesPhotos.gauche = step3.zonesPhotos.cote_gauche;
+    
+    // Jantes : le service attend janteAvDroit, janteArDroit, janteAvGauche, janteArGauche
+    // Pour moto, on a juste "jantes" - on peut les répartir ou les mettre dans une seule clé
+    // Pour l'instant, on les met dans janteAvDroit (le service les agrègera dans photos_jantes)
+    if (step3.zonesPhotos.jantes) {
+      adaptedZonesPhotos.janteAvDroit = step3.zonesPhotos.jantes;
+    }
+  }
+
+  // Construire le step3 adapté
+  const adaptedStep3 = {
+    ...step3,
+    zonesPhotos: adaptedZonesPhotos,
+  };
+
+  // ✅ Appel DIRECT à Supabase avec step4 = null (cohérence DB moto)
+  // Le service extraira automatiquement les photos depuis zonesPhotos
+  const { data, error } = await SupabaseCheckinService.saveCheckinDraft({
+    checkin_id: checkinId || null,
+    booking_id: bookingId,
+    owner_id: ownerId || null,
+    renter_id: renterId || null,
+    status: "draft",
+    data: {
+      step3: adaptedStep3,  // Structure adaptée pour extraction automatique
+      step4: null,  // ⚠️ IMPORTANT : Step 4 toujours null pour moto
+    },
+  });
+
+  // Gestion d'erreur
+  if (error) {
+    console.error("[CHECKIN_SERVICE] ❌ Erreur Step3 Moto:", error);
+    throw new Error(error);
+  }
+
+  // Succès
+  if (!data || !data.id) {
+    console.error("[CHECKIN_SERVICE] ❌ Réponse invalide (pas d'ID):", data);
+    throw new Error("Réponse Supabase invalide : ID manquant");
+  }
+
+  console.log("[CHECKIN_SERVICE] ✅ Sauvegarde Step3 Moto réussie:", {
+    checkinId: data.id,
+    status: data.status,
+    dataKeys: Object.keys(data.data || {}),
+  });
+
+  return {
+    checkinId: data.id,
+    status: data.status || "draft",
+    data: data.data,
+    raw: data,
+  };
+}
+
+// ============================================================================
+// ⭐ SAUVEGARDE MOTO - ÉTAPE 5 (Accessoires Moto)
+// ============================================================================
+
+interface Step5MotoData {
+  completedAt?: string;
+  accessories: Record<string, boolean>;
+  photos: Array<{ url: string; storagePath: string }>;
+  notes?: string;
+}
+
+/**
+ * Arguments pour sauvegarder un brouillon d'étape 5 moto
+ */
+interface SaveStep5DraftMotoArgs {
+  bookingId: string;
+  ownerId: string | null;
+  renterId: string | null;
+  checkinId?: string | null;
+  step5: Step5MotoData;
+}
+
+/**
+ * ⭐ SAUVEGARDE DE L'ÉTAPE 5 MOTO (Accessoires Moto)
+ * 
+ * ✅ Appel DIRECT à Supabase (même pattern que Step5 voiture)
+ * ⚠️ IMPORTANT : Force step4 = null pour cohérence DB moto
+ * 
+ * Mapping photos :
+ * - accessoires → photos_accessoires
+ * 
+ * @returns SaveDraftResponse ou throw Error
+ */
+export async function saveStep5DraftMoto({
+  bookingId,
+  ownerId,
+  renterId,
+  checkinId,
+  step5,
+}: SaveStep5DraftMotoArgs): Promise<SaveDraftResponse> {
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("[CHECKIN_SERVICE] 🏍️ Sauvegarde Étape 5 MOTO (DIRECT Supabase)");
+  console.log("[CHECKIN_SERVICE] 📊 Context:", {
+    bookingId,
+    hasCheckinId: !!checkinId,
+    action: checkinId ? "UPDATE" : "INSERT",
+  });
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  // Le service n'extrait pas automatiquement photos_accessoires depuis step5
+  // Il faut les ajouter dans data.step5.photos pour qu'elles soient persistées
+  // Pour l'extraction vers la colonne SQL, on devra peut-être adapter le service plus tard
+  // Pour l'instant, on les garde dans data.step5.photos
+  
+  // ✅ Appel DIRECT à Supabase avec step4 = null (cohérence DB moto)
+  const { data, error } = await SupabaseCheckinService.saveCheckinDraft({
+    checkin_id: checkinId || null,
+    booking_id: bookingId,
+    owner_id: ownerId || null,
+    renter_id: renterId || null,
+    status: "draft",
+    data: {
+      step5: {
+        completedAt: step5.completedAt,
+        accessories: step5.accessories,
+        photos: step5.photos,  // Photos conservées dans data.step5
+        notes: step5.notes,
+      },
+      step4: null,  // ⚠️ IMPORTANT : Step 4 toujours null pour moto
+    },
+  });
+
+  // Gestion d'erreur
+  if (error) {
+    console.error("[CHECKIN_SERVICE] ❌ Erreur Step5 Moto:", error);
+    throw new Error(error);
+  }
+
+  // Succès
+  if (!data || !data.id) {
+    console.error("[CHECKIN_SERVICE] ❌ Réponse invalide (pas d'ID):", data);
+    throw new Error("Réponse Supabase invalide : ID manquant");
+  }
+
+  console.log("[CHECKIN_SERVICE] ✅ Sauvegarde Step5 Moto réussie:", {
+    checkinId: data.id,
+    status: data.status,
+    dataKeys: Object.keys(data.data || {}),
+  });
+
+  return {
+    checkinId: data.id,
+    status: data.status || "draft",
+    data: data.data,
+    raw: data,
+  };
+}
+

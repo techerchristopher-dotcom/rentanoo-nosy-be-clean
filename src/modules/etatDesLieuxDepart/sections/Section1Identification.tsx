@@ -34,6 +34,12 @@ export default function Section1Identification({
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingRecto, setUploadingRecto] = useState(false);
   const [uploadingVerso, setUploadingVerso] = useState(false);
+  
+  // ⭐ États pour contrôler l'ouverture des Select (fix removeChild)
+  // En rendant les Select contrôlés, on évite les problèmes de Portal lors du démontage
+  // Fix minimal : uniquement contrôle React state, pas de manipulation DOM
+  const [paysEmissionOpen, setPaysEmissionOpen] = useState(false);
+  const [categoriePermisOpen, setCategoriePermisOpen] = useState(false);
 
   /**
    * 🛠️ HELPER : Convertir base64 → File
@@ -242,6 +248,10 @@ export default function Section1Identification({
    * 4. Passe à l'étape suivante uniquement si succès
    */
   const handleCompleteIdentificationAndGoNext = async () => {
+    // ⭐ FIX removeChild : Fermer tous les Select avant navigation (React state uniquement)
+    setPaysEmissionOpen(false);
+    setCategoriePermisOpen(false);
+    
     // 🔍 Étape 1 : Validation front-end stricte
     const validation = await validateStep1();
 
@@ -257,9 +267,11 @@ export default function Section1Identification({
       });
 
       // Scroll vers le premier champ en erreur (optionnel mais améliore l'UX)
+      // ⭐ FIX removeChild : Vérifier que l'élément est toujours dans le DOM avant scrollIntoView
       setTimeout(() => {
         const firstError = document.querySelector('[role="alert"]');
-        if (firstError) {
+        // Vérifier que l'élément existe ET qu'il est toujours attaché au DOM
+        if (firstError && firstError.isConnected && document.body.contains(firstError)) {
           firstError.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }, 100);
@@ -414,7 +426,16 @@ export default function Section1Identification({
                     <Globe className="h-4 w-4" />
                     Pays d'émission *
                   </FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    open={paysEmissionOpen} 
+                    onOpenChange={setPaysEmissionOpen}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Fermer le Select après sélection pour éviter les problèmes de Portal
+                      setPaysEmissionOpen(false);
+                    }} 
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner un pays" />
@@ -443,7 +464,16 @@ export default function Section1Identification({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Catégorie *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    open={categoriePermisOpen} 
+                    onOpenChange={setCategoriePermisOpen}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Fermer le Select après sélection pour éviter les problèmes de Portal
+                      setCategoriePermisOpen(false);
+                    }} 
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner une catégorie" />

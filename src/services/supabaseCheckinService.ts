@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { getVehicleTypeForChecking } from "@/utils/vehicleType";
 import {
   type CheckinLegalSnapshot,
   type CheckinLegalSnapshotDriver,
@@ -162,6 +163,10 @@ export const SupabaseCheckinService = {
         const photosCoffre = step3?.zonesPhotos?.coffre || [];
         const degats = step3?.damageReports || [];
 
+        // ⭐ Extraire Step5 : Accessoires (photos si présentes - pour moto)
+        const step5 = mergedData?.step5;
+        const photosAccessoires = step5?.photos || [];
+
         // ⭐ Extraire Step6 : Remarques (si présent)
         const step6 = mergedData?.step6;
         const remarques = step6?.remarques || {};
@@ -193,6 +198,7 @@ export const SupabaseCheckinService = {
           photos_exterieur: photosExterieur,
           photos_jantes: photosJantes,
           photos_coffre: photosCoffre,
+          photos_accessoires: photosAccessoires.length > 0 ? photosAccessoires : null,
           degats: degats,
           // ⭐ Step6 : Remarques (extraction vers colonnes SQL)
           remarques_owner: remarquesOwner,
@@ -260,6 +266,10 @@ export const SupabaseCheckinService = {
       const photosCoffre = step3?.zonesPhotos?.coffre || [];
       const degats = step3?.damageReports || [];
 
+      // ⭐ Extraire Step5 : Accessoires (photos si présentes - pour moto)
+      const step5 = dataToSave.data?.step5;
+      const photosAccessoires = step5?.photos || [];
+
       // ⭐ Extraire Step7 : Validation & Signatures (si présent)
       const step7 = dataToSave.data?.step7;
       const validation = step7?.validation || {};
@@ -287,6 +297,7 @@ export const SupabaseCheckinService = {
             photos_exterieur: photosExterieur,
             photos_jantes: photosJantes,
             photos_coffre: photosCoffre,
+            photos_accessoires: photosAccessoires.length > 0 ? photosAccessoires : null,
             degats: degats,
             // ⭐ Step7 : Validation & Signatures (extraction vers colonnes SQL)
             signature_owner: signatureOwner,
@@ -454,17 +465,19 @@ export const SupabaseCheckinService = {
         // On continue avec des valeurs null pour booking
       }
 
-      // 2.2. Charger le véhicule (pour obtenir owner_id)
+      // 2.2. Charger le véhicule (pour obtenir owner_id + vehicle_type)
       let vehicleOwnerId: string | null = null;
+      let vehicleTypeRaw: string | null = null;
       if (booking?.vehicle_id) {
         const { data: vehicle, error: vehicleError } = await supabase
           .from("vehicles" as any)
-          .select("id, owner_id")
+          .select("id, owner_id, vehicle_type")
           .eq("id", booking.vehicle_id)
           .single();
 
         if (!vehicleError && vehicle) {
           vehicleOwnerId = (vehicle as any).owner_id;
+          vehicleTypeRaw = (vehicle as any).vehicle_type || null;
         }
       }
 
@@ -584,6 +597,7 @@ export const SupabaseCheckinService = {
       };
 
       // 3.5. Vehicle (véhicule)
+      const vehicleTypeNormalized = getVehicleTypeForChecking(vehicleTypeRaw);
       const vehicleSnapshot: CheckinLegalSnapshotVehicle = {
         brand: vehicule.marque || "",
         model: vehicule.modele || "",
@@ -591,27 +605,38 @@ export const SupabaseCheckinService = {
         mileageDeparture: releves.kilometrage ?? null,
         fuelLevel: releves.niveauCarburant ?? null,
         dashboardPhotos: releves.dashboardPhotos || [],
+        type_raw: vehicleTypeRaw,
+        type_normalized: vehicleTypeNormalized,
       };
 
       // 3.6. Exterior (extérieur)
+      // ⭐ Phase 2 : Pour moto, coffre = null (non pertinent)
+      const isMoto = vehicleTypeNormalized === "moto";
       const exterior: CheckinLegalSnapshotExterior = {
         cleanliness: {
           level: propreteExterieure.level || null,
           notes: propreteExterieure.notes || null,
           photos: propreteExterieure.photos || [],
         },
-        trunkEquipments: {
-          triangle: coffreEquipements.triangle || false,
-          gilet: coffreEquipements.gilet || false,
-          roueSecours: coffreEquipements.roueSecours || false,
-          kitAntiCrevaison: coffreEquipements.kitAntiCrevaison || false,
-        },
+        trunkEquipments: isMoto
+          ? {
+              triangle: false,
+              gilet: false,
+              roueSecours: false,
+              kitAntiCrevaison: false,
+            }
+          : {
+              triangle: coffreEquipements.triangle || false,
+              gilet: coffreEquipements.gilet || false,
+              roueSecours: coffreEquipements.roueSecours || false,
+              kitAntiCrevaison: coffreEquipements.kitAntiCrevaison || false,
+            },
         photos: {
           avant: zonesPhotos.avant || [],
           droit: zonesPhotos.droit || [],
           arriere: zonesPhotos.arriere || [],
           gauche: zonesPhotos.gauche || [],
-          coffre: zonesPhotos.coffre || [],
+          coffre: isMoto ? [] : (zonesPhotos.coffre || []), // ⭐ Phase 2 : coffre = [] pour moto
           janteAvDroit: zonesPhotos.janteAvDroit || [],
           janteArDroit: zonesPhotos.janteArDroit || [],
           janteAvGauche: zonesPhotos.janteAvGauche || [],
@@ -632,25 +657,28 @@ export const SupabaseCheckinService = {
       };
 
       // 3.7. Interior (intérieur)
-      const interior: CheckinLegalSnapshotInterior = {
-        cleanliness: {
-          level: propreteGenerale.level || null,
-          notes: propreteGenerale.notes || null,
-          photos: propreteGenerale.photos || [],
-        },
-        seats: {
-          hasDamage: sieges.hasDamage || false,
-          damages: sieges.damages || [],
-          notes: sieges.notes || null,
-          photos: sieges.photos || [],
-        },
-        equipments: {
-          radioOk: equipements.radioOk ?? true,
-          acOk: equipements.acOk ?? true,
-          centralLockOk: equipements.centralLockOk ?? true,
-          windowsOk: equipements.windowsOk ?? true,
-        },
-      };
+      // ⭐ Phase 2 : Pour moto, interior = null (non pertinent)
+      const interior: CheckinLegalSnapshotInterior | null = isMoto
+        ? null
+        : {
+            cleanliness: {
+              level: propreteGenerale.level || null,
+              notes: propreteGenerale.notes || null,
+              photos: propreteGenerale.photos || [],
+            },
+            seats: {
+              hasDamage: sieges.hasDamage || false,
+              damages: sieges.damages || [],
+              notes: sieges.notes || null,
+              photos: sieges.photos || [],
+            },
+            equipments: {
+              radioOk: equipements.radioOk ?? true,
+              acOk: equipements.acOk ?? true,
+              centralLockOk: equipements.centralLockOk ?? true,
+              windowsOk: equipements.windowsOk ?? true,
+            },
+          };
 
       // 3.8. Accessories (accessoires)
       const accessories: CheckinLegalSnapshotAccessories = {

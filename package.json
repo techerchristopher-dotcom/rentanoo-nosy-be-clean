@@ -21,6 +21,7 @@
     "start": "tsx server/index.ts",
     "start:prod": "NODE_ENV=production tsx server/index.ts",
     "diagnostic:duplication": "node scripts/diagnostic-duplication.js",
+    "diagnose:stripe": "node scripts/diagnose-stripe-config.js",
     "verify:supabase": "node scripts/verify-supabase-connection.js",
     "switch:supabase": "./scripts/switch-supabase-project.sh",
     "i18n:extract": "i18next-scanner --config i18next-scanner.config.cjs",

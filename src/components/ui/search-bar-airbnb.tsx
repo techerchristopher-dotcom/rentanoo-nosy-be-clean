@@ -423,7 +423,9 @@ export function SearchBarAirbnb({
             )}
           </div>
             </div>,
-            document.body
+            typeof document !== 'undefined' 
+              ? (document.getElementById('radix-portal-root') || document.body)
+              : null
           )}
       {/* Modal flottant avec sélection d'heures */}
       {showTimePicker && createPortal(
@@ -493,7 +495,9 @@ export function SearchBarAirbnb({
             )}
           </div>
         </div>,
-        document.body
+        typeof document !== 'undefined' 
+          ? (document.getElementById('radix-portal-root') || document.body)
+          : null
       )}
     </div>
   );

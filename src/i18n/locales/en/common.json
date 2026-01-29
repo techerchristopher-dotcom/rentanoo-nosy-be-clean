@@ -975,6 +975,7 @@
     "error": "Error",
     "errorGeneric": "Error, please try again.",
     "errorNetwork": "Unable to contact the server. Please check your internet connection.",
+    "errorTimeout": "The request took too long. Please try again.",
     "fileTooLarge": "File must not exceed 10MB"
   }
 }

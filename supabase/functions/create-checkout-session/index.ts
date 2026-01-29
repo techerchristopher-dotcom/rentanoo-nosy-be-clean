@@ -82,10 +82,9 @@ if (isDev) {
 const PROD_ALLOWED_ORIGINS = Deno.env.get("CORS_ALLOWED_ORIGINS")
   ? Deno.env.get("CORS_ALLOWED_ORIGINS")!.split(",").map(o => o.trim())
   : [
-      "https://rentanoo.yt",
-      "https://www.rentanoo.yt",
       "https://rentanoo.com",
       "https://www.rentanoo.com",
+      // rentanoo.yt retiré (ancien domaine, migration vers rentanoo.com)
       // Ajouter d'autres domaines de production si nécessaire
     ];
 
@@ -450,6 +449,27 @@ Deno.serve(async (req) => {
     const successUrl = Deno.env.get("STRIPE_SUCCESS_URL");
     const cancelUrl = Deno.env.get("STRIPE_CANCEL_URL");
 
+    // Log des URLs utilisées pour vérification (sans révéler de secrets)
+    console.log("🔗 [create-checkout-session] URLs de redirection configurées:", {
+      successUrl: successUrl ? `${successUrl.substring(0, Math.min(30, successUrl.length))}...` : "MANQUANT",
+      cancelUrl: cancelUrl ? `${cancelUrl.substring(0, Math.min(30, cancelUrl.length))}...` : "MANQUANT",
+      successUrlDomain: successUrl ? (() => {
+        try {
+          return new URL(successUrl).hostname;
+        } catch {
+          return "INVALID_URL";
+        }
+      })() : "N/A",
+      cancelUrlDomain: cancelUrl ? (() => {
+        try {
+          return new URL(cancelUrl).hostname;
+        } catch {
+          return "INVALID_URL";
+        }
+      })() : "N/A",
+      timestamp: new Date().toISOString(),
+    });
+
     if (!successUrl || !cancelUrl) {
       console.error("❌ [create-checkout-session][FAIL][MISSING_REDIRECT_URLS] URLs de redirection manquantes:", {
         hasSuccessUrl: !!successUrl,
@@ -523,6 +543,23 @@ Deno.serve(async (req) => {
         ? "https://dashboard.stripe.com/payments"
         : "N/A",
       searchHint: `Chercher dans le dashboard Stripe (mode ${stripeKeyType}) avec session_id: ${session.id}`,
+      // URLs utilisées pour redirection (vérification domaine)
+      successUrlUsed: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrlUsed: cancelUrl,
+      successUrlDomain: successUrl ? (() => {
+        try {
+          return new URL(successUrl).hostname;
+        } catch {
+          return "INVALID_URL";
+        }
+      })() : "N/A",
+      cancelUrlDomain: cancelUrl ? (() => {
+        try {
+          return new URL(cancelUrl).hostname;
+        } catch {
+          return "INVALID_URL";
+        }
+      })() : "N/A",
     });
 
     // Retourner l'URL de la session

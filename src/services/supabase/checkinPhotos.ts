@@ -443,4 +443,26 @@ export class CheckinPhotoService {
       contextSuffix: `_${area}`,  // ⭐ Ex: degats_interieur_sieges_8
     });
   }
+
+  /**
+   * ⭐ Upload photo d'accessoires (Step5)
+   * 
+   * Path : resa_8/depart/photos_accessoires_8_<timestamp>_<uuid>.jpg
+   * Usage : Photo d'accessoires (casque, gants, etc.)
+   */
+  static async uploadAccessoryPhoto(
+    file: File,
+    bookingId: string,
+    bookingReferenceNumber: number | null | undefined,
+    accessorySuffix?: string  // Optionnel : "_casque", "_gants", etc.
+  ): Promise<{ data: UploadedCheckinPhoto | null; error: string | null }> {
+    return this.uploadCheckinPhoto({
+      file,
+      bookingId,
+      bookingReferenceNumber: bookingReferenceNumber ?? null,
+      subfolder: 'depart',
+      bddColumnName: 'photos_accessoires',
+      contextSuffix: accessorySuffix ? `_${accessorySuffix}` : undefined,
+    });
+  }
 }

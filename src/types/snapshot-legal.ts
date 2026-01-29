@@ -64,6 +64,9 @@ export interface CheckinLegalSnapshotVehicle {
     uploadedAt: string; // ISO datetime string
     storagePath: string;
   }>;
+  // ⭐ Phase 2 : Type de véhicule (raw + normalized)
+  type_raw: string | null; // Valeur brute depuis vehicles.vehicle_type (ex: "scooter", "moto", "car")
+  type_normalized: string | null; // Valeur normalisée via getVehicleTypeForChecking (ex: "moto", "car")
 }
 
 /**
@@ -224,7 +227,7 @@ export interface CheckinLegalSnapshot {
   booking: CheckinLegalSnapshotBooking;
   vehicle: CheckinLegalSnapshotVehicle;
   exterior: CheckinLegalSnapshotExterior;
-  interior: CheckinLegalSnapshotInterior;
+  interior: CheckinLegalSnapshotInterior | null; // ⭐ Phase 2 : null pour moto (non pertinent)
   accessories: CheckinLegalSnapshotAccessories;
   remarks: CheckinLegalSnapshotRemarks;
   validation: CheckinLegalSnapshotValidation;
