@@ -1,0 +1,384 @@
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Camera, X, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import { CheckinPhotoService } from "@/services/supabase/checkinPhotos";
+import { saveStep3DraftMoto } from "@/services/checkinDepartService";
+import type { Step3MotoData, MotoExteriorZone, MotoPhoto } from "../types/step3Moto";
+
+interface Section3ExterieurMotoProps {
+  bookingId?: string;
+  bookingReferenceNumber?: number | null;
+  ownerId?: string | null;
+  renterId?: string | null;
+  checkinId?: string | null;
+  onCheckinIdChange?: (id: string) => void;
+  onComplete?: () => void;
+  initialData?: Step3MotoData | null;
+  isReadOnly?: boolean;
+}
+
+const motoZones: Array<{
+  id: MotoExteriorZone;
+  label: string;
+  description: string;
+  bddColumn: "photos_exterieur" | "photos_jantes";
+}> = [
+  {
+    id: "avant",
+    label: "Avant",
+    description: "Photo de l'avant de la moto (phare, garde-boue avant)",
+    bddColumn: "photos_exterieur",
+  },
+  {
+    id: "cote_droit",
+    label: "Côté droit",
+    description: "Photo du côté droit de la moto",
+    bddColumn: "photos_exterieur",
+  },
+  {
+    id: "arriere",
+    label: "Arrière",
+    description: "Photo de l'arrière de la moto (feux, garde-boue arrière)",
+    bddColumn: "photos_exterieur",
+  },
+  {
+    id: "cote_gauche",
+    label: "Côté gauche",
+    description: "Photo du côté gauche de la moto",
+    bddColumn: "photos_exterieur",
+  },
+  {
+    id: "jantes",
+    label: "Jantes / Roues",
+    description: "Photos des jantes et roues (avant et arrière)",
+    bddColumn: "photos_jantes",
+  },
+];
+
+export function Section3ExterieurMoto({
+  bookingId,
+  bookingReferenceNumber,
+  ownerId,
+  renterId,
+  checkinId,
+  onCheckinIdChange,
+  onComplete,
+  initialData,
+}: Section3ExterieurMotoProps) {
+  const [zonesPhotos, setZonesPhotos] = useState<Step3MotoData["zonesPhotos"]>(
+    initialData?.zonesPhotos || {}
+  );
+  const [isUploading, setIsUploading] = useState<Record<MotoExteriorZone, boolean>>({
+    avant: false,
+    cote_droit: false,
+    arriere: false,
+    cote_gauche: false,
+    jantes: false,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRefs = useRef<Record<MotoExteriorZone, HTMLInputElement | null>>({
+    avant: null,
+    cote_droit: null,
+    arriere: null,
+    cote_gauche: null,
+    jantes: null,
+  });
+
+  // ⭐ Hydratation depuis initialData (draft chargé)
+  useEffect(() => {
+    if (initialData?.zonesPhotos) {
+      console.log("[Moto Step3] 🔄 Hydratation depuis draft:", {
+        zones: Object.keys(initialData.zonesPhotos),
+        totalPhotos: Object.values(initialData.zonesPhotos).flat().length,
+      });
+      setZonesPhotos(initialData.zonesPhotos);
+    }
+  }, [initialData]);
+
+  // Convertir base64 en File
+  const base64ToFile = (base64: string, filename: string): File => {
+    const arr = base64.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  // Upload photo pour une zone
+  const handleUploadPhoto = async (
+    zone: MotoExteriorZone,
+    files: FileList | null
+  ) => {
+    if (!files || files.length === 0 || !bookingId) return;
+
+    setIsUploading((prev) => ({ ...prev, [zone]: true }));
+
+    try {
+      const zoneConfig = motoZones.find((z) => z.id === zone);
+      if (!zoneConfig) return;
+
+      const uploadedPhotos: MotoPhoto[] = [];
+
+      for (const file of Array.from(files)) {
+        // Convertir en base64 puis en File
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const fileObj = base64ToFile(base64, `${zone}_${Date.now()}.jpg`);
+
+        let result;
+        if (zoneConfig.bddColumn === "photos_exterieur") {
+          // Mapping zones moto vers zones attendues par le service
+          const serviceZoneMap: Record<MotoExteriorZone, string> = {
+            avant: "avant",
+            cote_droit: "droit",
+            arriere: "arriere",
+            cote_gauche: "gauche",
+            jantes: "jantes", // Ne sera pas utilisé ici
+          };
+          const serviceZone = serviceZoneMap[zone];
+          
+          // Upload vers photos_exterieur avec suffix zone
+          result = await CheckinPhotoService.uploadExteriorZonePhoto(
+            fileObj,
+            bookingId,
+            bookingReferenceNumber,
+            serviceZone
+          );
+        } else {
+          // Upload vers photos_jantes avec suffix jantes (pour moto, on utilise un suffix simple)
+          result = await CheckinPhotoService.uploadWheelPhoto(
+            fileObj,
+            bookingId,
+            bookingReferenceNumber,
+            "jantes" // Suffix simple pour moto
+          );
+        }
+
+        if (result.error || !result.data) {
+          console.error(`[Moto Step3] Erreur upload ${zone}:`, result.error);
+          toast.error(`Erreur lors de l'upload de la photo ${zone}`);
+          continue;
+        }
+
+        uploadedPhotos.push({
+          url: result.data.publicUrl,
+          storagePath: result.data.storagePath,
+        });
+      }
+
+      if (uploadedPhotos.length > 0) {
+        setZonesPhotos((prev) => ({
+          ...prev,
+          [zone]: [...(prev[zone] || []), ...uploadedPhotos],
+        }));
+        toast.success(`${uploadedPhotos.length} photo(s) ajoutée(s) pour ${zoneConfig.label}`);
+      }
+    } catch (error) {
+      console.error(`[Moto Step3] Exception upload ${zone}:`, error);
+      toast.error(`Erreur lors de l'upload des photos`);
+    } finally {
+      setIsUploading((prev) => ({ ...prev, [zone]: false }));
+      // Reset input
+      const input = fileInputRefs.current[zone];
+      if (input) input.value = "";
+    }
+  };
+
+  // ⭐ Helper pour obtenir un identifiant stable d'une photo (storagePath prioritaire, fallback url)
+  const getPhotoId = (photo: MotoPhoto): string => {
+    return (photo.storagePath?.trim() ? photo.storagePath : photo.url);
+  };
+
+  // Supprimer une photo (local seulement)
+  const handleRemovePhoto = (zone: MotoExteriorZone, photoId: string) => {
+    setZonesPhotos((prev) => {
+      const zonePhotos = prev[zone] || [];
+      // ⭐ Comparer sur getPhotoId pour gérer le fallback storagePath → url
+      const updated = zonePhotos.filter((photo) => getPhotoId(photo) !== photoId);
+      return {
+        ...prev,
+        [zone]: updated.length > 0 ? updated : undefined,
+      };
+    });
+    toast.success("Photo supprimée");
+  };
+
+  // Vérifier si toutes les zones ont au moins une photo
+  const allZonesHavePhotos = motoZones.every(
+    (zone) => zonesPhotos[zone.id] && zonesPhotos[zone.id]!.length > 0
+  );
+
+  const handleComplete = async () => {
+    if (!allZonesHavePhotos) {
+      toast.error("Veuillez ajouter au moins une photo pour chaque zone");
+      return;
+    }
+
+    if (!bookingId) {
+      toast.error("Erreur : bookingId manquant");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Préparer le payload Step 3
+      const step3Payload: Step3MotoData = {
+        zonesPhotos,
+        completedAt: new Date().toISOString(),
+      };
+
+      // Sauvegarder via le service moto
+      const result = await saveStep3DraftMoto({
+        bookingId,
+        ownerId: ownerId || null,
+        renterId: renterId || null,
+        checkinId: checkinId || null,
+        step3: step3Payload,
+      });
+
+      // Propager le checkinId
+      if (result.checkinId && onCheckinIdChange) {
+        onCheckinIdChange(result.checkinId);
+      }
+
+      toast.success("✅ Étape 3 sauvegardée !", {
+        description: "Les photos ont été enregistrées avec succès.",
+      });
+
+      // Navigation vers l'étape suivante
+      onComplete?.();
+    } catch (error: any) {
+      console.error("[Moto Step3] ❌ Erreur sauvegarde:", error);
+      toast.error("❌ Erreur lors de la sauvegarde", {
+        description: error.message || "Vos données n'ont pas été perdues, vous pouvez réessayer.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Extérieur de la moto</h2>
+        <p className="text-muted-foreground text-sm">
+          Prenez des photos de chaque zone de la moto pour documenter son état.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {motoZones.map((zoneConfig) => {
+          const zone = zoneConfig.id;
+          const photos = zonesPhotos[zone] || [];
+          const hasPhotos = photos.length > 0;
+          const isUploadingZone = isUploading[zone];
+
+          return (
+            <Card key={zone}>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {zoneConfig.label}
+                  {hasPhotos && (
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  )}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {zoneConfig.description}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <input
+                  ref={(el) => {
+                    fileInputRefs.current[zone] = el;
+                  }}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleUploadPhoto(zone, e.target.files)}
+                />
+
+                {!hasPhotos ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <Camera className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Aucune photo pour cette zone
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRefs.current[zone]?.click()}
+                      disabled={isUploadingZone}
+                    >
+                      {isUploadingZone ? "Upload en cours..." : "Ajouter une photo"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {photos.map((photo) => {
+                        // ⭐ Clé stable basée sur zone + getPhotoId pour éviter les erreurs removeChild
+                        // La clé doit être unique même si 2 zones ont la même url
+                        const photoId = getPhotoId(photo);
+                        const photoKey = `${zone}-${photoId}`;
+                        return (
+                          <div key={photoKey} className="relative group">
+                            <img
+                              src={photo.url}
+                              alt={`${zoneConfig.label} - Photo`}
+                              className="w-full h-32 object-cover rounded-lg border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(zone, photoId)}
+                              className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-black/80 transition-colors opacity-0 group-hover:opacity-100"
+                              aria-label="Supprimer la photo"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRefs.current[zone]?.click()}
+                      disabled={isUploadingZone}
+                    >
+                      {isUploadingZone ? "Upload en cours..." : "Ajouter une autre photo"}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-end pt-4 border-t">
+        <Button
+          type="button"
+          onClick={handleComplete}
+          disabled={!allZonesHavePhotos || isSaving}
+        >
+          {isSaving ? "Sauvegarde en cours..." : "Suivant"}
+        </Button>
+      </div>
+    </div>
+  );
+}
