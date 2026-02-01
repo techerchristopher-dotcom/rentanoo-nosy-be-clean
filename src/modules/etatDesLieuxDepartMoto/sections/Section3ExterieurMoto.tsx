@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from "react";
+import { useFormContext } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, X, CheckCircle2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Camera, X, CheckCircle2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CheckinPhotoService } from "@/services/supabase/checkinPhotos";
 import { saveStep3DraftMoto } from "@/services/checkinDepartService";
@@ -67,6 +70,10 @@ export function Section3ExterieurMoto({
   onComplete,
   initialData,
 }: Section3ExterieurMotoProps) {
+  // ⭐ Step 3A : Accès RHF pour damageReports
+  const { watch, setValue, getValues } = useFormContext();
+  const damageReports = watch("damageReports") || [];
+
   const [zonesPhotos, setZonesPhotos] = useState<Step3MotoData["zonesPhotos"]>(
     initialData?.zonesPhotos || {}
   );
@@ -78,6 +85,8 @@ export function Section3ExterieurMoto({
     jantes: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  // ⭐ Step 3B : State pour upload photos dégâts
+  const [isUploadingDamagePhoto, setIsUploadingDamagePhoto] = useState<Record<number, boolean>>({});
   const fileInputRefs = useRef<Record<MotoExteriorZone, HTMLInputElement | null>>({
     avant: null,
     cote_droit: null,
@@ -85,6 +94,8 @@ export function Section3ExterieurMoto({
     cote_gauche: null,
     jantes: null,
   });
+  // ⭐ Step 3B : Refs pour inputs file photos dégâts
+  const damagePhotoInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   // ⭐ Hydratation depuis initialData (draft chargé)
   useEffect(() => {
@@ -214,6 +225,131 @@ export function Section3ExterieurMoto({
     toast.success("Photo supprimée");
   };
 
+  // ⭐ Step 3A : Handlers pour gérer damageReports
+  const handleAddDamage = () => {
+    const newDamage = { side: "avant", typeDegats: [], commentaire: "", photos: [] };
+    setValue("damageReports", [...damageReports, newDamage], {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
+  const handleUpdateDamage = (index: number, field: "side" | "commentaire", value: string) => {
+    const updated = [...damageReports];
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+    setValue("damageReports", updated, {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
+  const handleRemoveDamage = (index: number) => {
+    const updated = damageReports.filter((_: any, i: number) => i !== index);
+    setValue("damageReports", updated, {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+    toast.success("Dégât supprimé");
+  };
+
+  // ⭐ Step 3B : Upload photo pour un dégât
+  const handleAddDamagePhoto = async (damageIndex: number, files: FileList | null) => {
+    if (!files || files.length === 0 || !bookingId) {
+      if (!bookingId) {
+        toast.error("Erreur : bookingId manquant");
+      }
+      return;
+    }
+
+    setIsUploadingDamagePhoto((prev) => ({ ...prev, [damageIndex]: true }));
+
+    try {
+      const damage = damageReports[damageIndex];
+      if (!damage) {
+        toast.error("Dégât introuvable");
+        return;
+      }
+
+      const zone = damage.side || "avant";
+      const uploadedPhotos: MotoPhoto[] = [];
+
+      for (const file of Array.from(files)) {
+        // Convertir en base64 puis en File (même logique que zones)
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const fileObj = base64ToFile(base64, `degat_${damageIndex}_${Date.now()}.jpg`);
+
+        // Upload via CheckinPhotoService
+        const result = await CheckinPhotoService.uploadDamagePhoto(
+          fileObj,
+          bookingId,
+          bookingReferenceNumber,
+          zone,
+          damageIndex
+        );
+
+        if (result.error || !result.data) {
+          console.error(`[Moto Step3] Erreur upload photo dégât ${damageIndex}:`, result.error);
+          toast.error(`Erreur lors de l'upload de la photo`);
+          continue;
+        }
+
+        uploadedPhotos.push({
+          url: result.data.publicUrl,
+          storagePath: result.data.storagePath,
+        });
+      }
+
+      if (uploadedPhotos.length > 0) {
+        const updated = [...damageReports];
+        updated[damageIndex] = {
+          ...updated[damageIndex],
+          photos: [...(updated[damageIndex].photos || []), ...uploadedPhotos],
+        };
+        setValue("damageReports", updated, {
+          shouldDirty: true,
+          shouldTouch: true,
+        });
+        toast.success(`${uploadedPhotos.length} photo(s) ajoutée(s) pour ce dégât`);
+      }
+    } catch (error) {
+      console.error(`[Moto Step3] Exception upload photo dégât ${damageIndex}:`, error);
+      toast.error(`Erreur lors de l'upload des photos`);
+    } finally {
+      setIsUploadingDamagePhoto((prev) => ({ ...prev, [damageIndex]: false }));
+      // Reset input
+      const input = damagePhotoInputRefs.current[damageIndex];
+      if (input) input.value = "";
+    }
+  };
+
+  // ⭐ Step 3B : Supprimer une photo d'un dégât (local seulement)
+  const handleRemoveDamagePhoto = (damageIndex: number, photoIndex: number) => {
+    const updated = [...damageReports];
+    const damage = updated[damageIndex];
+    if (!damage || !damage.photos) return;
+
+    const updatedPhotos = damage.photos.filter((_: any, i: number) => i !== photoIndex);
+    updated[damageIndex] = {
+      ...damage,
+      photos: updatedPhotos.length > 0 ? updatedPhotos : [],
+    };
+
+    setValue("damageReports", updated, {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+    toast.success("Photo supprimée");
+  };
+
   // Vérifier si toutes les zones ont au moins une photo
   const allZonesHavePhotos = motoZones.every(
     (zone) => zonesPhotos[zone.id] && zonesPhotos[zone.id]!.length > 0
@@ -233,10 +369,14 @@ export function Section3ExterieurMoto({
     setIsSaving(true);
 
     try {
+      // ⭐ Step 3A : Récupérer damageReports depuis RHF
+      const currentDamageReports = getValues("damageReports") || [];
+
       // Préparer le payload Step 3
-      const step3Payload: Step3MotoData = {
+      const step3Payload: Step3MotoData & { damageReports?: any[] } = {
         zonesPhotos,
         completedAt: new Date().toISOString(),
+        damageReports: currentDamageReports,
       };
 
       // Sauvegarder via le service moto
@@ -369,6 +509,138 @@ export function Section3ExterieurMoto({
           );
         })}
       </div>
+
+      {/* ⭐ Step 3A : Card Dégâts */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Dégâts</CardTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddDamage}
+            >
+              Ajouter un dégât
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {damageReports.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Aucun dégât enregistré
+            </p>
+          ) : (
+            damageReports.map((damage: any, index: number) => (
+              <div
+                key={index}
+                className="border border-gray-200 rounded-md p-4 space-y-3 bg-gray-50"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                        Zone
+                      </label>
+                      <Select
+                        value={damage.side || "avant"}
+                        onValueChange={(value) => handleUpdateDamage(index, "side", value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Sélectionner une zone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="avant">Avant</SelectItem>
+                          <SelectItem value="droit">Côté droit</SelectItem>
+                          <SelectItem value="arriere">Arrière</SelectItem>
+                          <SelectItem value="gauche">Côté gauche</SelectItem>
+                          <SelectItem value="janteAvDroit">Jantes / Roues</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                        Commentaire
+                      </label>
+                      <Textarea
+                        value={damage.commentaire || ""}
+                        onChange={(e) => handleUpdateDamage(index, "commentaire", e.target.value)}
+                        placeholder="Décrire le dégât observé..."
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                    {/* ⭐ Step 3B : Photos du dégât */}
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                        Photos du dégât
+                      </label>
+                      <input
+                        ref={(el) => {
+                          damagePhotoInputRefs.current[index] = el;
+                        }}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => handleAddDamagePhoto(index, e.target.files)}
+                      />
+                      <div className="space-y-2">
+                        {damage.photos && Array.isArray(damage.photos) && damage.photos.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2">
+                            {damage.photos.map((photo: MotoPhoto, photoIndex: number) => (
+                              <div key={photoIndex} className="relative group">
+                                <img
+                                  src={photo.url}
+                                  alt={`Dégât ${index + 1} - Photo ${photoIndex + 1}`}
+                                  className="w-full h-24 object-cover rounded-lg border"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDamagePhoto(index, photoIndex)}
+                                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-sm hover:bg-black/80 transition-colors opacity-0 group-hover:opacity-100"
+                                  aria-label="Supprimer la photo"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => damagePhotoInputRefs.current[index]?.click()}
+                          disabled={isUploadingDamagePhoto[index]}
+                          className="w-full"
+                        >
+                          {isUploadingDamagePhoto[index] ? (
+                            <span className="flex items-center gap-2">
+                              <span>Upload en cours...</span>
+                            </span>
+                          ) : (
+                            "Ajouter une photo"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveDamage(index)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       <div className="flex justify-end pt-4 border-t">
         <Button

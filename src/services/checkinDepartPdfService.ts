@@ -1010,10 +1010,12 @@ function generatePage2(snapshot: CheckinLegalSnapshot, checkin: CheckinDepart): 
                   <span class="field-label">Zone :</span>
                   <span class="field-value">${damage.zone || 'Non renseigné'}</span>
                 </div>
+                ${damage.typeDegats && Array.isArray(damage.typeDegats) && damage.typeDegats.length > 0 ? `
                 <div class="field-row">
                   <span class="field-label">Types de dégâts :</span>
-                  <span class="field-value">${damage.typeDegats && damage.typeDegats.length > 0 ? damage.typeDegats.join(', ') : 'Aucun'}</span>
+                  <span class="field-value">${damage.typeDegats.join(', ')}</span>
                 </div>
+                ` : ''}
                 ${damage.commentaire ? `
                   <div class="field-row">
                     <span class="field-label">Commentaire :</span>

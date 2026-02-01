@@ -111,6 +111,7 @@ export function EtatDesLieuxDepartFormMoto({
       },
       ownerSignature: "",
       driverSignature: "",
+      damageReports: [], // ⭐ Step 1 : Initialisation damageReports pour hydratation
     }),
     [] // ⭐ Pas de dépendance - valeurs statiques
   );
@@ -335,6 +336,67 @@ export function EtatDesLieuxDepartFormMoto({
               zones: Object.keys(mappedZonesPhotos),
               totalPhotos: Object.values(mappedZonesPhotos).flat().length,
             });
+
+            // ⭐ Step 1 : Hydratation damageReports (priorité : damageReports > degats)
+            if (!cancelled) {
+              let convertedDamageReports: any[] = [];
+
+              // Priorité 1 : Si step3.damageReports existe et est un array → utiliser tel quel
+              if (step3.damageReports && Array.isArray(step3.damageReports)) {
+                convertedDamageReports = step3.damageReports;
+                console.log("[Moto Draft] ✅ damageReports chargé depuis step3.damageReports:", convertedDamageReports.length);
+              }
+              // Priorité 2 : Sinon, convertir step3.degats → damageReports
+              else if (step3.degats && Array.isArray(step3.degats) && step3.degats.length > 0) {
+                // Fonction de conversion locale
+                const convertDegatsMotoToDamageReports = (degats: any[]): any[] => {
+                  return degats.map((degat) => {
+                    // Mapping zone moto → side voiture
+                    let side: string;
+                    switch (degat.zone) {
+                      case "avant":
+                        side = "avant";
+                        break;
+                      case "cote_droit":
+                        side = "droit";
+                        break;
+                      case "arriere":
+                        side = "arriere";
+                        break;
+                      case "cote_gauche":
+                        side = "gauche";
+                        break;
+                      case "jantes":
+                        side = "janteAvDroit"; // ⚠️ Obligatoire : "jantes" n'est pas un side valide
+                        break;
+                      default:
+                        side = degat.zone || "avant"; // Fallback
+                    }
+
+                    return {
+                      side,
+                      typeDegats: [], // Toujours vide (pas de types prédéfinis dans ancien format)
+                      commentaire: degat.description || "",
+                      photos: degat.photos || [],
+                    };
+                  });
+                };
+
+                convertedDamageReports = convertDegatsMotoToDamageReports(step3.degats);
+                console.log("[Moto Draft] ✅ damageReports converti depuis step3.degats:", convertedDamageReports.length);
+              }
+              // Priorité 3 : Sinon → [] (déjà initialisé)
+
+              // Hydrater RHF
+              if (convertedDamageReports.length > 0) {
+                methods.setValue("damageReports", convertedDamageReports, {
+                  shouldDirty: false,
+                  shouldTouch: false,
+                  shouldValidate: false,
+                });
+                console.log("[Moto Draft] ✅ damageReports hydraté dans RHF:", convertedDamageReports.length, "dégât(s)");
+              }
+            }
           }
 
           // Extraire Step 5

@@ -649,7 +649,7 @@ export const SupabaseCheckinService = {
           typeDegats: damage.typeDegats || [],
           commentaire: damage.commentaire ?? null,
           photos: (damage.photos || []).map((photo: any) => ({
-            publicUrl: photo.publicUrl || '',
+            publicUrl: photo.publicUrl || photo.url || '', // ⭐ Step 3D : Compatibilité moto (url) + voiture (publicUrl)
             uploadedAt: photo.uploadedAt || '',
             storagePath: photo.storagePath || '',
           })),

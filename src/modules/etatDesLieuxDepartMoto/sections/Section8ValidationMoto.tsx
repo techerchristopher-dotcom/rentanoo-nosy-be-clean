@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertCircle, CheckCircle } from "lucide-react";
@@ -7,6 +8,7 @@ import { finalizeCheckinDepart, saveStep2Draft, type Step2Payload } from "@/serv
 import { useFormContext } from "react-hook-form";
 import { SignatureCanvas } from "@/components/checkin/SignatureCanvas";
 import { SupabaseCheckinService } from "@/services/supabaseCheckinService";
+import { FinalizeCheckinProgressModal } from "@/components/checkin/FinalizeCheckinProgressModal";
 
 interface Section8ValidationMotoProps {
   onInvalidStepsChange?: (steps: Set<number>) => void;
@@ -68,6 +70,51 @@ export function Section8ValidationMoto({
 
   const ownerSignature = watch("ownerSignature");
   const driverSignature = watch("driverSignature");
+  const damageReports = watch("damageReports") || [];
+
+  // ⭐ Step 4B : Mapping labels et ordre des zones
+  const SIDE_LABELS: Record<string, string> = {
+    avant: "Avant",
+    droit: "Côté droit",
+    arriere: "Arrière",
+    gauche: "Côté gauche",
+    coffre: "Coffre",
+    janteAvDroit: "Jantes / Roues",
+    janteArDroit: "Jante arrière droite",
+    janteAvGauche: "Jante avant gauche",
+    janteArGauche: "Jante arrière gauche",
+    unknown: "Zone non renseignée",
+  };
+
+  const ZONE_ORDER = [
+    "avant",
+    "droit",
+    "arriere",
+    "gauche",
+    "janteAvDroit",
+    "janteArDroit",
+    "janteAvGauche",
+    "janteArGauche",
+    "coffre",
+    "unknown",
+  ];
+
+  // ⭐ Step 3C : Helper pour extraire URL photo (robuste multi-shapes)
+  const getPhotoUrl = (photo: any): string | null => {
+    if (!photo) return null;
+    if (typeof photo === "string") return photo;
+    return photo.url || photo.publicUrl || null;
+  };
+
+  // ⭐ Step 4B : Grouper damageReports par side
+  const groupedDamages = damageReports.reduce((acc, damage) => {
+    const side = damage.side || "unknown";
+    if (!acc[side]) {
+      acc[side] = [];
+    }
+    acc[side].push(damage);
+    return acc;
+  }, {} as Record<string, any[]>);
 
   const [validationStatus, setValidationStatus] = useState<{
     isValid: boolean;
@@ -77,6 +124,14 @@ export function Section8ValidationMoto({
     missingFields: [],
   });
   const [isFinalizing, setIsFinalizing] = useState(false);
+  
+  // ⭐ États pour la modale de progression
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [finalizeProgress, setFinalizeProgress] = useState(0);
+  const [finalizeLabel, setFinalizeLabel] = useState("");
+  const [finalizeError, setFinalizeError] = useState<string | null>(null);
+  
+  const navigate = useNavigate();
 
   const checkValidationData = (showToast: boolean = false) => {
     const missing: string[] = [];
@@ -194,6 +249,11 @@ export function Section8ValidationMoto({
       return;
     }
 
+    // ⭐ Ouvrir la modale et initialiser les états
+    setShowFinalizeModal(true);
+    setFinalizeProgress(0);
+    setFinalizeLabel("Vérification des données…");
+    setFinalizeError(null);
     setIsFinalizing(true);
 
     try {
@@ -202,6 +262,9 @@ export function Section8ValidationMoto({
       // ============================================================================
       // ⭐ PHASE 2 : Garantir persistance Step2 (vehicule.*) avant snapshot
       // ============================================================================
+      setFinalizeProgress(5);
+      setFinalizeLabel("Vérification des données véhicule…");
+      
       const isBlankString = (v: unknown) => typeof v !== "string" || v.trim() === "";
 
       // 1️⃣ Lire le checkin DB pour vérifier si Step2 existe et contient vehicule.*
@@ -248,6 +311,9 @@ export function Section8ValidationMoto({
       // 2️⃣ Si nécessaire, sauvegarder Step2 minimal avec valeurs RHF
       if (needsStep2Save && bookingId) {
         try {
+          setFinalizeProgress(10);
+          setFinalizeLabel("Enregistrement des données véhicule…");
+          
           const vehicule = getValues("vehicule");
           const releves = getValues("releves");
 
@@ -288,14 +354,17 @@ export function Section8ValidationMoto({
           console.log("[Moto Validation] ✅ Step2 sauvegardé avec succès");
         } catch (step2Error: any) {
           console.error("[Moto Validation] ❌ Erreur sauvegarde Step2:", step2Error);
-          toast.error("Erreur lors de la sauvegarde des données véhicule", {
-            description: step2Error.message || "Impossible de sauvegarder les informations du véhicule. La finalisation est annulée.",
-          });
+          setFinalizeError(
+            step2Error.message || "Impossible de sauvegarder les informations du véhicule. La finalisation est annulée."
+          );
           return; // ⚠️ Stopper la finalisation si Step2 échoue
         }
       }
 
       // ⭐ FINALISATION COMPLÈTE : Step 7 + Snapshot légal + Status "completed"
+      setFinalizeProgress(20);
+      setFinalizeLabel("Enregistrement des signatures…");
+      
       const nowIso = new Date().toISOString();
       const step7Payload = {
         completedAt: nowIso,
@@ -305,6 +374,9 @@ export function Section8ValidationMoto({
           validatedAt: nowIso,
         },
       };
+
+      setFinalizeProgress(30);
+      setFinalizeLabel("Création du snapshot légal…");
 
       const result = await finalizeCheckinDepart({
         checkinId,
@@ -316,9 +388,7 @@ export function Section8ValidationMoto({
 
       if (result.error) {
         console.error("[Moto Validation] ❌ Erreur finalisation:", result.error);
-        toast.error("Erreur lors de la finalisation", {
-          description: result.error,
-        });
+        setFinalizeError(result.error);
         return;
       }
 
@@ -328,33 +398,54 @@ export function Section8ValidationMoto({
           onCheckinIdChange(result.data.id);
         }
 
-        toast.success("État des lieux finalisé avec succès !", {
-          description: "Un snapshot légal a été enregistré. L'état des lieux est maintenant verrouillé.",
-        });
-
-        // Afficher un avertissement si le PDF a échoué
+        // Afficher un avertissement si le PDF a échoué (mais ne pas bloquer)
         if (result.pdfError) {
           console.warn("[Moto Validation] ⚠️ PDF error during finalizeCheckinDepart:", result.pdfError);
-          toast.warning("État des lieux finalisé, mais le PDF n'a pas pu être généré.", {
-            description: result.pdfError,
-            duration: 8000,
-          });
+          // On continue quand même, juste un warning visuel dans la modale
         }
 
-        // Appeler onComplete pour notifier le parent
-        onComplete?.();
+        // Le PDF est généré dans finalizeCheckinDepart (non-bloquant)
+        // On considère que c'est fait à 80% même si ça peut échouer
+        setFinalizeProgress(80);
+        setFinalizeLabel("Génération du document PDF…");
+        
+        // Attendre un peu pour que l'utilisateur voie la progression PDF
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        setFinalizeProgress(100);
+        setFinalizeLabel("État des lieux finalisé avec succès");
+
+        // Attendre ~1200ms pour que l'utilisateur voie le message de succès avant redirection
+        await new Promise(resolve => setTimeout(resolve, 1200));
+
+        // Redirection automatique vers l'accueil
+        navigate("/");
       } else if (result.data?.id && onCheckinIdChange) {
         // Fallback : propager uniquement le checkinId si le statut n'est pas "completed"
         onCheckinIdChange(result.data.id);
+        setFinalizeError("Finalisation incomplète : le statut n'a pas été mis à jour.");
       }
     } catch (error: any) {
       console.error("[Moto Validation] ❌ Erreur finalisation:", error);
-      toast.error("Erreur lors de la finalisation", {
-        description: error.message || "Veuillez réessayer.",
-      });
+      setFinalizeError(error.message || "Une erreur inattendue s'est produite. Veuillez réessayer.");
     } finally {
       setIsFinalizing(false);
+      // Ne pas fermer la modale en cas d'erreur (elle reste ouverte avec le message d'erreur)
+      // En cas de succès, la redirection fermera la page donc la modale aussi
     }
+  };
+
+  // Handler pour fermer la modale en cas d'erreur
+  const handleCloseModal = () => {
+    setShowFinalizeModal(false);
+    setFinalizeProgress(0);
+    setFinalizeLabel("");
+    setFinalizeError(null);
+    // Rediriger vers les bookings même en cas d'erreur
+    const redirectPath = ownerId && !renterId 
+      ? "/me/owner/bookings" 
+      : "/me/renter/bookings";
+    navigate(redirectPath);
   };
 
   return (
@@ -451,6 +542,98 @@ export function Section8ValidationMoto({
         </CardContent>
       </Card>
 
+      {/* ⭐ Step 2A + Step 4B : Dégâts (draft) - Lecture seule, groupés par zone */}
+      {damageReports.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Dégâts (draft)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {ZONE_ORDER.map((zoneKey) => {
+              const zoneDamages = groupedDamages[zoneKey];
+              if (!zoneDamages || zoneDamages.length === 0) return null;
+
+              const zoneLabel = SIDE_LABELS[zoneKey] ?? zoneKey;
+
+              return (
+                <div key={zoneKey} className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-300 pb-1">
+                    {zoneLabel} ({zoneDamages.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {zoneDamages.map((d: any, index: number) => {
+                      // ⭐ Step 6A : Normaliser commentaire (trim) pour affichage placeholder
+                      const commentaire = typeof d.commentaire === "string" ? d.commentaire.trim() : "";
+                      const hasCommentaire = commentaire.length > 0;
+
+                      return (
+                        <div
+                          key={index}
+                          className="border border-gray-200 rounded-md p-4 space-y-2 bg-gray-50"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1 flex-1">
+                              {Array.isArray(d.typeDegats) && d.typeDegats.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-muted-foreground">Type(s):</span>
+                                  <span className="text-sm">{d.typeDegats.join(", ")}</span>
+                                </div>
+                              )}
+                              <div className="space-y-1">
+                                <span className="text-sm font-medium text-muted-foreground">Commentaire:</span>
+                                {hasCommentaire ? (
+                                  <p className="text-sm text-gray-700 italic">"{commentaire}"</p>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground italic">(Sans commentaire)</p>
+                                )}
+                              </div>
+                              {/* ⭐ Step 3C : Miniatures photos dégâts */}
+                              {d.photos && Array.isArray(d.photos) && d.photos.length > 0 && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground">Photos:</span>
+                                    <span className="text-sm">📷 {d.photos.length} photo{d.photos.length > 1 ? "s" : ""}</span>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {d.photos.slice(0, 4).map((photo: any, photoIndex: number) => {
+                                      const photoUrl = getPhotoUrl(photo);
+                                      if (!photoUrl) return null;
+                                      return (
+                                        <div
+                                          key={photoIndex}
+                                          className="relative group cursor-pointer"
+                                          onClick={() => window.open(photoUrl, "_blank", "noopener,noreferrer")}
+                                        >
+                                          <img
+                                            src={photoUrl}
+                                            alt={`Dégât ${index + 1} - Photo ${photoIndex + 1}`}
+                                            className="w-full h-20 object-cover rounded-lg border hover:opacity-90 transition-opacity"
+                                            loading="lazy"
+                                          />
+                                        </div>
+                                      );
+                                    })}
+                                    {d.photos.length > 4 && (
+                                      <div className="flex items-center justify-center h-20 border border-dashed rounded-lg bg-muted/30 text-xs text-muted-foreground">
+                                        +{d.photos.length - 4}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Bouton Finaliser */}
       <div className="flex justify-end pt-4">
         <Button
@@ -480,6 +663,15 @@ export function Section8ValidationMoto({
           ✅ Cet état des lieux a été finalisé et est maintenant verrouillé.
         </p>
       )}
+
+      {/* ⭐ Modale de progression de finalisation */}
+      <FinalizeCheckinProgressModal
+        open={showFinalizeModal}
+        progress={finalizeProgress}
+        label={finalizeLabel}
+        error={finalizeError}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
