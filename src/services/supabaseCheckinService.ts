@@ -456,7 +456,7 @@ export const SupabaseCheckinService = {
       // 2.1. Charger la réservation
       const { data: booking, error: bookingError } = await supabase
         .from("bookings")
-        .select("id, reference_number, start_date, end_date, user_id, vehicle_id, pickup_location")
+        .select("id, reference_number, start_date, end_date, start_time, end_time, user_id, vehicle_id, pickup_location")
         .eq("id", checkinTyped.booking_id)
         .single();
 
@@ -588,10 +588,26 @@ export const SupabaseCheckinService = {
       };
 
       // 3.4. Booking (réservation)
+      // Construire les datetime ISO Madagascar (UTC+3) à partir de date + heure
+      const departureIso = booking?.start_date
+        ? `${booking.start_date}T${booking.start_time || "08:00"}:00+03:00`
+        : null;
+      const returnIso = booking?.end_date
+        ? `${booking.end_date}T${booking.end_time || "08:00"}:00+03:00`
+        : null;
+
+      // Log si fallback utilisé (pour debugging)
+      if (booking?.start_date && !booking?.start_time) {
+        console.warn("[SupabaseCheckinService] ⚠️ start_time manquant, utilisation fallback 08:00 pour", booking.start_date);
+      }
+      if (booking?.end_date && !booking?.end_time) {
+        console.warn("[SupabaseCheckinService] ⚠️ end_time manquant, utilisation fallback 08:00 pour", booking.end_date);
+      }
+
       const bookingSnapshot: CheckinLegalSnapshotBooking = {
         referenceNumber: booking?.reference_number ?? null,
-        departureDatetime: booking?.start_date ?? null,
-        returnDatetime: booking?.end_date ?? null,
+        departureDatetime: departureIso,
+        returnDatetime: returnIso,
         departureLocation: booking?.pickup_location ?? null,
         returnLocation: booking?.pickup_location ?? null, // Pour l'instant = departureLocation
       };
