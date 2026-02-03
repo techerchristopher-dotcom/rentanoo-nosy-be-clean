@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { DictionaryService } from "@/services/supabase/dictionary";
 
@@ -27,7 +26,6 @@ export default function DictionaryEntryPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
       <main className="flex-1 container max-w-3xl mx-auto px-4 py-8 space-y-6">
         <Button variant="ghost" onClick={handleBack}>
           ← {t("dictionary.back")}

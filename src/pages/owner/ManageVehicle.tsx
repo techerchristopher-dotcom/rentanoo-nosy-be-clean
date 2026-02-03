@@ -15,7 +15,6 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { useToast } from "@/hooks/use-toast";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
@@ -1532,7 +1531,6 @@ export default function ManageVehicle() {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="container mx-auto px-4 py-8 pt-24">
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -1546,7 +1544,6 @@ export default function ManageVehicle() {
   if (!vehicle) {
     return (
       <>
-        <Navbar />
         <div className="container mx-auto px-4 py-8 pt-24">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Véhicule non trouvé</h1>
@@ -1564,7 +1561,6 @@ export default function ManageVehicle() {
 
   return (
     <>
-      <Navbar />
       <div className="container mx-auto px-4 py-8 pt-24">
         {/* Header amélioré */}
         <div className="mb-8">

@@ -9,7 +9,10 @@ export type BookingStatus =
   | "cancelled" 
   | "active" 
   | "closed"
-  | "pending_payment";
+  | "pending_payment"
+  | "confirmed"
+  | "completed"
+  | "terminated";
 
 export type PaymentType = "charge" | "refund" | "payout";
 
@@ -376,6 +379,7 @@ export interface CheckinReturnSummary {
   id: string;
   status: string;
   legalPdfUrl?: string | null;
+  updatedAt?: string | null;
 }
 
 // API Response types

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Users, Car, Calendar, CreditCard, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { UsersService, VehiclesService, BookingsService } from "@/services";
 import { User, Vehicle, Booking } from "@/types";
@@ -47,7 +46,6 @@ const Admin = () => {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen bg-background pt-20">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center">
@@ -63,7 +61,6 @@ const Admin = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8">

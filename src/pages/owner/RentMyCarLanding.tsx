@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { Car, Euro, Calendar, ArrowRight, CheckCircle } from 'lucide-react';
 
@@ -39,8 +38,6 @@ const RentMyCarLanding = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20">
-      <Navbar />
-      
       <main className="container mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="text-center mb-16">

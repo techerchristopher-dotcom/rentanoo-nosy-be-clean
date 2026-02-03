@@ -14,7 +14,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ProfileService } from "@/services/supabase/profile";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
@@ -139,7 +138,6 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <Navbar />
         <main className="container mx-auto px-4 py-8 max-w-7xl">
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Chargement...</p>
@@ -152,8 +150,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Navbar />
-      
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">

@@ -152,7 +152,7 @@ export class SupabaseBookingsService {
    */
   static async updateBookingStatusWithReason(
     bookingId: string,
-    status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'active' | 'closed' | 'declined' | 'confirmed' | 'pending_payment',
+    status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'active' | 'closed' | 'declined' | 'confirmed' | 'pending_payment' | 'terminated',
     reason?: string
   ): Promise<{
     data: SupabaseBooking | null;
@@ -220,7 +220,7 @@ export class SupabaseBookingsService {
    */
   static async updateBookingStatus(
     bookingId: string,
-    status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'active' | 'closed' | 'declined' | 'confirmed' | 'pending_payment'
+    status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'active' | 'closed' | 'declined' | 'confirmed' | 'pending_payment' | 'terminated'
   ): Promise<{
     data: SupabaseBooking | null;
     error: string | null;
@@ -435,7 +435,7 @@ export class SupabaseBookingsService {
         .select(`
           *,
           checkin_depart:checkin_depart(id, status, legal_pdf_url, booking_id),
-          checkin_return:checkin_return(id, status, legal_pdf_url, booking_id, checkin_depart_id)
+          checkin_return:checkin_return(id, status, legal_pdf_url, booking_id, checkin_depart_id, updated_at)
         `)
         .in('vehicle_id', vehicleIds)
         .order('created_at', { ascending: false });

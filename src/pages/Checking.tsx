@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import EtatDesLieuxDepartForm from "@/modules/etatDesLieuxDepart/EtatDesLieuxDepartForm";
 import { EtatDesLieuxDepartFormMoto } from "@/modules/etatDesLieuxDepartMoto/EtatDesLieuxDepartFormMoto";
@@ -99,7 +98,6 @@ export default function Checking() {
   if (!bookingId) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-destructive">Erreur</h1>
@@ -156,7 +154,6 @@ export default function Checking() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft">
-      <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-6">
           <h1 className="text-3xl font-semibold text-foreground">

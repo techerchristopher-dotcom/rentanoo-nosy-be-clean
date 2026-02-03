@@ -755,12 +755,14 @@ export default function RenterBookingCard({
             "transition-all duration-300 relative",
             booking.status === 'cancelled' || booking.status === 'declined'
               ? "opacity-60 grayscale-[0.7] bg-muted/50" 
+              : booking.status === 'terminated'
+              ? "bg-green-50/50 border-green-200/50"
               : "hover:shadow-lagoon hover:scale-[1.01] bg-gradient-to-br from-card to-card/50"
           )}>
         <CollapsibleTrigger asChild>
           <CardContent className={cn(
             "p-4",
-            (booking.status === 'cancelled' || booking.status === 'declined') ? "cursor-default" : "cursor-pointer"
+            (booking.status === 'cancelled' || booking.status === 'declined' || booking.status === 'terminated') ? "cursor-default" : "cursor-pointer"
           )}>
             <div className="flex items-center justify-between">
               {/* Informations principales */}
@@ -779,7 +781,8 @@ export default function RenterBookingCard({
                     }
                     className={cn(
                       "w-full h-full object-cover",
-                      (booking.status === 'cancelled' || booking.status === 'declined') && "opacity-40"
+                      (booking.status === 'cancelled' || booking.status === 'declined') && "opacity-40",
+                      booking.status === 'terminated' && "opacity-90"
                     )}
                   />
                 </div>

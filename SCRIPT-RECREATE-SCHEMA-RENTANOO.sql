@@ -218,7 +218,7 @@ CREATE TABLE public.bookings (
     rental_days integer,
     reference_number integer,
     CONSTRAINT bookings_check CHECK ((end_date > start_date)),
-    CONSTRAINT bookings_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'pending_payment'::character varying, 'confirmed'::character varying, 'active'::character varying, 'completed'::character varying, 'cancelled'::character varying, 'rejected'::character varying, 'declined'::character varying])::text[]))),
+    CONSTRAINT bookings_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'pending_payment'::character varying, 'confirmed'::character varying, 'active'::character varying, 'completed'::character varying, 'cancelled'::character varying, 'rejected'::character varying, 'declined'::character varying, 'terminated'::character varying])::text[]))),
     CONSTRAINT bookings_total_price_check CHECK ((total_price >= (0)::numeric)),
     CONSTRAINT check_start_time_format CHECK (((start_time)::text ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'::text)),
     CONSTRAINT check_end_time_format CHECK (((end_time)::text ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'::text)),

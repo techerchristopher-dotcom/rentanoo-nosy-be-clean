@@ -125,14 +125,18 @@ export default function Section6Remarques({
           type="button"
           onClick={handleCompleteStep6AndGoNext}
           disabled={isSaving}
-          className="bg-gradient-lagoon hover:opacity-90 text-white font-semibold shadow-lagoon flex items-center gap-2"
+          className="bg-gradient-lagoon hover:opacity-90 text-white font-semibold shadow-lagoon flex items-center gap-2 w-full sm:w-auto"
           size="lg"
         >
           {isSaving ? (
-            <>⏳ Sauvegarde en cours...</>
+            <>
+              <span className="hidden sm:inline">⏳ Sauvegarde en cours...</span>
+              <span className="sm:hidden">⏳ Sauvegarde...</span>
+            </>
           ) : (
             <>
-              Terminer les remarques et passer à la validation & signature
+              <span className="hidden sm:inline">Terminer les remarques et passer à la validation & signature</span>
+              <span className="sm:hidden">Valider & continuer</span>
               <ArrowRight className="h-4 w-4" />
             </>
           )}

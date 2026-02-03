@@ -11,7 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { OwnerLocationDropdown } from '@/components/ui/owner-location-dropdown';
 import { PickupZonesModal } from '@/components/ui/pickup-zones-modal';
@@ -3782,8 +3781,6 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      
       {/* Bouton de développement temporaire - À SUPPRIMER EN PRODUCTION */}
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed top-20 right-4 z-50 bg-yellow-400 text-black p-2 rounded-lg shadow-lg">

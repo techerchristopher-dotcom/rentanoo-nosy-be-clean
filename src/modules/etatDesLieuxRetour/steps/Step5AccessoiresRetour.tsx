@@ -9,9 +9,12 @@ interface StepProps {
   setValue: (name: string, value: any) => void;
   watch: (name: string) => any;
   bookingData?: { startDate?: string; endDate?: string; startTime?: string; endTime?: string };
+  vehicleType?: string | null;
 }
 
-const accessoryKeys = [
+// Configuration des accessoires RETOUR
+// VOITURE : liste actuelle inchangée (ordre et labels identiques).
+const RETURN_CAR_ACCESSORY_KEYS = [
   { key: "gilet", label: "Gilet" },
   { key: "triangle", label: "Triangle" },
   { key: "roueSecours", label: "Roue de secours" },
@@ -22,7 +25,20 @@ const accessoryKeys = [
   { key: "carteCarburant", label: "Carte carburant" },
 ];
 
-export default function Step5AccessoiresRetour({ departData, setValue, watch }: StepProps) {
+// MOTO : liste issue du départ moto (seule source disponible dans le repo).
+// Source : src/modules/etatDesLieuxDepartMoto/sections/Section5AccessoiresMoto.tsx lignes 45-90
+const RETURN_MOTO_ACCESSORY_KEYS = [
+  { key: "casque", label: "Casque" },
+  { key: "gants", label: "Gants" },
+  { key: "cadenas", label: "Cadenas antivol" },
+  { key: "support_telephone", label: "Support téléphone" },
+  { key: "top_case", label: "Top case / Coffre" },
+  { key: "prise_usb", label: "Prise USB" },
+  { key: "gilet_jaune", label: "Gilet jaune / Réfléchissant" },
+  { key: "autre", label: "Autre accessoire" },
+];
+
+export default function Step5AccessoiresRetour({ departData, setValue, watch, vehicleType }: StepProps) {
   const departAccessoires = departData?.step5?.accessoires || {};
 
   const accessoiresRetour = watch("returnData.step5.accessoiresRetour") || {};
@@ -57,7 +73,7 @@ export default function Step5AccessoiresRetour({ departData, setValue, watch }: 
         </CardHeader>
         <CardContent className="p-3 sm:p-4 md:p-6 pt-2 sm:pt-3 md:pt-4 space-y-2 sm:space-y-3">
           <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-muted-foreground">
-            {accessoryKeys.map((acc) => (
+            {(vehicleType === "moto" ? RETURN_MOTO_ACCESSORY_KEYS : RETURN_CAR_ACCESSORY_KEYS).map((acc) => (
               <div key={acc.key} className="flex justify-between items-center py-1">
                 <span>{acc.label}</span>
                 <span className="font-medium">
@@ -129,7 +145,7 @@ export default function Step5AccessoiresRetour({ departData, setValue, watch }: 
             <div className="space-y-2 sm:space-y-3">
               <p className="text-xs sm:text-sm font-medium">Cocher les accessoires présents au retour</p>
               <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-                {accessoryKeys
+                {(vehicleType === "moto" ? RETURN_MOTO_ACCESSORY_KEYS : RETURN_CAR_ACCESSORY_KEYS)
                   .filter((acc) => {
                     // Afficher uniquement les accessoires qui étaient présents au départ
                     return departAccessoires?.[acc.key] === true;
@@ -150,7 +166,7 @@ export default function Step5AccessoiresRetour({ departData, setValue, watch }: 
                       <span>{acc.label}</span>
                     </label>
                   ))}
-                {accessoryKeys.filter((acc) => departAccessoires?.[acc.key] === true).length === 0 && (
+                {(vehicleType === "moto" ? RETURN_MOTO_ACCESSORY_KEYS : RETURN_CAR_ACCESSORY_KEYS).filter((acc) => departAccessoires?.[acc.key] === true).length === 0 && (
                   <p className="text-xs sm:text-sm text-muted-foreground italic py-2">
                     Aucun accessoire n'était présent au départ.
                   </p>

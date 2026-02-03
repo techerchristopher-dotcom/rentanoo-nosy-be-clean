@@ -52,6 +52,10 @@ export function StatusBadge({ status, size = "md", className }: StatusBadgeProps
       color: "bg-muted text-muted-foreground",
       label: t('bookings.status.completed')
     },
+    terminated: {
+      color: "bg-green-50 text-green-700",
+      label: t('bookings.status.terminated')
+    },
     closed: { 
       color: "bg-muted text-muted-foreground", 
       label: t('bookings.status.closed')
@@ -130,6 +134,7 @@ export function StatusBadge({ status, size = "md", className }: StatusBadgeProps
       closed: 'bookings.status.closed',
       confirmed: 'bookings.status.confirmed',
       completed: 'bookings.status.completed',
+      terminated: 'bookings.status.terminated',
       rejected: 'bookings.status.rejected',
     }
     

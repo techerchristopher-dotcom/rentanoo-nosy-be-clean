@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -210,7 +209,6 @@ const OwnerBookingRequests = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-soft">
-        <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -223,8 +221,6 @@ const OwnerBookingRequests = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft">
-      <Navbar />
-      
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
           {/* Header */}

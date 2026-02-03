@@ -54,6 +54,16 @@ export const checkinReturnService = {
       return { data: null, error: "Le checkin_depart lié est annulé, impossible de créer un retour." };
     }
 
+    // Garde-fou strict : ownerId et renterId doivent être définis avant de créer un retour.
+    // On évite ainsi de laisser passer un INSERT avec owner_id/renter_id = NULL qui violerait la contrainte NOT NULL.
+    if (!ownerId || !renterId) {
+      return {
+        data: null,
+        error:
+          "Impossible de créer un état des lieux de retour : owner_id ou renter_id manquant sur le checkin_depart.",
+      };
+    }
+
     // Chercher un draft existant
     const { data: existingDraft, error: existingError } = await SupabaseCheckinReturnService.getReturnByBookingId(bookingId);
     if (existingError) return { data: null, error: existingError };
@@ -512,6 +522,42 @@ export const checkinReturnService = {
         checkinReturnId,
         status: statusResult.data.status,
       });
+
+      // ============================================================================
+      // ÉTAPE 4.5 : Mettre à jour le statut de la réservation de "confirmed" à "terminated"
+      // ============================================================================
+      console.log("[CheckinReturnService] 🔄 Étape 4.5 : Vérification et mise à jour du statut de la réservation...");
+      
+      try {
+        // Récupérer le statut actuel de la réservation directement depuis Supabase
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: currentBooking, error: fetchError } = await supabase
+          .from('bookings')
+          .select('status')
+          .eq('id', bookingId)
+          .single();
+        
+        if (fetchError) {
+          console.error("[CheckinReturnService] ⚠️ Erreur lors de la récupération du statut de la réservation:", fetchError);
+        } else if (currentBooking && currentBooking.status === 'confirmed') {
+          console.log("[CheckinReturnService] 🔄 Statut de la réservation actuel: 'confirmed', mise à jour vers 'terminated'...");
+          
+          const { SupabaseBookingsService } = await import("./supabase/bookings");
+          const bookingStatusResult = await SupabaseBookingsService.updateBookingStatus(bookingId, 'terminated');
+          
+          if (bookingStatusResult.error) {
+            console.error("[CheckinReturnService] ⚠️ Erreur lors de la mise à jour du statut de la réservation:", bookingStatusResult.error);
+            // Ne pas bloquer la finalisation du check-in retour si la mise à jour du statut échoue
+          } else {
+            console.log("[CheckinReturnService] ✅ Statut de la réservation mis à jour vers 'terminated'");
+          }
+        } else {
+          console.log("[CheckinReturnService] ℹ️ Statut de la réservation:", currentBooking?.status, "- pas de mise à jour nécessaire");
+        }
+      } catch (bookingStatusError: any) {
+        console.error("[CheckinReturnService] ⚠️ Exception lors de la mise à jour du statut de la réservation:", bookingStatusError);
+        // Ne pas bloquer la finalisation du check-in retour
+      }
 
       // ============================================================================
       // ÉTAPE 5 : Générer le PDF d'état des lieux retour (non-bloquant)

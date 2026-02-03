@@ -12,9 +12,12 @@ interface StepProps {
   watch: (name: string) => any;
   bookingData?: { startDate?: string; endDate?: string; startTime?: string; endTime?: string; referenceNumber?: number | null };
   bookingId?: string;
+  vehicleType?: string | null;
 }
 
-const zoneKeys = [
+// Configuration des zones extérieures RETOUR
+// VOITURE : liste actuelle inchangée (ordre et labels identiques).
+const RETURN_CAR_ZONES = [
   { key: "avant", label: "Avant" },
   { key: "droit", label: "Côté droit" },
   { key: "arriere", label: "Arrière" },
@@ -24,6 +27,17 @@ const zoneKeys = [
   { key: "janteArDroit", label: "Jante arrière droite" },
   { key: "janteAvGauche", label: "Jante avant gauche" },
   { key: "janteArGauche", label: "Jante arrière gauche" },
+];
+
+// MOTO : zones conformes aux définitions moto (sans coffre),
+// Pour les motos, seulement 2 jantes : avant et arrière (sans distinction gauche/droite)
+const RETURN_MOTO_ZONES = [
+  { key: "avant", label: "Avant" },
+  { key: "droit", label: "Côté droit" },
+  { key: "arriere", label: "Arrière" },
+  { key: "gauche", label: "Côté gauche" },
+  { key: "janteAvant", label: "Jante avant" },
+  { key: "janteArriere", label: "Jante arrière" },
 ];
 
 /**
@@ -74,12 +88,16 @@ export default function Step3ExterieurRetour({
   watch,
   bookingData,
   bookingId,
+  vehicleType,
 }: StepProps) {
   const { toast } = useToast();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   const zonesPhotos = departData?.step3?.zonesPhotos || {};
+
+  // Déterminer la liste des zones selon le type de véhicule
+  const zones = vehicleType === "moto" ? RETURN_MOTO_ZONES : RETURN_CAR_ZONES;
 
   // Gestion de l'upload des photos de dégâts extérieurs
   const handleFileSelect = async (zoneKey: string, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,9 +142,12 @@ export default function Step3ExterieurRetour({
       // Mettre à jour le form state
       setValue(`returnData.step3.sections.${zoneKey}.newDamages.0`, updatedFirstDamage);
 
+      // Trouver le label de la zone
+      const zoneLabel = zones.find(z => z.key === zoneKey)?.label || zoneKey;
+
       toast({
         title: "📸 Photo uploadée",
-        description: `La photo de dégât pour ${zoneKeys.find(z => z.key === zoneKey)?.label || zoneKey} a été ajoutée`,
+        description: `La photo de dégât pour ${zoneLabel} a été ajoutée`,
       });
     } catch (error: any) {
       console.error("[Step3ExterieurRetour] ❌ Erreur upload:", error);
@@ -159,7 +180,7 @@ export default function Step3ExterieurRetour({
       </div>
 
       <div className="space-y-3 sm:space-y-4">
-        {zoneKeys.map((zone) => {
+        {(vehicleType === "moto" ? RETURN_MOTO_ZONES : RETURN_CAR_ZONES).map((zone) => {
           const photosDepart = zonesPhotos?.[zone.key] || [];
           const isSameAsDepart = watch(`returnData.step3.sections.${zone.key}.isSameAsDepart`);
           const newDamages = watch(`returnData.step3.sections.${zone.key}.newDamages`) || [];

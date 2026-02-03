@@ -12,6 +12,7 @@ interface StepProps {
   watch: (name: string) => any;
   bookingData?: { startDate?: string; endDate?: string; startTime?: string; endTime?: string; referenceNumber?: number | null };
   bookingId?: string;
+  vehicleType?: string | null;
 }
 
 /**
@@ -55,7 +56,7 @@ function PhotosGrid({ photos, className = "" }: { photos: any[]; className?: str
   );
 }
 
-export default function Step4InterieurRetour({ departData, setValue, watch, bookingData, bookingId }: StepProps) {
+export default function Step4InterieurRetour({ departData, setValue, watch, bookingData, bookingId, vehicleType }: StepProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -147,6 +148,8 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
       </div>
 
       {/* Card : Intérieur au départ (lecture seule) */}
+      {/* Pour la MOTO, on évite d'afficher les équipements typés voiture (radio/clim/etc.). */}
+      {vehicleType !== "moto" && (
       <Card>
         <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3 md:pb-4">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -201,6 +204,7 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Sélecteur Nouveaux dégâts intérieurs : deux boutons Non/Oui */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">

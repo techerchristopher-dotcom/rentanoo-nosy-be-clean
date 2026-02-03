@@ -7,7 +7,6 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ProfileService } from "@/services/supabase/profile";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
@@ -253,7 +252,6 @@ const OwnerVehicles = () => {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen bg-background pt-20">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center">
@@ -272,7 +270,6 @@ const OwnerVehicles = () => {
   if (!currentUser) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen bg-background pt-20">
           <div className="container mx-auto px-4 py-8">
             <Card className="max-w-md mx-auto">
@@ -310,7 +307,6 @@ const OwnerVehicles = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-8">

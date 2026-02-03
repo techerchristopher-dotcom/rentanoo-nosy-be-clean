@@ -13,7 +13,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SupabaseVehiclesService } from '@/services/supabaseVehiclesService';
 import { supabase } from '@/integrations/supabase/client';
 import { DEFAULT_VEHICLE_TEMPLATE, populateAddVehicleForm, convertToSupabaseFormat, validateVehicleField, calculateVehiclePricing, uploadVehiclePhotos } from '@/templates/vehicleTemplate';
-import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import EquipmentSelector from '@/components/ui/equipment-selector';
 import { 
@@ -1268,8 +1267,6 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">

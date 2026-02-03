@@ -135,15 +135,38 @@ export async function generateCheckinReturnPdf(
     const snapshot = checkinReturn.snapshot_legal as CheckinReturnLegalSnapshot;
     const bookingReferenceNumber = snapshot.booking.referenceNumber;
 
+    // Détection du type de véhicule (méthode locale : depuis booking_id)
+    let vehicleType: string | null = null;
+    try {
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("vehicle_id")
+        .eq("id", checkinReturn.booking_id)
+        .single();
+      
+      if (booking?.vehicle_id) {
+        const { data: vehicle } = await supabase
+          .from("vehicles")
+          .select("vehicle_type")
+          .eq("id", booking.vehicle_id)
+          .single();
+        
+        vehicleType = vehicle?.vehicle_type || null;
+      }
+    } catch (error) {
+      console.warn("[CheckinReturnPdfService] ⚠️ Impossible de récupérer vehicle_type, utilisation du comportement par défaut (voiture):", error);
+    }
+
     console.log("[CheckinReturnPdfService] ✅ Vérifications OK");
     console.log("[CheckinReturnPdfService] 📊 Réservation #:", bookingReferenceNumber);
+    console.log("[CheckinReturnPdfService] 🚗 Type de véhicule:", vehicleType || "voiture (défaut)");
 
     // ============================================================================
     // ÉTAPE 3 : Générer le PDF (HTML → Canvas → PDF)
     // ============================================================================
     console.log("[CheckinReturnPdfService] 📄 ÉTAPE 3 : Génération du PDF Blob...");
 
-    const { blob: pdfBlob, error: blobError } = await generatePdfBlob(snapshot, checkinReturn);
+    const { blob: pdfBlob, error: blobError } = await generatePdfBlob(snapshot, checkinReturn, vehicleType);
     console.log("[CheckinReturnPdfService] 📄 generatePdfBlob retourné:", {
       hasBlob: !!pdfBlob,
       blobSize: pdfBlob ? `${pdfBlob.size} bytes` : "null",
@@ -304,7 +327,8 @@ function buildStoragePath(checkinReturnId: string, bookingReferenceNumber: numbe
  */
 async function generatePdfBlob(
   snapshot: CheckinReturnLegalSnapshot,
-  checkinReturn: CheckinReturn
+  checkinReturn: CheckinReturn,
+  vehicleType: string | null
 ): Promise<{ blob: Blob | null; error: string | null }> {
   console.log("[CheckinReturnPdfService] 🔧 generatePdfBlob : Début");
 
@@ -348,7 +372,7 @@ async function generatePdfBlob(
     tempDiv.style.backgroundColor = '#ffffff';
     
     // Générer le HTML du PDF
-    tempDiv.innerHTML = createPDFTemplateHTML(snapshot, checkinReturn);
+    tempDiv.innerHTML = createPDFTemplateHTML(snapshot, checkinReturn, vehicleType);
     
     // Attacher temporairement au DOM
     document.body.appendChild(tempDiv);
@@ -501,7 +525,8 @@ function chunkArray<T>(array: T[], size: number): T[][] {
  */
 function createPDFTemplateHTML(
   snapshot: CheckinReturnLegalSnapshot,
-  checkinReturn: CheckinReturn
+  checkinReturn: CheckinReturn,
+  vehicleType: string | null
 ): string {
   return `
     <!DOCTYPE html>
@@ -677,7 +702,7 @@ function createPDFTemplateHTML(
     </head>
     <body>
       ${generatePage1(snapshot, checkinReturn)}
-      ${generatePage2(snapshot, checkinReturn)}
+      ${generatePage2(snapshot, checkinReturn, vehicleType)}
       ${generatePage3(snapshot, checkinReturn)}
       ${generatePage4(snapshot, checkinReturn)}
       ${generatePage5(snapshot, checkinReturn)}
@@ -846,9 +871,31 @@ function generatePage1(snapshot: CheckinReturnLegalSnapshot, checkinReturn: Chec
 /**
  * Génère la page 2 : Extérieur RETOUR (TOUTES les zones)
  */
-function generatePage2(snapshot: CheckinReturnLegalSnapshot, checkinReturn: CheckinReturn): string {
-  const step3 = snapshot.return.step3;
-  const zoneKeys = ["avant", "droit", "arriere", "gauche", "coffre", "janteAvDroit", "janteArDroit", "janteAvGauche", "janteArGauche"];
+function generatePage2(snapshot: CheckinReturnLegalSnapshot, checkinReturn: CheckinReturn, vehicleType: string | null): string {
+  const step3 = snapshot.return?.step3 || { sections: {} as Record<string, any> };
+  const sections = step3.sections || {};
+  
+  // Sélection des zones selon le type de véhicule
+  // Pour VOITURE : conserver EXACTEMENT la liste actuelle (et l'ordre actuel) si type != moto
+  // Pour MOTO : utiliser un ordre déterministe basé sur les définitions de zones moto existantes
+  let zoneKeys: string[];
+  if (vehicleType === 'moto') {
+    // Ordre déterministe pour la moto (aligné avec RETURN_MOTO_ZONE_KEYS dans checkinReturnSnapshotService)
+    // Pour les motos, seulement 2 jantes : avant et arrière (sans distinction gauche/droite)
+    const MOTO_ZONE_ORDER = [
+      "avant",
+      "droit",
+      "arriere",
+      "gauche",
+      "janteAvant",
+      "janteArriere",
+    ];
+    // Ne garder que les zones réellement présentes dans le snapshot pour éviter les sections vides
+    zoneKeys = MOTO_ZONE_ORDER.filter((key) => Object.prototype.hasOwnProperty.call(sections, key));
+  } else {
+    // Comportement par défaut : zones voiture (strictement identique à l'existant)
+    zoneKeys = ["avant", "droit", "arriere", "gauche", "coffre", "janteAvDroit", "janteArDroit", "janteAvGauche", "janteArGauche"];
+  }
 
   return `
     <div class="page">
@@ -858,7 +905,7 @@ function generatePage2(snapshot: CheckinReturnLegalSnapshot, checkinReturn: Chec
       </div>
 
       ${zoneKeys.map(zoneKey => {
-        const section = step3.sections[zoneKey] || { label: zoneKey, isSameAsDepart: true, newDamages: [] };
+        const section = sections[zoneKey] || { label: zoneKey, isSameAsDepart: true, newDamages: [] };
         const hasNewDamage = !section.isSameAsDepart && section.newDamages && section.newDamages.length > 0;
         const firstDamage = hasNewDamage ? section.newDamages[0] : null;
 

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -170,6 +169,7 @@ const OwnerBookings = () => {
           id: checkinReturnEntry.id,
           status: checkinReturnEntry.status,
           legalPdfUrl: checkinReturnEntry.legal_pdf_url || null,
+          updatedAt: checkinReturnEntry.updated_at || null,
         } : undefined;
 
         // Debug pour voir les motifs d'annulation
@@ -541,7 +541,6 @@ const OwnerBookings = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -555,8 +554,6 @@ const OwnerBookings = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* En-tête */}
         <div className="mb-8">

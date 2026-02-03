@@ -735,6 +735,7 @@
       "closed": "Closed",
       "active": "Ongoing",
       "completed": "Completed",
+      "terminated": "Terminated",
       "cancelled": "Cancelled"
     },
     "cancel": {

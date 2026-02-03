@@ -110,6 +110,16 @@ export const SupabaseCheckinReturnService = {
     try {
       const { checkin_return_id, ...dataToSave } = payload;
 
+      // Garde-fou ultime : la table checkin_return impose owner_id et renter_id NOT NULL.
+      // Si ces valeurs sont nulles ici, on renvoie une erreur claire sans tenter d'INSERT/UPDATE.
+      if (!dataToSave.owner_id || !dataToSave.renter_id) {
+        return {
+          data: null,
+          error:
+            "Impossible de sauvegarder le check-in retour : owner_id ou renter_id manquant (contrainte NOT NULL).",
+        };
+      }
+
       // ---------------------------------------------------------------------------
       // MODE UPDATE si ID fourni ou si un draft existe déjà pour ce booking
       // ---------------------------------------------------------------------------

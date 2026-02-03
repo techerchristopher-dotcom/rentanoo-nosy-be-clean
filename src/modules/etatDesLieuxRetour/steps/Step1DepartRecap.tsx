@@ -87,7 +87,64 @@ export default function Step1DepartRecap({
 
   const zonesPhotos = departData?.step3?.zonesPhotos || {};
   const propreteExterieurePhotos = departData?.step3?.propreteExterieure?.photos || [];
-  const damageReports = departData?.step3?.damageReports || [];
+
+  // Dégâts : on enrichit les damageReports avec les photos de zones ayant kind = "degat"
+  // lorsqu'aucune photo n'est directement présente sur le dégât.
+  const rawDamageReports = (departData?.step3?.damageReports || []) as any[];
+  const allZonePhotos: any[] = Object.values(zonesPhotos || {}).reduce((acc: any[], photos: any) => {
+    if (Array.isArray(photos)) {
+      acc.push(...photos);
+    }
+    return acc;
+  }, []);
+
+  const damageReports = rawDamageReports.map((d, idx) => {
+    if (d?.photos && Array.isArray(d.photos) && d.photos.length > 0) {
+      return d;
+    }
+
+    const side = d?.side || d?.zone || null;
+
+    const fallbackPhotos = allZonePhotos.filter((p: any) => {
+      if (!p || typeof p !== "object") return false;
+      // Photos marquées comme "degat" et associées à ce dégât via damageIndex
+      if (p.damageIndex === idx && (p.kind === "degat" || !p.kind)) {
+        return true;
+      }
+      return false;
+    });
+
+    // 1) Si on a des photos explicitement taggées pour ce dégât → on les utilise.
+    if (fallbackPhotos.length > 0) {
+      return {
+        ...d,
+        photos: fallbackPhotos,
+      };
+    }
+
+    // 2) Fallback supplémentaire : si aucune photo spécifique trouvée mais qu'on connaît la zone
+    //    et qu'il existe des photos pour cette zone, on les associe à ce dégât.
+    if (side && zonesPhotos && Array.isArray((zonesPhotos as any)[side])) {
+      const zonePhotos: any[] = (zonesPhotos as any)[side] || [];
+      if (zonePhotos.length > 0) {
+        const zoneDamagePhotos = zonePhotos.filter((p: any) => {
+          if (!p || typeof p !== "object") return false;
+          // Priorité aux photos marquées comme "degat" sur cette zone
+          if (p.kind === "degat") return true;
+          return false;
+        });
+
+        const photosToAttach = zoneDamagePhotos.length > 0 ? zoneDamagePhotos : zonePhotos;
+
+        return {
+          ...d,
+          photos: photosToAttach,
+        };
+      }
+    }
+
+    return d;
+  });
 
   const interieurPropretePhotos = departData?.step4?.propreteGenerale?.photos || [];
   const interieurSiegesPhotos = departData?.step4?.sieges?.photos || [];

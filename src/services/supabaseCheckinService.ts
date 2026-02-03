@@ -94,6 +94,83 @@ export const SupabaseCheckinService = {
       const { checkin_id, ...dataToSave } = payload;
 
       // ============================================================================
+      // GARDE-FOU OWNER / RENTER
+      // ============================================================================
+      // Objectif : garantir que checkin_depart.owner_id et renter_id sont toujours renseignés
+      // au moment de l'écriture, en les dérivant depuis bookings / vehicles si nécessaire.
+      //
+      // Source de vérité prouvée par le code :
+      // - Renter = bookings.user_id (voir createLegalSnapshot(), sélection bookings.user_id)
+      // - Owner  = vehicles.owner_id   (voir createLegalSnapshot(), sélection vehicles.owner_id)
+      //
+      // Référence :
+      // - SCRIPT-RECREATE-SCHEMA-RENTANOO.sql : 
+      //   - bookings.user_id uuid NOT NULL (lignes 200-201)
+      //   - vehicles.owner_id uuid NOT NULL (lignes 170-172)
+      //
+      let resolvedOwnerId: string | null = dataToSave.owner_id ?? null;
+      let resolvedRenterId: string | null = dataToSave.renter_id ?? null;
+
+      if (!resolvedOwnerId || !resolvedRenterId) {
+        // 1) Charger la réservation pour obtenir renter_id (user_id) et vehicle_id
+        const { data: bookingForIds, error: bookingIdsError } = await supabase
+          .from("bookings" as any)
+          .select("id, user_id, vehicle_id")
+          .eq("id", dataToSave.booking_id)
+          .single();
+
+        if (bookingIdsError || !bookingForIds) {
+          console.error("[SupabaseCheckinService] ❌ Impossible de résoudre owner/renter depuis bookings:", bookingIdsError);
+          return {
+            data: null,
+            error:
+              "Impossible de sauvegarder le check-in : réservation introuvable pour déterminer owner_id / renter_id.",
+          };
+        }
+
+        // 2) Résoudre renter_id depuis bookings.user_id
+        if (!resolvedRenterId) {
+          resolvedRenterId = (bookingForIds as any).user_id || null;
+        }
+
+        // 3) Résoudre owner_id depuis vehicles.owner_id via bookings.vehicle_id
+        if (!resolvedOwnerId && (bookingForIds as any).vehicle_id) {
+          const { data: vehicleForOwner, error: vehicleIdsError } = await supabase
+            .from("vehicles" as any)
+            .select("id, owner_id")
+            .eq("id", (bookingForIds as any).vehicle_id)
+            .single();
+
+          if (vehicleIdsError) {
+            console.error(
+              "[SupabaseCheckinService] ❌ Impossible de résoudre owner_id depuis vehicles:",
+              vehicleIdsError
+            );
+          } else if (vehicleForOwner) {
+            resolvedOwnerId = (vehicleForOwner as any).owner_id || null;
+          }
+        }
+      }
+
+      // Si après tentative de résolution on a toujours un des deux identifiants manquant,
+      // on renvoie une erreur claire AVANT tout INSERT/UPDATE.
+      if (!resolvedOwnerId || !resolvedRenterId) {
+        console.error(
+          "[SupabaseCheckinService] ❌ owner_id ou renter_id manquant après résolution:",
+          { resolvedOwnerId, resolvedRenterId, booking_id: dataToSave.booking_id }
+        );
+        return {
+          data: null,
+          error:
+            "Impossible de sauvegarder le check-in : owner_id ou renter_id manquant (mapping booking/vehicle/profiles incomplet).",
+        };
+      }
+
+      // Injecter les valeurs résolues dans le payload utilisé pour l'UPDATE / INSERT
+      (dataToSave as any).owner_id = resolvedOwnerId;
+      (dataToSave as any).renter_id = resolvedRenterId;
+
+      // ============================================================================
       // CAS UPDATE : check-in existant
       // ============================================================================
       if (checkin_id) {
@@ -102,7 +179,8 @@ export const SupabaseCheckinService = {
         // ⚠️ VERROUILLAGE BACKEND : Vérifier que le check-in n'est pas finalisé
         const { data: existingCheckinStatus, error: statusError } = await supabase
           .from("checkin_depart" as any)
-          .select("status, data")
+          // On lit aussi owner_id / renter_id pour ne les écraser que s'ils sont NULL
+          .select("status, data, owner_id, renter_id")
           .eq("id", checkin_id)
           .single();
 
@@ -125,10 +203,10 @@ export const SupabaseCheckinService = {
         }
 
         // Lire les données existantes pour merge
-        const existingCheckin = existingCheckinStatus;
+        const existingCheckin = existingCheckinStatus as any;
 
         // Merge des données JSONB
-        const existingData = (existingCheckin as any)?.data || {};
+        const existingData = existingCheckin?.data || {};
         const mergedData = {
           ...existingData,
           ...(dataToSave.data || {}),
@@ -209,6 +287,15 @@ export const SupabaseCheckinService = {
           validated_at: validatedAt,
           updated_at: new Date().toISOString(),
         };
+
+        // Ne mettre à jour owner_id / renter_id que si la ligne actuelle les a NULL
+        // pour éviter d'écraser des valeurs déjà présentes.
+        if (!existingCheckin.owner_id) {
+          updatePayload.owner_id = resolvedOwnerId;
+        }
+        if (!existingCheckin.renter_id) {
+          updatePayload.renter_id = resolvedRenterId;
+        }
 
         const { data, error } = await supabase
           .from("checkin_depart" as any)

@@ -227,12 +227,13 @@ export const checkinReturnSnapshotService = {
         model: string;
         license_plate: string;
         owner_id: string | null;
+        vehicle_type: string | null;
       } | null = null;
 
       if (booking?.vehicle_id) {
         const { data: vehicleData, error: vehicleError } = await supabase
           .from("vehicles" as any)
-          .select("id, brand, model, license_plate, owner_id")
+          .select("id, brand, model, license_plate, owner_id, vehicle_type")
           .eq("id", booking.vehicle_id)
           .single();
 
@@ -240,6 +241,9 @@ export const checkinReturnSnapshotService = {
           vehicle = vehicleData as any;
         }
       }
+
+      // Exposer le type de véhicule pour les étapes suivantes
+      const vehicleType = vehicle?.vehicle_type || null;
 
       // 2.4. Charger le profil propriétaire
       let ownerProfile: {
@@ -359,8 +363,11 @@ export const checkinReturnSnapshotService = {
       };
 
       // 3.8. Données retour - Step 3 (extérieur)
-      // ⭐ Labels des zones pour le PDF
-      const zoneLabels: Record<string, string> = {
+      // ⭐ Configuration des zones selon le type de véhicule
+      
+      // Constantes VOITURE (comportement par défaut, strictement identique à l'existant)
+      const RETURN_CAR_ZONE_KEYS = ["avant", "droit", "arriere", "gauche", "coffre", "janteAvDroit", "janteArDroit", "janteAvGauche", "janteArGauche"];
+      const RETURN_CAR_ZONE_LABELS: Record<string, string> = {
         avant: "Avant",
         droit: "Côté droit",
         arriere: "Arrière",
@@ -372,9 +379,25 @@ export const checkinReturnSnapshotService = {
         janteArGauche: "Jante arrière gauche",
       };
 
+      // Constantes MOTO
+      // Pour les motos, seulement 2 jantes : avant et arrière (sans distinction gauche/droite)
+      // Pas de "coffre" pour la moto
+      const RETURN_MOTO_ZONE_KEYS = ["avant", "droit", "arriere", "gauche", "janteAvant", "janteArriere"];
+      const RETURN_MOTO_ZONE_LABELS: Record<string, string> = {
+        avant: "Avant",
+        droit: "Côté droit",
+        arriere: "Arrière",
+        gauche: "Côté gauche",
+        janteAvant: "Jante avant",
+        janteArriere: "Jante arrière",
+      };
+
+      // Sélection conditionnelle basée sur vehicleType
+      const zoneKeys = vehicleType === 'moto' ? RETURN_MOTO_ZONE_KEYS : RETURN_CAR_ZONE_KEYS;
+      const zoneLabels = vehicleType === 'moto' ? RETURN_MOTO_ZONE_LABELS : RETURN_CAR_ZONE_LABELS;
+
       const returnStep3 = returnData.step3?.sections || {};
       const returnStep3Snapshot: Record<string, any> = {};
-      const zoneKeys = ["avant", "droit", "arriere", "gauche", "coffre", "janteAvDroit", "janteArDroit", "janteAvGauche", "janteArGauche"];
       for (const zoneKey of zoneKeys) {
         const section = returnStep3[zoneKey] || {};
         returnStep3Snapshot[zoneKey] = {
@@ -408,8 +431,10 @@ export const checkinReturnSnapshotService = {
       };
 
       // 3.10. Données retour - Step 5 (accessoires)
-      // ⭐ Liste complète des accessoires avec leurs labels
-      const accessoryLabels: Record<string, string> = {
+      // ⭐ Configuration des accessoires selon le type de véhicule
+      
+      // Constantes VOITURE (comportement par défaut, strictement identique à l'existant)
+      const RETURN_CAR_ACCESSORY_LABELS: Record<string, string> = {
         gilet: "Gilet",
         triangle: "Triangle",
         roueSecours: "Roue de secours",
@@ -419,6 +444,25 @@ export const checkinReturnSnapshotService = {
         manuel: "Manuel",
         carteCarburant: "Carte carburant",
       };
+
+      // Constantes MOTO
+      // ⚠️ Source : src/modules/etatDesLieuxDepartMoto/sections/Section5AccessoiresMoto.tsx lignes 45-90
+      // Aucune liste d'accessoires retour moto spécifique n'existe dans le repo.
+      // Cette liste provient du départ moto (seule source disponible).
+      // TODO : Vérifier si une liste retour moto spécifique doit être créée.
+      const RETURN_MOTO_ACCESSORY_LABELS: Record<string, string> = {
+        casque: "Casque",
+        gants: "Gants",
+        cadenas: "Cadenas antivol",
+        support_telephone: "Support téléphone",
+        top_case: "Top case / Coffre",
+        prise_usb: "Prise USB",
+        gilet_jaune: "Gilet jaune / Réfléchissant",
+        autre: "Autre accessoire",
+      };
+
+      // Sélection conditionnelle basée sur vehicleType
+      const accessoryLabels = vehicleType === 'moto' ? RETURN_MOTO_ACCESSORY_LABELS : RETURN_CAR_ACCESSORY_LABELS;
 
       const returnStep5 = returnData.step5?.accessoiresRetour || {};
       const departAccessoires = departData.step5?.accessoires || {};

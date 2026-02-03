@@ -640,6 +640,7 @@
       "closed": "Geschlossen",
       "active": "Laufend",
       "completed": "Abgeschlossen",
+      "terminated": "Beendet",
       "cancelled": "Storniert"
     },
     "cancel": {

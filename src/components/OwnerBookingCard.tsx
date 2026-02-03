@@ -746,18 +746,20 @@ export default function OwnerBookingCard({
         "transition-all duration-300 relative",
         (booking.status === 'cancelled' || booking.status === 'declined')
           ? "opacity-60 grayscale-[0.7] bg-muted/50" 
+          : booking.status === 'terminated'
+          ? "bg-green-50/50 border-green-200/50"
           : "hover:shadow-lagoon hover:scale-[1.01] bg-gradient-to-br from-card to-card/50"
       )}>
         <CollapsibleTrigger asChild>
           <CardContent className={cn(
             "p-4",
-            (booking.status === 'cancelled' || booking.status === 'declined') ? "cursor-default" : "cursor-pointer"
+            (booking.status === 'cancelled' || booking.status === 'declined' || booking.status === 'terminated') ? "cursor-default" : "cursor-pointer"
           )}>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               {/* Informations principales */}
-              <div className="flex items-center space-x-4 flex-1">
+              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                   {/* Mini photo véhicule */}
-                  <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="w-16 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden flex-shrink-0">
                     <img
                       src={
                         booking.primaryPhoto?.url ||
@@ -770,7 +772,8 @@ export default function OwnerBookingCard({
                       }
                       className={cn(
                         "w-full h-full object-cover",
-                        (booking.status === 'cancelled' || booking.status === 'declined') && "opacity-40"
+                        (booking.status === 'cancelled' || booking.status === 'declined') && "opacity-40",
+                        booking.status === 'terminated' && "opacity-90"
                       )}
                     />
                   </div>
@@ -778,25 +781,26 @@ export default function OwnerBookingCard({
                   {/* Détails principaux */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-base text-foreground truncate">
+                      <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
                         {booking.vehicle
                           ? `${booking.vehicle.brand} ${booking.vehicle.model}`
                           : 'Véhicule supprimé'}
                       </h3>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                     <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                        <span>
+                      <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="whitespace-nowrap">
                           {formatDate(booking.startDate).split(' ')[0]}{' '}
                           {formatDate(booking.startDate).split(' ')[1]}
                         </span>
                     </div>
-                    <span>→</span>
+                    <span className="hidden sm:inline">→</span>
+                    <span className="sm:hidden">→</span>
                     <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                        <span>
+                      <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="whitespace-nowrap">
                           {formatDate(booking.endDate).split(' ')[0]}{' '}
                           {formatDate(booking.endDate).split(' ')[1]}
                         </span>
@@ -806,8 +810,8 @@ export default function OwnerBookingCard({
                 </div>
 
                 {/* Actions et statut - alignement parfait */}
-                <div className="flex flex-col items-end gap-2 h-16">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-2 sm:h-16">
+                  <div className="flex items-center gap-2 sm:gap-3 order-2 sm:order-1">
                     <div className="flex flex-col items-end gap-1">
                       {/* Badge statut enrichi */}
                       {(() => {
@@ -816,14 +820,14 @@ export default function OwnerBookingCard({
                           return (
                             <div className="flex flex-col items-end gap-0.5">
                               <span className={cn(
-                                "rounded-full px-3 py-1 text-sm font-medium",
+                                "rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-medium",
                                 enrichedBadge.badgeColor
                               )}>
                                 {enrichedBadge.badgeLabel}
                               </span>
                               {enrichedBadge.note && (
                                 <span className={cn(
-                                  "text-xs font-medium",
+                                  "text-[10px] sm:text-xs font-medium",
                                   enrichedBadge.noteColor
                                 )}>
                                   {enrichedBadge.note}
@@ -859,11 +863,11 @@ export default function OwnerBookingCard({
                           : undefined;
                         return (
                           <div className="flex flex-col items-end">
-                            <span className="text-[10px] text-muted-foreground/70 italic">
+                            <span className="text-[10px] text-muted-foreground/70 italic text-right">
                               {cancellationReason || (booking.status === 'cancelled' ? 'Délai de paiement expiré' : 'Réservation refusée')}
                             </span>
                             {updatedText && (
-                              <span className="text-[10px] text-muted-foreground/60">Mise à jour le : {updatedText}</span>
+                              <span className="text-[10px] text-muted-foreground/60 text-right">Mise à jour le : {updatedText}</span>
                             )}
                           </div>
                         );
@@ -885,7 +889,7 @@ export default function OwnerBookingCard({
                               }}
                             >
                               <div className="relative">
-                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary/10 to-primary/20 border-2 border-primary/20 flex items-center justify-center shadow-sm mb-2 group-hover:shadow-md transition-shadow">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary/10 to-primary/20 border-2 border-primary/20 flex items-center justify-center shadow-sm mb-1 sm:mb-2 group-hover:shadow-md transition-shadow">
                                   {renter?.avatarUrl ? (
                                     <img
                                       src={renter.avatarUrl}
@@ -893,24 +897,24 @@ export default function OwnerBookingCard({
                                       className="w-full h-full object-cover object-center"
                                     />
                                   ) : (
-                                    <div className="w-full h-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
+                                    <div className="w-full h-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-xs sm:text-sm">
                                       {renter?.firstName?.charAt(0) || renter?.lastName?.charAt(0) || 'L'}
                                     </div>
                                   )}
                                 </div>
                                 {unreadCount > 0 && (
-                                  <div className="absolute -top-1 -right-1 bg-destructive rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 border-2 border-white shadow-lg">
+                                  <div className="absolute -top-1 -right-1 bg-destructive rounded-full min-w-[18px] sm:min-w-[20px] h-4 sm:h-5 flex items-center justify-center px-1 sm:px-1.5 border-2 border-white shadow-lg">
                                     {unreadCount > 9 ? (
-                                      <span className="text-[10px] font-bold text-white">9+</span>
+                                      <span className="text-[9px] sm:text-[10px] font-bold text-white">9+</span>
                                     ) : (
-                                      <span className="text-[10px] font-bold text-white">{unreadCount}</span>
+                                      <span className="text-[9px] sm:text-[10px] font-bold text-white">{unreadCount}</span>
                                     )}
                                   </div>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+                              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-medium text-primary hover:text-primary/80 transition-colors">
                                 <MessageSquare className="h-3 w-3" />
-                                <span>Message</span>
+                                <span className="hidden sm:inline">Message</span>
               </div>
                             </button>
                           </TooltipTrigger>
@@ -927,9 +931,10 @@ export default function OwnerBookingCard({
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                  </div>
                 
                 {/* Chevron */}
-                <div className="flex items-center justify-center w-6 h-6">
+                <div className="flex items-center justify-center w-6 h-6 order-1 sm:order-2">
                   {isExpanded ? (
                     <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (
@@ -937,7 +942,6 @@ export default function OwnerBookingCard({
                   )}
                     </div>
                 </div>
-              </div>
             </div>
           </CardContent>
         </CollapsibleTrigger>
@@ -1163,8 +1167,12 @@ export default function OwnerBookingCard({
                     </Button>
                   )}
 
-                  {/* Bouton État des lieux de départ : visible si status confirmed et pas encore de checkin */}
-                  {booking.status === 'confirmed' && !(booking as any).hasCheckin && (
+                  {/* Bouton État des lieux de départ :
+                      - visible si statut booking = confirmed
+                      - caché si un checkin_depart complété existe déjà */}
+                  {booking.status === 'confirmed' &&
+                    booking.checkinDepart?.status !== 'completed' &&
+                    !(booking as any).hasCheckin && (
                     <Link
                       to={`/checking/${booking.id}`}
                       onClick={(e) => e.stopPropagation()}
@@ -1181,11 +1189,35 @@ export default function OwnerBookingCard({
                       </Button>
                     </Link>
                   )}
-
-                  {/* Bouton État des lieux de retour : visible si checkin_depart est complété */}
+                  {/* Badges et boutons pour les états des lieux : départ et retour */}
                   {booking.checkinDepart?.status === 'completed' && (
                     <>
-                      {!booking.checkinReturn || booking.checkinReturn.status === 'draft' ? (
+                      {/* Si le retour est aussi complété, afficher les deux badges côte à côte */}
+                      {booking.checkinReturn?.status === 'completed' ? (
+                        <div className="flex items-center gap-2 flex-1 sm:flex-none flex-wrap">
+                          {/* Badge Départ complété */}
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Départ complété
+                          </Badge>
+                          {/* Badge Retour complété */}
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Retour complété
+                          </Badge>
+                        </div>
+                      ) : (
+                        /* Si le retour n'est pas complété, afficher le badge départ seul ou le bouton retour */
+                        <>
+                          {/* Badge "Départ complété" : affiché quand checkin_depart est complété mais retour pas encore */}
+                          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Départ complété
+                            </Badge>
+                          </div>
+                          {/* Bouton État des lieux de retour : visible si checkin_depart est complété mais retour pas encore */}
+                          {(!booking.checkinReturn || booking.checkinReturn.status === 'draft') && (
                         <Link
                           to={`/checkin-return/${booking.id}`}
                           onClick={(e) => e.stopPropagation()}
@@ -1203,45 +1235,28 @@ export default function OwnerBookingCard({
                               : "État des lieux de retour"}
                           </Button>
                         </Link>
-                      ) : booking.checkinReturn.status === 'completed' ? (
-                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Retour complété
-                          </Badge>
-                          {booking.checkinReturn.legalPdfUrl && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(booking.checkinReturn!.legalPdfUrl!, '_blank', 'noopener,noreferrer');
-                              }}
-                              className="flex items-center gap-2"
-                            >
-                              <FileText className="h-4 w-4" />
-                              Voir le PDF
-                            </Button>
                           )}
-                        </div>
-                      ) : null}
+                        </>
+                      )}
                     </>
                   )}
                   
-                  {/* Bouton annuler la réservation : TOUJOURS AFFICHÉ */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleOpenCancelModal()
-                    }}
-                    disabled={isUpdating}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Annuler la réservation
-                  </Button>
+                  {/* Bouton annuler la réservation : masqué si terminated */}
+                  {booking.status !== 'terminated' && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenCancelModal()
+                      }}
+                      disabled={isUpdating}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Annuler la réservation
+                    </Button>
+                  )}
 
                   <BookingMoreActionsMenu
                     checkinDepart={booking.checkinDepart}
@@ -1254,6 +1269,7 @@ export default function OwnerBookingCard({
                         navigate(`/vehicle/${booking.vehicle.license}`)
                       }
                     }}
+                    className="flex-1 sm:flex-none sm:ml-auto w-full sm:w-auto"
                   />
               </div>
             </div>

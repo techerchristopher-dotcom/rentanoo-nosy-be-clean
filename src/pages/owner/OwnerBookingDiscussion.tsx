@@ -25,7 +25,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Vehicle, Photo, Message as MessageType, Conversation, User as AppUser } from "@/types";
 import { VehiclesService, PhotosService, ConversationsService, MessagesService } from "@/services";
@@ -340,7 +339,6 @@ const OwnerBookingDiscussion = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -355,7 +353,6 @@ const OwnerBookingDiscussion = () => {
   if (!vehicle || !conversation) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
         <div className="container mx-auto px-4 py-8">
           <Card className="max-w-md mx-auto text-center">
             <CardContent className="pt-6">
@@ -373,8 +370,6 @@ const OwnerBookingDiscussion = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Navbar />
-      
       <main className="container mx-auto px-4 py-6 max-w-7xl">
         {/* En-tête avec bouton retour */}
         <div className="flex items-center mb-6">

@@ -738,6 +738,7 @@
       "closed": "Clôturée",
       "active": "En cours",
       "completed": "Terminé",
+      "terminated": "Terminée",
       "cancelled": "Annulée"
     },
     "cancel": {

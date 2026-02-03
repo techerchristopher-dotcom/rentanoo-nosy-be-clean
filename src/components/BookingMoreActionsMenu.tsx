@@ -1,4 +1,4 @@
-import { MoreVertical, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ interface BookingMoreActionsMenuProps {
   checkinReturn?: CheckinReturnSummary;
   onViewDetails?: () => void;
   onViewVehicle?: () => void;
+  className?: string;
 }
 
 /**
@@ -21,7 +22,7 @@ interface BookingMoreActionsMenuProps {
  * un check-in de départ complété avec URL PDF est disponible.
  * Affiche également le PDF de retour si disponible.
  */
-export function BookingMoreActionsMenu({ checkinDepart, checkinReturn, onViewDetails, onViewVehicle }: BookingMoreActionsMenuProps) {
+export function BookingMoreActionsMenu({ checkinDepart, checkinReturn, onViewDetails, onViewVehicle, className }: BookingMoreActionsMenuProps) {
   const hasDepartPdf =
     !!checkinDepart &&
     checkinDepart.status === "completed" &&
@@ -52,8 +53,9 @@ export function BookingMoreActionsMenu({ checkinDepart, checkinReturn, onViewDet
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Plus d'actions">
-          <MoreVertical className="h-4 w-4" />
+        <Button variant="outline" size="sm" className={`flex items-center gap-2 w-full sm:w-auto ${className || ''}`}>
+          <FileText className="h-4 w-4" />
+          Mes documents de location
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

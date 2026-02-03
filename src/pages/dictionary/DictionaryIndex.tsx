@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { DictionaryService } from "@/services/supabase/dictionary";
 
@@ -30,7 +29,6 @@ export default function DictionaryIndex() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
       <main className="flex-1 container max-w-4xl mx-auto px-4 py-8 space-y-6">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">

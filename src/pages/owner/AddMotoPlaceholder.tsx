@@ -1,7 +1,6 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -390,7 +389,6 @@ export default function AddMotoPlaceholder() {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
           <Card>
