@@ -6,10 +6,10 @@ import { compressImage } from "@/utils/imageCompression";
 
 // ⭐ Configuration de compression pour état des lieux
 const COMPRESSION = {
-  maxWidth: 1920,
-  maxHeight: 1920,
-  quality: 0.85,
-  maxSizeMB: 0.5,
+  maxWidth: 1280,
+  maxHeight: 1280,
+  quality: 0.72,
+  maxSizeMB: 0.3,
 };
 
 type PhotoCaptureFieldProps = {

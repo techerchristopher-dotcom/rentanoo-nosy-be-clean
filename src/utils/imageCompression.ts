@@ -5,22 +5,22 @@
  * sur mobile. Utilise createImageBitmap (plus performant) avec fallback sur Image.
  * 
  * Configuration recommandée pour état des lieux :
- * - maxWidth: 1920px (suffisant pour voir les détails)
- * - maxHeight: 1920px
- * - quality: 0.85 (bon compromis qualité/taille)
- * - maxSizeMB: 0.5 (objectif 500KB max)
+ * - maxWidth: 1280px (suffisant pour voir les détails)
+ * - maxHeight: 1280px
+ * - quality: 0.72 (bon compromis qualité/taille)
+ * - maxSizeMB: 0.3 (objectif 300KB max)
  * 
- * Gain attendu : 85-95% de réduction (3-8MB → 200-500KB)
+ * Gain attendu : 85-95% de réduction (3-8MB → 150-400KB)
  */
 
 export type CompressOptions = {
-  /** Largeur maximale en pixels (défaut: 1920) */
+  /** Largeur maximale en pixels (défaut: 1280) */
   maxWidth?: number;
-  /** Hauteur maximale en pixels (défaut: 1920) */
+  /** Hauteur maximale en pixels (défaut: 1280) */
   maxHeight?: number;
-  /** Qualité JPEG 0-1 (défaut: 0.82) */
+  /** Qualité JPEG 0-1 (défaut: 0.72) */
   quality?: number;
-  /** Taille maximale cible en MB (défaut: 0.5) */
+  /** Taille maximale cible en MB (défaut: 0.3) */
   maxSizeMB?: number;
   /** Type MIME de sortie (défaut: "image/jpeg") */
   mimeType?: "image/jpeg" | "image/webp";
@@ -100,32 +100,37 @@ async function canvasToBlob(
  * @example
  * ```typescript
  * const compressed = await compressImage(file, {
- *   maxWidth: 1920,
- *   maxHeight: 1920,
- *   quality: 0.82,
- *   maxSizeMB: 0.5,
+ *   maxWidth: 1280,
+ *   maxHeight: 1280,
+ *   quality: 0.72,
+ *   maxSizeMB: 0.3,
  * });
  * ```
  */
 export async function compressImage(file: File, opts: CompressOptions = {}): Promise<File> {
   const {
-    maxWidth = 1920,
-    maxHeight = 1920,
-    quality = 0.85,
-    maxSizeMB = 0.5,
+    maxWidth = 1280,
+    maxHeight = 1280,
+    quality = 0.72,
+    maxSizeMB = 0.3,
     mimeType = "image/jpeg",
   } = opts;
 
+  // ⭐ Log DEV (désactivé en prod via NODE_ENV)
+  const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+  const logDev = isDev ? console.log : () => {};
+
   // Si le fichier est déjà petit, ne pas compresser
   if (file.size <= maxSizeMB * 1024 * 1024) {
-    console.log(
+    logDev(
       `[compressImage] Fichier déjà petit (${(file.size / 1024).toFixed(0)}KB), pas de compression`
     );
     return file;
   }
 
+  let bitmapOrImg: ImageBitmap | HTMLImageElement | null = null;
   try {
-    const bitmapOrImg = await fileToImageBitmap(file);
+    bitmapOrImg = await fileToImageBitmap(file);
 
     // Extraire dimensions (ImageBitmap a width/height directement, Image a naturalWidth/naturalHeight)
     const srcW =
@@ -137,46 +142,75 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
         ? bitmapOrImg.height
         : (bitmapOrImg as HTMLImageElement).naturalHeight;
 
-    const { tw, th } = computeTargetSize(srcW, srcH, maxWidth, maxHeight);
+    const maxBytes = maxSizeMB * 1024 * 1024;
+    let targetMaxW = maxWidth;
+    let targetMaxH = maxHeight;
+    let finalQuality = clamp(quality, 0.4, 0.92);
+    let blob: Blob | null = null;
+    let downsizes = 0;
+    const MAX_DOWNSIZES = 3;
+    let finalTw = 0;
+    let finalTh = 0;
 
-    console.log(
-      `[compressImage] Redimensionnement: ${srcW}x${srcH} → ${tw}x${th} (ratio: ${(tw / srcW).toFixed(2)})`
-    );
+    // ⭐ Boucle principale : réduire dimensions de sortie si nécessaire après épuisement qualité
+    while (downsizes <= MAX_DOWNSIZES) {
+      const { tw, th } = computeTargetSize(srcW, srcH, targetMaxW, targetMaxH);
+      finalTw = tw;
+      finalTh = th;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = tw;
-    canvas.height = th;
+      logDev(
+        `[compressImage] Redimensionnement: ${srcW}x${srcH} → ${tw}x${th} (targetMax: ${targetMaxW}x${targetMaxH})`
+      );
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Impossible d'obtenir un contexte 2D");
+      const canvas = document.createElement("canvas");
+      canvas.width = tw;
+      canvas.height = th;
 
-    // Améliorer la qualité du downscale
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Impossible d'obtenir un contexte 2D");
 
-    // Dessiner l'image redimensionnée
-    ctx.drawImage(bitmapOrImg as any, 0, 0, tw, th);
+      // Améliorer la qualité du downscale
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
 
-    // Libérer la mémoire si ImageBitmap
-    if ("close" in (bitmapOrImg as any) && typeof (bitmapOrImg as any).close === "function") {
-      try {
-        (bitmapOrImg as any).close();
-      } catch {
-        // ignore
+      // Dessiner depuis la source originale (toujours depuis bitmapOrImg)
+      ctx.drawImage(bitmapOrImg as any, 0, 0, tw, th);
+
+      // Compression itérative jusqu'à atteindre la taille cible
+      let q = finalQuality;
+      blob = await canvasToBlob(canvas, mimeType, q);
+
+      // Réduction itérative de qualité si encore trop gros
+      let guard = 0;
+      while (blob.size > maxBytes && guard < 5) {
+        q = clamp(q - 0.12, 0.4, 0.92);
+        blob = await canvasToBlob(canvas, mimeType, q);
+        guard++;
+      }
+
+      finalQuality = q;
+
+      // Si taille OK, sortir
+      if (blob.size <= maxBytes) {
+        break;
+      }
+
+      // Si encore trop gros après épuisement qualité, réduire dimensions cibles (x0.85)
+      if (blob.size > maxBytes && downsizes < MAX_DOWNSIZES) {
+        targetMaxW = Math.round(targetMaxW * 0.85);
+        targetMaxH = Math.round(targetMaxH * 0.85);
+        downsizes++;
+        logDev(`[compressImage] Taille encore trop grande (${(blob.size / 1024).toFixed(0)}KB), réduction targetMax: ${targetMaxW}x${targetMaxH}`);
+        // Réinitialiser qualité pour le prochain cycle
+        finalQuality = clamp(quality, 0.4, 0.92);
+      } else {
+        // Dernière tentative ou max downsizes atteint
+        break;
       }
     }
 
-    // Compression itérative jusqu'à atteindre la taille cible
-    const maxBytes = maxSizeMB * 1024 * 1024;
-    let q = clamp(quality, 0.4, 0.92);
-    let blob = await canvasToBlob(canvas, mimeType, q);
-
-    // Réduction itérative si encore trop gros
-    let guard = 0;
-    while (blob.size > maxBytes && guard < 5) {
-      q = clamp(q - 0.12, 0.4, 0.92);
-      blob = await canvasToBlob(canvas, mimeType, q);
-      guard++;
+    if (!blob) {
+      throw new Error("Échec de la compression");
     }
 
     // Nom de fichier cohérent
@@ -188,16 +222,27 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
       lastModified: Date.now(),
     });
 
-    const reduction = ((1 - compressedFile.size / file.size) * 100).toFixed(1);
-    console.log(
-      `[compressImage] Compression réussie: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB (${reduction}% de réduction)`
-    );
+    // ⭐ Logs DEV
+    logDev(`[compressImage] Compression réussie:`);
+    logDev(`  - Dimensions: ${srcW}x${srcH} → ${finalTw}x${finalTh}`);
+    logDev(`  - Taille: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB`);
+    logDev(`  - Qualité finale: ${finalQuality.toFixed(2)}`);
+    logDev(`  - Réduction: ${((1 - compressedFile.size / file.size) * 100).toFixed(1)}%`);
 
     return compressedFile;
   } catch (error) {
     console.error("[compressImage] Erreur lors de la compression:", error);
     // Fallback : retourner le fichier original
     return file;
+  } finally {
+    // Libérer la mémoire si ImageBitmap (toujours appelé, même en cas d'erreur)
+    if (bitmapOrImg && "close" in (bitmapOrImg as any) && typeof (bitmapOrImg as any).close === "function") {
+      try {
+        (bitmapOrImg as any).close();
+      } catch {
+        // ignore
+      }
+    }
   }
 }
 
@@ -211,8 +256,9 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
  * @example
  * ```typescript
  * const compressedFiles = await compressImages(files, {
- *   maxWidth: 1920,
- *   quality: 0.82,
+ *   maxWidth: 1280,
+ *   quality: 0.72,
+ *   maxSizeMB: 0.3,
  * });
  * ```
  */
