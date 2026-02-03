@@ -17,6 +17,7 @@ type PhotoCaptureFieldProps = {
   description?: string;
   value: string | string[] | null;
   onChange: (val: string | string[]) => void;
+  onFileChange?: (files: File[]) => void; // ⭐ NOUVEAU : callback optionnel pour File[] (évite base64 ping-pong)
   multiple?: boolean;
   className?: string;
 };
@@ -26,6 +27,7 @@ export function PhotoCaptureField({
   description,
   value,
   onChange,
+  onFileChange,
   multiple = false,
   className,
 }: PhotoCaptureFieldProps) {
@@ -70,26 +72,38 @@ export function PhotoCaptureField({
     try {
       if (multiple) {
         const list = Array.from(files);
-        const base64s = await mapLimit(list, 2, async (f) => {
+        const compressedFiles = await mapLimit(list, 2, async (f) => {
           try {
-            const compressed = await compressImage(f, COMPRESSION);
-            return fileToBase64(compressed);
+            return await compressImage(f, COMPRESSION);
           } catch (error) {
             console.warn("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
-            // Fallback : utiliser le fichier original
-            return fileToBase64(f);
+            return f; // Fallback : utiliser le fichier original
           }
         });
-        onChange(base64s);
+        
+        // ⭐ Si onFileChange fourni, renvoyer File[] directement (évite base64 ping-pong)
+        if (onFileChange) {
+          onFileChange(compressedFiles);
+        } else {
+          // Sinon, convertir en base64 (comportement par défaut)
+          const base64s = await Promise.all(compressedFiles.map(fileToBase64));
+          onChange(base64s);
+        }
       } else {
+        let compressed: File;
         try {
-          const compressed = await compressImage(files[0], COMPRESSION);
-          const b64 = await fileToBase64(compressed);
-          onChange(b64);
+          compressed = await compressImage(files[0], COMPRESSION);
         } catch (error) {
           console.warn("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
-          // Fallback : utiliser le fichier original
-          const b64 = await fileToBase64(files[0]);
+          compressed = files[0]; // Fallback : utiliser le fichier original
+        }
+        
+        // ⭐ Si onFileChange fourni, renvoyer File[] directement
+        if (onFileChange) {
+          onFileChange([compressed]);
+        } else {
+          // Sinon, convertir en base64 (comportement par défaut)
+          const b64 = await fileToBase64(compressed);
           onChange(b64);
         }
       }

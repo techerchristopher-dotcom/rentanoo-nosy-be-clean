@@ -10,7 +10,7 @@ import { saveStep3Draft, saveStep3ZoneDraft } from '@/services/checkinDepartServ
 import type { Step3Payload, ExteriorPhoto, ExteriorDamage } from '@/types/step3'
 import { uploadZonePhoto, uploadWheelPhoto, uploadTrunkPhoto, uploadDamagePhoto } from '@/modules/etatDesLieuxDepart/helpers/step3Helpers'
 import { ZoomableImage } from '@/components/ZoomableImage'
-import { compressImage } from '@/utils/imageCompression'
+import { compressForUpload } from '@/utils/compressForUpload'
 
 const ChevronDownIcon = ({ className }: { className?: string }) => (
   <svg
@@ -64,92 +64,7 @@ const CameraIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-// ⭐ Compression + upload (optimisé mobile)
-const PHOTO_COMPRESSION = {
-  maxWidth: 1280,
-  maxHeight: 1280,
-  quality: 0.72,
-  maxSizeMB: 0.3,
-} as const
-
-const PHOTO_COMPRESSION_AGGRESSIVE = {
-  maxWidth: 1024,
-  maxHeight: 1024,
-  quality: 0.65,
-  maxSizeMB: 0.25,
-} as const
-
 const UPLOAD_CONCURRENCY = 2
-
-/**
- * ⭐ Vérifie si le mode debug upload est activé
- * 
- * Active si :
- * - URL contient ?debug_upload=1 (query param)
- * - OU localStorage.debug_upload === "1"
- */
-function isDebugUploadEnabled(): boolean {
-  if (typeof window === "undefined") return false;
-  
-  // Vérifier query param
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("debug_upload") === "1") {
-    return true;
-  }
-  
-  // Vérifier localStorage
-  try {
-    return localStorage.getItem("debug_upload") === "1";
-  } catch {
-    return false;
-  }
-}
-
-/**
- * ⭐ Compression robuste en 2 passes avec garde-fou
- * 
- * Passe 1 : Compression standard (1280x1280, quality 0.72, max 300KB)
- * Passe 2 : Si > 350KB, compression agressive (1024x1024, quality 0.65, max 250KB)
- * Garde-fou : Si > 500KB après 2 passes, retourne null (ne pas uploader)
- * 
- * @param showDebugToast - Si true, affiche le toast de preuve (première photo du lot uniquement)
- * @returns File compressé ou null si trop lourd (> 500KB)
- */
-async function compressForUpload(file: File, showDebugToast: boolean = false): Promise<File | null> {
-  const sizeBefore = file.size;
-  
-  // Passe 1 : Compression standard
-  let compressed = await compressImage(file, PHOTO_COMPRESSION);
-  const sizeAfterPass1 = compressed.size;
-  
-  // Si > 350KB après passe 1, relancer compression agressive
-  if (sizeAfterPass1 > 350 * 1024) {
-    compressed = await compressImage(compressed, PHOTO_COMPRESSION_AGGRESSIVE);
-  }
-  
-  const sizeAfter = compressed.size;
-  const sizeKB = (sizeAfter / 1024).toFixed(0);
-  
-  // Garde-fou : Si > 500KB après 2 passes, ne pas uploader
-  // ⚠️ Toast d'erreur toujours visible (fonctionnel, pas debug)
-  if (sizeAfter > 500 * 1024) {
-    toast.error(
-      `Compression échouée : photo trop lourde (${sizeKB} KB). Réessayez.`,
-      { duration: 5000 }
-    );
-    return null;
-  }
-  
-  // Toast de preuve : seulement si debug activé ET showDebugToast=true (première photo)
-  if (showDebugToast && isDebugUploadEnabled()) {
-    const reduction = ((1 - sizeAfter / sizeBefore) * 100).toFixed(0);
-    toast.info(`Photo compressée : ${sizeKB} KB (${reduction}% de réduction)`, {
-      duration: 2000,
-    });
-  }
-  
-  return compressed;
-}
 
 async function mapLimit<T, R>(
   items: T[],
@@ -1159,7 +1074,7 @@ export default function ExteriorInspectionAccordionSimple({
                           const main = zonePhotos[0] as any
                           const mainUrl: string | undefined = typeof main === 'string' ? main : main?.publicUrl
                           
-                          // Handler commun d'upload (vide ou remplacement)
+                          // Handler unifié : compression (comme PhotoCaptureField) puis upload base64
                           const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, replaceFirst: boolean) => {
                             const files = Array.from(e.target.files || [])
                             if (files.length === 0 || !currentZoneKey) return;
@@ -1174,27 +1089,27 @@ export default function ExteriorInspectionAccordionSimple({
                               const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file, idx) => {
                                 const photoId = `${Date.now()}_${idx}_${currentZoneKey}`;
                                 const t0 = performance.now();
-                                const sizeBefore = file.size;
                                 
-                                // ⭐ Compression robuste en 2 passes avec garde-fou
-                                // showDebugToast=true seulement pour la première photo (idx === 0)
+                                // ⭐ Compression robuste 2 passes avec garde-fou
                                 const tCompressStart = performance.now();
-                                const compressed = await compressForUpload(file, idx === 0);
+                                const compressed = await compressForUpload(file, (sizeKB) => {
+                                  toast.error(`Photo trop lourde (${sizeKB} KB). Réessayez.`, { duration: 5000 });
+                                });
                                 const tCompress = performance.now() - tCompressStart;
                                 
                                 // Si compression échouée (trop lourd), skip cette photo
                                 if (!compressed) {
-                                  logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
+                                  logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(file.size / 1024).toFixed(0)}KB)`);
                                   return null;
                                 }
                                 
-                                // ✅ Upload direct File (plus rapide que base64 → File)
+                                // ✅ Upload File direct (plus rapide que base64)
                                 const tUploadStart = performance.now();
                                 const result = await uploadZonePhoto(compressed, bookingId, bookingReferenceNumber, currentZoneKey)
                                 const tUpload = performance.now() - tUploadStart;
                                 const tTotal = performance.now() - t0;
                                 
-                                logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
+                                logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tCompress.toFixed(0)} beforeKB=${(file.size / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
                                 
                                 return result;
                               })
@@ -1203,11 +1118,8 @@ export default function ExteriorInspectionAccordionSimple({
                               )
                               
                               if (uploadedPhotos.length > 0) {
-                                // ⭐ Mesurer UI freeze (setValue)
                                 const tSetValueStart = performance.now();
-                                
                                 if (replaceFirst) {
-                                  // Remplacer la photo principale par la première uploadée
                                   const rest = current.slice(1);
                                   setValue(
                                     `exteriorInspection.zonesPhotos.${currentZoneKey}`,
@@ -1216,7 +1128,6 @@ export default function ExteriorInspectionAccordionSimple({
                                   );
                                   toast.success(`✅ Photo remplacée`);
                                 } else {
-                                  // Ajout en mode vide (comportement existant)
                                   setValue(
                                     `exteriorInspection.zonesPhotos.${currentZoneKey}`,
                                     [...current, ...uploadedPhotos],
@@ -1224,8 +1135,6 @@ export default function ExteriorInspectionAccordionSimple({
                                   );
                                   toast.success(`✅ ${uploadedPhotos.length} photo(s) uploadée(s)`);
                                 }
-                                
-                                // Mesurer re-render cost
                                 requestAnimationFrame(() => {
                                   const tSetValueMs = performance.now() - tSetValueStart;
                                   const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
@@ -1285,7 +1194,6 @@ export default function ExteriorInspectionAccordionSimple({
                                     className="group cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      // choix simple: cliquer sur la photo ouvre le sélecteur pour remplacer
                                       zonePhotoInputRef.current?.click()
                                     }}
                                   >
@@ -1295,14 +1203,13 @@ export default function ExteriorInspectionAccordionSimple({
                                       className="w-full max-w-[900px] mx-auto aspect-[16/9] object-cover rounded-lg border"
                                     />
                                   </div>
-                                  {/* Bouton supprimer (overlay discret en haut à droite) */}
                                   <button
                                     type="button"
                                     aria-label="Supprimer la photo"
                                     onClick={(e) => {
                                       e.stopPropagation()
                                       if (!currentZoneKey) return
-                                      const updated = zonePhotos.slice(1) // retirer la principale
+                                      const updated = zonePhotos.slice(1)
                                       setValue(
                                         `exteriorInspection.zonesPhotos.${currentZoneKey}`,
                                         updated,
@@ -1313,7 +1220,6 @@ export default function ExteriorInspectionAccordionSimple({
                                   >
                                     ×
                                   </button>
-                                  {/* Bouton changer (discret sous la photo) */}
                                   <div className="flex justify-center">
                                     <button
                                       type="button"
@@ -1375,134 +1281,91 @@ export default function ExteriorInspectionAccordionSimple({
                           <>
                             <div className="space-y-3">
                               {damagesForThisSide.map((damage: any) => {
-                                const DamagePhotoInput = () => {
-                                  const fileInputRef = useRef<HTMLInputElement | null>(null)
-                                  
-                                  return (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          fileInputRef.current?.click()
-                                        }}
-                                        className="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white"
-                                      >
-                                        <CameraIcon className="h-4 w-4" />
-                                        <span className="ml-1">Ajouter des photos</span>
-                                      </button>
-                                      <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        className="hidden"
-                                        onChange={async (e) => {
-                                          const files = Array.from(e.target.files || []);
-                                          if (files.length === 0) return;
+                                const currentPhotos = damage.photos || [];
+                                const photoValue = currentPhotos.length > 0
+                                  ? currentPhotos.map((p: any) => typeof p === 'string' ? p : p?.publicUrl || '').filter(Boolean)
+                                  : null;
 
-                                          setIsUploadingPhoto(true);
+                                const handleDamageUpload = async (files: File[]) => {
+                                  if (!files || files.length === 0) {
+                                    updateDamage(damage.indexGlobal, "photos", []);
+                                    return;
+                                  }
 
-                                          try {
-                                            const currentPhotos = damage.photos || [];
-                                            const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
-                                            const logDev = isDev ? console.log : () => {};
+                                  setIsUploadingPhoto(true);
 
-                                            // ⭐ Compression et upload en parallèle (optimisé : File direct, pas base64)
-                                            const { compressImage } = await import("@/utils/imageCompression");
-                                            const COMPRESSION = {
-                                              maxWidth: 1280,
-                                              maxHeight: 1280,
-                                              quality: 0.72,
-                                              maxSizeMB: 0.3,
-                                            };
+                                  try {
+                                    const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                    const logDev = isDev ? console.log : () => {};
 
-                                            // ⭐ Compression robuste en 2 passes avec garde-fou
-                                            const tCompressStart = performance.now();
-                                            const compressedFiles = await Promise.all(
-                                              files.map(async (file, idx) => {
-                                                const photoId = `${Date.now()}_${idx}_degat_zone_${damage.side}_${damage.indexGlobal}`;
-                                                const sizeBefore = file.size;
-                                                const tFileCompressStart = performance.now();
-                                                // showDebugToast=true seulement pour la première photo (idx === 0)
-                                                const compressed = await compressForUpload(file, idx === 0);
-                                                const tFileCompress = performance.now() - tFileCompressStart;
-                                                
-                                                if (!compressed) {
-                                                  logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
-                                                  return null;
-                                                }
-                                                
-                                                logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tFileCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)}`);
-                                                return compressed;
-                                              })
-                                            );
-                                            const tCompress = performance.now() - tCompressStart;
-                                            
-                                            // Filtrer les fichiers null (compression échouée)
-                                            const validCompressedFiles = compressedFiles.filter((f): f is File => f !== null);
-                                            
-                                            if (validCompressedFiles.length === 0) {
-                                              toast.error("Toutes les photos sont trop lourdes après compression. Réessayez.");
-                                              return;
-                                            }
+                                    // ⭐ Compression robuste 2 passes avec garde-fou (File direct, pas base64 ping-pong)
+                                    const tCompressStart = performance.now();
+                                    const compressedFiles = await Promise.all(
+                                      files.map(async (file, idx) => {
+                                        return await compressForUpload(file, (sizeKB) => {
+                                          toast.error(`Photo ${idx + 1} trop lourde (${sizeKB} KB). Réessayez.`, { duration: 5000 });
+                                        });
+                                      })
+                                    );
+                                    const tCompress = performance.now() - tCompressStart;
+                                    
+                                    // Filtrer les fichiers null (compression échouée)
+                                    const validFiles = compressedFiles.filter((f): f is File => f !== null);
+                                    if (validFiles.length === 0) {
+                                      toast.error("Toutes les photos sont trop lourdes. Réessayez.");
+                                      return;
+                                    }
 
-                                            // ✅ Uploader directement avec File (plus rapide que base64 → File)
-                                            const tUploadStart = performance.now();
-                                            const uploadPromises = validCompressedFiles.map((compressedFile, idx) => {
-                                              const photoId = `${Date.now()}_${idx}_degat_zone_${damage.side}_${damage.indexGlobal}`;
-                                              const tFileUploadStart = performance.now();
-                                              return uploadDamagePhoto(
-                                                compressedFile,
-                                                bookingId,
-                                                bookingReferenceNumber,
-                                                damage.side, // zone (avant, droit, arriere, gauche, coffre)
-                                                damage.indexGlobal
-                                              ).then(result => {
-                                                const tFileUpload = performance.now() - tFileUploadStart;
-                                                logDev(`[STEP3_EXT] photoId=${photoId} uploadMs=${tFileUpload.toFixed(0)}`);
-                                                return result;
-                                              });
-                                            });
-                                            const uploadedResults = await Promise.all(uploadPromises);
-                                            const tUpload = performance.now() - tUploadStart;
-                                            const tTotal = tCompress + tUpload;
-                                            
-                                            logDev(`[STEP3_EXT] Dégât zone ${damage.side}[${damage.indexGlobal}] - TOTAL compress=${tCompress.toFixed(0)} upload=${tUpload.toFixed(0)} total=${tTotal.toFixed(0)}`);
-                                            const uploadedPhotos = uploadedResults.filter(
-                                              (p): p is ExteriorPhoto => p !== null
-                                            );
+                                    // ✅ Uploader avec File compressé direct (plus rapide)
+                                    const tUploadStart = performance.now();
+                                    const uploadPromises = validFiles.map((file, idx) => {
+                                      const photoId = `${Date.now()}_${idx}_degat_zone_${damage.side}_${damage.indexGlobal}`;
+                                      const tFileUploadStart = performance.now();
+                                      return uploadDamagePhoto(
+                                        file,
+                                        bookingId,
+                                        bookingReferenceNumber,
+                                        damage.side,
+                                        damage.indexGlobal
+                                      ).then(result => {
+                                        const tFileUpload = performance.now() - tFileUploadStart;
+                                        logDev(`[STEP3_EXT] photoId=${photoId} uploadMs=${tFileUpload.toFixed(0)}`);
+                                        return result;
+                                      });
+                                    });
+                                    const uploadedResults = await Promise.all(uploadPromises);
+                                    const tUpload = performance.now() - tUploadStart;
+                                    
+                                    logDev(`[STEP3_EXT] Dégât zone ${damage.side}[${damage.indexGlobal}] - TOTAL compress=${tCompress.toFixed(0)} upload=${tUpload.toFixed(0)}`);
+                                    const uploadedPhotos = uploadedResults.filter(
+                                      (p): p is ExteriorPhoto => p !== null
+                                    );
 
-                                            if (uploadedPhotos.length > 0) {
-                                              // ⭐ Mesurer UI freeze (updateDamage)
-                                              const tSetValueStart = performance.now();
-                                              updateDamage(damage.indexGlobal, "photos", [
-                                                ...currentPhotos,
-                                                ...uploadedPhotos,
-                                              ]);
-                                              toast.success(
-                                                `✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`
-                                              );
-                                              
-                                              requestAnimationFrame(() => {
-                                                const tSetValueMs = performance.now() - tSetValueStart;
-                                                const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
-                                                const logDev = isDev ? console.log : () => {};
-                                                logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=degat_zone_${damage.side} damageIndex=${damage.indexGlobal} photosCount=${uploadedPhotos.length}`);
-                                              });
-                                            }
-                                          } catch (error: any) {
-                                            console.error("[Step3] ❌ Erreur upload photo dégât:", error);
-                                            toast.error("❌ Erreur lors de l'upload des photos");
-                                          } finally {
-                                            setIsUploadingPhoto(false);
-                                            e.target.value = "";
-                                          }
-                                        }}
-                                      />
-                                    </>
-                                  )
-                                }
+                                    if (uploadedPhotos.length > 0) {
+                                      // ⭐ Mesurer UI freeze (updateDamage)
+                                      const tSetValueStart = performance.now();
+                                      updateDamage(damage.indexGlobal, "photos", [
+                                        ...currentPhotos,
+                                        ...uploadedPhotos,
+                                      ]);
+                                      toast.success(
+                                        `✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`
+                                      );
+                                      
+                                      requestAnimationFrame(() => {
+                                        const tSetValueMs = performance.now() - tSetValueStart;
+                                        const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                        const logDev = isDev ? console.log : () => {};
+                                        logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=degat_zone_${damage.side} damageIndex=${damage.indexGlobal} photosCount=${uploadedPhotos.length}`);
+                                      });
+                                    }
+                                  } catch (error: any) {
+                                    console.error("[Step3] ❌ Erreur upload photo dégât:", error);
+                                    toast.error("❌ Erreur lors de l'upload des photos");
+                                  } finally {
+                                    setIsUploadingPhoto(false);
+                                  }
+                                };
                                 
                                 return (
                                   <div key={damage.indexGlobal} className="bg-red-50 border border-red-300 rounded-md p-3 text-sm text-red-900 space-y-3">
@@ -1575,75 +1438,14 @@ export default function ExteriorInspectionAccordionSimple({
                                       onClick={(e) => e.stopPropagation()}
                                     />
 
-                                    <div className="rounded-md border border-dashed border-red-300 bg-red-50 p-3 text-center space-y-2">
-                                      <div className="text-sm font-medium text-red-900 mb-2">
-                                        Photos du dégât
-                                      </div>
-                                      <DamagePhotoInput />
-
-                                      {damage.photos && damage.photos.length > 0 && (() => {
-                                        const main = damage.photos[0] as any;
-                                        const mainUrl: string | undefined = typeof main === 'string' ? main : main?.publicUrl;
-                                        const others = damage.photos.slice(1) as ExteriorPhoto[];
-                                        return (
-                                          <div className="mt-3 space-y-3">
-                                            {/* Grande photo principale */}
-                                            <div className="relative">
-                                              <img
-                                                src={mainUrl}
-                                                alt={`degat-${damage.indexGlobal}-main`}
-                                                className="w-full max-w-[900px] mx-auto aspect-[16/9] object-cover rounded-lg border border-red-300"
-                                              />
-                                              {/* Supprimer la photo principale */}
-                                              <button
-                                                type="button"
-                                                aria-label="Supprimer la photo principale"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  const photos = damage.photos.slice(1);
-                                                  updateDamage(damage.indexGlobal, "photos", photos);
-                                                }}
-                                                className="absolute top-2 right-2 bg-red-600/80 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-red-700 transition-colors"
-                                              >
-                                                ×
-                                              </button>
-                                            </div>
-                                            {/* Autres photos en mini-vignettes */}
-                                            {others.length > 0 && (
-                                              <div className="flex flex-wrap gap-2 justify-center">
-                                                {others.map((p: ExteriorPhoto, idx: number) => (
-                                                  <div key={idx} className="relative">
-                                                    <img
-                                                      src={p.publicUrl}
-                                                      alt={`degat-${damage.indexGlobal}-thumb-${idx}`}
-                                                      className="h-16 w-16 rounded-md object-cover border border-red-300 cursor-pointer hover:scale-105 transition-transform"
-                                                      onClick={() => window.open(p.publicUrl, '_blank')}
-                                                    />
-                                                    <button
-                                                      type="button"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const photos = [main, ...others.filter((_, j) => j !== idx)];
-                                                        updateDamage(damage.indexGlobal, "photos", photos);
-                                                      }}
-                                                      className="absolute -top-2 -right-2 bg-white text-red-700 rounded-full border border-red-300 w-5 h-5 text-xs flex items-center justify-center shadow-sm"
-                                                    >
-                                                      ×
-                                                    </button>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            )}
-                                            {/* Bouton pour ajouter d'autres photos (réutilise l'input existant via le bouton au-dessus) */}
-                                            <div className="flex justify-center">
-                                              <span className="text-[11px] text-red-700/80">
-                                                Utilisez "Ajouter des photos" ci-dessus pour compléter le dossier
-                                              </span>
-                                            </div>
-                                          </div>
-                                        )
-                                      })()}
-                                    </div>
+                                    <PhotoCaptureField
+                                      label="Photos du dégât"
+                                      description="Ajoutez une ou plusieurs photos pour documenter ce dégât"
+                                      value={photoValue}
+                                      onFileChange={handleDamageUpload}
+                                      multiple={true}
+                                      className="w-full"
+                                    />
                                   </div>
                                 )
                               })}
@@ -1791,132 +1593,96 @@ export default function ExteriorInspectionAccordionSimple({
                               </div>
                               
                               {(() => {
-                                const wheelPhotoInputRef = useRef<HTMLInputElement | null>(null)
                                 const wheelPhotos = watch(`exteriorInspection.zonesPhotos.${wheelSide}`) || []
-                                
-                                return (
-                                  <>
-                                    <input
-                                      ref={wheelPhotoInputRef}
-                                      type="file"
-                                      accept="image/*"
-                                      capture="environment"
-                                      multiple
-                                      className="hidden"
-                                      onChange={async (e) => {
-                                        const files = Array.from(e.target.files || []);
-                                        if (files.length === 0) return;
+                                const photoValue = wheelPhotos.length > 0
+                                  ? wheelPhotos.map((p: any) => typeof p === 'string' ? p : p?.publicUrl || '').filter(Boolean)
+                                  : null;
 
-                                        setIsUploadingPhoto(true);
+                                const handleWheelUpload = async (files: File[]) => {
+                                  if (!files || files.length === 0) {
+                                    setValue(`exteriorInspection.zonesPhotos.${wheelSide}`, [], { shouldDirty: true });
+                                    return;
+                                  }
 
-                                        try {
-                                          const current = watch(`exteriorInspection.zonesPhotos.${wheelSide}`) || [];
-                                          const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
-                                          const logDev = isDev ? console.log : () => {};
-                                          
-                                          const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file, idx) => {
-                                            const photoId = `${Date.now()}_${idx}_jante_${wheelSide}`;
-                                            const t0 = performance.now();
-                                            const sizeBefore = file.size;
-                                            
-                                            // ⭐ Compression robuste en 2 passes avec garde-fou
-                                            // showDebugToast=true seulement pour la première photo (idx === 0)
-                                            const tCompressStart = performance.now();
-                                            const compressed = await compressForUpload(file, idx === 0);
-                                            const tCompress = performance.now() - tCompressStart;
-                                            
-                                            // Si compression échouée (trop lourd), skip cette photo
-                                            if (!compressed) {
-                                              logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
-                                              return null;
-                                            }
-                                            
-                                            const tUploadStart = performance.now();
-                                            const result = await uploadWheelPhoto(
-                                              compressed,
-                                              bookingId,
-                                              bookingReferenceNumber,
-                                              wheelSide
-                                            )
-                                            const tUpload = performance.now() - tUploadStart;
-                                            const tTotal = performance.now() - t0;
-                                            
-                                            logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
-                                            
-                                            return result;
-                                          })
-                                          const uploadedPhotos = uploadedResults.filter(
-                                            (p): p is ExteriorPhoto => p !== null
-                                          )
+                                  setIsUploadingPhoto(true);
 
-                                          if (uploadedPhotos.length > 0) {
-                                            // ⭐ Mesurer UI freeze (setValue)
-                                            const tSetValueStart = performance.now();
-                                            setValue(
-                                              `exteriorInspection.zonesPhotos.${wheelSide}`,
-                                              [...current, ...uploadedPhotos],
-                                              { shouldDirty: true }
-                                            );
-                                            toast.success(`✅ ${uploadedPhotos.length} photo(s) de jante uploadée(s)`);
-                                            
-                                            requestAnimationFrame(() => {
-                                              const tSetValueMs = performance.now() - tSetValueStart;
-                                              const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
-                                              const logDev = isDev ? console.log : () => {};
-                                              logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=jante_${wheelSide} photosCount=${uploadedPhotos.length}`);
-                                            });
-                                          }
-                                        } catch (error: any) {
-                                          console.error('[Step3] ❌ Erreur upload photo jante:', error);
-                                          toast.error('❌ Erreur lors de l\'upload des photos');
-                                        } finally {
-                                          setIsUploadingPhoto(false);
-                                          e.target.value = '';
-                                        }
-                                      }}
-                                    />
+                                  try {
+                                    const current = watch(`exteriorInspection.zonesPhotos.${wheelSide}`) || [];
+                                    const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                    const logDev = isDev ? console.log : () => {};
                                     
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        wheelPhotoInputRef.current?.click()
-                                      }}
-                                      className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors mb-3"
-                                    >
-                                      <CameraIcon className="h-4 w-4" />
-                                      <span className="ml-1">Ajouter une photo</span>
-                                    </button>
+                                    // ⭐ Compression robuste 2 passes avec garde-fou (File direct, pas base64 ping-pong)
+                                    const compressedFiles = await Promise.all(
+                                      files.map(async (file, idx) => {
+                                        return await compressForUpload(file, (sizeKB) => {
+                                          toast.error(`Photo ${idx + 1} trop lourde (${sizeKB} KB). Réessayez.`, { duration: 5000 });
+                                        });
+                                      })
+                                    );
+                                    
+                                    // Filtrer les fichiers null (compression échouée)
+                                    const validFiles = compressedFiles.filter((f): f is File => f !== null);
+                                    if (validFiles.length === 0) {
+                                      toast.error("Toutes les photos sont trop lourdes. Réessayez.");
+                                      return;
+                                    }
+                                    
+                                    const uploadedResults = await mapLimit(validFiles, UPLOAD_CONCURRENCY, async (file, idx) => {
+                                      const photoId = `${Date.now()}_${idx}_jante_${wheelSide}`;
+                                      const t0 = performance.now();
+                                      
+                                      const tUploadStart = performance.now();
+                                      const result = await uploadWheelPhoto(
+                                        file,
+                                        bookingId,
+                                        bookingReferenceNumber,
+                                        wheelSide
+                                      )
+                                      const tUpload = performance.now() - tUploadStart;
+                                      const tTotal = performance.now() - t0;
+                                      
+                                      logDev(`[STEP3_EXT] photoId=${photoId} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
+                                      
+                                      return result;
+                                    })
+                                    const uploadedPhotos = uploadedResults.filter(
+                                      (p): p is ExteriorPhoto => p !== null
+                                    )
 
-                                    {wheelPhotos.length > 0 && (
-                                      <div className="mt-2 mb-3 flex flex-wrap gap-2">
-                                        {wheelPhotos.map((photo: ExteriorPhoto, photoIdx: number) => (
-                                          <div key={photoIdx} className="relative">
-                                            <ZoomableImage
-                                              src={photo.publicUrl}
-                                              alt={`${wheel.label} - photo ${photoIdx + 1}`}
-                                              className="h-16 w-16 rounded-md border object-cover hover:scale-105 transition-transform"
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                const updated = wheelPhotos.filter((_: ExteriorPhoto, i: number) => i !== photoIdx)
-                                                setValue(
-                                                  `exteriorInspection.zonesPhotos.${wheelSide}`,
-                                                  updated,
-                                                  { shouldDirty: true }
-                                                )
-                                              }}
-                                              className="absolute -top-1 -right-1 bg-black/70 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none"
-                                            >
-                                              ×
-                                            </button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </>
+                                    if (uploadedPhotos.length > 0) {
+                                      // ⭐ Mesurer UI freeze (setValue)
+                                      const tSetValueStart = performance.now();
+                                      setValue(
+                                        `exteriorInspection.zonesPhotos.${wheelSide}`,
+                                        [...current, ...uploadedPhotos],
+                                        { shouldDirty: true }
+                                      );
+                                      toast.success(`✅ ${uploadedPhotos.length} photo(s) de jante uploadée(s)`);
+                                      
+                                      requestAnimationFrame(() => {
+                                        const tSetValueMs = performance.now() - tSetValueStart;
+                                        const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                        const logDev = isDev ? console.log : () => {};
+                                        logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=jante_${wheelSide} photosCount=${uploadedPhotos.length}`);
+                                      });
+                                    }
+                                  } catch (error: any) {
+                                    console.error('[Step3] ❌ Erreur upload photo jante:', error);
+                                    toast.error('❌ Erreur lors de l\'upload des photos');
+                                  } finally {
+                                    setIsUploadingPhoto(false);
+                                  }
+                                };
+
+                                return (
+                                  <PhotoCaptureField
+                                    label={wheel.label}
+                                    description="Ajoutez une ou plusieurs photos de cette jante"
+                                    value={photoValue}
+                                    onFileChange={handleWheelUpload}
+                                    multiple={true}
+                                    className="w-full mb-3"
+                                  />
                                 )
                               })()}
 
@@ -1961,100 +1727,82 @@ export default function ExteriorInspectionAccordionSimple({
                                 <>
                                   <div className="space-y-3 mt-3">
                                     {damagesForThisWheel.map((damage: any) => {
-                                      const WheelPhotoInput = () => {
-                                        const fileInputRef = useRef<HTMLInputElement | null>(null)
-                                        
-                                        return (
-                                          <>
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                fileInputRef.current?.click()
-                                              }}
-                                              className="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white"
-                                            >
-                                              <CameraIcon className="h-4 w-4" />
-                                              <span className="ml-1">Ajouter des photos</span>
-                                            </button>
-                                            <input
-                                              ref={fileInputRef}
-                                              type="file"
-                                              accept="image/*"
-                                              multiple
-                                              className="hidden"
-                                              onChange={async (e) => {
-                                                const files = Array.from(e.target.files || []);
-                                                if (files.length === 0) return;
+                                      const currentPhotos = damage.photos || [];
+                                      const photoValue = currentPhotos.length > 0
+                                        ? currentPhotos.map((p: any) => typeof p === 'string' ? p : p?.publicUrl || '').filter(Boolean)
+                                        : null;
 
-                                                setIsUploadingPhoto(true);
+                                      const handleWheelDamageUpload = async (files: File[]) => {
+                                        if (!files || files.length === 0) {
+                                          updateDamage(damage.indexGlobal, "photos", []);
+                                          return;
+                                        }
 
-                                                try {
-                                                  const currentPhotos = damage.photos || [];
-                                                  const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
-                                                  const logDev = isDev ? console.log : () => {};
-                                                  
-                                                  const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file, idx) => {
-                                                    const photoId = `${Date.now()}_${idx}_degat_jante_${damage.side}_${damage.indexGlobal}`;
-                                                    const t0 = performance.now();
-                                                    const sizeBefore = file.size;
-                                                    
-                                                    // ⭐ Compression robuste en 2 passes avec garde-fou
-                                                    // showDebugToast=true seulement pour la première photo (idx === 0)
-                                                    const tCompressStart = performance.now();
-                                                    const compressed = await compressForUpload(file, idx === 0);
-                                                    const tCompress = performance.now() - tCompressStart;
-                                                    
-                                                    // Si compression échouée (trop lourd), skip cette photo
-                                                    if (!compressed) {
-                                                      logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
-                                                      return null;
-                                                    }
-                                                    
-                                                    const tUploadStart = performance.now();
-                                                    const result = await uploadDamagePhoto(
-                                                      compressed,
-                                                      bookingId,
-                                                      bookingReferenceNumber,
-                                                      damage.side,
-                                                      damage.indexGlobal
-                                                    )
-                                                    const tUpload = performance.now() - tUploadStart;
-                                                    const tTotal = performance.now() - t0;
-                                                    
-                                                    logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
-                                                    
-                                                    return result;
-                                                  })
-                                                  const uploadedPhotos = uploadedResults.filter(
-                                                    (p): p is ExteriorPhoto => p !== null
-                                                  )
+                                        setIsUploadingPhoto(true);
 
-                                                  if (uploadedPhotos.length > 0) {
-                                                    // ⭐ Mesurer UI freeze (updateDamage)
-                                                    const tSetValueStart = performance.now();
-                                                    updateDamage(damage.indexGlobal, "photos", [...currentPhotos, ...uploadedPhotos]);
-                                                    
-                                                    requestAnimationFrame(() => {
-                                                      const tSetValueMs = performance.now() - tSetValueStart;
-                                                      const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
-                                                      const logDev = isDev ? console.log : () => {};
-                                                      logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=degat_jante_${damage.side} damageIndex=${damage.indexGlobal} photosCount=${uploadedPhotos.length}`);
-                                                    });
-                                                    toast.success(`✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`);
-                                                  }
-                                                } catch (error: any) {
-                                                  console.error('[Step3] ❌ Erreur upload photo dégât:', error);
-                                                  toast.error('❌ Erreur lors de l\'upload des photos');
-                                                } finally {
-                                                  setIsUploadingPhoto(false);
-                                                  e.target.value = '';
-                                                }
-                                              }}
-                                            />
-                                          </>
-                                        )
-                                      }
+                                        try {
+                                          const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                          const logDev = isDev ? console.log : () => {};
+                                          
+                                          // ⭐ Compression robuste 2 passes avec garde-fou (File direct, pas base64 ping-pong)
+                                          const compressedFiles = await Promise.all(
+                                            files.map(async (file, idx) => {
+                                              return await compressForUpload(file, (sizeKB) => {
+                                                toast.error(`Photo ${idx + 1} trop lourde (${sizeKB} KB). Réessayez.`, { duration: 5000 });
+                                              });
+                                            })
+                                          );
+                                          
+                                          // Filtrer les fichiers null (compression échouée)
+                                          const validFiles = compressedFiles.filter((f): f is File => f !== null);
+                                          if (validFiles.length === 0) {
+                                            toast.error("Toutes les photos sont trop lourdes. Réessayez.");
+                                            return;
+                                          }
+                                          
+                                          const uploadedResults = await mapLimit(validFiles, UPLOAD_CONCURRENCY, async (file, idx) => {
+                                            const photoId = `${Date.now()}_${idx}_degat_jante_${damage.side}_${damage.indexGlobal}`;
+                                            const t0 = performance.now();
+                                            
+                                            const tUploadStart = performance.now();
+                                            const result = await uploadDamagePhoto(
+                                              file,
+                                              bookingId,
+                                              bookingReferenceNumber,
+                                              damage.side,
+                                              damage.indexGlobal
+                                            )
+                                            const tUpload = performance.now() - tUploadStart;
+                                            const tTotal = performance.now() - t0;
+                                            
+                                            logDev(`[STEP3_EXT] photoId=${photoId} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
+                                            
+                                            return result;
+                                          })
+                                          const uploadedPhotos = uploadedResults.filter(
+                                            (p): p is ExteriorPhoto => p !== null
+                                          )
+
+                                          if (uploadedPhotos.length > 0) {
+                                            // ⭐ Mesurer UI freeze (updateDamage)
+                                            const tSetValueStart = performance.now();
+                                            updateDamage(damage.indexGlobal, "photos", [...currentPhotos, ...uploadedPhotos]);
+                                            
+                                            requestAnimationFrame(() => {
+                                              const tSetValueMs = performance.now() - tSetValueStart;
+                                              const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                              const logDev = isDev ? console.log : () => {};
+                                              logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=degat_jante_${damage.side} damageIndex=${damage.indexGlobal} photosCount=${uploadedPhotos.length}`);
+                                            });
+                                            toast.success(`✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`);
+                                          }
+                                        } catch (error: any) {
+                                          console.error('[Step3] ❌ Erreur upload photo dégât:', error);
+                                          toast.error('❌ Erreur lors de l\'upload des photos');
+                                        } finally {
+                                          setIsUploadingPhoto(false);
+                                        }
+                                      };
                                       
                                       return (
                                         <div key={damage.indexGlobal} className="bg-red-50 border border-red-300 rounded-md p-3 text-sm text-red-900 space-y-3">
@@ -2120,73 +1868,14 @@ export default function ExteriorInspectionAccordionSimple({
                                             onClick={(e) => e.stopPropagation()}
                                           />
 
-                                          <div className="rounded-md border border-dashed border-red-300 bg-red-50 p-3 text-center space-y-2">
-                                            <div className="text-sm font-medium text-red-900 mb-2">
-                                              Photos du dégât
-                                            </div>
-                                            <WheelPhotoInput />
-
-                                            {damage.photos && damage.photos.length > 0 && (() => {
-                                              const main = damage.photos[0] as any;
-                                              const mainUrl: string | undefined = typeof main === 'string' ? main : main?.publicUrl;
-                                              const others = damage.photos.slice(1) as ExteriorPhoto[];
-                                              return (
-                                                <div className="mt-3 space-y-3">
-                                                  {/* Grande photo principale */}
-                                                  <div className="relative">
-                                                    <img
-                                                      src={mainUrl}
-                                                      alt={`jante-${damage.indexGlobal}-main`}
-                                                      className="w-full max-w-[900px] mx-auto aspect-[16/9] object-cover rounded-lg border border-red-300"
-                                                    />
-                                                    <button
-                                                      type="button"
-                                                      aria-label="Supprimer la photo principale"
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const photos = damage.photos.slice(1);
-                                                        updateDamage(damage.indexGlobal, "photos", photos);
-                                                      }}
-                                                      className="absolute top-2 right-2 bg-red-600/80 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-red-700 transition-colors"
-                                                    >
-                                                      ×
-                                                    </button>
-                                                  </div>
-                                                  {/* Autres photos */}
-                                                  {others.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 justify-center">
-                                                      {others.map((p: ExteriorPhoto, idx: number) => (
-                                                        <div key={idx} className="relative">
-                                                          <img
-                                                            src={p.publicUrl}
-                                                            alt={`jante-${damage.indexGlobal}-thumb-${idx}`}
-                                                            className="h-16 w-16 rounded-md object-cover border border-red-300 cursor-pointer hover:scale-105 transition-transform"
-                                                            onClick={() => window.open(p.publicUrl, '_blank')}
-                                                          />
-                                                          <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              const photos = [main, ...others.filter((_, j) => j !== idx)];
-                                                              updateDamage(damage.indexGlobal, "photos", photos);
-                                                            }}
-                                                            className="absolute -top-2 -right-2 bg-white text-red-700 rounded-full border border-red-300 w-5 h-5 text-xs flex items-center justify-center shadow-sm"
-                                                          >
-                                                            ×
-                                                          </button>
-                                                        </div>
-                                                      ))}
-                                                    </div>
-                                                  )}
-                                                  <div className="flex justify-center">
-                                                    <span className="text-[11px] text-red-700/80">
-                                                      Utilisez "Ajouter des photos" ci-dessus pour compléter le dossier
-                                                    </span>
-                                                  </div>
-                                                </div>
-                                              )
-                                            })()}
-                                          </div>
+                                          <PhotoCaptureField
+                                            label="Photos du dégât"
+                                            description="Ajoutez une ou plusieurs photos pour documenter ce dégât"
+                                            value={photoValue}
+                                            onFileChange={handleWheelDamageUpload}
+                                            multiple={true}
+                                            className="w-full"
+                                          />
                                         </div>
                                       )
                                     })}

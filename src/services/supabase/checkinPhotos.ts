@@ -13,6 +13,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { compressForUpload } from "@/utils/compressForUpload";
 
 /**
  * Métadonnées d'une photo uploadée
@@ -74,7 +75,19 @@ export class CheckinPhotoService {
         return { data: null, error: 'Le fichier ne doit pas dépasser 10MB' };
       }
 
-      const fileExtension = file.name.split('.').pop() || 'jpg';
+      // ⭐ Compression robuste 2 passes avec garde-fou AVANT upload (source de vérité)
+      const compressed = await compressForUpload(file, (sizeKB) => {
+        // Le toast est géré par compressForUpload, on retourne juste l'erreur
+      });
+      if (!compressed) {
+        const sizeKB = (file.size / 1024).toFixed(0);
+        return { data: null, error: `Photo trop lourde (${sizeKB} KB). Réessayez.` };
+      }
+      
+      // Utiliser le fichier compressé pour l'upload
+      const fileToUpload = compressed;
+
+      const fileExtension = fileToUpload.name.split('.').pop() || 'jpg';
       const timestamp = Date.now();
       const random = Math.random().toString(36).substring(2, 10);  // 8 caractères
 
@@ -116,7 +129,7 @@ export class CheckinPhotoService {
       const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
       const logDev = isDev ? console.log : () => {};
       const tUploadTotalStart = performance.now();
-      const fileSizeKB = (file.size / 1024).toFixed(0);
+      const fileSizeKB = (fileToUpload.size / 1024).toFixed(0);
       const step = subfolder; // "depart", "retour", "documents"
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -128,9 +141,9 @@ export class CheckinPhotoService {
           const tUploadStart = performance.now();
           const uploadPromise = supabase.storage
             .from(this.BUCKET_NAME)
-            .upload(storagePath, file, {
+            .upload(storagePath, fileToUpload, {
               cacheControl: '3600',
-              contentType: file.type || 'image/jpeg',
+              contentType: fileToUpload.type || 'image/jpeg',
               upsert: false,
             });
 
@@ -204,7 +217,7 @@ export class CheckinPhotoService {
           const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
           const logDev = isDev ? console.log : () => {};
           const tAttemptMs = performance.now() - (performance.now() - 100); // Approximation
-          logDev(`[UPLOAD] step=${subfolder} path=${storagePath} sizeKB=${(file.size / 1024).toFixed(0)} attempt=${attempt} EXCEPTION error="${error.message}"`);
+          logDev(`[UPLOAD] step=${subfolder} path=${storagePath} sizeKB=${(fileToUpload.size / 1024).toFixed(0)} attempt=${attempt} EXCEPTION error="${error.message}"`);
           
           console.warn(
             `[CheckinPhotoService] ⚠️ Exception tentative ${attempt}/${MAX_RETRIES}:`,
