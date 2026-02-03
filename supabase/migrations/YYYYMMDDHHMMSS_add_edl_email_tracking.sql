@@ -15,7 +15,7 @@ ADD COLUMN IF NOT EXISTS edl_email_sent_at TIMESTAMPTZ;
 -- Colonne 2 : Statut de l'envoi email EDL
 ALTER TABLE public.checkin_depart
 ADD COLUMN IF NOT EXISTS edl_email_sent_status TEXT
-  CHECK (edl_email_sent_status IS NULL OR edl_email_sent_status IN ('sent', 'failed', 'retrying'));
+  CHECK (edl_email_sent_status IS NULL OR edl_email_sent_status IN ('sent', 'failed', 'retrying', 'sending'));
 
 -- Colonne 3 : Compteur de tentatives (pour retries)
 ALTER TABLE public.checkin_depart
@@ -34,7 +34,7 @@ WHERE status = 'completed'
 
 -- Commentaires pour documentation
 COMMENT ON COLUMN public.checkin_depart.edl_email_sent_at IS 'Timestamp du dernier envoi email EDL (locataire + propriétaire)';
-COMMENT ON COLUMN public.checkin_depart.edl_email_sent_status IS 'Statut de l''envoi: sent (succès), failed (échec), retrying (en cours de retry)';
+COMMENT ON COLUMN public.checkin_depart.edl_email_sent_status IS 'Statut de l''envoi: sent (succès), failed (échec), retrying (en cours de retry), sending (en cours d''envoi - évite les doubles)';
 COMMENT ON COLUMN public.checkin_depart.edl_email_retry_count IS 'Nombre de tentatives d''envoi (max 3)';
 COMMENT ON COLUMN public.checkin_depart.edl_email_last_error IS 'Message d''erreur de la dernière tentative (pour debugging)';
 

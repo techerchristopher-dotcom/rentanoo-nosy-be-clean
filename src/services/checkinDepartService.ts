@@ -1075,6 +1075,72 @@ export async function finalizeCheckinDepart(params: {
     });
 
     // ============================================================================
+    // ÉTAPE 4.5 : Appel webhook n8n pour envoi email EDL (non-bloquant)
+    // ============================================================================
+    if (finalizedCheckin.status === "completed") {
+      const n8nWebhookUrl = 
+        (typeof import.meta !== "undefined" && import.meta.env?.VITE_N8N_WEBHOOK_CHECKIN_DEPART_URL) ||
+        "https://n8n.srv1285649.hstgr.cloud/webhook/checkin-depart-updated";
+
+      console.log("[CHECKIN_SERVICE] 📧 Appel webhook n8n pour envoi email EDL...");
+
+      try {
+        const n8nPayload = {
+          event: "checkin_depart_completed",
+          checkinId: params.checkinId,
+          bookingId: params.bookingId,
+          timestamp: new Date().toISOString(),
+        };
+
+        // Timeout de 8 secondes pour éviter de bloquer le front
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 8000);
+
+        const n8nResponse = await fetch(n8nWebhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(n8nPayload),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!n8nResponse.ok) {
+          console.warn("[CHECKIN_SERVICE] ⚠️ Webhook n8n erreur:", {
+            status: n8nResponse.status,
+            statusText: n8nResponse.statusText,
+          });
+        } else {
+          console.log("[CHECKIN_SERVICE] ✅ Webhook n8n appelé avec succès");
+        }
+      } catch (n8nError: any) {
+        // Ne pas bloquer la finalisation si le webhook échoue
+        const isTimeout = n8nError?.name === "AbortError" || 
+                          n8nError?.code === "ETIMEDOUT" ||
+                          n8nError?.message?.toLowerCase().includes("timeout");
+
+        console.warn("[CHECKIN_SERVICE] ⚠️ Erreur appel webhook n8n (non-bloquant):", {
+          message: n8nError?.message,
+          isTimeout,
+        });
+      }
+    }
+
+    // ⭐ Instrumentation : Log pour tracer les déclenchements email (DIAG 6 emails)
+    const correlationId = `${params.checkinId}_${Date.now()}`;
+    console.log(`[CHECKIN_SERVICE] 📧 Email trigger correlationId=${correlationId}`, {
+      checkinId: params.checkinId,
+      bookingId: params.bookingId,
+      status: finalizedCheckin.status,
+      timestamp: new Date().toISOString(),
+      caller: new Error().stack?.split('\n').slice(1, 4).map(l => l.trim()).join(' | '),
+    });
+
+    // ============================================================================
     // ÉTAPE 5 : Générer le PDF d'état des lieux (non-bloquant)
     // ============================================================================
     console.log("[CHECKIN_SERVICE] 📄 Étape 5 : Génération du PDF...");
