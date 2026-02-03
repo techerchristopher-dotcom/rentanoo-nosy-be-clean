@@ -111,10 +111,21 @@ export class CheckinPhotoService {
       const MAX_RETRIES = 3;
       const TIMEOUT_MS = 30000; // 30 secondes
       let lastError: any = null;
+      
+      // ⭐ Instrumentation DEV
+      const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+      const logDev = isDev ? console.log : () => {};
+      const tUploadTotalStart = performance.now();
+      const fileSizeKB = (file.size / 1024).toFixed(0);
+      const step = subfolder; // "depart", "retour", "documents"
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
+          const tAttemptStart = performance.now();
+          logDev(`[UPLOAD] step=${step} path=${storagePath} sizeKB=${fileSizeKB} type=${file.type || 'image/jpeg'} attempt=${attempt} START`);
+          
           // Créer une promesse avec timeout (et cleanup du timer)
+          const tUploadStart = performance.now();
           const uploadPromise = supabase.storage
             .from(this.BUCKET_NAME)
             .upload(storagePath, file, {
@@ -138,9 +149,13 @@ export class CheckinPhotoService {
               if (timeoutId) clearTimeout(timeoutId);
             }
           })();
+          const tUploadMs = performance.now() - tUploadStart;
 
           if (uploadError) {
             lastError = uploadError;
+            const tAttemptMs = performance.now() - tAttemptStart;
+            logDev(`[UPLOAD] step=${step} path=${storagePath} sizeKB=${fileSizeKB} attempt=${attempt} FAILED uploadMs=${tUploadMs.toFixed(0)} attemptMs=${tAttemptMs.toFixed(0)} error="${uploadError.message}"`);
+            
             console.warn(
               `[CheckinPhotoService] ⚠️ Tentative ${attempt}/${MAX_RETRIES} échouée:`,
               uploadError.message
@@ -148,24 +163,32 @@ export class CheckinPhotoService {
 
             if (attempt === MAX_RETRIES) {
               console.error('[CheckinPhotoService] ❌ Échec après toutes les tentatives:', uploadError);
+              const tTotalMs = performance.now() - tUploadTotalStart;
+              logDev(`[UPLOAD] step=${step} path=${storagePath} sizeKB=${fileSizeKB} FINAL_FAILED totalMs=${tTotalMs.toFixed(0)}`);
               return { data: null, error: uploadError.message };
             }
 
             // Backoff exponentiel : attendre avant retry (1s, 2s, 4s)
             const backoffMs = 1000 * Math.pow(2, attempt - 1);
+            logDev(`[UPLOAD] step=${step} path=${storagePath} sizeKB=${fileSizeKB} attempt=${attempt} BACKOFF backoffMs=${backoffMs}`);
             console.log(`[CheckinPhotoService] ⏳ Attente ${backoffMs}ms avant retry...`);
             await new Promise((resolve) => setTimeout(resolve, backoffMs));
             continue;
           }
 
           // Succès !
-          console.log(`[CheckinPhotoService] ✅ Fichier uploadé (tentative ${attempt})`);
-
-          // Récupérer l'URL publique
+          const tPublicUrlStart = performance.now();
           const { data: urlData } = supabase.storage
             .from(this.BUCKET_NAME)
             .getPublicUrl(storagePath);
-
+          const tPublicUrlMs = performance.now() - tPublicUrlStart;
+          
+          const tAttemptMs = performance.now() - tAttemptStart;
+          const tTotalMs = performance.now() - tUploadTotalStart;
+          
+          logDev(`[UPLOAD] step=${step} path=${storagePath} sizeKB=${fileSizeKB} attempt=${attempt} SUCCESS uploadMs=${tUploadMs.toFixed(0)} publicUrlMs=${tPublicUrlMs.toFixed(0)} attemptMs=${tAttemptMs.toFixed(0)} totalMs=${tTotalMs.toFixed(0)}`);
+          
+          console.log(`[CheckinPhotoService] ✅ Fichier uploadé (tentative ${attempt})`);
           console.log('[CheckinPhotoService] 🔗 URL publique:', urlData.publicUrl);
 
           return {
@@ -178,6 +201,11 @@ export class CheckinPhotoService {
           };
         } catch (error: any) {
           lastError = error;
+          const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+          const logDev = isDev ? console.log : () => {};
+          const tAttemptMs = performance.now() - (performance.now() - 100); // Approximation
+          logDev(`[UPLOAD] step=${subfolder} path=${storagePath} sizeKB=${(file.size / 1024).toFixed(0)} attempt=${attempt} EXCEPTION error="${error.message}"`);
+          
           console.warn(
             `[CheckinPhotoService] ⚠️ Exception tentative ${attempt}/${MAX_RETRIES}:`,
             error.message
@@ -193,6 +221,7 @@ export class CheckinPhotoService {
 
           // Backoff exponentiel
           const backoffMs = 1000 * Math.pow(2, attempt - 1);
+          logDev(`[UPLOAD] step=${subfolder} path=${storagePath} sizeKB=${(file.size / 1024).toFixed(0)} attempt=${attempt} BACKOFF backoffMs=${backoffMs}`);
           console.log(`[CheckinPhotoService] ⏳ Attente ${backoffMs}ms avant retry...`);
           await new Promise((resolve) => setTimeout(resolve, backoffMs));
         }

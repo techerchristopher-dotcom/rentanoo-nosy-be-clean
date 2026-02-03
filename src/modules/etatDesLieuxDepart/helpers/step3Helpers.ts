@@ -28,29 +28,53 @@ export function base64ToFile(base64: string, filename: string): File {
 
 /**
  * ⭐ Upload photo de zone extérieure (avant, droit, arriere, gauche)
+ * 
+ * @overload
+ * Accepte soit un File (recommandé, plus rapide) soit un base64 (rétrocompatibilité)
  */
 export async function uploadZonePhoto(
-  base64: string,
+  fileOrBase64: File | string,
   bookingId: string,
   bookingReferenceNumber: number | null | undefined,
   zone: string
 ): Promise<ExteriorPhoto | null> {
+  const t0 = performance.now();
   try {
-    const file = base64ToFile(base64, `${zone}_${Date.now()}.jpg`);
+    // ⭐ Instrumentation DEV
+    const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+    const logDev = isDev ? console.log : () => {};
     
+    let file: File;
+    let tConvert = 0;
+    
+    if (fileOrBase64 instanceof File) {
+      // ✅ Mode File direct (optimisé)
+      file = fileOrBase64;
+      logDev(`[STEP3_EXT] Upload zone ${zone} - File direct (${(file.size / 1024).toFixed(0)}KB)`);
+    } else {
+      // ⚠️ Mode base64 (rétrocompatibilité, plus lent)
+      const tConvertStart = performance.now();
+      file = base64ToFile(fileOrBase64, `${zone}_${Date.now()}.jpg`);
+      tConvert = performance.now() - tConvertStart;
+      logDev(`[STEP3_EXT] Upload zone ${zone} - base64→File conversion: ${tConvert.toFixed(0)}ms`);
+    }
+    
+    const tUploadStart = performance.now();
     const { data, error } = await CheckinPhotoService.uploadExteriorZonePhoto(
       file,
       bookingId,
       bookingReferenceNumber,
       zone
     );
+    const tUpload = performance.now() - tUploadStart;
     
     if (error || !data) {
       console.error(`[Step3] ❌ Erreur upload zone ${zone}:`, error);
       return null;
     }
     
-    console.log(`[Step3] ✅ Upload zone ${zone} réussi:`, data.storagePath);
+    const tTotal = performance.now() - t0;
+    logDev(`[STEP3_EXT] ✅ Zone ${zone} - convert=${tConvert.toFixed(0)}ms upload=${tUpload.toFixed(0)}ms total=${tTotal.toFixed(0)}ms sizeBefore=${(file.size / 1024).toFixed(0)}KB`);
     
     return {
       ...data,
@@ -65,29 +89,50 @@ export async function uploadZonePhoto(
 
 /**
  * ⭐ Upload photo de jante
+ * 
+ * @overload
+ * Accepte soit un File (recommandé, plus rapide) soit un base64 (rétrocompatibilité)
  */
 export async function uploadWheelPhoto(
-  base64: string,
+  fileOrBase64: File | string,
   bookingId: string,
   bookingReferenceNumber: number | null | undefined,
   wheelKey: string  // "janteAvDroit", "janteArDroit", etc.
 ): Promise<ExteriorPhoto | null> {
+  const t0 = performance.now();
   try {
-    const file = base64ToFile(base64, `${wheelKey}_${Date.now()}.jpg`);
+    const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+    const logDev = isDev ? console.log : () => {};
     
+    let file: File;
+    let tConvert = 0;
+    
+    if (fileOrBase64 instanceof File) {
+      file = fileOrBase64;
+      logDev(`[STEP3_EXT] Upload jante ${wheelKey} - File direct (${(file.size / 1024).toFixed(0)}KB)`);
+    } else {
+      const tConvertStart = performance.now();
+      file = base64ToFile(fileOrBase64, `${wheelKey}_${Date.now()}.jpg`);
+      tConvert = performance.now() - tConvertStart;
+      logDev(`[STEP3_EXT] Upload jante ${wheelKey} - base64→File conversion: ${tConvert.toFixed(0)}ms`);
+    }
+    
+    const tUploadStart = performance.now();
     const { data, error } = await CheckinPhotoService.uploadWheelPhoto(
       file,
       bookingId,
       bookingReferenceNumber,
       wheelKey
     );
+    const tUpload = performance.now() - tUploadStart;
     
     if (error || !data) {
       console.error(`[Step3] ❌ Erreur upload jante ${wheelKey}:`, error);
       return null;
     }
     
-    console.log(`[Step3] ✅ Upload jante ${wheelKey} réussi:`, data.storagePath);
+    const tTotal = performance.now() - t0;
+    logDev(`[STEP3_EXT] ✅ Jante ${wheelKey} - convert=${tConvert.toFixed(0)}ms upload=${tUpload.toFixed(0)}ms total=${tTotal.toFixed(0)}ms sizeBefore=${(file.size / 1024).toFixed(0)}KB`);
     
     return {
       ...data,
@@ -102,27 +147,48 @@ export async function uploadWheelPhoto(
 
 /**
  * ⭐ Upload photo de coffre
+ * 
+ * @overload
+ * Accepte soit un File (recommandé, plus rapide) soit un base64 (rétrocompatibilité)
  */
 export async function uploadTrunkPhoto(
-  base64: string,
+  fileOrBase64: File | string,
   bookingId: string,
   bookingReferenceNumber: number | null | undefined
 ): Promise<ExteriorPhoto | null> {
+  const t0 = performance.now();
   try {
-    const file = base64ToFile(base64, `coffre_${Date.now()}.jpg`);
+    const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+    const logDev = isDev ? console.log : () => {};
     
+    let file: File;
+    let tConvert = 0;
+    
+    if (fileOrBase64 instanceof File) {
+      file = fileOrBase64;
+      logDev(`[STEP3_EXT] Upload coffre - File direct (${(file.size / 1024).toFixed(0)}KB)`);
+    } else {
+      const tConvertStart = performance.now();
+      file = base64ToFile(fileOrBase64, `coffre_${Date.now()}.jpg`);
+      tConvert = performance.now() - tConvertStart;
+      logDev(`[STEP3_EXT] Upload coffre - base64→File conversion: ${tConvert.toFixed(0)}ms`);
+    }
+    
+    const tUploadStart = performance.now();
     const { data, error } = await CheckinPhotoService.uploadTrunkPhoto(
       file,
       bookingId,
       bookingReferenceNumber
     );
+    const tUpload = performance.now() - tUploadStart;
     
     if (error || !data) {
       console.error('[Step3] ❌ Erreur upload coffre:', error);
       return null;
     }
     
-    console.log('[Step3] ✅ Upload coffre réussi:', data.storagePath);
+    const tTotal = performance.now() - t0;
+    logDev(`[STEP3_EXT] ✅ Coffre - convert=${tConvert.toFixed(0)}ms upload=${tUpload.toFixed(0)}ms total=${tTotal.toFixed(0)}ms sizeBefore=${(file.size / 1024).toFixed(0)}KB`);
     
     return {
       ...data,
@@ -137,17 +203,36 @@ export async function uploadTrunkPhoto(
 
 /**
  * ⭐ Upload photo de dégât
+ * 
+ * @overload
+ * Accepte soit un File (recommandé, plus rapide) soit un base64 (rétrocompatibilité)
  */
 export async function uploadDamagePhoto(
-  base64: string,
+  fileOrBase64: File | string,
   bookingId: string,
   bookingReferenceNumber: number | null | undefined,
   zone: string,
   damageIndex: number
 ): Promise<ExteriorPhoto | null> {
+  const t0 = performance.now();
   try {
-    const file = base64ToFile(base64, `degat_${zone}_${damageIndex}_${Date.now()}.jpg`);
+    const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+    const logDev = isDev ? console.log : () => {};
     
+    let file: File;
+    let tConvert = 0;
+    
+    if (fileOrBase64 instanceof File) {
+      file = fileOrBase64;
+      logDev(`[STEP3_EXT] Upload dégât ${zone}[${damageIndex}] - File direct (${(file.size / 1024).toFixed(0)}KB)`);
+    } else {
+      const tConvertStart = performance.now();
+      file = base64ToFile(fileOrBase64, `degat_${zone}_${damageIndex}_${Date.now()}.jpg`);
+      tConvert = performance.now() - tConvertStart;
+      logDev(`[STEP3_EXT] Upload dégât ${zone}[${damageIndex}] - base64→File conversion: ${tConvert.toFixed(0)}ms`);
+    }
+    
+    const tUploadStart = performance.now();
     const { data, error } = await CheckinPhotoService.uploadDamagePhoto(
       file,
       bookingId,
@@ -155,13 +240,15 @@ export async function uploadDamagePhoto(
       zone,
       damageIndex
     );
+    const tUpload = performance.now() - tUploadStart;
     
     if (error || !data) {
       console.error(`[Step3] ❌ Erreur upload dégât ${zone}:`, error);
       return null;
     }
     
-    console.log(`[Step3] ✅ Upload dégât ${zone}[${damageIndex}] réussi:`, data.storagePath);
+    const tTotal = performance.now() - t0;
+    logDev(`[STEP3_EXT] ✅ Dégât ${zone}[${damageIndex}] - convert=${tConvert.toFixed(0)}ms upload=${tUpload.toFixed(0)}ms total=${tTotal.toFixed(0)}ms sizeBefore=${(file.size / 1024).toFixed(0)}KB`);
     
     return {
       ...data,

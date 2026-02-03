@@ -72,15 +72,83 @@ const PHOTO_COMPRESSION = {
   maxSizeMB: 0.3,
 } as const
 
+const PHOTO_COMPRESSION_AGGRESSIVE = {
+  maxWidth: 1024,
+  maxHeight: 1024,
+  quality: 0.65,
+  maxSizeMB: 0.25,
+} as const
+
 const UPLOAD_CONCURRENCY = 2
 
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+/**
+ * ⭐ Vérifie si le mode debug upload est activé
+ * 
+ * Active si :
+ * - URL contient ?debug_upload=1 (query param)
+ * - OU localStorage.debug_upload === "1"
+ */
+function isDebugUploadEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  
+  // Vérifier query param
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("debug_upload") === "1") {
+    return true;
+  }
+  
+  // Vérifier localStorage
+  try {
+    return localStorage.getItem("debug_upload") === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * ⭐ Compression robuste en 2 passes avec garde-fou
+ * 
+ * Passe 1 : Compression standard (1280x1280, quality 0.72, max 300KB)
+ * Passe 2 : Si > 350KB, compression agressive (1024x1024, quality 0.65, max 250KB)
+ * Garde-fou : Si > 500KB après 2 passes, retourne null (ne pas uploader)
+ * 
+ * @param showDebugToast - Si true, affiche le toast de preuve (première photo du lot uniquement)
+ * @returns File compressé ou null si trop lourd (> 500KB)
+ */
+async function compressForUpload(file: File, showDebugToast: boolean = false): Promise<File | null> {
+  const sizeBefore = file.size;
+  
+  // Passe 1 : Compression standard
+  let compressed = await compressImage(file, PHOTO_COMPRESSION);
+  const sizeAfterPass1 = compressed.size;
+  
+  // Si > 350KB après passe 1, relancer compression agressive
+  if (sizeAfterPass1 > 350 * 1024) {
+    compressed = await compressImage(compressed, PHOTO_COMPRESSION_AGGRESSIVE);
+  }
+  
+  const sizeAfter = compressed.size;
+  const sizeKB = (sizeAfter / 1024).toFixed(0);
+  
+  // Garde-fou : Si > 500KB après 2 passes, ne pas uploader
+  // ⚠️ Toast d'erreur toujours visible (fonctionnel, pas debug)
+  if (sizeAfter > 500 * 1024) {
+    toast.error(
+      `Compression échouée : photo trop lourde (${sizeKB} KB). Réessayez.`,
+      { duration: 5000 }
+    );
+    return null;
+  }
+  
+  // Toast de preuve : seulement si debug activé ET showDebugToast=true (première photo)
+  if (showDebugToast && isDebugUploadEnabled()) {
+    const reduction = ((1 - sizeAfter / sizeBefore) * 100).toFixed(0);
+    toast.info(`Photo compressée : ${sizeKB} KB (${reduction}% de réduction)`, {
+      duration: 2000,
+    });
+  }
+  
+  return compressed;
 }
 
 async function mapLimit<T, R>(
@@ -1100,16 +1168,44 @@ export default function ExteriorInspectionAccordionSimple({
                             
                             try {
                               const current = watch(`exteriorInspection.zonesPhotos.${currentZoneKey}`) || []
-                              const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
-                                const compressed = await compressImage(file, PHOTO_COMPRESSION)
-                                const base64 = await fileToBase64(compressed)
-                                return uploadZonePhoto(base64, bookingId, bookingReferenceNumber, currentZoneKey)
+                              const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                              const logDev = isDev ? console.log : () => {};
+                              
+                              const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file, idx) => {
+                                const photoId = `${Date.now()}_${idx}_${currentZoneKey}`;
+                                const t0 = performance.now();
+                                const sizeBefore = file.size;
+                                
+                                // ⭐ Compression robuste en 2 passes avec garde-fou
+                                // showDebugToast=true seulement pour la première photo (idx === 0)
+                                const tCompressStart = performance.now();
+                                const compressed = await compressForUpload(file, idx === 0);
+                                const tCompress = performance.now() - tCompressStart;
+                                
+                                // Si compression échouée (trop lourd), skip cette photo
+                                if (!compressed) {
+                                  logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
+                                  return null;
+                                }
+                                
+                                // ✅ Upload direct File (plus rapide que base64 → File)
+                                const tUploadStart = performance.now();
+                                const result = await uploadZonePhoto(compressed, bookingId, bookingReferenceNumber, currentZoneKey)
+                                const tUpload = performance.now() - tUploadStart;
+                                const tTotal = performance.now() - t0;
+                                
+                                logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
+                                
+                                return result;
                               })
                               const uploadedPhotos = uploadedResults.filter(
                                 (p): p is ExteriorPhoto => p !== null
                               )
                               
                               if (uploadedPhotos.length > 0) {
+                                // ⭐ Mesurer UI freeze (setValue)
+                                const tSetValueStart = performance.now();
+                                
                                 if (replaceFirst) {
                                   // Remplacer la photo principale par la première uploadée
                                   const rest = current.slice(1);
@@ -1128,6 +1224,14 @@ export default function ExteriorInspectionAccordionSimple({
                                   );
                                   toast.success(`✅ ${uploadedPhotos.length} photo(s) uploadée(s)`);
                                 }
+                                
+                                // Mesurer re-render cost
+                                requestAnimationFrame(() => {
+                                  const tSetValueMs = performance.now() - tSetValueStart;
+                                  const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                  const logDev = isDev ? console.log : () => {};
+                                  logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=${currentZoneKey} photosCount=${uploadedPhotos.length}`);
+                                });
                               }
                             } catch (error: any) {
                               console.error('[Step3] ❌ Erreur upload photo zone:', error);
@@ -1301,49 +1405,77 @@ export default function ExteriorInspectionAccordionSimple({
 
                                           try {
                                             const currentPhotos = damage.photos || [];
+                                            const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                            const logDev = isDev ? console.log : () => {};
 
-                                            // ⭐ Compression et upload en parallèle
+                                            // ⭐ Compression et upload en parallèle (optimisé : File direct, pas base64)
                                             const { compressImage } = await import("@/utils/imageCompression");
                                             const COMPRESSION = {
-                                              maxWidth: 1920,
-                                              maxHeight: 1920,
-                                              quality: 0.82,
-                                              maxSizeMB: 0.5,
+                                              maxWidth: 1280,
+                                              maxHeight: 1280,
+                                              quality: 0.72,
+                                              maxSizeMB: 0.3,
                                             };
 
-                                            // Compresser toutes les images en parallèle
+                                            // ⭐ Compression robuste en 2 passes avec garde-fou
+                                            const tCompressStart = performance.now();
                                             const compressedFiles = await Promise.all(
-                                              files.map((file) => compressImage(file, COMPRESSION))
+                                              files.map(async (file, idx) => {
+                                                const photoId = `${Date.now()}_${idx}_degat_zone_${damage.side}_${damage.indexGlobal}`;
+                                                const sizeBefore = file.size;
+                                                const tFileCompressStart = performance.now();
+                                                // showDebugToast=true seulement pour la première photo (idx === 0)
+                                                const compressed = await compressForUpload(file, idx === 0);
+                                                const tFileCompress = performance.now() - tFileCompressStart;
+                                                
+                                                if (!compressed) {
+                                                  logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
+                                                  return null;
+                                                }
+                                                
+                                                logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tFileCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)}`);
+                                                return compressed;
+                                              })
                                             );
+                                            const tCompress = performance.now() - tCompressStart;
+                                            
+                                            // Filtrer les fichiers null (compression échouée)
+                                            const validCompressedFiles = compressedFiles.filter((f): f is File => f !== null);
+                                            
+                                            if (validCompressedFiles.length === 0) {
+                                              toast.error("Toutes les photos sont trop lourdes après compression. Réessayez.");
+                                              return;
+                                            }
 
-                                            // Convertir en base64 en parallèle
-                                            const base64Promises = compressedFiles.map(
-                                              (file) =>
-                                                new Promise<string>((resolve, reject) => {
-                                                  const reader = new FileReader();
-                                                  reader.onload = () => resolve(reader.result as string);
-                                                  reader.onerror = reject;
-                                                  reader.readAsDataURL(file);
-                                                })
-                                            );
-                                            const base64Array = await Promise.all(base64Promises);
-
-                                            // Uploader en parallèle
-                                            const uploadPromises = base64Array.map((base64) =>
-                                              uploadDamagePhoto(
-                                                base64,
+                                            // ✅ Uploader directement avec File (plus rapide que base64 → File)
+                                            const tUploadStart = performance.now();
+                                            const uploadPromises = validCompressedFiles.map((compressedFile, idx) => {
+                                              const photoId = `${Date.now()}_${idx}_degat_zone_${damage.side}_${damage.indexGlobal}`;
+                                              const tFileUploadStart = performance.now();
+                                              return uploadDamagePhoto(
+                                                compressedFile,
                                                 bookingId,
                                                 bookingReferenceNumber,
                                                 damage.side, // zone (avant, droit, arriere, gauche, coffre)
                                                 damage.indexGlobal
-                                              )
-                                            );
+                                              ).then(result => {
+                                                const tFileUpload = performance.now() - tFileUploadStart;
+                                                logDev(`[STEP3_EXT] photoId=${photoId} uploadMs=${tFileUpload.toFixed(0)}`);
+                                                return result;
+                                              });
+                                            });
                                             const uploadedResults = await Promise.all(uploadPromises);
+                                            const tUpload = performance.now() - tUploadStart;
+                                            const tTotal = tCompress + tUpload;
+                                            
+                                            logDev(`[STEP3_EXT] Dégât zone ${damage.side}[${damage.indexGlobal}] - TOTAL compress=${tCompress.toFixed(0)} upload=${tUpload.toFixed(0)} total=${tTotal.toFixed(0)}`);
                                             const uploadedPhotos = uploadedResults.filter(
                                               (p): p is ExteriorPhoto => p !== null
                                             );
 
                                             if (uploadedPhotos.length > 0) {
+                                              // ⭐ Mesurer UI freeze (updateDamage)
+                                              const tSetValueStart = performance.now();
                                               updateDamage(damage.indexGlobal, "photos", [
                                                 ...currentPhotos,
                                                 ...uploadedPhotos,
@@ -1351,6 +1483,13 @@ export default function ExteriorInspectionAccordionSimple({
                                               toast.success(
                                                 `✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`
                                               );
+                                              
+                                              requestAnimationFrame(() => {
+                                                const tSetValueMs = performance.now() - tSetValueStart;
+                                                const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                                const logDev = isDev ? console.log : () => {};
+                                                logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=degat_zone_${damage.side} damageIndex=${damage.indexGlobal} photosCount=${uploadedPhotos.length}`);
+                                              });
                                             }
                                           } catch (error: any) {
                                             console.error("[Step3] ❌ Erreur upload photo dégât:", error);
@@ -1672,27 +1811,60 @@ export default function ExteriorInspectionAccordionSimple({
 
                                         try {
                                           const current = watch(`exteriorInspection.zonesPhotos.${wheelSide}`) || [];
-                                          const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
-                                            const compressed = await compressImage(file, PHOTO_COMPRESSION)
-                                            const base64 = await fileToBase64(compressed)
-                                            return uploadWheelPhoto(
-                                              base64,
+                                          const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                          const logDev = isDev ? console.log : () => {};
+                                          
+                                          const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file, idx) => {
+                                            const photoId = `${Date.now()}_${idx}_jante_${wheelSide}`;
+                                            const t0 = performance.now();
+                                            const sizeBefore = file.size;
+                                            
+                                            // ⭐ Compression robuste en 2 passes avec garde-fou
+                                            // showDebugToast=true seulement pour la première photo (idx === 0)
+                                            const tCompressStart = performance.now();
+                                            const compressed = await compressForUpload(file, idx === 0);
+                                            const tCompress = performance.now() - tCompressStart;
+                                            
+                                            // Si compression échouée (trop lourd), skip cette photo
+                                            if (!compressed) {
+                                              logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
+                                              return null;
+                                            }
+                                            
+                                            const tUploadStart = performance.now();
+                                            const result = await uploadWheelPhoto(
+                                              compressed,
                                               bookingId,
                                               bookingReferenceNumber,
                                               wheelSide
                                             )
+                                            const tUpload = performance.now() - tUploadStart;
+                                            const tTotal = performance.now() - t0;
+                                            
+                                            logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
+                                            
+                                            return result;
                                           })
                                           const uploadedPhotos = uploadedResults.filter(
                                             (p): p is ExteriorPhoto => p !== null
                                           )
 
                                           if (uploadedPhotos.length > 0) {
+                                            // ⭐ Mesurer UI freeze (setValue)
+                                            const tSetValueStart = performance.now();
                                             setValue(
                                               `exteriorInspection.zonesPhotos.${wheelSide}`,
                                               [...current, ...uploadedPhotos],
                                               { shouldDirty: true }
                                             );
                                             toast.success(`✅ ${uploadedPhotos.length} photo(s) de jante uploadée(s)`);
+                                            
+                                            requestAnimationFrame(() => {
+                                              const tSetValueMs = performance.now() - tSetValueStart;
+                                              const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                              const logDev = isDev ? console.log : () => {};
+                                              logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=jante_${wheelSide} photosCount=${uploadedPhotos.length}`);
+                                            });
                                           }
                                         } catch (error: any) {
                                           console.error('[Step3] ❌ Erreur upload photo jante:', error);
@@ -1819,23 +1991,56 @@ export default function ExteriorInspectionAccordionSimple({
 
                                                 try {
                                                   const currentPhotos = damage.photos || [];
-                                                  const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
-                                                    const compressed = await compressImage(file, PHOTO_COMPRESSION)
-                                                    const base64 = await fileToBase64(compressed)
-                                                    return uploadDamagePhoto(
-                                                      base64,
+                                                  const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                                  const logDev = isDev ? console.log : () => {};
+                                                  
+                                                  const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file, idx) => {
+                                                    const photoId = `${Date.now()}_${idx}_degat_jante_${damage.side}_${damage.indexGlobal}`;
+                                                    const t0 = performance.now();
+                                                    const sizeBefore = file.size;
+                                                    
+                                                    // ⭐ Compression robuste en 2 passes avec garde-fou
+                                                    // showDebugToast=true seulement pour la première photo (idx === 0)
+                                                    const tCompressStart = performance.now();
+                                                    const compressed = await compressForUpload(file, idx === 0);
+                                                    const tCompress = performance.now() - tCompressStart;
+                                                    
+                                                    // Si compression échouée (trop lourd), skip cette photo
+                                                    if (!compressed) {
+                                                      logDev(`[STEP3_EXT] photoId=${photoId} SKIPPED - compression failed (sizeBefore=${(sizeBefore / 1024).toFixed(0)}KB)`);
+                                                      return null;
+                                                    }
+                                                    
+                                                    const tUploadStart = performance.now();
+                                                    const result = await uploadDamagePhoto(
+                                                      compressed,
                                                       bookingId,
                                                       bookingReferenceNumber,
                                                       damage.side,
                                                       damage.indexGlobal
                                                     )
+                                                    const tUpload = performance.now() - tUploadStart;
+                                                    const tTotal = performance.now() - t0;
+                                                    
+                                                    logDev(`[STEP3_EXT] photoId=${photoId} compressMs=${tCompress.toFixed(0)} beforeKB=${(sizeBefore / 1024).toFixed(0)} afterKB=${(compressed.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
+                                                    
+                                                    return result;
                                                   })
                                                   const uploadedPhotos = uploadedResults.filter(
                                                     (p): p is ExteriorPhoto => p !== null
                                                   )
 
                                                   if (uploadedPhotos.length > 0) {
+                                                    // ⭐ Mesurer UI freeze (updateDamage)
+                                                    const tSetValueStart = performance.now();
                                                     updateDamage(damage.indexGlobal, "photos", [...currentPhotos, ...uploadedPhotos]);
+                                                    
+                                                    requestAnimationFrame(() => {
+                                                      const tSetValueMs = performance.now() - tSetValueStart;
+                                                      const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+                                                      const logDev = isDev ? console.log : () => {};
+                                                      logDev(`[STEP3_EXT_UI] setValueCostMs=${tSetValueMs.toFixed(0)} zone=degat_jante_${damage.side} damageIndex=${damage.indexGlobal} photosCount=${uploadedPhotos.length}`);
+                                                    });
                                                     toast.success(`✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`);
                                                   }
                                                 } catch (error: any) {

@@ -110,22 +110,34 @@ export default function Section2Releves({
     setUploadingDashboard(true);
     try {
       console.log(`[STEP2] 📸 Upload de ${toUpload.length} photo(s) dashboard...`);
+      const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+      const logDev = isDev ? console.log : () => {};
 
-      const uploadPromises = toUpload.map(async (base64) => {
+      const uploadPromises = toUpload.map(async (base64, idx) => {
+        const photoId = `${Date.now()}_${idx}_dashboard`;
+        const t0 = performance.now();
+        
+        // Conversion base64 → File
+        const tConvertStart = performance.now();
         const file = base64ToFile(base64, `dashboard_${Date.now()}.jpg`);
+        const tConvert = performance.now() - tConvertStart;
         
         // ⭐ Upload avec nouvelle convention (resa_8/depart/photos_dashboard_8_...)
+        const tUploadStart = performance.now();
         const { data, error } = await CheckinPhotoService.uploadDashboardPhoto(
           file,
           bookingId,
           bookingReferenceNumber  // ⭐ NOUVEAU : pour naming intelligent
         );
+        const tUpload = performance.now() - tUploadStart;
+        const tTotal = performance.now() - t0;
         
         if (error) {
           console.error('[STEP2] ❌ Erreur upload:', error);
           throw new Error(error);
         }
 
+        logDev(`[STEP2] photoId=${photoId} convertMs=${tConvert.toFixed(0)} beforeKB=${(base64.length * 3 / 4 / 1024).toFixed(0)} afterKB=${(file.size / 1024).toFixed(0)} uploadMs=${tUpload.toFixed(0)} totalMs=${tTotal.toFixed(0)}`);
         console.log('[STEP2] ✅ Photo uploadée:', data!.storagePath);
         return data!;  // {storagePath, publicUrl, uploadedAt}
       });
@@ -133,11 +145,21 @@ export default function Section2Releves({
       const newPhotos = await Promise.all(uploadPromises);
       const allPhotos = [...alreadyUploaded, ...newPhotos];
 
+      // ⭐ Mesurer UI freeze (setValue)
+      const tSetValueStart = performance.now();
+      
       // ⭐ Stocker métadonnées complètes (avec URLs)
       setValue("releves.dashboardPhotosData", allPhotos, { shouldDirty: true });
       
       // ⭐ Stocker URLs pour affichage dans PhotoCaptureField
       setValue("releves.dashboardPhotos", allPhotos.map(p => p.publicUrl), { shouldDirty: true });
+      
+      requestAnimationFrame(() => {
+        const tSetValueMs = performance.now() - tSetValueStart;
+        const isDev = typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+        const logDev = isDev ? console.log : () => {};
+        logDev(`[STEP2_UI] setValueCostMs=${tSetValueMs.toFixed(0)} photosCount=${allPhotos.length}`);
+      });
 
       toast({
         title: "📸 Photos dashboard uploadées",
