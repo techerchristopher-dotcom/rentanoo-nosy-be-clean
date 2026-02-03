@@ -10,7 +10,6 @@
  * @returns File compressé ou null si trop lourd (> 500KB)
  */
 import { compressImage } from "./imageCompression";
-import { toast } from "sonner";
 
 const PHOTO_COMPRESSION = {
   maxWidth: 1280,
@@ -47,7 +46,8 @@ export async function compressForUpload(
     if (onError) {
       onError(sizeKB);
     } else {
-      toast.error(`Photo trop lourde (${sizeKB} KB). Réessayez.`, { duration: 5000 });
+      // Si pas de callback, log seulement (le toast sera géré par l'appelant)
+      console.warn(`[compressForUpload] Photo trop lourde (${sizeKB} KB). Réessayez.`);
     }
     return null;
   }

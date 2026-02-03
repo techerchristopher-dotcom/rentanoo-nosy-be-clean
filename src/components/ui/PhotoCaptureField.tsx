@@ -16,7 +16,7 @@ type PhotoCaptureFieldProps = {
   label: string;
   description?: string;
   value: string | string[] | null;
-  onChange: (val: string | string[]) => void;
+  onChange?: (val: string | string[]) => void; // ⭐ Optionnel si onFileChange est fourni
   onFileChange?: (files: File[]) => void; // ⭐ NOUVEAU : callback optionnel pour File[] (évite base64 ping-pong)
   multiple?: boolean;
   className?: string;
@@ -84,7 +84,7 @@ export function PhotoCaptureField({
         // ⭐ Si onFileChange fourni, renvoyer File[] directement (évite base64 ping-pong)
         if (onFileChange) {
           onFileChange(compressedFiles);
-        } else {
+        } else if (onChange) {
           // Sinon, convertir en base64 (comportement par défaut)
           const base64s = await Promise.all(compressedFiles.map(fileToBase64));
           onChange(base64s);
@@ -101,7 +101,7 @@ export function PhotoCaptureField({
         // ⭐ Si onFileChange fourni, renvoyer File[] directement
         if (onFileChange) {
           onFileChange([compressed]);
-        } else {
+        } else if (onChange) {
           // Sinon, convertir en base64 (comportement par défaut)
           const b64 = await fileToBase64(compressed);
           onChange(b64);

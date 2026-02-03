@@ -1442,6 +1442,7 @@ export default function ExteriorInspectionAccordionSimple({
                                       label="Photos du dégât"
                                       description="Ajoutez une ou plusieurs photos pour documenter ce dégât"
                                       value={photoValue}
+                                      onChange={() => {}} // ⭐ Requis mais non utilisé si onFileChange est fourni
                                       onFileChange={handleDamageUpload}
                                       multiple={true}
                                       className="w-full"
@@ -1679,6 +1680,7 @@ export default function ExteriorInspectionAccordionSimple({
                                     label={wheel.label}
                                     description="Ajoutez une ou plusieurs photos de cette jante"
                                     value={photoValue}
+                                    onChange={() => {}} // ⭐ Requis mais non utilisé si onFileChange est fourni
                                     onFileChange={handleWheelUpload}
                                     multiple={true}
                                     className="w-full mb-3"
@@ -1872,6 +1874,7 @@ export default function ExteriorInspectionAccordionSimple({
                                             label="Photos du dégât"
                                             description="Ajoutez une ou plusieurs photos pour documenter ce dégât"
                                             value={photoValue}
+                                            onChange={() => {}} // ⭐ Requis mais non utilisé si onFileChange est fourni
                                             onFileChange={handleWheelDamageUpload}
                                             multiple={true}
                                             className="w-full"
