@@ -107,35 +107,93 @@ export class CheckinPhotoService {
 
       console.log(`[CheckinPhotoService] 📁 Path (resa #${bookingReferenceNumber ?? 'N/A'}):`, storagePath);
 
-      // Upload vers Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .upload(storagePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+      // ⭐ Upload vers Supabase Storage avec timeout et retry
+      const MAX_RETRIES = 3;
+      const TIMEOUT_MS = 30000; // 30 secondes
+      let lastError: any = null;
 
-      if (uploadError) {
-        console.error('[CheckinPhotoService] ❌ Erreur upload:', uploadError);
-        return { data: null, error: uploadError.message };
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          // Créer une promesse avec timeout
+          const uploadPromise = supabase.storage
+            .from(this.BUCKET_NAME)
+            .upload(storagePath, file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout: upload a pris plus de 30 secondes')), TIMEOUT_MS);
+          });
+
+          const { data: uploadData, error: uploadError } = await Promise.race([
+            uploadPromise,
+            timeoutPromise,
+          ]);
+
+          if (uploadError) {
+            lastError = uploadError;
+            console.warn(
+              `[CheckinPhotoService] ⚠️ Tentative ${attempt}/${MAX_RETRIES} échouée:`,
+              uploadError.message
+            );
+
+            if (attempt === MAX_RETRIES) {
+              console.error('[CheckinPhotoService] ❌ Échec après toutes les tentatives:', uploadError);
+              return { data: null, error: uploadError.message };
+            }
+
+            // Backoff exponentiel : attendre avant retry (1s, 2s, 4s)
+            const backoffMs = 1000 * Math.pow(2, attempt - 1);
+            console.log(`[CheckinPhotoService] ⏳ Attente ${backoffMs}ms avant retry...`);
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+            continue;
+          }
+
+          // Succès !
+          console.log(`[CheckinPhotoService] ✅ Fichier uploadé (tentative ${attempt})`);
+
+          // Récupérer l'URL publique
+          const { data: urlData } = supabase.storage
+            .from(this.BUCKET_NAME)
+            .getPublicUrl(storagePath);
+
+          console.log('[CheckinPhotoService] 🔗 URL publique:', urlData.publicUrl);
+
+          return {
+            data: {
+              storagePath,
+              publicUrl: urlData.publicUrl,  // ⭐ URL complète pour stockage BDD
+              uploadedAt: new Date().toISOString(),
+            },
+            error: null,
+          };
+        } catch (error: any) {
+          lastError = error;
+          console.warn(
+            `[CheckinPhotoService] ⚠️ Exception tentative ${attempt}/${MAX_RETRIES}:`,
+            error.message
+          );
+
+          if (attempt === MAX_RETRIES) {
+            console.error('[CheckinPhotoService] ❌ Échec après toutes les tentatives:', error);
+            return {
+              data: null,
+              error: `Erreur après ${MAX_RETRIES} tentatives : ${error.message}`,
+            };
+          }
+
+          // Backoff exponentiel
+          const backoffMs = 1000 * Math.pow(2, attempt - 1);
+          console.log(`[CheckinPhotoService] ⏳ Attente ${backoffMs}ms avant retry...`);
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        }
       }
 
-      console.log('[CheckinPhotoService] ✅ Fichier uploadé');
-
-      // Récupérer l'URL publique
-      const { data: urlData } = supabase.storage
-        .from(this.BUCKET_NAME)
-        .getPublicUrl(storagePath);
-
-      console.log('[CheckinPhotoService] 🔗 URL publique:', urlData.publicUrl);
-
+      // Ne devrait jamais arriver ici, mais au cas où
       return {
-        data: {
-          storagePath,
-          publicUrl: urlData.publicUrl,  // ⭐ URL complète pour stockage BDD
-          uploadedAt: new Date().toISOString(),
-        },
-        error: null,
+        data: null,
+        error: lastError?.message || 'Échec après toutes les tentatives',
       };
     } catch (error: any) {
       console.error('[CheckinPhotoService] ❌ Exception:', error);

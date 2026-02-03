@@ -2,6 +2,15 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/utils/imageCompression";
+
+// ⭐ Configuration de compression pour état des lieux
+const COMPRESSION = {
+  maxWidth: 1920,
+  maxHeight: 1920,
+  quality: 0.82,
+  maxSizeMB: 0.5,
+};
 
 type PhotoCaptureFieldProps = {
   label: string;
@@ -43,13 +52,31 @@ export function PhotoCaptureField({
     if (multiple) {
       const arr: string[] = [];
       for (const f of Array.from(files)) {
-        const b64 = await fileToBase64(f);
-        arr.push(b64);
+        try {
+          // ⭐ Compression avant conversion base64
+          const compressed = await compressImage(f, COMPRESSION);
+          const b64 = await fileToBase64(compressed);
+          arr.push(b64);
+        } catch (error) {
+          console.error("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
+          // Fallback : utiliser le fichier original
+          const b64 = await fileToBase64(f);
+          arr.push(b64);
+        }
       }
       onChange(arr);
     } else {
-      const b64 = await fileToBase64(files[0]);
-      onChange(b64);
+      try {
+        // ⭐ Compression avant conversion base64
+        const compressed = await compressImage(files[0], COMPRESSION);
+        const b64 = await fileToBase64(compressed);
+        onChange(b64);
+      } catch (error) {
+        console.error("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
+        // Fallback : utiliser le fichier original
+        const b64 = await fileToBase64(files[0]);
+        onChange(b64);
+      }
     }
   }
 

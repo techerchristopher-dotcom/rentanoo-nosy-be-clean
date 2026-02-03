@@ -1272,42 +1272,63 @@ export default function ExteriorInspectionAccordionSimple({
 
                                           try {
                                             const currentPhotos = damage.photos || [];
-                                            const uploadedPhotos: ExteriorPhoto[] = [];
 
-                                            // ⭐ Upload chaque fichier vers Storage
-                                            for (const file of files) {
-                                              // Convertir File → base64
-                                              const base64 = await new Promise<string>((resolve, reject) => {
-                                                const reader = new FileReader();
-                                                reader.onload = () => resolve(reader.result as string);
-                                                reader.onerror = reject;
-                                                reader.readAsDataURL(file);
-                                              });
+                                            // ⭐ Compression et upload en parallèle
+                                            const { compressImage } = await import("@/utils/imageCompression");
+                                            const COMPRESSION = {
+                                              maxWidth: 1920,
+                                              maxHeight: 1920,
+                                              quality: 0.82,
+                                              maxSizeMB: 0.5,
+                                            };
 
-                                              // Upload via helper avec zone + index du dégât
-                                              const uploaded = await uploadDamagePhoto(
+                                            // Compresser toutes les images en parallèle
+                                            const compressedFiles = await Promise.all(
+                                              files.map((file) => compressImage(file, COMPRESSION))
+                                            );
+
+                                            // Convertir en base64 en parallèle
+                                            const base64Promises = compressedFiles.map(
+                                              (file) =>
+                                                new Promise<string>((resolve, reject) => {
+                                                  const reader = new FileReader();
+                                                  reader.onload = () => resolve(reader.result as string);
+                                                  reader.onerror = reject;
+                                                  reader.readAsDataURL(file);
+                                                })
+                                            );
+                                            const base64Array = await Promise.all(base64Promises);
+
+                                            // Uploader en parallèle
+                                            const uploadPromises = base64Array.map((base64) =>
+                                              uploadDamagePhoto(
                                                 base64,
                                                 bookingId,
                                                 bookingReferenceNumber,
                                                 damage.side, // zone (avant, droit, arriere, gauche, coffre)
                                                 damage.indexGlobal
-                                              );
-
-                                              if (uploaded) {
-                                                uploadedPhotos.push(uploaded);
-                                              }
-                                            }
+                                              )
+                                            );
+                                            const uploadedResults = await Promise.all(uploadPromises);
+                                            const uploadedPhotos = uploadedResults.filter(
+                                              (p): p is ExteriorPhoto => p !== null
+                                            );
 
                                             if (uploadedPhotos.length > 0) {
-                                              updateDamage(damage.indexGlobal, "photos", [...currentPhotos, ...uploadedPhotos]);
-                                              toast.success(`✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`);
+                                              updateDamage(damage.indexGlobal, "photos", [
+                                                ...currentPhotos,
+                                                ...uploadedPhotos,
+                                              ]);
+                                              toast.success(
+                                                `✅ ${uploadedPhotos.length} photo(s) de dégât uploadée(s)`
+                                              );
                                             }
                                           } catch (error: any) {
-                                            console.error('[Step3] ❌ Erreur upload photo dégât:', error);
-                                            toast.error('❌ Erreur lors de l\'upload des photos');
+                                            console.error("[Step3] ❌ Erreur upload photo dégât:", error);
+                                            toast.error("❌ Erreur lors de l'upload des photos");
                                           } finally {
                                             setIsUploadingPhoto(false);
-                                            e.target.value = '';
+                                            e.target.value = "";
                                           }
                                         }}
                                       />
