@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { saveStep4Draft, saveStep4SectionDraft } from "@/services/checkinDepartService";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { uploadInteriorSeatsPhoto, uploadInteriorCleanlinessPhoto, uploadInteriorDamagePhoto } from "@/modules/etatDesLieuxDepart/helpers/step4Helpers";
+import { compressImage } from "@/utils/imageCompression";
 import type { InteriorPhoto } from "@/types/step4";
 
 const CameraIcon = ({ className }: { className?: string }) => (
@@ -93,6 +94,43 @@ const interiorSections: InteriorSection[] = [
   { id: 2, key: "propreteGenerale", title: "Propreté intérieure" },
   { id: 3, key: "equipements", title: "Équipements intérieurs" },
 ];
+
+// ⭐ Compression + upload (optimisé mobile)
+const PHOTO_COMPRESSION = {
+  maxWidth: 1920,
+  maxHeight: 1920,
+  quality: 0.85,
+  maxSizeMB: 0.5,
+} as const;
+
+const UPLOAD_CONCURRENCY = 2;
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, idx: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    while (true) {
+      const i = nextIndex++;
+      if (i >= items.length) break;
+      results[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
 
 type Section4InterieurProps = {
   onComplete?: () => void;
@@ -739,29 +777,14 @@ export default function Section4Interieur({
 
                             try {
                               const currentPhotos = seatsPhotos;
-                              const uploadedPhotos: InteriorPhoto[] = [];
-
-                              // ⭐ Upload chaque fichier vers Storage
-                              for (const file of files) {
-                                // Convertir File → base64
-                                const base64 = await new Promise<string>((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onload = () => resolve(reader.result as string);
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(file);
-                                });
-
-                                // Upload via helper
-                                const uploaded = await uploadInteriorSeatsPhoto(
-                                  base64,
-                                  bookingId,
-                                  bookingReferenceNumber
-                                );
-
-                                if (uploaded) {
-                                  uploadedPhotos.push(uploaded);
-                                }
-                              }
+                              const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
+                                const compressed = await compressImage(file, PHOTO_COMPRESSION);
+                                const base64 = await fileToBase64(compressed);
+                                return uploadInteriorSeatsPhoto(base64, bookingId, bookingReferenceNumber);
+                              });
+                              const uploadedPhotos = uploadedResults.filter(
+                                (p): p is InteriorPhoto => p !== null
+                              );
 
                               if (uploadedPhotos.length > 0) {
                                 // Si aucune photo existante, ajouter normalement
@@ -1001,42 +1024,16 @@ export default function Section4Interieur({
                                 try {
                                   const currentPhotos = seatsReport.photos;
 
-                                  // ⭐ Compression et upload en parallèle
-                                  const { compressImage } = await import("@/utils/imageCompression");
-                                  const COMPRESSION = {
-                                    maxWidth: 1920,
-                                    maxHeight: 1920,
-                                    quality: 0.82,
-                                    maxSizeMB: 0.5,
-                                  };
-
-                                  // Compresser toutes les images en parallèle
-                                  const compressedFiles = await Promise.all(
-                                    files.map((file) => compressImage(file, COMPRESSION))
-                                  );
-
-                                  // Convertir en base64 en parallèle
-                                  const base64Promises = compressedFiles.map(
-                                    (file) =>
-                                      new Promise<string>((resolve, reject) => {
-                                        const reader = new FileReader();
-                                        reader.onload = () => resolve(reader.result as string);
-                                        reader.onerror = reject;
-                                        reader.readAsDataURL(file);
-                                      })
-                                  );
-                                  const base64Array = await Promise.all(base64Promises);
-
-                                  // Uploader en parallèle
-                                  const uploadPromises = base64Array.map((base64) =>
-                                    uploadInteriorDamagePhoto(
+                                  const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
+                                    const compressed = await compressImage(file, PHOTO_COMPRESSION);
+                                    const base64 = await fileToBase64(compressed);
+                                    return uploadInteriorDamagePhoto(
                                       base64,
                                       bookingId,
                                       bookingReferenceNumber,
                                       "sieges"
-                                    )
-                                  );
-                                  const uploadedResults = await Promise.all(uploadPromises);
+                                    );
+                                  });
                                   const uploadedPhotos = uploadedResults.filter(
                                     (p): p is InteriorPhoto => p !== null
                                   );
@@ -1203,29 +1200,14 @@ export default function Section4Interieur({
 
                             try {
                               const currentPhotos = cleanlinessPhotos;
-                              const uploadedPhotos: InteriorPhoto[] = [];
-
-                              // ⭐ Upload chaque fichier vers Storage
-                              for (const file of files) {
-                                // Convertir File → base64
-                                const base64 = await new Promise<string>((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onload = () => resolve(reader.result as string);
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(file);
-                                });
-
-                                // Upload via helper
-                                const uploaded = await uploadInteriorCleanlinessPhoto(
-                                  base64,
-                                  bookingId,
-                                  bookingReferenceNumber
-                                );
-
-                                if (uploaded) {
-                                  uploadedPhotos.push(uploaded);
-                                }
-                              }
+                              const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
+                                const compressed = await compressImage(file, PHOTO_COMPRESSION);
+                                const base64 = await fileToBase64(compressed);
+                                return uploadInteriorCleanlinessPhoto(base64, bookingId, bookingReferenceNumber);
+                              });
+                              const uploadedPhotos = uploadedResults.filter(
+                                (p): p is InteriorPhoto => p !== null
+                              );
 
                               if (uploadedPhotos.length > 0) {
                                 // Si aucune photo existante, ajouter normalement

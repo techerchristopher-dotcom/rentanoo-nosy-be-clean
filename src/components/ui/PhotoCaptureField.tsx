@@ -8,7 +8,7 @@ import { compressImage } from "@/utils/imageCompression";
 const COMPRESSION = {
   maxWidth: 1920,
   maxHeight: 1920,
-  quality: 0.82,
+  quality: 0.85,
   maxSizeMB: 0.5,
 };
 
@@ -40,43 +40,64 @@ export function PhotoCaptureField({
     if (!files || files.length === 0) return;
 
     // helper base64
-    async function fileToBase64(file: File): Promise<string> {
-      return new Promise<string>((resolve, reject) => {
+    const fileToBase64 = async (file: File): Promise<string> =>
+      new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (ev) => resolve(ev.target?.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-    }
 
-    if (multiple) {
-      const arr: string[] = [];
-      for (const f of Array.from(files)) {
+    // ⭐ mini-concurrency limiter (évite de saturer la mémoire sur mobile)
+    const mapLimit = async <T, R>(
+      items: T[],
+      limit: number,
+      fn: (item: T, idx: number) => Promise<R>
+    ): Promise<R[]> => {
+      const results: R[] = new Array(items.length);
+      let nextIndex = 0;
+      const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+        while (true) {
+          const i = nextIndex++;
+          if (i >= items.length) break;
+          results[i] = await fn(items[i], i);
+        }
+      });
+      await Promise.all(workers);
+      return results;
+    };
+
+    try {
+      if (multiple) {
+        const list = Array.from(files);
+        const base64s = await mapLimit(list, 2, async (f) => {
+          try {
+            const compressed = await compressImage(f, COMPRESSION);
+            return fileToBase64(compressed);
+          } catch (error) {
+            console.warn("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
+            // Fallback : utiliser le fichier original
+            return fileToBase64(f);
+          }
+        });
+        onChange(base64s);
+      } else {
         try {
-          // ⭐ Compression avant conversion base64
-          const compressed = await compressImage(f, COMPRESSION);
+          const compressed = await compressImage(files[0], COMPRESSION);
           const b64 = await fileToBase64(compressed);
-          arr.push(b64);
+          onChange(b64);
         } catch (error) {
-          console.error("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
+          console.warn("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
           // Fallback : utiliser le fichier original
-          const b64 = await fileToBase64(f);
-          arr.push(b64);
+          const b64 = await fileToBase64(files[0]);
+          onChange(b64);
         }
       }
-      onChange(arr);
-    } else {
-      try {
-        // ⭐ Compression avant conversion base64
-        const compressed = await compressImage(files[0], COMPRESSION);
-        const b64 = await fileToBase64(compressed);
-        onChange(b64);
-      } catch (error) {
-        console.error("[PhotoCaptureField] Erreur compression, utilisation fichier original:", error);
-        // Fallback : utiliser le fichier original
-        const b64 = await fileToBase64(files[0]);
-        onChange(b64);
-      }
+    } catch (error) {
+      console.error("[PhotoCaptureField] Erreur capture photo:", error);
+    } finally {
+      // Permet de re-sélectionner le même fichier (mobile)
+      e.target.value = "";
     }
   }
 

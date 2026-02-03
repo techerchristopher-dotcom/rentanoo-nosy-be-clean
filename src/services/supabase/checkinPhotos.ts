@@ -114,22 +114,30 @@ export class CheckinPhotoService {
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-          // Créer une promesse avec timeout
+          // Créer une promesse avec timeout (et cleanup du timer)
           const uploadPromise = supabase.storage
             .from(this.BUCKET_NAME)
             .upload(storagePath, file, {
               cacheControl: '3600',
+              contentType: file.type || 'image/jpeg',
               upsert: false,
             });
 
+          let timeoutId: ReturnType<typeof setTimeout> | null = null;
           const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Timeout: upload a pris plus de 30 secondes')), TIMEOUT_MS);
+            timeoutId = setTimeout(
+              () => reject(new Error('Timeout: upload a pris plus de 30 secondes')),
+              TIMEOUT_MS
+            );
           });
 
-          const { data: uploadData, error: uploadError } = await Promise.race([
-            uploadPromise,
-            timeoutPromise,
-          ]);
+          const { error: uploadError } = await (async () => {
+            try {
+              return await Promise.race([uploadPromise, timeoutPromise]);
+            } finally {
+              if (timeoutId) clearTimeout(timeoutId);
+            }
+          })();
 
           if (uploadError) {
             lastError = uploadError;

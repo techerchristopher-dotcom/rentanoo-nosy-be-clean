@@ -7,7 +7,7 @@
  * Configuration recommandée pour état des lieux :
  * - maxWidth: 1920px (suffisant pour voir les détails)
  * - maxHeight: 1920px
- * - quality: 0.82 (bon compromis qualité/taille)
+ * - quality: 0.85 (bon compromis qualité/taille)
  * - maxSizeMB: 0.5 (objectif 500KB max)
  * 
  * Gain attendu : 85-95% de réduction (3-8MB → 200-500KB)
@@ -24,6 +24,8 @@ export type CompressOptions = {
   maxSizeMB?: number;
   /** Type MIME de sortie (défaut: "image/jpeg") */
   mimeType?: "image/jpeg" | "image/webp";
+  /** Nombre max de compressions en parallèle (défaut: 2) */
+  concurrency?: number;
 };
 
 /**
@@ -40,29 +42,28 @@ async function fileToImageBitmap(file: File): Promise<ImageBitmap | HTMLImageEle
   // createImageBitmap est souvent plus rapide / memory-friendly sur mobile
   if ("createImageBitmap" in window) {
     try {
-      return await createImageBitmap(file);
+      // imageOrientation: "from-image" → évite les photos pivotées (EXIF) sur mobile
+      return await createImageBitmap(file, { imageOrientation: "from-image" });
     } catch (error) {
       console.warn("[compressImage] createImageBitmap échoué, fallback Image:", error);
       // Continue avec le fallback
     }
   }
 
-  // Fallback: HTMLImageElement via FileReader
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  // Fallback: HTMLImageElement via ObjectURL (évite un DataURL énorme en mémoire)
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = objectUrl;
+    });
 
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = reject;
-    i.src = dataUrl;
-  });
-
-  return img;
+    return img;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 /**
@@ -110,7 +111,7 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
   const {
     maxWidth = 1920,
     maxHeight = 1920,
-    quality = 0.82,
+    quality = 0.85,
     maxSizeMB = 0.5,
     mimeType = "image/jpeg",
   } = opts;
@@ -155,6 +156,15 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
 
     // Dessiner l'image redimensionnée
     ctx.drawImage(bitmapOrImg as any, 0, 0, tw, th);
+
+    // Libérer la mémoire si ImageBitmap
+    if ("close" in (bitmapOrImg as any) && typeof (bitmapOrImg as any).close === "function") {
+      try {
+        (bitmapOrImg as any).close();
+      } catch {
+        // ignore
+      }
+    }
 
     // Compression itérative jusqu'à atteindre la taille cible
     const maxBytes = maxSizeMB * 1024 * 1024;
@@ -210,7 +220,21 @@ export async function compressImages(
   files: File[],
   options: CompressOptions = {}
 ): Promise<File[]> {
-  const promises = files.map((file) => compressImage(file, options));
-  return Promise.all(promises);
+  const { concurrency = 2, ...rest } = options;
+  const limit = Math.max(1, Math.min(concurrency, files.length || 1));
+
+  const results: File[] = new Array(files.length);
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: limit }, async () => {
+    while (true) {
+      const i = nextIndex++;
+      if (i >= files.length) break;
+      results[i] = await compressImage(files[i], rest);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
 }
 

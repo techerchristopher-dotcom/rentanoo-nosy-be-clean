@@ -10,6 +10,7 @@ import { saveStep3Draft, saveStep3ZoneDraft } from '@/services/checkinDepartServ
 import type { Step3Payload, ExteriorPhoto, ExteriorDamage } from '@/types/step3'
 import { uploadZonePhoto, uploadWheelPhoto, uploadTrunkPhoto, uploadDamagePhoto } from '@/modules/etatDesLieuxDepart/helpers/step3Helpers'
 import { ZoomableImage } from '@/components/ZoomableImage'
+import { compressImage } from '@/utils/imageCompression'
 
 const ChevronDownIcon = ({ className }: { className?: string }) => (
   <svg
@@ -62,6 +63,46 @@ const CameraIcon = ({ className }: { className?: string }) => (
     <circle cx="12" cy="13" r="3" />
   </svg>
 )
+
+// ⭐ Compression + upload (optimisé mobile)
+const PHOTO_COMPRESSION = {
+  maxWidth: 1920,
+  maxHeight: 1920,
+  quality: 0.85,
+  maxSizeMB: 0.5,
+} as const
+
+const UPLOAD_CONCURRENCY = 2
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, idx: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let nextIndex = 0
+  const workers = Array.from(
+    { length: Math.max(1, Math.min(limit, items.length)) },
+    async () => {
+      while (true) {
+        const i = nextIndex++
+        if (i >= items.length) break
+        results[i] = await fn(items[i], i)
+      }
+    }
+  )
+  await Promise.all(workers)
+  return results
+}
 
 type StepDetails = {
   photoLabel: string
@@ -1059,26 +1100,14 @@ export default function ExteriorInspectionAccordionSimple({
                             
                             try {
                               const current = watch(`exteriorInspection.zonesPhotos.${currentZoneKey}`) || []
-                              const uploadedPhotos: ExteriorPhoto[] = [];
-                              
-                              // Convertir et uploader chaque fichier
-                              for (const file of files) {
-                                const base64 = await new Promise<string>((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onload = () => resolve(reader.result as string);
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(file);
-                                });
-                                
-                                const uploaded = await uploadZonePhoto(
-                                  base64,
-                                  bookingId,
-                                  bookingReferenceNumber,
-                                  currentZoneKey
-                                );
-                                
-                                if (uploaded) uploadedPhotos.push(uploaded);
-                              }
+                              const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
+                                const compressed = await compressImage(file, PHOTO_COMPRESSION)
+                                const base64 = await fileToBase64(compressed)
+                                return uploadZonePhoto(base64, bookingId, bookingReferenceNumber, currentZoneKey)
+                              })
+                              const uploadedPhotos = uploadedResults.filter(
+                                (p): p is ExteriorPhoto => p !== null
+                              )
                               
                               if (uploadedPhotos.length > 0) {
                                 if (replaceFirst) {
@@ -1643,30 +1672,19 @@ export default function ExteriorInspectionAccordionSimple({
 
                                         try {
                                           const current = watch(`exteriorInspection.zonesPhotos.${wheelSide}`) || [];
-                                          const uploadedPhotos: ExteriorPhoto[] = [];
-
-                                          // ⭐ Upload chaque fichier vers Storage
-                                          for (const file of files) {
-                                            // Convertir File → base64
-                                            const base64 = await new Promise<string>((resolve, reject) => {
-                                              const reader = new FileReader();
-                                              reader.onload = () => resolve(reader.result as string);
-                                              reader.onerror = reject;
-                                              reader.readAsDataURL(file);
-                                            });
-
-                                            // Upload via helper
-                                            const uploaded = await uploadWheelPhoto(
+                                          const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
+                                            const compressed = await compressImage(file, PHOTO_COMPRESSION)
+                                            const base64 = await fileToBase64(compressed)
+                                            return uploadWheelPhoto(
                                               base64,
                                               bookingId,
                                               bookingReferenceNumber,
-                                              wheelSide // janteAvDroit, janteArDroit, etc.
-                                            );
-
-                                            if (uploaded) {
-                                              uploadedPhotos.push(uploaded);
-                                            }
-                                          }
+                                              wheelSide
+                                            )
+                                          })
+                                          const uploadedPhotos = uploadedResults.filter(
+                                            (p): p is ExteriorPhoto => p !== null
+                                          )
 
                                           if (uploadedPhotos.length > 0) {
                                             setValue(
@@ -1801,31 +1819,20 @@ export default function ExteriorInspectionAccordionSimple({
 
                                                 try {
                                                   const currentPhotos = damage.photos || [];
-                                                  const uploadedPhotos: ExteriorPhoto[] = [];
-
-                                                  // ⭐ Upload chaque fichier vers Storage
-                                                  for (const file of files) {
-                                                    // Convertir File → base64
-                                                    const base64 = await new Promise<string>((resolve, reject) => {
-                                                      const reader = new FileReader();
-                                                      reader.onload = () => resolve(reader.result as string);
-                                                      reader.onerror = reject;
-                                                      reader.readAsDataURL(file);
-                                                    });
-
-                                                    // Upload via helper avec zone + index du dégât
-                                                    const uploaded = await uploadDamagePhoto(
+                                                  const uploadedResults = await mapLimit(files, UPLOAD_CONCURRENCY, async (file) => {
+                                                    const compressed = await compressImage(file, PHOTO_COMPRESSION)
+                                                    const base64 = await fileToBase64(compressed)
+                                                    return uploadDamagePhoto(
                                                       base64,
                                                       bookingId,
                                                       bookingReferenceNumber,
-                                                      damage.side, // zone (avant, droit, arriere, gauche, coffre)
+                                                      damage.side,
                                                       damage.indexGlobal
-                                                    );
-
-                                                    if (uploaded) {
-                                                      uploadedPhotos.push(uploaded);
-                                                    }
-                                                  }
+                                                    )
+                                                  })
+                                                  const uploadedPhotos = uploadedResults.filter(
+                                                    (p): p is ExteriorPhoto => p !== null
+                                                  )
 
                                                   if (uploadedPhotos.length > 0) {
                                                     updateDamage(damage.indexGlobal, "photos", [...currentPhotos, ...uploadedPhotos]);
