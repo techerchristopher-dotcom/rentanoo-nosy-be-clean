@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, Camera, AlertTriangle, Upload, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Car, Camera, AlertTriangle } from "lucide-react";
+import { PhotoCaptureField } from "@/components/ui/PhotoCaptureField";
 import { CheckinPhotoService } from "@/services/supabase/checkinPhotos";
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,7 +58,6 @@ function PhotosGrid({ photos, className = "" }: { photos: any[]; className?: str
 
 export default function Step4InterieurRetour({ departData, setValue, watch, bookingData, bookingId, vehicleType }: StepProps) {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   const propretePhotos = departData?.step4?.propreteGenerale?.photos || [];
@@ -76,10 +75,9 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
   const firstDamage = newDamages[0] || {};
   const damagePhotos = firstDamage.photos || [];
 
-  // Gestion de l'upload des photos de dégâts intérieurs
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // ⭐ PhotoCaptureField → compression front → onFileChange reçoit File[] → upload parallèle
+  const handleInteriorDamageFilesChange = async (files: File[]) => {
+    if (!files.length || uploading) return;
 
     if (!bookingId) {
       toast({
@@ -92,45 +90,56 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
 
     setUploading(true);
     try {
-      // Récupérer l'area du premier dégât (ou utiliser un fallback)
-      const area = firstDamage.area || "interieur";
+      const interiorData = watch("returnData.step4.interior") || {};
+      const newDamagesData = interiorData.newDamages || [];
+      const firstDamageData = newDamagesData[0] || {};
+      const area = firstDamageData.area || "interieur";
+      const referenceNumber = bookingData?.referenceNumber ?? null;
 
-      const { data, error } = await CheckinPhotoService.uploadReturnInteriorDamagePhoto(
-        file,
-        bookingId,
-        bookingData?.referenceNumber ?? null,
-        area
+      // Upload parallèle
+      const uploadPromises = files.map((file) =>
+        CheckinPhotoService.uploadReturnInteriorDamagePhoto(
+          file,
+          bookingId,
+          referenceNumber,
+          area
+        )
       );
 
-      if (error || !data) {
-        throw new Error(error || "Erreur lors de l'upload");
+      const results = await Promise.all(uploadPromises);
+
+      const newPhotos = results
+        .filter((r) => r.data)
+        .map((r) => r.data!);
+      const errors = results.filter((r) => r.error);
+
+      if (errors.length > 0) {
+        const firstError = errors[0];
+        throw new Error(firstError?.error || "Erreur lors de l'upload");
       }
 
-      // Ajouter la nouvelle photo au premier dégât
-      const currentPhotos = damagePhotos || [];
-      const updatedPhotos = [...currentPhotos, data];
-      const updatedFirstDamage = { ...firstDamage, photos: updatedPhotos };
+      if (newPhotos.length === 0) {
+        throw new Error("Erreur lors de l'upload");
+      }
 
-      // Mettre à jour le form state
+      const currentPhotos = firstDamageData.photos || [];
+      const updatedFirstDamage = { ...firstDamageData, photos: [...currentPhotos, ...newPhotos] };
+
       setValue("returnData.step4.interior.newDamages.0", updatedFirstDamage);
 
       toast({
-        title: "📸 Photo uploadée",
-        description: "La photo de dégât intérieur a été ajoutée avec succès",
+        title: "📸 Photos uploadées",
+        description: `${newPhotos.length} photo(s) ajoutée(s)`,
       });
     } catch (error: any) {
       console.error("[Step4InterieurRetour] ❌ Erreur upload:", error);
       toast({
         variant: "destructive",
         title: "❌ Erreur d'upload",
-        description: error.message || "Impossible d'uploader la photo",
+        description: error.message || "Impossible d'uploader les photos",
       });
     } finally {
       setUploading(false);
-      // Réinitialiser l'input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
@@ -290,37 +299,13 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
                 <span>Photos du nouveau dégât</span>
               </p>
               <PhotosGrid photos={damagePhotos} />
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  id="interior-damage-photo-input"
-                  disabled={uploading || !bookingId}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto text-xs sm:text-sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading || !bookingId}
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
-                      <span>Upload en cours...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                      <span>Ajouter une photo</span>
-                    </>
-                  )}
-                </Button>
-              </div>
+              <PhotoCaptureField
+                label="Ajouter des photos"
+                description={uploading ? "⏳ Upload en cours..." : "Ajoutez des photos du nouveau dégât"}
+                value={damagePhotos.map((p) => p?.publicUrl || p?.url).filter(Boolean) as string[]}
+                onFileChange={handleInteriorDamageFilesChange}
+                multiple={true}
+              />
             </div>
           </CardContent>
         </Card>

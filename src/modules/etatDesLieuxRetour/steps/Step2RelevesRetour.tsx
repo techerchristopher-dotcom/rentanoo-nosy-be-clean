@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gauge, Camera, Upload, Loader2 } from "lucide-react";
+import { Gauge, Camera } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { FuelLevelSlider } from "@/components/FuelLevelSlider";
+import { PhotoCaptureField } from "@/components/ui/PhotoCaptureField";
 import { CheckinPhotoService } from "@/services/supabase/checkinPhotos";
 import { useToast } from "@/hooks/use-toast";
 
@@ -59,7 +59,6 @@ function PhotosGrid({ photos, className = "" }: { photos: any[]; className?: str
 
 export default function Step2RelevesRetour({ departData, returnData, setValue, watch, bookingData, bookingId }: StepProps) {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   // Données départ (lecture seule)
@@ -72,10 +71,9 @@ export default function Step2RelevesRetour({ departData, returnData, setValue, w
   const niveauCarburantRetour = watch("returnData.step2.releves.niveauCarburantRetour");
   const dashboardPhotosRetour = watch("returnData.step2.releves.dashboardPhotosRetour") || [];
 
-  // Gestion de l'upload des photos dashboard retour
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // ⭐ PhotoCaptureField → compression front → onFileChange reçoit File[] → upload parallèle
+  const handleDashboardPhotosFileChange = async (files: File[]) => {
+    if (!files.length || uploading) return;
 
     if (!bookingId) {
       toast({
@@ -88,40 +86,44 @@ export default function Step2RelevesRetour({ departData, returnData, setValue, w
 
     setUploading(true);
     try {
-      const { data, error } = await CheckinPhotoService.uploadReturnDashboardPhoto(
-        file,
-        bookingId,
-        bookingData?.referenceNumber ?? null
+      const uploadPromises = files.map((file) =>
+        CheckinPhotoService.uploadReturnDashboardPhoto(
+          file,
+          bookingId,
+          bookingData?.referenceNumber ?? null
+        )
       );
 
-      if (error || !data) {
-        throw new Error(error || "Erreur lors de l'upload");
+      const results = await Promise.all(uploadPromises);
+
+      const newPhotos = results
+        .filter((r) => r.data)
+        .map((r) => r.data!);
+      const errors = results.filter((r) => r.error);
+
+      if (errors.length > 0) {
+        const firstError = errors[0];
+        throw new Error(firstError?.error || "Erreur lors de l'upload");
       }
 
-      // Ajouter la nouvelle photo à l'array existant
       const currentPhotos = dashboardPhotosRetour || [];
-      const updatedPhotos = [...currentPhotos, data];
+      const updatedPhotos = [...currentPhotos, ...newPhotos];
 
-      // Mettre à jour le form state
       setValue("returnData.step2.releves.dashboardPhotosRetour", updatedPhotos);
 
       toast({
-        title: "📸 Photo uploadée",
-        description: "La photo dashboard retour a été ajoutée avec succès",
+        title: "📸 Photos uploadées",
+        description: `${newPhotos.length} photo(s) dashboard retour ajoutée(s) avec succès`,
       });
     } catch (error: any) {
       console.error("[Step2RelevesRetour] ❌ Erreur upload:", error);
       toast({
         variant: "destructive",
         title: "❌ Erreur d'upload",
-        description: error.message || "Impossible d'uploader la photo",
+        description: error.message || "Impossible d'uploader les photos",
       });
     } finally {
       setUploading(false);
-      // Réinitialiser l'input pour permettre de sélectionner le même fichier à nouveau
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
@@ -218,37 +220,13 @@ export default function Step2RelevesRetour({ departData, returnData, setValue, w
           <div className="space-y-2 sm:space-y-3">
             <p className="text-xs sm:text-sm font-medium">Photos dashboard retour</p>
             <PhotosGrid photos={dashboardPhotosRetour} />
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="dashboard-return-photo-input"
-                disabled={uploading}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto text-xs sm:text-sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || !bookingId}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
-                    <span>Upload en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                    <span>Ajouter une photo</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            <PhotoCaptureField
+              label="Ajouter des photos"
+              description={uploading ? "⏳ Upload en cours..." : "Prends une photo du compteur et du niveau de carburant."}
+              value={dashboardPhotosRetour.map((p) => p?.publicUrl || p?.url).filter(Boolean) as string[]}
+              onFileChange={handleDashboardPhotosFileChange}
+              multiple={true}
+            />
           </div>
         </CardContent>
       </Card>

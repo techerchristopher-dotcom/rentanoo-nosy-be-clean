@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, Camera, AlertTriangle, Upload, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Car, Camera, AlertTriangle } from "lucide-react";
+import { PhotoCaptureField } from "@/components/ui/PhotoCaptureField";
 import { CheckinPhotoService } from "@/services/supabase/checkinPhotos";
 import { useToast } from "@/hooks/use-toast";
 
@@ -91,7 +91,6 @@ export default function Step3ExterieurRetour({
   vehicleType,
 }: StepProps) {
   const { toast } = useToast();
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   const zonesPhotos = departData?.step3?.zonesPhotos || {};
@@ -99,10 +98,9 @@ export default function Step3ExterieurRetour({
   // Déterminer la liste des zones selon le type de véhicule
   const zones = vehicleType === "moto" ? RETURN_MOTO_ZONES : RETURN_CAR_ZONES;
 
-  // Gestion de l'upload des photos de dégâts extérieurs
-  const handleFileSelect = async (zoneKey: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // ⭐ PhotoCaptureField → compression front → onFileChange reçoit File[] → upload parallèle
+  const handleExteriorDamageFilesChange = async (zoneKey: string, files: File[]) => {
+    if (!files.length || uploading[zoneKey]) return;
 
     if (!bookingId) {
       toast({
@@ -117,17 +115,29 @@ export default function Step3ExterieurRetour({
     try {
       // Pour V1, on gère un seul dégât par zone (index 0)
       const damageIndex = 0;
+      const referenceNumber = bookingData?.referenceNumber ?? null;
 
-      const { data, error } = await CheckinPhotoService.uploadReturnExteriorDamagePhoto(
-        file,
-        bookingId,
-        bookingData?.referenceNumber ?? null,
-        zoneKey,
-        damageIndex
+      // Upload parallèle
+      const uploadPromises = files.map((file) =>
+        CheckinPhotoService.uploadReturnExteriorDamagePhoto(
+          file,
+          bookingId,
+          referenceNumber,
+          zoneKey,
+          damageIndex
+        )
       );
 
-      if (error || !data) {
-        throw new Error(error || "Erreur lors de l'upload");
+      const results = await Promise.all(uploadPromises);
+
+      const newPhotos = results
+        .filter((r) => r.data)
+        .map((r) => r.data!);
+      const errors = results.filter((r) => r.error);
+
+      if (errors.length > 0) {
+        const firstError = errors[0];
+        throw new Error(firstError?.error || "Erreur lors de l'upload");
       }
 
       // Récupérer les dégâts existants pour cette zone
@@ -135,8 +145,8 @@ export default function Step3ExterieurRetour({
       const firstDamage = currentNewDamages[0] || { description: "", type: "", photos: [] };
       const currentPhotos = firstDamage.photos || [];
 
-      // Ajouter la nouvelle photo
-      const updatedPhotos = [...currentPhotos, data];
+      // Ajouter les nouvelles photos
+      const updatedPhotos = [...currentPhotos, ...newPhotos];
       const updatedFirstDamage = { ...firstDamage, photos: updatedPhotos };
 
       // Mettre à jour le form state
@@ -146,23 +156,18 @@ export default function Step3ExterieurRetour({
       const zoneLabel = zones.find(z => z.key === zoneKey)?.label || zoneKey;
 
       toast({
-        title: "📸 Photo uploadée",
-        description: `La photo de dégât pour ${zoneLabel} a été ajoutée`,
+        title: "📸 Photos uploadées",
+        description: `${newPhotos.length} photo(s) de dégât pour ${zoneLabel} ajoutée(s)`,
       });
     } catch (error: any) {
       console.error("[Step3ExterieurRetour] ❌ Erreur upload:", error);
       toast({
         variant: "destructive",
         title: "❌ Erreur d'upload",
-        description: error.message || "Impossible d'uploader la photo",
+        description: error.message || "Impossible d'uploader les photos",
       });
     } finally {
       setUploading((prev) => ({ ...prev, [zoneKey]: false }));
-      // Réinitialiser l'input
-      const input = fileInputRefs.current[zoneKey];
-      if (input) {
-        input.value = "";
-      }
     }
   };
 
@@ -300,39 +305,13 @@ export default function Step3ExterieurRetour({
                           <span>Photos du nouveau dégât</span>
                         </p>
                         <PhotosGrid photos={damagePhotos} />
-                        <div className="flex items-center gap-2">
-                          <input
-                            ref={(el) => {
-                              fileInputRefs.current[zone.key] = el;
-                            }}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleFileSelect(zone.key, e)}
-                            className="hidden"
-                            id={`exterior-damage-photo-input-${zone.key}`}
-                            disabled={uploading[zone.key] || !bookingId}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="w-full sm:w-auto text-xs sm:text-sm"
-                            onClick={() => fileInputRefs.current[zone.key]?.click()}
-                            disabled={uploading[zone.key] || !bookingId}
-                          >
-                            {uploading[zone.key] ? (
-                              <>
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
-                                <span>Upload en cours...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                                <span>Ajouter une photo</span>
-                              </>
-                            )}
-                          </Button>
-                        </div>
+                        <PhotoCaptureField
+                          label="Ajouter des photos"
+                          description={uploading[zone.key] ? "⏳ Upload en cours..." : "Ajoutez des photos du nouveau dégât"}
+                          value={damagePhotos.map((p) => p?.publicUrl || p?.url).filter(Boolean) as string[]}
+                          onFileChange={(files) => handleExteriorDamageFilesChange(zone.key, files)}
+                          multiple={true}
+                        />
                       </div>
                     </CardContent>
                   </Card>
