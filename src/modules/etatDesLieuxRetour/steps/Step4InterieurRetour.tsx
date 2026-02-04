@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { resolvePhotoUrl } from "@/utils/resolvePhotoUrl";
 import { Car, Camera, AlertTriangle } from "lucide-react";
 import { PhotoCaptureField } from "@/components/ui/PhotoCaptureField";
 import { CheckinPhotoService } from "@/services/supabase/checkinPhotos";
@@ -29,7 +30,7 @@ function PhotosGrid({ photos, className = "" }: { photos: any[]; className?: str
   return (
     <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3 ${className}`}>
       {photos.map((p, idx) => {
-        const photoUrl = p?.publicUrl || p?.url || p?.storagePath || "";
+        const photoUrl = resolvePhotoUrl(p);
         if (!photoUrl) return null;
         
         return (

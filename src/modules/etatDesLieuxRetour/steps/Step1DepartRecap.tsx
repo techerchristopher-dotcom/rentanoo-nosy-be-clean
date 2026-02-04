@@ -1,5 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { resolvePhotoUrl } from "@/utils/resolvePhotoUrl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Car, Gauge, Camera, AlertCircle, CheckCircle2, AlertTriangle, Calendar, Clock } from "lucide-react";
@@ -43,7 +44,7 @@ function PhotosGrid({ photos, className = "" }: { photos: any[]; className?: str
   return (
     <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3 ${className}`}>
       {photos.map((p, idx) => {
-        const photoUrl = p?.publicUrl || p?.url || p?.storagePath || "";
+        const photoUrl = resolvePhotoUrl(p);
         if (!photoUrl) return null;
         
         return (
