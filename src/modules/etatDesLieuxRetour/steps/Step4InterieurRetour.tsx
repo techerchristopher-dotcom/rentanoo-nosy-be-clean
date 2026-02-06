@@ -14,6 +14,7 @@ interface StepProps {
   bookingData?: { startDate?: string; endDate?: string; startTime?: string; endTime?: string; referenceNumber?: number | null };
   bookingId?: string;
   vehicleType?: string | null;
+  onAutoSaveStep4?: () => Promise<void>;
 }
 
 /**
@@ -57,7 +58,7 @@ function PhotosGrid({ photos, className = "" }: { photos: any[]; className?: str
   );
 }
 
-export default function Step4InterieurRetour({ departData, setValue, watch, bookingData, bookingId, vehicleType }: StepProps) {
+export default function Step4InterieurRetour({ departData, setValue, watch, bookingData, bookingId, vehicleType, onAutoSaveStep4 }: StepProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
@@ -127,6 +128,8 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
       const updatedFirstDamage = { ...firstDamageData, photos: [...currentPhotos, ...newPhotos] };
 
       setValue("returnData.step4.interior.newDamages.0", updatedFirstDamage);
+
+      void onAutoSaveStep4?.();
 
       toast({
         title: "📸 Photos uploadées",
@@ -226,6 +229,7 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
               // "Non" = pas de nouveau dégât → isSameAsDepart = true, clear newDamages
               setValue("returnData.step4.interior.isSameAsDepart", true);
               setValue("returnData.step4.interior.newDamages", []);
+              void onAutoSaveStep4?.();
             }}
             className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors border ${
               isNoDamage
@@ -249,6 +253,7 @@ export default function Step4InterieurRetour({ departData, setValue, watch, book
                   photos: []
                 }]);
               }
+              void onAutoSaveStep4?.();
             }}
             className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors border ${
               hasNewDamage

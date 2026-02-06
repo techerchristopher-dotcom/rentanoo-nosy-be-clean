@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { Loader2 } from "lucide-react";
@@ -62,6 +62,10 @@ export default function EtatDesLieuxRetourForm({ bookingId }: EtatDesLieuxRetour
   const [finalizeProgress, setFinalizeProgress] = useState(0);
   const [finalizeLabel, setFinalizeLabel] = useState("");
   const [finalizeError, setFinalizeError] = useState<string | null>(null);
+
+  // Verrous autosave (fire-and-forget, anti-concurrence)
+  const autoSaveLocksStep3 = useRef<Record<string, boolean>>({});
+  const autoSaveLockStep4 = useRef(false);
 
   const totalSteps = steps.length;
 
@@ -182,6 +186,71 @@ export default function EtatDesLieuxRetourForm({ bookingId }: EtatDesLieuxRetour
       return stepNumber;
     });
   };
+
+  const handleAutoSaveStep3 = useCallback(
+    async (zoneKey: string) => {
+      if (autoSaveLocksStep3.current[zoneKey]) return;
+      const checkinDepartId = checkinReturn?.checkin_depart_id;
+      const checkinReturnId = checkinReturn?.id;
+      if (!bookingId || !checkinDepartId || !checkinReturnId || !ownerId || !renterId) return;
+
+      autoSaveLocksStep3.current[zoneKey] = true;
+      try {
+        const section = methods.getValues(`returnData.step3.sections.${zoneKey}`) || {};
+        const sectionPayload = {
+          isSameAsDepart: !!section.isSameAsDepart,
+          newDamages: Array.isArray(section.newDamages) ? section.newDamages : [],
+        };
+        const { error: saveError } = await checkinReturnService.saveReturnStep3Section({
+          bookingId,
+          checkinDepartId,
+          checkinReturnId,
+          ownerId,
+          renterId,
+          sectionKey: zoneKey,
+          sectionPayload,
+        });
+        if (saveError) console.warn("[EtatDesLieuxRetourForm] Autosave step3:", saveError);
+      } catch (err: any) {
+        console.warn("[EtatDesLieuxRetourForm] Autosave step3 (non-bloquant):", err?.message);
+      } finally {
+        autoSaveLocksStep3.current[zoneKey] = false;
+      }
+    },
+    [bookingId, checkinReturn?.checkin_depart_id, checkinReturn?.id, ownerId, renterId, methods]
+  );
+
+  const handleAutoSaveStep4 = useCallback(
+    async () => {
+      if (autoSaveLockStep4.current) return;
+      const checkinDepartId = checkinReturn?.checkin_depart_id;
+      const checkinReturnId = checkinReturn?.id;
+      if (!bookingId || !checkinDepartId || !checkinReturnId || !ownerId || !renterId) return;
+
+      autoSaveLockStep4.current = true;
+      try {
+        const interior = methods.getValues("returnData.step4.interior") || {};
+        const interiorPayload = {
+          isSameAsDepart: interior.isSameAsDepart !== false,
+          newDamages: Array.isArray(interior.newDamages) ? interior.newDamages : [],
+        };
+        const { error: saveError } = await checkinReturnService.saveReturnStep4Interior({
+          bookingId,
+          checkinDepartId,
+          checkinReturnId,
+          ownerId,
+          renterId,
+          interiorPayload,
+        });
+        if (saveError) console.warn("[EtatDesLieuxRetourForm] Autosave step4:", saveError);
+      } catch (err: any) {
+        console.warn("[EtatDesLieuxRetourForm] Autosave step4 (non-bloquant):", err?.message);
+      } finally {
+        autoSaveLockStep4.current = false;
+      }
+    },
+    [bookingId, checkinReturn?.checkin_depart_id, checkinReturn?.id, ownerId, renterId, methods]
+  );
 
   const handleNextFromStep2 = async () => {
     if (!bookingId) {
@@ -616,6 +685,8 @@ export default function EtatDesLieuxRetourForm({ bookingId }: EtatDesLieuxRetour
               bookingId={bookingId}
               vehicleType={vehicleType || null}
               onStartReturn={() => goToStep(2)}
+              onAutoSaveStep3={handleAutoSaveStep3}
+              onAutoSaveStep4={handleAutoSaveStep4}
             />
           ) : (
             <div className="text-center p-8 text-muted-foreground">Étape inconnue</div>

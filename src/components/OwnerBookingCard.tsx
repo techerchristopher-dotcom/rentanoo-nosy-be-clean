@@ -1205,6 +1205,24 @@ export default function OwnerBookingCard({
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Retour complété
                           </Badge>
+                          {/* Bouton Ouvrir un litige : visible uniquement si EDL retour complété et nouveaux dégâts signalés */}
+                          {(booking.checkinReturn as any)?.has_new_damage === true && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toast({
+                                  title: 'Fonctionnalité à venir',
+                                  description: "L'ouverture de litige sera disponible prochainement.",
+                                })
+                              }}
+                              className="flex-1 sm:flex-none"
+                            >
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Ouvrir un litige
+                            </Button>
+                          )}
                         </div>
                       ) : (
                         /* Si le retour n'est pas complété, afficher le badge départ seul ou le bouton retour */

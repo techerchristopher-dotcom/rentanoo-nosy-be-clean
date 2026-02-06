@@ -14,6 +14,7 @@ interface StepProps {
   bookingData?: { startDate?: string; endDate?: string; startTime?: string; endTime?: string; referenceNumber?: number | null };
   bookingId?: string;
   vehicleType?: string | null;
+  onAutoSaveStep3?: (zoneKey: string) => Promise<void>;
 }
 
 // Configuration des zones extérieures RETOUR
@@ -90,6 +91,7 @@ export default function Step3ExterieurRetour({
   bookingData,
   bookingId,
   vehicleType,
+  onAutoSaveStep3,
 }: StepProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
@@ -152,6 +154,8 @@ export default function Step3ExterieurRetour({
 
       // Mettre à jour le form state
       setValue(`returnData.step3.sections.${zoneKey}.newDamages.0`, updatedFirstDamage);
+
+      void onAutoSaveStep3?.(zoneKey);
 
       // Trouver le label de la zone
       const zoneLabel = zones.find(z => z.key === zoneKey)?.label || zoneKey;
@@ -229,6 +233,7 @@ export default function Step3ExterieurRetour({
                           true
                         );
                         setValue(`returnData.step3.sections.${zone.key}.newDamages`, []);
+                        void onAutoSaveStep3?.(zone.key);
                       }}
                       className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors border ${
                         isNoDamage
@@ -255,6 +260,7 @@ export default function Step3ExterieurRetour({
                             photos: []
                           }]);
                         }
+                        void onAutoSaveStep3?.(zone.key);
                       }}
                       className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors border ${
                         hasNewDamage

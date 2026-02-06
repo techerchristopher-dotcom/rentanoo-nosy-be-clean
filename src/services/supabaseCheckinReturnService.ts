@@ -16,6 +16,8 @@ export interface CheckinReturn {
   data: any;
   snapshot_legal?: any;
   legal_pdf_url?: string | null;
+  has_new_damage?: boolean;
+  new_damage_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -106,6 +108,8 @@ export const SupabaseCheckinReturnService = {
     renter_id: string | null;
     status?: string;
     data: any;
+    has_new_damage?: boolean;
+    new_damage_count?: number;
   }): Promise<{ data: CheckinReturn | null; error: string | null }> {
     try {
       const { checkin_return_id, ...dataToSave } = payload;
@@ -159,16 +163,24 @@ export const SupabaseCheckinReturnService = {
 
         const nextStatus = dataToSave.status || existing.status || "draft";
 
+        const updatePayload: Record<string, unknown> = {
+          status: nextStatus,
+          data: mergedData,
+          checkin_depart_id: dataToSave.checkin_depart_id,
+          owner_id: dataToSave.owner_id,
+          renter_id: dataToSave.renter_id,
+          updated_at: new Date().toISOString(),
+        };
+        if (typeof dataToSave.has_new_damage === "boolean") {
+          updatePayload.has_new_damage = dataToSave.has_new_damage;
+        }
+        if (typeof dataToSave.new_damage_count === "number") {
+          updatePayload.new_damage_count = dataToSave.new_damage_count;
+        }
+
         const { data, error } = await supabase
           .from("checkin_return" as any)
-          .update({
-            status: nextStatus,
-            data: mergedData,
-            checkin_depart_id: dataToSave.checkin_depart_id,
-            owner_id: dataToSave.owner_id,
-            renter_id: dataToSave.renter_id,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq("id", targetId)
           .select()
           .single();

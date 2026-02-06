@@ -170,6 +170,8 @@ const OwnerBookings = () => {
           status: checkinReturnEntry.status,
           legalPdfUrl: checkinReturnEntry.legal_pdf_url || null,
           updatedAt: checkinReturnEntry.updated_at || null,
+          has_new_damage: checkinReturnEntry.has_new_damage ?? false,
+          new_damage_count: checkinReturnEntry.new_damage_count ?? 0,
         } : undefined;
 
         // Debug pour voir les motifs d'annulation

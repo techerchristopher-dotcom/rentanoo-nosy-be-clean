@@ -29,6 +29,21 @@ export interface ReturnSectionPayload {
   photosRetour?: any[];
 }
 
+/**
+ * Calcule les flags dommages à partir du JSONB data.
+ * Source of truth : step3.sections et step4.interior.
+ */
+function computeDamageFlags(data: any): { has_new_damage: boolean; new_damage_count: number } {
+  let count = 0;
+  const step3 = data?.step3?.sections || {};
+  for (const s of Object.values(step3) as any[]) {
+    if (s?.isSameAsDepart === false && Array.isArray(s?.newDamages)) count += s.newDamages.length;
+  }
+  const step4 = data?.step4?.interior;
+  if (step4?.isSameAsDepart === false && Array.isArray(step4?.newDamages)) count += step4.newDamages.length;
+  return { has_new_damage: count > 0, new_damage_count: count };
+}
+
 export const checkinReturnService = {
   /**
    * Crée ou récupère un check-in retour draft pour un booking donné.
@@ -200,6 +215,9 @@ export const checkinReturnService = {
       step3: mergedStep3,
     };
 
+    const mergedData = { ...(existing?.data || {}), ...patch };
+    const flags = computeDamageFlags(mergedData);
+
     return SupabaseCheckinReturnService.saveCheckinReturnDraft({
       checkin_return_id: targetId,
       booking_id: bookingId,
@@ -207,6 +225,8 @@ export const checkinReturnService = {
       owner_id: ownerId,
       renter_id: renterId,
       data: patch,
+      has_new_damage: flags.has_new_damage,
+      new_damage_count: flags.new_damage_count,
     });
   },
 
@@ -263,6 +283,9 @@ export const checkinReturnService = {
 
     const patch = { step4: mergedStep4 };
 
+    const mergedData = { ...(existing?.data || {}), ...patch };
+    const flags = computeDamageFlags(mergedData);
+
     return SupabaseCheckinReturnService.saveCheckinReturnDraft({
       checkin_return_id: targetId,
       booking_id: bookingId,
@@ -270,6 +293,8 @@ export const checkinReturnService = {
       owner_id: ownerId,
       renter_id: renterId,
       data: patch,
+      has_new_damage: flags.has_new_damage,
+      new_damage_count: flags.new_damage_count,
     });
   },
 
@@ -476,6 +501,48 @@ export const checkinReturnService = {
         });
         if (mergeResult.error) {
           return { data: null, error: `Erreur lors de la sauvegarde de step7: ${mergeResult.error}` };
+        }
+
+        // Filet de sécurité : recalculer les flags dommages (non-bloquant)
+        try {
+          const mergedData = mergeResult.data?.data || { ...(current.data || {}), step7: step7Payload };
+          const flags = computeDamageFlags(mergedData);
+          const flagsResult = await SupabaseCheckinReturnService.saveCheckinReturnDraft({
+            checkin_return_id: checkinReturnId,
+            booking_id: bookingId,
+            checkin_depart_id: current.checkin_depart_id,
+            owner_id: ownerId,
+            renter_id: renterId,
+            data: {},
+            has_new_damage: flags.has_new_damage,
+            new_damage_count: flags.new_damage_count,
+          });
+          if (flagsResult.error) {
+            console.warn("[CheckinReturnService] ⚠️ Filet de sécurité flags dommages (non-bloquant):", flagsResult.error);
+          }
+        } catch (flagsErr: any) {
+          console.warn("[CheckinReturnService] ⚠️ Filet de sécurité flags dommages (non-bloquant):", flagsErr?.message);
+        }
+      } else {
+        // Filet de sécurité même sans step7 : recalculer les flags sur current.data (non-bloquant)
+        try {
+          const mergedData = current.data || {};
+          const flags = computeDamageFlags(mergedData);
+          const flagsResult = await SupabaseCheckinReturnService.saveCheckinReturnDraft({
+            checkin_return_id: checkinReturnId,
+            booking_id: bookingId,
+            checkin_depart_id: current.checkin_depart_id,
+            owner_id: ownerId,
+            renter_id: renterId,
+            data: {},
+            has_new_damage: flags.has_new_damage,
+            new_damage_count: flags.new_damage_count,
+          });
+          if (flagsResult.error) {
+            console.warn("[CheckinReturnService] ⚠️ Filet de sécurité flags dommages (non-bloquant):", flagsResult.error);
+          }
+        } catch (flagsErr: any) {
+          console.warn("[CheckinReturnService] ⚠️ Filet de sécurité flags dommages (non-bloquant):", flagsErr?.message);
         }
       }
 

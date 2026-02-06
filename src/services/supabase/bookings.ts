@@ -435,7 +435,7 @@ export class SupabaseBookingsService {
         .select(`
           *,
           checkin_depart:checkin_depart(id, status, legal_pdf_url, booking_id),
-          checkin_return:checkin_return(id, status, legal_pdf_url, booking_id, checkin_depart_id, updated_at)
+          checkin_return:checkin_return(id, status, legal_pdf_url, booking_id, checkin_depart_id, updated_at, has_new_damage, new_damage_count)
         `)
         .in('vehicle_id', vehicleIds)
         .order('created_at', { ascending: false });
