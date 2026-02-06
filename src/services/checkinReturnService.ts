@@ -524,6 +524,73 @@ export const checkinReturnService = {
       });
 
       // ============================================================================
+      // ÉTAPE 4.6 : Appel webhook n8n pour envoi email EDL RETOUR (non-bloquant)
+      // Structure alignée sur EDL DÉPART (checkinDepartService.ts)
+      // ============================================================================
+      if (statusResult.data.status === "completed") {
+        const n8nWebhookUrl =
+          (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_N8N_WEBHOOK_CHECKIN_RETURN_URL) ||
+          "https://n8n.srv1285649.hstgr.cloud/webhook/7da2e622-bc36-44b3-b716-68e088522a54";
+
+        // Payload strictement identique au départ (event, checkinId, bookingId, timestamp)
+        const n8nPayload = {
+          event: "checkin_return_completed",
+          checkinId: checkinReturnId,
+          bookingId,
+          timestamp: new Date().toISOString(),
+        };
+
+        const bodyStr = JSON.stringify(n8nPayload);
+        console.log("[CheckinReturnService] 📧 Appel webhook n8n pour envoi email EDL retour...");
+        // DEBUG : preuve que le body part bien (si n8n reçoit body: {}, vérifier côté n8n)
+        console.log("[CheckinReturnService] DEBUG webhook:", {
+          url: n8nWebhookUrl,
+          method: "POST",
+          body: bodyStr,
+          payloadKeys: Object.keys(n8nPayload),
+        });
+
+        try {
+          // Timeout de 8 secondes pour éviter de bloquer le front (identique départ)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+            controller.abort();
+          }, 8000);
+
+          const n8nResponse = await fetch(n8nWebhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: bodyStr,
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!n8nResponse.ok) {
+            console.warn("[CheckinReturnService] ⚠️ Webhook n8n (EDL retour) erreur:", {
+              status: n8nResponse.status,
+              statusText: n8nResponse.statusText,
+            });
+          } else {
+            console.log("[CheckinReturnService] ✅ Webhook n8n (EDL retour) appelé avec succès");
+          }
+        } catch (n8nError: any) {
+          // Ne pas bloquer la finalisation si le webhook échoue
+          const isTimeout =
+            n8nError?.name === "AbortError" ||
+            n8nError?.code === "ETIMEDOUT" ||
+            (typeof n8nError?.message === "string" && n8nError.message.toLowerCase().includes("timeout"));
+
+          console.warn("[CheckinReturnService] ⚠️ Erreur appel webhook n8n (EDL retour, non-bloquant):", {
+            message: n8nError?.message,
+            isTimeout,
+          });
+        }
+      }
+
+      // ============================================================================
       // ÉTAPE 4.5 : Mettre à jour le statut de la réservation de "confirmed" à "terminated"
       // ============================================================================
       console.log("[CheckinReturnService] 🔄 Étape 4.5 : Vérification et mise à jour du statut de la réservation...");
