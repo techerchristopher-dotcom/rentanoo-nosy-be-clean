@@ -56,6 +56,7 @@
     "rechercher_une_ville_de_prise_en_charge": "Search for a pickup location",
     "roadster": "Roadster",
     "se_connecter": "Sign in",
+    "sinistre_caution": "Damage & deposit",
     "search": "Search",
     "slectionner_les_dates": "Select dates",
     "slectionner_les_heures": "Select times",
@@ -978,5 +979,97 @@
     "errorNetwork": "Unable to contact the server. Please check your internet connection.",
     "errorTimeout": "The request took too long. Please try again.",
     "fileTooLarge": "File must not exceed 10MB"
+  },
+  "sinistreCaution": {
+    "metaTitle": "Damage & deposit | RENTANOO - Nosy Be rental",
+    "metaDescription": "In case of incident during your rental: damage and deposit procedure, card insurance, documents to provide. Rentanoo supports you.",
+    "mailSubject": "Quick update following your return inspection",
+    "illustrationComingSoon": "Illustration coming soon (we'll add it later)",
+    "hero": {
+      "subtitle": "Damage & deposit",
+      "title": "Don't panic: we stay calm and take it step by step.",
+      "description": "A small incident can happen during a rental. Here we explain what happens next simply, to avoid stress and keep things smooth.",
+      "bullet1": "No immediate charge",
+      "bullet2": "The deposit is not charged automatically",
+      "bullet3": "It only serves (if needed) to advance real costs",
+      "bullet4": "Never beyond the justified amount",
+      "ctaProcess": "Understand the procedure",
+      "ctaContact": "Contact Rentanoo",
+      "tip": "Tip: keep this link, it's meant to be shared from our emails."
+    },
+    "illustration": {
+      "hero": "Header illustration (relaxed couple + scooter, Nosy Be)",
+      "process": "Process illustration (timeline / steps)",
+      "caution": "Deposit illustration (justified amount)",
+      "assurance": "Insurance illustration (card / protection)",
+      "documents": "Documents illustration (invoice / papers)",
+      "cta": "Zen + process illustration (renter)",
+      "faq": "FAQ / support illustration"
+    },
+    "process": {
+      "title": "How it works, in concrete terms",
+      "subtitle": "We keep things simple: the owner quotes, Rentanoo verifies, then we inform you before any decision.",
+      "step1Title": "1) Owner's quote (48h max)",
+      "step1Desc": "The owner estimates the repairs needed precisely.",
+      "step2Title": "2) Rentanoo verification",
+      "step2Desc": "We ensure amounts are consistent, justified and documented.",
+      "step3Title": "3) Information + next steps",
+      "step3Desc": "Nothing happens \"behind your back\". We keep you informed before any action."
+    },
+    "caution": {
+      "title": "The deposit: what it's really for",
+      "subtitle": "The deposit isn't there to \"punish\". It mainly serves to advance real costs if a repair is needed — and only with supporting documents.",
+      "bullet1": "No automatic charge",
+      "bullet2": "If withheld: only for justified costs",
+      "bullet3": "Never beyond the repair amount",
+      "note": "Important: if damages are below the deposit amount, the remainder is not charged."
+    },
+    "assurance": {
+      "title": "Card payment: a real advantage",
+      "subtitle": "In many cases, you can use your card insurance (or travel/personal insurance).",
+      "card": "The deposit can serve to advance costs, then you can request reimbursement through your insurance, depending on your contract.",
+      "note": "(We don't replace your insurance: we help you build a clear file.)"
+    },
+    "documents": {
+      "title": "Documents: we make it easy for you",
+      "subtitle": "Rentanoo will provide the documents needed for your file (invoice, supporting documents, useful elements).",
+      "bullet1": "Invoice / supporting documents",
+      "bullet2": "File elements (photos if needed)",
+      "bullet3": "Booking references"
+    },
+    "cta": {
+      "title": "Key points reminder (stay calm)",
+      "subtitle": "In short: don't panic, we handle this calmly.",
+      "bullet1": "No immediate charge: nothing is taken \"automatically\".",
+      "bullet2": "The deposit only serves as an advance if needed.",
+      "bullet3": "Never beyond the real and justified repair amount.",
+      "bullet4": "We'll provide invoice + documents for your insurance (card / travel).",
+      "bullet5": "The owner has up to 48h to quote, then Rentanoo verifies.",
+      "button": "Contact Rentanoo"
+    },
+    "faq": {
+      "intro": "Frequently asked questions — we answer simply.",
+      "q1": "Will my entire deposit be charged?",
+      "a1": "No. If there are repairs, only the part corresponding to real and justified costs can be withheld. Nothing is done without verification.",
+      "q2": "When can an amount be withheld?",
+      "a2": "Only if damage is confirmed and quoted (estimate/invoice), then validated after Rentanoo verification.",
+      "q3": "Why not go directly through the vehicle insurance?",
+      "a3": "Depending on the case, vehicle insurance may involve specific procedures and delays. The \"deposit + documents\" route is often faster to restore the vehicle, while allowing you to get reimbursed via your insurance (card / travel).",
+      "q4": "Can I use my card insurance?",
+      "a4": "Often yes. Many cards include coverage (conditions vary). Card payment is a real plus: we provide the documents you need for your file.",
+      "q5": "What documents will I receive?",
+      "a5": "Depending on the case: invoice, supporting documents, file elements and useful references. Everything needed to submit a reimbursement request calmly.",
+      "q6": "What if I disagree with the amount?",
+      "a6": "You can reply and discuss with the team. The goal: a fair, documented solution without tension.",
+      "q7": "What are the deadlines?",
+      "a7": "The owner has up to 48h to quote. Then Rentanoo verifies the documents. You're informed at each important step."
+    },
+    "contact": {
+      "title": "A question? We're here.",
+      "description": "If something isn't clear, contact us: we reply quickly, and always calmly.",
+      "emailCta": "Email support",
+      "homeCta": "Back to home",
+      "tip": "Tip: in your message, include your booking reference if you have it."
+    }
   }
 }

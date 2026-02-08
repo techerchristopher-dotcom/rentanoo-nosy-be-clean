@@ -20,6 +20,7 @@ import ProfileTest from "./pages/ProfileTest";
 import BookingDiscussion from "./pages/booking/BookingDiscussion";
 import MessageToOwners from "./pages/booking/MessageToOwners";
 import Legal from "./pages/legal/Legal";
+import SinistreCaution from "./pages/sinistre-caution/SinistreCaution";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
@@ -84,6 +85,7 @@ const App = () => (
             <Route path="/moto/:license/booking/discussion" element={<BookingDiscussion />} />
             <Route path="/booking/message" element={<MessageToOwners />} />
             <Route path="/legal" element={<Legal />} />
+            <Route path="/sinistre-caution" element={<SinistreCaution />} />
             <Route path="/contact" element={<Contact />} />
             
             {/* Routes non critiques (lazy-loaded) */}

@@ -54,6 +54,7 @@
     "rinitialiser": "Reimposta",
     "rinitialiser_les_filtres": "Reimposta filtri",
     "roadster": "Roadster",
+    "sinistre_caution": "Danni e cauzione",
     "se_connecter": "Accedi",
     "search": "Cerca",
     "slectionner_les_dates": "Seleziona le date",
@@ -956,5 +957,97 @@
     "error": "Errore",
     "errorGeneric": "Errore, riprova.",
     "fileTooLarge": "Il file non deve superare 10MB"
+  },
+  "sinistreCaution": {
+    "metaTitle": "Danni e cauzione | RENTANOO - Noleggio Nosy Be",
+    "metaDescription": "In caso di incidente durante il noleggio: procedura sinistro e cauzione, assicurazione carta, documenti da fornire. Rentanoo ti accompagna.",
+    "mailSubject": "Breve aggiornamento dopo il tuo stato di consegna",
+    "illustrationComingSoon": "Illustrazione in arrivo (la aggiungeremo successivamente)",
+    "hero": {
+      "subtitle": "Danni e cauzione",
+      "title": "Niente panico: restiamo calmi e procediamo passo dopo passo.",
+      "description": "Un piccolo incidente può capitare durante un noleggio. Qui ti spieghiamo cosa succede dopo in modo semplice, per evitare stress e mantenere tutto fluido.",
+      "bullet1": "Nessun addebito immediato",
+      "bullet2": "La cauzione non viene addebitata automaticamente",
+      "bullet3": "Serve solo (se necessario) ad anticipare i costi reali",
+      "bullet4": "Mai oltre l'importo giustificato",
+      "ctaProcess": "Comprendere la procedura",
+      "ctaContact": "Contattare Rentanoo",
+      "tip": "Consiglio: tieni questo link, è pensato per essere condiviso dalle nostre email."
+    },
+    "illustration": {
+      "hero": "Illustrazione header (coppia rilassata + scooter, Nosy Be)",
+      "process": "Illustrazione processo (timeline / tappe)",
+      "caution": "Illustrazione cauzione (importo giustificato)",
+      "assurance": "Illustrazione assicurazione (carta / protezione)",
+      "documents": "Illustrazione documenti (fattura / pratiche)",
+      "cta": "Illustrazione zen + processo (noleggiatore)",
+      "faq": "Illustrazione FAQ / assistenza"
+    },
+    "process": {
+      "title": "Come funziona, concretamente",
+      "subtitle": "Teniamo le cose semplici: il proprietario fa il preventivo, Rentanoo verifica, poi ti informiamo prima di ogni decisione.",
+      "step1Title": "1) Preventivo del proprietario (max 48h)",
+      "step1Desc": "Il proprietario stima precisamente le riparazioni necessarie.",
+      "step2Title": "2) Verifica Rentanoo",
+      "step2Desc": "Ci assicuriamo che gli importi siano coerenti, giustificati e documentati.",
+      "step3Title": "3) Informazione + prossimi passi",
+      "step3Desc": "Niente si fa \"alle tue spalle\". Ti teniamo aggiornato prima di ogni azione."
+    },
+    "caution": {
+      "title": "La cauzione: a cosa serve davvero",
+      "subtitle": "La cauzione non è lì per \"punire\". Serve soprattutto ad anticipare i costi reali se è necessaria una riparazione — e solo con giustificativi.",
+      "bullet1": "Nessun addebito automatico",
+      "bullet2": "Se trattenuta: solo su costi giustificati",
+      "bullet3": "Mai oltre l'importo della riparazione",
+      "note": "Importante: se i danni sono inferiori all'importo della cauzione, il resto non viene addebitato."
+    },
+    "assurance": {
+      "title": "Pagamento con carta: un vero vantaggio",
+      "subtitle": "In molti casi puoi fare valere l'assicurazione della tua carta (o un'assicurazione viaggio/personale).",
+      "card": "La cauzione può servire ad anticipare i costi, poi puoi richiedere il rimborso tramite la tua assicurazione, secondo il tuo contratto.",
+      "note": "(Non sostituiamo la tua assicurazione: ti aiutiamo a costituire un fascicolo chiaro.)"
+    },
+    "documents": {
+      "title": "I documenti: te ne facilitiamo la vita",
+      "subtitle": "Rentanoo metterà a disposizione i documenti necessari per il tuo fascicolo (fattura, giustificativi, elementi utili).",
+      "bullet1": "Fattura / giustificativi",
+      "bullet2": "Elementi del fascicolo (foto se necessario)",
+      "bullet3": "Riferimenti della prenotazione"
+    },
+    "cta": {
+      "title": "Promemoria punti chiave (restiamo calmi)",
+      "subtitle": "In sintesi: niente panico, gestiamo tutto con serenità.",
+      "bullet1": "Nessun addebito immediato: nulla viene prelevato \"automaticamente\".",
+      "bullet2": "La cauzione serve solo da anticipo se necessario.",
+      "bullet3": "Mai oltre l'importo reale e giustificato delle riparazioni.",
+      "bullet4": "Ti forniremo fattura + giustificativi per la tua assicurazione (carta / viaggio).",
+      "bullet5": "Il proprietario ha fino a 48h per fare il preventivo, poi Rentanoo verifica.",
+      "button": "Contattare Rentanoo"
+    },
+    "faq": {
+      "intro": "Domande frequenti — rispondiamo in modo semplice.",
+      "q1": "Sarà addebitata tutta la mia cauzione?",
+      "a1": "No. Se ci sono riparazioni, solo la parte corrispondente ai costi reali e giustificati può essere trattenuta. Niente si fa senza verifica.",
+      "q2": "Quando può essere trattenuto un importo?",
+      "a2": "Solo se un danno è confermato e quotato (preventivo/fattura), poi validato dopo verifica da Rentanoo.",
+      "q3": "Perché non passare direttamente dall'assicurazione del veicolo?",
+      "a3": "A seconda dei casi, l'assicurazione del veicolo può implicare procedure e termini specifici. Il percorso \"cauzione + giustificativi\" è spesso più veloce per rimettere il veicolo in condizioni, permettendoti comunque di farti rimborsare tramite la tua assicurazione (carta / viaggio).",
+      "q4": "Posso fare valere l'assicurazione della mia carta?",
+      "a4": "Spesso sì. Molte carte includono una copertura (condizioni variabili). Il pagamento con carta è un vero vantaggio: ti forniamo i documenti necessari per il tuo fascicolo.",
+      "q5": "Quali documenti riceverò?",
+      "a5": "A seconda del caso: fattura, giustificativi, elementi del fascicolo e riferimenti utili. Tutto per presentare serenamente una richiesta di rimborso.",
+      "q6": "E se non sono d'accordo con l'importo?",
+      "a6": "Potrai rispondere e discutere con il team. L'obiettivo: una soluzione giusta, documentata e senza tensioni.",
+      "q7": "Quali sono i termini?",
+      "a7": "Il proprietario ha fino a 48h per fare il preventivo. Poi Rentanoo verifica i documenti. Sei informato ad ogni passaggio importante."
+    },
+    "contact": {
+      "title": "Una domanda? Siamo qui.",
+      "description": "Se qualcosa non è chiaro, contattaci: rispondiamo rapidamente e sempre con calma.",
+      "emailCta": "Scrivere al supporto",
+      "homeCta": "Torna alla home",
+      "tip": "Consiglio: nel tuo messaggio, indica il riferimento della prenotazione se ce l'hai."
+    }
   }
 }

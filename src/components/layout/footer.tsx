@@ -60,6 +60,9 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-2 md:mb-4 text-sm md:text-base">{t('common.lgal')}</h3>
             <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
               <li>
+                <Link to="/sinistre-caution" className="text-muted-foreground hover:text-primary transition-colors">{t('common.sinistre_caution', 'Sinistre & caution')}</Link>
+              </li>
+              <li>
                 <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">{t('common.conditions_dutilisation')}</Link>
               </li>
               <li>

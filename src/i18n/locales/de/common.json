@@ -54,6 +54,7 @@
     "rinitialiser": "Zurücksetzen",
     "rinitialiser_les_filtres": "Filter zurücksetzen",
     "roadster": "Roadster",
+    "sinistre_caution": "Schaden & Kaution",
     "se_connecter": "Anmelden",
     "search": "Suchen",
     "slectionner_les_dates": "Daten auswählen",
@@ -956,5 +957,97 @@
     "error": "Fehler",
     "errorGeneric": "Fehler, bitte versuchen Sie es erneut.",
     "fileTooLarge": "Die Datei darf 10MB nicht überschreiten"
+  },
+  "sinistreCaution": {
+    "metaTitle": "Schaden & Kaution | RENTANOO - Vermietung Nosy Be",
+    "metaDescription": "Bei Schaden während Ihrer Miete: Verfahren, Kaution, Kartenversicherung, erforderliche Unterlagen. Rentanoo begleitet Sie.",
+    "mailSubject": "Kurze Zusammenfassung nach Ihrer Rückgabebesichtigung",
+    "illustrationComingSoon": "Illustration in Kürze (wir fügen sie später hinzu)",
+    "hero": {
+      "subtitle": "Schaden & Kaution",
+      "title": "Keine Panik: Wir bleiben gelassen und gehen Schritt für Schritt vor.",
+      "description": "Ein kleiner Unfall kann während einer Miete passieren. Hier erklären wir Ihnen einfach, was als Nächstes passiert – ohne Stress und reibungslos.",
+      "bullet1": "Keine sofortige Belastung",
+      "bullet2": "Die Kaution wird nicht automatisch abgebucht",
+      "bullet3": "Sie dient nur (falls nötig) dazu, die tatsächlichen Kosten vorzuschießen",
+      "bullet4": "Niemals über den begründeten Betrag hinaus",
+      "ctaProcess": "Das Verfahren verstehen",
+      "ctaContact": "Rentanoo kontaktieren",
+      "tip": "Tipp: Behalten Sie diesen Link, er ist zum Teilen aus unseren E-Mails gedacht."
+    },
+    "illustration": {
+      "hero": "Header-Illustration (entspanntes Paar + Roller, Nosy Be)",
+      "process": "Prozess-Illustration (Zeitplan / Schritte)",
+      "caution": "Kaution-Illustration (begründeter Betrag)",
+      "assurance": "Versicherung-Illustration (Karte / Schutz)",
+      "documents": "Dokumente-Illustration (Rechnung / Unterlagen)",
+      "cta": "Zen + Prozess-Illustration (Mieter)",
+      "faq": "FAQ / Support-Illustration"
+    },
+    "process": {
+      "title": "So funktioniert es, ganz konkret",
+      "subtitle": "Wir halten es einfach: Der Vermieter schätzt, Rentanoo prüft, dann informieren wir Sie vor jeder Entscheidung.",
+      "step1Title": "1) Schätzung des Vermieters (max. 48h)",
+      "step1Desc": "Der Vermieter schätzt die erforderlichen Reparaturen genau ab.",
+      "step2Title": "2) Rentanoo-Prüfung",
+      "step2Desc": "Wir stellen sicher, dass die Beträge stimmig, begründet und dokumentiert sind.",
+      "step3Title": "3) Information + nächste Schritte",
+      "step3Desc": "Nichts passiert \"hinter Ihrem Rücken\". Wir halten Sie vor jeder Maßnahme auf dem Laufenden."
+    },
+    "caution": {
+      "title": "Die Kaution: wofür sie wirklich dient",
+      "subtitle": "Die Kaution ist nicht dazu da zu \"bestrafen\". Sie dient vor allem dazu, die tatsächlichen Kosten vorzuschießen, wenn eine Reparatur nötig ist — und nur mit Nachweisen.",
+      "bullet1": "Keine automatische Belastung",
+      "bullet2": "Bei Einbehalt: nur für begründete Kosten",
+      "bullet3": "Niemals über den Reparaturbetrag hinaus",
+      "note": "Wichtig: Liegen die Schäden unter dem Kautionbetrag, wird der Rest nicht abgebucht."
+    },
+    "assurance": {
+      "title": "Kartenzahlung: ein echter Vorteil",
+      "subtitle": "In vielen Fällen können Sie Ihre Kartenversicherung (oder Reise-/Privatversicherung) nutzen.",
+      "card": "Die Kaution kann dazu dienen, Kosten vorzuschießen; dann können Sie je nach Vertrag die Erstattung über Ihre Versicherung beantragen.",
+      "note": "(Wir ersetzen nicht Ihre Versicherung: wir helfen Ihnen, eine klare Akte zusammenzustellen.)"
+    },
+    "documents": {
+      "title": "Dokumente: wir machen es Ihnen einfach",
+      "subtitle": "Rentanoo stellt die für Ihre Akte nötigen Unterlagen bereit (Rechnung, Nachweise, nützliche Elemente).",
+      "bullet1": "Rechnung / Nachweise",
+      "bullet2": "Aktenunterlagen (Fotos bei Bedarf)",
+      "bullet3": "Buchungsreferenzen"
+    },
+    "cta": {
+      "title": "Erinnerung an die wichtigsten Punkte (ruhig bleiben)",
+      "subtitle": "Kurz: Keine Panik, wir regeln das gelassen.",
+      "bullet1": "Keine sofortige Belastung: es wird nichts \"automatisch\" abgebucht.",
+      "bullet2": "Die Kaution dient nur bei Bedarf als Vorschuss.",
+      "bullet3": "Niemals über den tatsächlichen und begründeten Reparaturbetrag hinaus.",
+      "bullet4": "Wir liefern Rechnung + Nachweise für Ihre Versicherung (Karte / Reise).",
+      "bullet5": "Der Vermieter hat bis zu 48h zum Schätzen, dann prüft Rentanoo.",
+      "button": "Rentanoo kontaktieren"
+    },
+    "faq": {
+      "intro": "Häufig gestellte Fragen — wir antworten einfach.",
+      "q1": "Wird meine gesamte Kaution abgebucht?",
+      "a1": "Nein. Bei Reparaturen kann nur der Teil einbehalten werden, der den tatsächlichen und begründeten Kosten entspricht. Nichts geschieht ohne Prüfung.",
+      "q2": "Wann kann ein Betrag einbehalten werden?",
+      "a2": "Nur wenn ein Schaden bestätigt und geschätzt ist (Kostenvoranschlag/Rechnung), dann nach Rentanoo-Prüfung validiert.",
+      "q3": "Warum nicht direkt über die Fahrzeugversicherung?",
+      "a3": "Je nach Fall kann die Fahrzeugversicherung bestimmte Abläufe und Fristen bedeuten. Der Weg \"Kaution + Nachweise\" ist oft schneller, um das Fahrzeug wieder instand zu setzen und Ihnen gleichzeitig die Erstattung über Ihre Versicherung (Karte / Reise) zu ermöglichen.",
+      "q4": "Kann ich meine Kartenversicherung nutzen?",
+      "a4": "Oft ja. Viele Karten bieten Deckung (Bedingungen variieren). Kartenzahlung ist ein echter Pluspunkt: wir liefern die Dokumente für Ihre Akte.",
+      "q5": "Welche Dokumente erhalte ich?",
+      "a5": "Je nach Fall: Rechnung, Nachweise, Aktenunterlagen und nützliche Referenzen. Alles, um ruhig einen Erstattungsantrag einzureichen.",
+      "q6": "Was, wenn ich mit dem Betrag nicht einverstanden bin?",
+      "a6": "Sie können antworten und mit dem Team besprechen. Das Ziel: eine faire, dokumentierte Lösung ohne Spannungen.",
+      "q7": "Welche Fristen gelten?",
+      "a7": "Der Vermieter hat bis zu 48h zum Schätzen. Dann prüft Rentanoo die Unterlagen. Sie werden bei jedem wichtigen Schritt informiert."
+    },
+    "contact": {
+      "title": "Eine Frage? Wir sind für Sie da.",
+      "description": "Wenn etwas unklar ist, kontaktieren Sie uns: wir antworten schnell und immer gelassen.",
+      "emailCta": "Support per E-Mail",
+      "homeCta": "Zurück zur Startseite",
+      "tip": "Tipp: Fügen Sie in Ihrer Nachricht Ihre Buchungsreferenz hinzu, falls vorhanden."
+    }
   }
 }

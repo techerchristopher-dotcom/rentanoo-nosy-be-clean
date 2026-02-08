@@ -56,6 +56,7 @@
     "rechercher_une_ville_de_prise_en_charge": "Rechercher une ville de prise en charge",
     "roadster": "Roadster",
     "se_connecter": "Se connecter",
+    "sinistre_caution": "Sinistre & caution",
     "search": "Rechercher",
     "slectionner_les_dates": "Sélectionner les dates",
     "slectionner_les_heures": "Sélectionner les heures",
@@ -981,5 +982,97 @@
     "errorNetwork": "Impossible de contacter le serveur. Vérifiez votre connexion internet.",
     "errorTimeout": "La requête a pris trop de temps. Veuillez réessayer.",
     "fileTooLarge": "Le fichier ne doit pas dépasser 10MB"
+  },
+  "sinistreCaution": {
+    "metaTitle": "Sinistre & caution | RENTANOO - Location Nosy Be",
+    "metaDescription": "En cas d'incident pendant votre location : procédure sinistre et caution, assurance CB, documents à fournir. Rentanoo vous accompagne.",
+    "mailSubject": "Petit point suite à votre état des lieux de retour",
+    "illustrationComingSoon": "Illustration à venir (nous l'ajouterons ensuite)",
+    "hero": {
+      "subtitle": "Sinistre & caution",
+      "title": "Pas de panique : on reste zen, et on avance étape par étape.",
+      "description": "Un petit incident peut arriver pendant une location. Ici, on vous explique la suite simplement, pour éviter le stress et garder les choses fluides.",
+      "bullet1": "Aucun débit immédiat",
+      "bullet2": "La caution n'est pas prélevée automatiquement",
+      "bullet3": "Elle sert uniquement (si besoin) à avancer les frais réels",
+      "bullet4": "Jamais au-delà du montant justifié",
+      "ctaProcess": "Comprendre la procédure",
+      "ctaContact": "Contacter Rentanoo",
+      "tip": "Astuce : gardez ce lien, il est prévu pour être partagé depuis nos emails."
+    },
+    "illustration": {
+      "hero": "Illustration header (couple zen + scooter, Nosy Be)",
+      "process": "Illustration process (timeline / étapes)",
+      "caution": "Illustration caution (montant justifié)",
+      "assurance": "Illustration assurance (carte bancaire / protection)",
+      "documents": "Illustration documents (facture / pièces)",
+      "cta": "Illustration zen + process (locataire)",
+      "faq": "Illustration FAQ / assistance"
+    },
+    "process": {
+      "title": "Comment ça se passe, très concrètement",
+      "subtitle": "On garde les choses simples : le loueur chiffre, Rentanoo vérifie, puis on vous informe avant toute décision.",
+      "step1Title": "1) Chiffrage du loueur (48h max)",
+      "step1Desc": "Le loueur estime précisément les réparations nécessaires.",
+      "step2Title": "2) Vérification Rentanoo",
+      "step2Desc": "On s'assure que les montants sont cohérents, justifiés et documentés.",
+      "step3Title": "3) Information + suite",
+      "step3Desc": "Rien ne se fait \"dans votre dos\". On vous tient au courant avant toute action."
+    },
+    "caution": {
+      "title": "La caution : à quoi elle sert (vraiment)",
+      "subtitle": "La caution n'est pas là pour \"punir\". Elle sert surtout à avancer les frais réels si une réparation est nécessaire — et uniquement sur justificatifs.",
+      "bullet1": "Pas de débit automatique",
+      "bullet2": "Si retenue : uniquement sur frais justifiés",
+      "bullet3": "Jamais au-delà du montant de réparation",
+      "note": "Important : si les dégâts sont inférieurs au montant de la caution, le reste n'est pas prélevé."
+    },
+    "assurance": {
+      "title": "Paiement par carte bancaire : un vrai avantage",
+      "subtitle": "Dans beaucoup de cas, vous pouvez faire jouer l'assurance de votre carte bancaire (ou une assurance voyage/personnelle).",
+      "card": "La caution peut servir à avancer les frais, puis vous pouvez demander le remboursement via votre assurance, selon votre contrat.",
+      "note": "(On ne remplace pas votre assurance : on vous aide à constituer un dossier clair.)"
+    },
+    "documents": {
+      "title": "Les documents : on vous facilite la vie",
+      "subtitle": "Rentanoo mettra à disposition les pièces nécessaires pour votre dossier (facture, justificatifs, éléments utiles).",
+      "bullet1": "Facture / justificatifs",
+      "bullet2": "Éléments du dossier (photos si besoin)",
+      "bullet3": "Références de la réservation"
+    },
+    "cta": {
+      "title": "Rappel des points clés (on reste zen)",
+      "subtitle": "En résumé : pas de panique, on gère ça sereinement.",
+      "bullet1": "Aucun débit immédiat : rien n'est prélevé \"automatiquement\".",
+      "bullet2": "La caution sert seulement d'avance si nécessaire.",
+      "bullet3": "Jamais au-delà du montant réel et justifié des réparations.",
+      "bullet4": "On vous fournira facture + justificatifs pour votre assurance (CB / voyage).",
+      "bullet5": "Le loueur a jusqu'à 48h pour chiffrer, puis Rentanoo vérifie.",
+      "button": "Contacter Rentanoo"
+    },
+    "faq": {
+      "intro": "Questions fréquentes — on répond simplement.",
+      "q1": "Vais-je être débité de toute ma caution ?",
+      "a1": "Non. S'il y a des réparations, seule la partie correspondant aux frais réels et justifiés peut être retenue. Rien n'est fait sans vérification.",
+      "q2": "Quand est-ce qu'un montant peut être retenu ?",
+      "a2": "Uniquement si un dommage est confirmé et chiffré (devis/facture), puis validé après vérification par Rentanoo.",
+      "q3": "Pourquoi ne pas passer directement par l'assurance du véhicule ?",
+      "a3": "Selon les cas, l'assurance du véhicule peut impliquer des démarches et délais spécifiques. Le parcours \"caution + justificatifs\" est souvent plus rapide pour remettre le véhicule en état, tout en vous permettant de vous faire rembourser via votre assurance (CB / voyage).",
+      "q4": "Puis-je faire jouer l'assurance de ma carte bancaire ?",
+      "a4": "Souvent oui. Beaucoup de cartes incluent une couverture (conditions variables). Le paiement CB est un vrai plus : on vous fournit les documents nécessaires pour votre dossier.",
+      "q5": "Quels documents vais-je recevoir ?",
+      "a5": "Selon le cas : facture, justificatifs, éléments du dossier et références utiles. De quoi déposer une demande de remboursement sereinement.",
+      "q6": "Et si je ne suis pas d'accord avec le montant ?",
+      "a6": "Vous pourrez nous répondre et échanger avec l'équipe. L'objectif : une solution juste, documentée, et sans tension.",
+      "q7": "Quels sont les délais ?",
+      "a7": "Le loueur a jusqu'à 48h pour chiffrer. Ensuite, Rentanoo vérifie les pièces. Vous êtes informé à chaque étape importante."
+    },
+    "contact": {
+      "title": "Une question ? On est là.",
+      "description": "Si quelque chose n'est pas clair, contactez-nous : on vous répond rapidement, et toujours calmement.",
+      "emailCta": "Écrire au support",
+      "homeCta": "Retour à l'accueil",
+      "tip": "Conseil : dans votre message, indiquez votre référence de réservation si vous l'avez."
+    }
   }
 }
