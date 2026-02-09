@@ -261,10 +261,12 @@ export default function SinistreCaution() {
           </div>
 
           <div className="md:col-span-1">
-            <IllustrationPlaceholder
-              title={t("sinistreCaution.illustration.cta")}
-              ratio="4/3"
-              comingSoon={t("sinistreCaution.illustrationComingSoon")}
+            <img
+              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page/relax.webp"
+              alt="Client rassuré au téléphone avec le service Rentanoo"
+              className="w-full h-auto rounded-2xl shadow-sm border border-slate-200/60 object-cover"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         </div>
@@ -272,14 +274,6 @@ export default function SinistreCaution() {
 
       {/* FAQ */}
       <section className="mx-auto max-w-6xl px-4 py-10 md:py-14">
-        <div className="mb-6">
-          <IllustrationPlaceholder
-            title={t("sinistreCaution.illustration.faq")}
-            ratio="16/9"
-            comingSoon={t("sinistreCaution.illustrationComingSoon")}
-          />
-        </div>
-
         <p className="text-muted-foreground">{t("sinistreCaution.faq.intro")}</p>
 
         <Accordion type="single" collapsible className="mt-6 w-full">
