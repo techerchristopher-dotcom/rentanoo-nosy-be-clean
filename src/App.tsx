@@ -16,6 +16,7 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Callback from "./pages/auth/Callback";
 import Profile from "./pages/Profile";
+import ClientOnboarding from "./pages/onboarding/ClientOnboarding";
 import ProfileTest from "./pages/ProfileTest";
 import BookingDiscussion from "./pages/booking/BookingDiscussion";
 import MessageToOwners from "./pages/booking/MessageToOwners";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
             <Route path="/auth/callback" element={<Callback />} />
+            <Route path="/onboarding/client" element={<ClientOnboarding />} />
             <Route path="/profile" element={
               <ErrorBoundary>
                 <Profile />

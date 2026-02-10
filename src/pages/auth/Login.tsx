@@ -70,11 +70,18 @@ export default function Login() {
       });
 
       if (error) {
+        const friendlyMessage =
+          error.message?.toLowerCase().includes("invalid login") ||
+          error.message?.toLowerCase().includes("invalid_credentials")
+            ? "Identifiants invalides. Vérifiez votre email, votre mot de passe, ou réinitialisez votre mot de passe."
+            : error.message;
         toast({
           title: "Erreur de connexion",
-          description: error.message,
+          description: friendlyMessage,
           variant: "destructive",
         });
+        setShowForgotPassword(true);
+        forgotPasswordForm.setValue("email", data.email);
         return;
       }
 
@@ -83,7 +90,7 @@ export default function Login() {
           title: "Connexion réussie",
           description: "Bienvenue sur MayCar !",
         });
-        navigate("/");
+        navigate("/onboarding/client");
       }
     } catch (error) {
       toast({

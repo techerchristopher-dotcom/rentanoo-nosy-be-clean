@@ -57,11 +57,12 @@ export default function Register() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setLoading(true);
+      const emailRedirectTo = `${window.location.origin}/auth/callback`;
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo,
           data: {
             firstName: data.firstName,
             lastName: data.lastName,
@@ -81,10 +82,12 @@ export default function Register() {
 
       if (authData.user) {
         toast({
-          title: "Inscription réussie",
-          description: "Vérifiez votre email pour confirmer votre compte",
+          title: authData.session ? "Compte créé" : "Email envoyé",
+          description: authData.session
+            ? "Bienvenue !"
+            : "Un email de confirmation a été envoyé.",
         });
-        navigate("/auth/login");
+        navigate("/onboarding/client");
       }
     } catch (error) {
       toast({

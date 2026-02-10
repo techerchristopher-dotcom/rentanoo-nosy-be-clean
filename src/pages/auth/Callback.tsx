@@ -10,49 +10,138 @@ export default function Callback() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    let isMounted = true;
+    let handled = false;
+
+    const hasAuthTokensInUrl = () => {
+      if (typeof window === "undefined") return false;
+      const href = window.location.href.toLowerCase();
+
+      // Indices typiques d'un callback Supabase (OAuth + email/magic link)
+      const hasAccessTokens =
+        href.includes("access_token=") || href.includes("refresh_token=");
+      const hasEmailCallbackType =
+        href.includes("type=signup") ||
+        href.includes("type=recovery") ||
+        href.includes("type=invite") ||
+        href.includes("type=magiclink");
+      const hasCodeParam = href.includes("code=");
+      const hasTokenHash = href.includes("token_hash=");
+
+      return hasAccessTokens || hasEmailCallbackType || hasCodeParam || hasTokenHash;
+    };
+
+    const completeSuccess = () => {
+      if (!isMounted || handled) return;
+      handled = true;
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur Rentanoo !",
+      });
+      navigate("/onboarding/client");
+      setLoading(false);
+    };
+
+    const completeFailureToLogin = (description: string) => {
+      if (!isMounted || handled) return;
+      handled = true;
+      toast({
+        title: "Erreur de connexion",
+        description,
+        variant: "destructive",
+      });
+      navigate("/auth/login");
+      setLoading(false);
+    };
+
+    const completeFailureStayHere = (description: string) => {
+      if (!isMounted || handled) return;
+      handled = true;
+      toast({
+        title: "Erreur",
+        description,
+        variant: "destructive",
+      });
+      // On reste sur la page callback, sans rediriger vers /auth/login
+      setLoading(false);
+    };
+
+    const maxAttempts = hasAuthTokensInUrl() ? 10 : 3;
+    const retryDelayMs = 300;
+    let attempts = 0;
+
+    const tryGetSession = async () => {
+      if (!isMounted || handled) return;
+
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Auth callback error:", error);
-          toast({
-            title: "Erreur de connexion",
-            description: "Une erreur s'est produite lors de la connexion",
-            variant: "destructive",
-          });
-          navigate("/auth/login");
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          completeSuccess();
           return;
         }
 
-        if (session?.user) {
-          toast({
-            title: "Connexion réussie",
-            description: "Bienvenue sur MayCar !",
-          });
-          navigate("/");
+        if (error) {
+          console.error("[AuthCallback] Erreur getSession():", error);
+        }
+
+        attempts += 1;
+
+        if (attempts >= maxAttempts) {
+          const hasTokens = hasAuthTokensInUrl();
+
+          if (hasTokens) {
+            console.error(
+              "[AuthCallback] Impossible de finaliser la connexion malgré les tokens dans l'URL"
+            );
+            completeFailureStayHere(
+              "Impossible de finaliser la connexion depuis ce lien. Veuillez réessayer à partir de l'application ou demander un nouveau lien."
+            );
+          } else {
+            console.debug(
+              "[AuthCallback] Aucune session après tentatives et aucun indice de callback, redirection vers login"
+            );
+            completeFailureToLogin(
+              "Une erreur s'est produite lors de la connexion"
+            );
+          }
         } else {
-          toast({
-            title: "Erreur",
-            description: "Aucune session trouvée",
-            variant: "destructive",
-          });
-          navigate("/auth/login");
+          setTimeout(tryGetSession, retryDelayMs);
         }
       } catch (error) {
-        console.error("Unexpected auth error:", error);
-        toast({
-          title: "Erreur",
-          description: "Une erreur inattendue s'est produite",
-          variant: "destructive",
-        });
-        navigate("/auth/login");
-      } finally {
-        setLoading(false);
+        console.error("[AuthCallback] Erreur inattendue:", error);
+        const hasTokens = hasAuthTokensInUrl();
+        if (hasTokens) {
+          completeFailureStayHere(
+            "Une erreur inattendue s'est produite lors de la finalisation de la connexion. Veuillez réessayer plus tard."
+          );
+        } else {
+          completeFailureToLogin(
+            "Une erreur inattendue s'est produite lors de la connexion"
+          );
+        }
       }
     };
 
-    handleAuthCallback();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted || handled) return;
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+        completeSuccess();
+      }
+    });
+
+    // Démarre immédiatement une première tentative de récupération de session
+    tryGetSession();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate, toast]);
 
   if (loading) {
