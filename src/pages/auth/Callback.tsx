@@ -109,12 +109,13 @@ export default function Callback() {
      * Anti-doublon: only runs once per page load via hasRunRef
      */
     const handleVerifiedUser = async (userId: string) => {
+      console.log("[AuthCallback] handleVerifiedUser called", { userId, locked: hasRunRef.current });
+
       // Anti-doublon: prevent double execution
       if (hasRunRef.current) {
         console.log("[AuthCallback] Already processed, skipping");
         return;
       }
-      hasRunRef.current = true;
 
       try {
         // 1. Fetch profile to check current state
@@ -126,8 +127,12 @@ export default function Callback() {
 
         if (fetchError || !profile) {
           console.error("[AuthCallback] Failed to fetch profile:", fetchError);
-          return;
+          return; // Don't lock, allow retry
         }
+
+        // Lock after successful profile fetch
+        console.log("[AuthCallback] handleVerifiedUser lock set");
+        hasRunRef.current = true;
 
         // 2. If already verified, skip update but check welcome email
         if (profile.kyc_status === "verified") {
