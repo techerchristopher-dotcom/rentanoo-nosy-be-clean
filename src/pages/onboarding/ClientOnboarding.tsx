@@ -140,7 +140,8 @@ export default function ClientOnboarding() {
 
   const handleResendEmail = async () => {
     const userEmail = session?.user?.email;
-    if (!userEmail) {
+    const userId = session?.user?.id;
+    if (!userEmail || !userId) {
       toast({
         title: "Erreur",
         description: "Adresse email introuvable.",
@@ -148,28 +149,51 @@ export default function ClientOnboarding() {
       });
       return;
     }
+
+    const webhookUrl = import.meta.env.VITE_N8N_PROFILES_CREATED_WEBHOOK_URL;
+    if (!webhookUrl) {
+      toast({
+        title: "Erreur",
+        description: "Configuration email manquante (webhook).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setResending(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: userEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/onboarding/client`,
+      // Appel webhook n8n profiles-created (même workflow que l'inscription)
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          body: {
+            record: {
+              id: userId,
+              email: userEmail,
+              first_name: profile?.firstName || null,
+              last_name: profile?.lastName || null,
+              phone: profile?.phone || null,
+            },
+          },
+        }),
       });
-      if (error) {
-        toast({
-          title: "Erreur",
-          description: error.message || "Impossible de renvoyer l'email.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Email renvoyé",
-          description: "Vérifiez votre boîte mail.",
-        });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Erreur réseau");
+        console.error("[RESEND N8N] failed", { status: response.status, error: errorText });
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
-    } catch {
+
+      console.log("[RESEND N8N] ok");
+      toast({
+        title: "Email renvoyé",
+        description: "Vérifiez votre boîte mail.",
+      });
+    } catch (error) {
+      console.error("[RESEND N8N] failed", error);
       toast({
         title: "Erreur",
         description: "Impossible de renvoyer l'email. Réessayez.",
