@@ -6,31 +6,44 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle2, Clock, Lock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const STEPS = [
   { id: 1, label: "Session active" },
-  { id: 2, label: "Email confirmé" },
+  { id: 2, label: "Confirmer le compte" },
   { id: 3, label: "Profil complété" },
   { id: 4, label: "Terminé" },
 ] as const;
 
 export default function ClientOnboarding() {
-  const { session, user, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ firstName: string; lastName: string; phone?: string } | null>(null);
+  const { toast } = useToast();
+  const [profile, setProfile] = useState<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    kycStatus: string;
+  } | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const [showResend, setShowResend] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const hasSession = Boolean(session?.user);
-  const isEmailConfirmed = Boolean((user as { email_confirmed_at?: string })?.email_confirmed_at);
+  const isKycVerified = profile?.kycStatus === "verified";
   const isProfileComplete = Boolean(
     profile?.firstName?.trim() && profile?.lastName?.trim() && profile?.phone?.trim()
   );
 
   let currentStep: 1 | 2 | 3 | 4 = 1;
   if (!hasSession) currentStep = 1;
-  else if (!isEmailConfirmed) currentStep = 2;
+  else if (profileLoading || !profile || !isKycVerified) currentStep = 2;
   else if (!isProfileComplete) currentStep = 3;
   else currentStep = 4;
 
@@ -52,9 +65,12 @@ export default function ClientOnboarding() {
           setProfile(null);
         } else if (data) {
           setProfile({
+            id: data.id,
+            email: data.email ?? "",
             firstName: data.firstName ?? "",
             lastName: data.lastName ?? "",
             phone: data.phone ?? "",
+            kycStatus: data.kycStatus ?? "pending",
           });
         } else {
           setProfile(null);
@@ -68,17 +84,107 @@ export default function ClientOnboarding() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await supabase.auth.getSession();
+    setProfileError(null);
+    await supabase.auth.getUser();
+    await refreshUser();
     const { data, error } = await ProfileService.getCurrentUserProfile();
     setProfileError(error ?? null);
     if (data) {
       setProfile({
+        id: data.id,
+        email: data.email ?? "",
         firstName: data.firstName ?? "",
         lastName: data.lastName ?? "",
         phone: data.phone ?? "",
+        kycStatus: data.kycStatus ?? "pending",
       });
     }
     setRefreshing(false);
+  };
+
+  const handleConfirmAccount = async () => {
+    setChecking(true);
+    setCheckError(null);
+    setShowResend(false);
+    const { data, error } = await ProfileService.getCurrentUserProfile();
+    setChecking(false);
+    if (error) {
+      setCheckError("Impossible de vérifier. Réessayez.");
+      setShowResend(true);
+      return;
+    }
+    if (data) {
+      setProfile({
+        id: data.id,
+        email: data.email ?? "",
+        firstName: data.firstName ?? "",
+        lastName: data.lastName ?? "",
+        phone: data.phone ?? "",
+        kycStatus: data.kycStatus ?? "pending",
+      });
+      if (data.kycStatus !== "verified") {
+        setCheckError("Compte non vérifié. Vérifiez l'email et réessayez.");
+        setShowResend(true);
+      } else {
+        setCheckError(null);
+        setShowResend(false);
+      }
+    } else {
+      setCheckError("Compte non vérifié. Vérifiez l'email et réessayez.");
+      setShowResend(true);
+    }
+  };
+
+  const N8N_WEBHOOK_PROFILES_CREATED =
+    "https://n8n.srv1285649.hstgr.cloud/webhook/profiles-created";
+
+  const handleResendEmail = async () => {
+    console.debug("[RESEND_CLICK] clicked", { resending, profile });
+    if (!profile?.id || !profile?.email) {
+      console.debug("[RESEND_CLICK] early return - missing profile data", {
+        profileId: profile?.id,
+        profileEmail: profile?.email,
+      });
+      return;
+    }
+    setResending(true);
+    const url = N8N_WEBHOOK_PROFILES_CREATED;
+    const payload = {
+      userId: profile.id,
+      email: profile.email,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+    };
+    console.debug("[RESEND_FETCH] sending", { url, payload });
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      console.debug("[RESEND_FETCH] response", { status: response.status, ok: response.ok });
+      if (response.ok) {
+        toast({
+          title: "Email renvoyé",
+          description: "Vérifiez votre boîte mail.",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Impossible de renvoyer l'email. Réessayez.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.debug("[RESEND_FETCH] error", err);
+      toast({
+        title: "Erreur",
+        description: "Impossible de renvoyer l'email. Réessayez.",
+        variant: "destructive",
+      });
+    } finally {
+      setResending(false);
+    }
   };
 
   const getStepStatus = (stepId: number): "done" | "current" | "locked" => {
@@ -159,27 +265,51 @@ export default function ClientOnboarding() {
           ) : currentStep === 2 ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Vérifiez votre boîte mail puis revenez.
+                Confirmez votre compte via l&apos;email reçu, puis revenez ici.
               </p>
+              {checkError && (
+                <p className="text-sm text-destructive">{checkError}</p>
+              )}
               <Button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                variant="outline"
-                className="w-full"
+                onClick={handleConfirmAccount}
+                disabled={checking}
+                className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
               >
-                {refreshing ? (
+                {checking ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Rafraîchissement...
+                    Vérification...
                   </>
                 ) : (
-                  "Rafraîchir"
+                  "J'ai confirmé mon compte"
                 )}
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Cliquez sur le lien dans l&apos;email de confirmation, puis revenez sur cette page et
-                cliquez sur Rafraîchir.
-              </p>
+              {showResend && (
+                <Button
+                  onClick={handleResendEmail}
+                  disabled={resending || !profile?.email}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {resending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Envoi...
+                    </>
+                  ) : (
+                    "Renvoyer l&apos;email"
+                  )}
+                </Button>
+              )}
+              <Button
+                onClick={handleRefresh}
+                disabled={refreshing || checking}
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+              >
+                {refreshing ? "Rafraîchissement..." : "Rafraîchir"}
+              </Button>
             </div>
           ) : currentStep === 3 ? (
             <div className="space-y-3">

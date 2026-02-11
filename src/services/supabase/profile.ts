@@ -32,35 +32,20 @@ export class ProfileService {
    */
   static async getCurrentUserProfile(): Promise<{ data: User | null; error: string | null }> {
     try {
-      console.log('🔍 [ProfileService] Récupération de l\'utilisateur auth...');
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
-      console.log('👤 [ProfileService] Auth user:', authUser);
-      console.log('❌ [ProfileService] Auth error:', authError);
-      
+
       if (authError || !authUser) {
-        console.log('❌ [ProfileService] Utilisateur non authentifié');
         return { data: null, error: 'Utilisateur non authentifié' };
       }
-
-      console.log('🔍 [ProfileService] Récupération du profil depuis la table profiles...');
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
         .single();
 
-      console.log('📊 [ProfileService] Profile data:', profile);
-      console.log('❌ [ProfileService] Profile error:', error);
-
       if (error) {
-        console.error('❌ [ProfileService] Erreur lors de la récupération du profil:', error);
-        console.error('❌ [ProfileService] Code erreur:', error.code);
-        console.error('❌ [ProfileService] Message erreur:', error.message);
-        
         // Si le profil n'existe pas, essayer de le créer
         if (error.code === 'PGRST116') {
-          console.log('Profil non trouvé, tentative de création...');
           const createResult = await this.createUserProfile(authUser.id, {
             email: authUser.email || '',
             firstName: authUser.user_metadata?.firstName || '',
@@ -78,12 +63,7 @@ export class ProfileService {
         return { data: null, error: error.message };
       }
 
-      // Convertir le format Supabase vers le format de l'application
-      console.log('🔄 [ProfileService] Conversion du profil vers format User...');
-      console.log('🔍 [ProfileService] Profile avant conversion:', profile);
-      
       if (!profile) {
-        console.error('❌ [ProfileService] Profile est null ou undefined');
         return { data: null, error: 'Profil non trouvé' };
       }
       
@@ -113,16 +93,6 @@ export class ProfileService {
         updatedAt: profile.updated_at || profile.created_at
       };
 
-      console.log('✅ [ProfileService] User converti:', user);
-      console.log('🔍 [ProfileService] Type de user:', typeof user);
-      console.log('🔍 [ProfileService] Keys de user:', Object.keys(user));
-      console.log('🎯 [ProfileService] Retour de getCurrentUserProfile avec succès');
-      
-      // Créer une copie profonde de l'objet user pour éviter les mutations
-      const userCopy = JSON.parse(JSON.stringify(user));
-      console.log('🔍 [ProfileService] User copy (deep):', userCopy);
-      
-      // Forcer la création d'un nouvel objet avec les valeurs
       const result = {
         data: {
           id: user.id,
@@ -151,16 +121,9 @@ export class ProfileService {
         },
         error: null
       };
-      
-      console.log('🔍 [ProfileService] Résultat final retourné:', result);
-      console.log('🔍 [ProfileService] Type de result.data:', typeof result.data);
-      console.log('🔍 [ProfileService] Keys de result.data:', Object.keys(result.data));
-      console.log('🔍 [ProfileService] result.data.id:', result.data.id);
-      console.log('🔍 [ProfileService] result.data.email:', result.data.email);
-      
+
       return result;
-    } catch (error) {
-      console.error('Erreur inattendue:', error);
+    } catch {
       return { data: null, error: 'Erreur inattendue lors de la récupération du profil' };
     }
   }
@@ -170,8 +133,6 @@ export class ProfileService {
    */
   static async getUserProfile(userId: string): Promise<{ data: User | null; error: string | null }> {
     try {
-      console.log('🔍 [ProfileService] Récupération du profil utilisateur:', userId);
-
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -179,12 +140,10 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('❌ [ProfileService] Erreur lors de la récupération du profil:', error);
         return { data: null, error: error.message };
       }
 
       if (!profile) {
-        console.error('❌ [ProfileService] Profile est null ou undefined');
         return { data: null, error: 'Profil non trouvé' };
       }
 
@@ -202,11 +161,8 @@ export class ProfileService {
         updatedAt: profile.updated_at || new Date().toISOString(),
       };
 
-      console.log('✅ [ProfileService] Profil récupéré:', user);
-
       return { data: user, error: null };
     } catch (error: any) {
-      console.error('❌ [ProfileService] Erreur inattendue:', error);
       return { data: null, error: error.message || 'Erreur lors de la récupération du profil' };
     }
   }
@@ -277,8 +233,6 @@ export class ProfileService {
         supabaseUpdate.driver_license_file_path = updateData.driverLicenseFilePath || null;
       }
 
-      console.log('Données Supabase à mettre à jour:', supabaseUpdate);
-
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
         .update(supabaseUpdate)
@@ -287,7 +241,6 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Erreur lors de la mise à jour du profil:', error);
         return { data: null, error: error.message };
       }
 
@@ -317,8 +270,7 @@ export class ProfileService {
       };
 
       return { data: user, error: null };
-    } catch (error) {
-      console.error('Erreur inattendue:', error);
+    } catch {
       return { data: null, error: 'Erreur inattendue lors de la mise à jour du profil' };
     }
   }
@@ -348,7 +300,6 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Erreur lors de la création du profil:', error);
         return { data: null, error: error.message };
       }
 
@@ -368,8 +319,7 @@ export class ProfileService {
       };
 
       return { data: user, error: null };
-    } catch (error) {
-      console.error('Erreur inattendue:', error);
+    } catch {
       return { data: null, error: 'Erreur inattendue lors de la création du profil' };
     }
   }

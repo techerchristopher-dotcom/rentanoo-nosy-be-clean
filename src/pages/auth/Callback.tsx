@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Car } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Car, CheckCircle2, AlertCircle } from "lucide-react";
+
+type CallbackStatus = "loading" | "success" | "invalid";
 
 export default function Callback() {
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<CallbackStatus>("loading");
+  const [countdown, setCountdown] = useState(4);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     let isMounted = true;
@@ -16,8 +19,6 @@ export default function Callback() {
     const hasAuthTokensInUrl = () => {
       if (typeof window === "undefined") return false;
       const href = window.location.href.toLowerCase();
-
-      // Indices typiques d'un callback Supabase (OAuth + email/magic link)
       const hasAccessTokens =
         href.includes("access_token=") || href.includes("refresh_token=");
       const hasEmailCallbackType =
@@ -27,46 +28,22 @@ export default function Callback() {
         href.includes("type=magiclink");
       const hasCodeParam = href.includes("code=");
       const hasTokenHash = href.includes("token_hash=");
-
       return hasAccessTokens || hasEmailCallbackType || hasCodeParam || hasTokenHash;
     };
 
     const completeSuccess = () => {
       if (!isMounted || handled) return;
       handled = true;
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur Rentanoo !",
-      });
-      navigate("/onboarding/client");
-      setLoading(false);
+      setStatus("success");
     };
 
-    const completeFailureToLogin = (description: string) => {
+    const completeInvalid = () => {
       if (!isMounted || handled) return;
       handled = true;
-      toast({
-        title: "Erreur de connexion",
-        description,
-        variant: "destructive",
-      });
-      navigate("/auth/login");
-      setLoading(false);
+      setStatus("invalid");
     };
 
-    const completeFailureStayHere = (description: string) => {
-      if (!isMounted || handled) return;
-      handled = true;
-      toast({
-        title: "Erreur",
-        description,
-        variant: "destructive",
-      });
-      // On reste sur la page callback, sans rediriger vers /auth/login
-      setLoading(false);
-    };
-
-    const maxAttempts = hasAuthTokensInUrl() ? 10 : 3;
+    const maxAttempts = hasAuthTokensInUrl() ? 10 : 2;
     const retryDelayMs = 300;
     let attempts = 0;
 
@@ -91,38 +68,13 @@ export default function Callback() {
         attempts += 1;
 
         if (attempts >= maxAttempts) {
-          const hasTokens = hasAuthTokensInUrl();
-
-          if (hasTokens) {
-            console.error(
-              "[AuthCallback] Impossible de finaliser la connexion malgré les tokens dans l'URL"
-            );
-            completeFailureStayHere(
-              "Impossible de finaliser la connexion depuis ce lien. Veuillez réessayer à partir de l'application ou demander un nouveau lien."
-            );
-          } else {
-            console.debug(
-              "[AuthCallback] Aucune session après tentatives et aucun indice de callback, redirection vers login"
-            );
-            completeFailureToLogin(
-              "Une erreur s'est produite lors de la connexion"
-            );
-          }
+          completeInvalid();
         } else {
           setTimeout(tryGetSession, retryDelayMs);
         }
       } catch (error) {
         console.error("[AuthCallback] Erreur inattendue:", error);
-        const hasTokens = hasAuthTokensInUrl();
-        if (hasTokens) {
-          completeFailureStayHere(
-            "Une erreur inattendue s'est produite lors de la finalisation de la connexion. Veuillez réessayer plus tard."
-          );
-        } else {
-          completeFailureToLogin(
-            "Une erreur inattendue s'est produite lors de la connexion"
-          );
-        }
+        completeInvalid();
       }
     };
 
@@ -135,18 +87,30 @@ export default function Callback() {
       }
     });
 
-    // Démarre immédiatement une première tentative de récupération de session
     tryGetSession();
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, []);
 
-  if (loading) {
+  // Auto-redirect après succès (success uniquement)
+  useEffect(() => {
+    if (status !== "success") return;
+    const timer = setTimeout(() => navigate("/onboarding/client"), 4000);
+    const interval = setInterval(() => {
+      setCountdown((c) => (c <= 1 ? 0 : c - 1));
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [status, navigate]);
+
+  if (status === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-soft flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-soft flex items-center justify-center p-4">
         <div className="text-center">
           <div className="flex items-center justify-center w-16 h-16 bg-gradient-lagoon rounded-2xl shadow-lagoon mb-4 animate-pulse">
             <Car className="h-8 w-8 text-white" />
@@ -162,5 +126,105 @@ export default function Callback() {
     );
   }
 
-  return null;
+  const isSuccess = status === "success";
+
+  return (
+    <div className="min-h-screen bg-gradient-soft flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center space-x-2 group">
+            <div className="flex items-center justify-center w-12 h-12 bg-gradient-lagoon rounded-2xl shadow-lagoon group-hover:shadow-soft transition-shadow">
+              <Car className="h-7 w-7 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
+              MayCar
+            </span>
+          </Link>
+        </div>
+
+        <Card className="shadow-card">
+          <CardHeader className="text-center">
+            {isSuccess ? (
+              <>
+                <div className="flex justify-center mb-4">
+                  <div className="flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-500" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl font-bold">Compte confirmé</CardTitle>
+                <CardDescription className="text-base">
+                  Votre compte a bien été confirmé.
+                </CardDescription>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-center mb-4">
+                  <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full">
+                    <AlertCircle className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl font-bold">Lien invalide ou expiré</CardTitle>
+                <CardDescription className="text-base">
+                  Ce lien n&apos;est plus valide ou a déjà été utilisé.
+                  <br />
+                  Connectez-vous ou demandez un nouveau lien.
+                </CardDescription>
+              </>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {isSuccess ? (
+              <>
+                <Button
+                  onClick={() => {
+                    const target = "/onboarding/client";
+                    try {
+                      window.open("", "_self");
+                      window.close();
+                    } catch {
+                      /* window.close() bloqué si onglet ouvert par l'utilisateur */
+                    }
+                    window.location.assign(target);
+                  }}
+                  className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
+                >
+                  Retourner sur Rentanoo
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Cette page peut être fermée.
+                </p>
+                <p className="text-xs text-muted-foreground text-center">
+                  Redirection automatique dans {countdown} s…
+                </p>
+                <Button
+                  onClick={() => navigate("/")}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Aller à l&apos;accueil
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => navigate("/auth/login")}
+                className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
+              >
+                Retour connexion
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="text-center mt-6">
+          <Link
+            to="/"
+            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            ← Retour à l&apos;accueil
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }
