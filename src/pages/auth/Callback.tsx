@@ -31,7 +31,7 @@ export default function Callback() {
       return hasAccessTokens || hasEmailCallbackType || hasCodeParam || hasTokenHash;
     };
 
-    const completeSuccess = () => {
+    const completeSuccess = async () => {
       if (!isMounted || handled) return;
       handled = true;
       setStatus("success");
@@ -57,6 +57,18 @@ export default function Callback() {
         } = await supabase.auth.getSession();
 
         if (session?.user) {
+          // Update kyc_status = "verified" quand session disponible
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ kyc_status: "verified" })
+            .eq("id", session.user.id);
+
+          if (updateError) {
+            console.error("[AuthCallback] UPDATE kyc_status FAILED:", updateError);
+          } else {
+            console.log("[AuthCallback] kyc_status updated to verified");
+          }
+
           completeSuccess();
           return;
         }
@@ -80,9 +92,21 @@ export default function Callback() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted || handled) return;
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+        // Update kyc_status = "verified" quand session disponible
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ kyc_status: "verified" })
+          .eq("id", session.user.id);
+
+        if (updateError) {
+          console.error("[AuthCallback] UPDATE kyc_status FAILED:", updateError);
+        } else {
+          console.log("[AuthCallback] kyc_status updated to verified");
+        }
+
         completeSuccess();
       }
     });
