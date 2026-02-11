@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,83 @@ import { Car, CheckCircle2, AlertCircle } from "lucide-react";
 
 type CallbackStatus = "loading" | "success" | "invalid";
 
+/**
+ * Send welcome email via n8n webhook (non-blocking)
+ */
+async function sendWelcomeEmail(
+  userId: string,
+  profile: {
+    email: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    welcome_email_sent_at: string | null;
+  }
+): Promise<boolean> {
+  const webhookUrl = import.meta.env.VITE_N8N_WELCOME_WEBHOOK_URL;
+
+  // Skip if webhook not configured
+  if (!webhookUrl) {
+    console.log("[Welcome] skipped (reason=missing_webhook)");
+    return false;
+  }
+
+  // Skip if email already sent
+  if (profile.welcome_email_sent_at) {
+    console.log("[Welcome] skipped (reason=already_sent)");
+    return false;
+  }
+
+  // Skip if no email
+  if (!profile.email) {
+    console.log("[Welcome] skipped (reason=missing_email)");
+    return false;
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        body: {
+          record: {
+            id: userId,
+            email: profile.email,
+            first_name: profile.first_name || "",
+            last_name: profile.last_name || "",
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("[Welcome] failed", { status: response.status });
+      return false;
+    }
+
+    console.log("[Welcome] sent");
+
+    // Mark email as sent in DB
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ welcome_email_sent_at: new Date().toISOString() })
+      .eq("id", userId);
+
+    if (updateError) {
+      console.error("[Welcome] failed to mark as sent", updateError);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("[Welcome] failed", error);
+    return false;
+  }
+}
+
 export default function Callback() {
   const [status, setStatus] = useState<CallbackStatus>("loading");
   const [countdown, setCountdown] = useState(4);
   const navigate = useNavigate();
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -29,6 +102,65 @@ export default function Callback() {
       const hasCodeParam = href.includes("code=");
       const hasTokenHash = href.includes("token_hash=");
       return hasAccessTokens || hasEmailCallbackType || hasCodeParam || hasTokenHash;
+    };
+
+    /**
+     * Handle verified user: update kyc_status + send welcome email
+     * Anti-doublon: only runs once per page load via hasRunRef
+     */
+    const handleVerifiedUser = async (userId: string) => {
+      // Anti-doublon: prevent double execution
+      if (hasRunRef.current) {
+        console.log("[AuthCallback] Already processed, skipping");
+        return;
+      }
+      hasRunRef.current = true;
+
+      try {
+        // 1. Fetch profile to check current state
+        const { data: profile, error: fetchError } = await supabase
+          .from("profiles")
+          .select("kyc_status, welcome_email_sent_at, email, first_name, last_name")
+          .eq("id", userId)
+          .single();
+
+        if (fetchError || !profile) {
+          console.error("[AuthCallback] Failed to fetch profile:", fetchError);
+          return;
+        }
+
+        // 2. If already verified, skip update but check welcome email
+        if (profile.kyc_status === "verified") {
+          console.log("[AuthCallback] Already verified, checking welcome email");
+          
+          // Send welcome email if not sent yet (non-blocking)
+          sendWelcomeEmail(userId, profile).catch((err) =>
+            console.error("[AuthCallback] Welcome email error", err)
+          );
+          
+          return;
+        }
+
+        // 3. Update kyc_status to verified
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ kyc_status: "verified" })
+          .eq("id", userId);
+
+        if (updateError) {
+          console.error("[AuthCallback] UPDATE kyc_status FAILED:", updateError);
+          return;
+        }
+
+        console.log("[AuthCallback] kyc_status updated to verified");
+
+        // 4. Send welcome email (non-blocking)
+        sendWelcomeEmail(userId, profile).catch((err) =>
+          console.error("[AuthCallback] Welcome email error", err)
+        );
+      } catch (error) {
+        console.error("[AuthCallback] handleVerifiedUser error:", error);
+      }
     };
 
     const completeSuccess = async () => {
@@ -57,18 +189,8 @@ export default function Callback() {
         } = await supabase.auth.getSession();
 
         if (session?.user) {
-          // Update kyc_status = "verified" quand session disponible
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update({ kyc_status: "verified" })
-            .eq("id", session.user.id);
-
-          if (updateError) {
-            console.error("[AuthCallback] UPDATE kyc_status FAILED:", updateError);
-          } else {
-            console.log("[AuthCallback] kyc_status updated to verified");
-          }
-
+          // Handle verification + welcome email
+          await handleVerifiedUser(session.user.id);
           completeSuccess();
           return;
         }
@@ -95,18 +217,8 @@ export default function Callback() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted || handled) return;
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
-        // Update kyc_status = "verified" quand session disponible
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ kyc_status: "verified" })
-          .eq("id", session.user.id);
-
-        if (updateError) {
-          console.error("[AuthCallback] UPDATE kyc_status FAILED:", updateError);
-        } else {
-          console.log("[AuthCallback] kyc_status updated to verified");
-        }
-
+        // Handle verification + welcome email
+        await handleVerifiedUser(session.user.id);
         completeSuccess();
       }
     });

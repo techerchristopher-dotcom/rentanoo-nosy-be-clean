@@ -177,6 +177,7 @@ export type Database = {
           driver_license_country: string | null
           driver_license_file_path: string | null
           full_name: string | null
+          welcome_email_sent_at: string | null
         }
         Insert: {
           id?: string
@@ -200,6 +201,7 @@ export type Database = {
           driver_license_country?: string | null
           driver_license_file_path?: string | null
           full_name?: string | null
+          welcome_email_sent_at?: string | null
         }
         Update: {
           id?: string
@@ -223,6 +225,7 @@ export type Database = {
           driver_license_country?: string | null
           driver_license_file_path?: string | null
           full_name?: string | null
+          welcome_email_sent_at?: string | null
         }
         Relationships: []
       }
