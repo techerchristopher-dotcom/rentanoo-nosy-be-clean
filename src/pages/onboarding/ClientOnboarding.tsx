@@ -25,7 +25,6 @@ export default function ClientOnboarding() {
     firstName: string;
     lastName: string;
     phone?: string;
-    kycStatus: string;
   } | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -34,19 +33,42 @@ export default function ClientOnboarding() {
   const [showResend, setShowResend] = useState(false);
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
+  const [isEmailConfirmed, setIsEmailConfirmed] = useState(false);
+  const [emailCheckLoading, setEmailCheckLoading] = useState(true);
 
   const hasSession = Boolean(session?.user);
-  const isKycVerified = profile?.kycStatus === "verified";
   const isProfileComplete = Boolean(
     profile?.firstName?.trim() && profile?.lastName?.trim() && profile?.phone?.trim()
   );
 
   let currentStep: 1 | 2 | 3 | 4 = 1;
   if (!hasSession) currentStep = 1;
-  else if (profileLoading || !profile || !isKycVerified) currentStep = 2;
-  else if (!isProfileComplete) currentStep = 3;
+  else if (emailCheckLoading || !isEmailConfirmed) currentStep = 2;
+  else if (profileLoading || !isProfileComplete) currentStep = 3;
   else currentStep = 4;
 
+  // Vérifier le statut email_confirmed_at via Supabase Auth
+  useEffect(() => {
+    if (!hasSession) {
+      setEmailCheckLoading(false);
+      setIsEmailConfirmed(false);
+      return;
+    }
+    let cancelled = false;
+    setEmailCheckLoading(true);
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (cancelled) return;
+      if (error || !data?.user) {
+        setIsEmailConfirmed(false);
+      } else {
+        setIsEmailConfirmed(!!data.user.email_confirmed_at);
+      }
+      setEmailCheckLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [hasSession]);
+
+  // Charger le profil (pour vérifier s'il est complet)
   useEffect(() => {
     if (!hasSession) {
       setProfileLoading(false);
@@ -70,7 +92,6 @@ export default function ClientOnboarding() {
             firstName: data.firstName ?? "",
             lastName: data.lastName ?? "",
             phone: data.phone ?? "",
-            kycStatus: data.kycStatus ?? "pending",
           });
         } else {
           setProfile(null);
@@ -85,8 +106,13 @@ export default function ClientOnboarding() {
   const handleRefresh = async () => {
     setRefreshing(true);
     setProfileError(null);
-    await supabase.auth.getUser();
+    // Refresh email confirmation status
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData?.user) {
+      setIsEmailConfirmed(!!userData.user.email_confirmed_at);
+    }
     await refreshUser();
+    // Refresh profile
     const { data, error } = await ProfileService.getCurrentUserProfile();
     setProfileError(error ?? null);
     if (data) {
@@ -96,7 +122,6 @@ export default function ClientOnboarding() {
         firstName: data.firstName ?? "",
         lastName: data.lastName ?? "",
         phone: data.phone ?? "",
-        kycStatus: data.kycStatus ?? "pending",
       });
     }
     setRefreshing(false);
@@ -106,77 +131,62 @@ export default function ClientOnboarding() {
     setChecking(true);
     setCheckError(null);
     setShowResend(false);
-    const { data, error } = await ProfileService.getCurrentUserProfile();
-    setChecking(false);
-    if (error) {
-      setCheckError("Impossible de vérifier. Réessayez.");
+
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error || !data?.user) {
+      setCheckError("Impossible de vérifier votre statut.");
       setShowResend(true);
+      setChecking(false);
       return;
     }
-    if (data) {
-      setProfile({
-        id: data.id,
-        email: data.email ?? "",
-        firstName: data.firstName ?? "",
-        lastName: data.lastName ?? "",
-        phone: data.phone ?? "",
-        kycStatus: data.kycStatus ?? "pending",
-      });
-      if (data.kycStatus !== "verified") {
-        setCheckError("Compte non vérifié. Vérifiez l'email et réessayez.");
-        setShowResend(true);
-      } else {
-        setCheckError(null);
-        setShowResend(false);
-      }
-    } else {
-      setCheckError("Compte non vérifié. Vérifiez l'email et réessayez.");
+
+    const confirmed = !!data.user.email_confirmed_at;
+    setIsEmailConfirmed(confirmed);
+
+    if (!confirmed) {
+      setCheckError("Votre email n'est pas encore confirmé.");
       setShowResend(true);
+    } else {
+      setCheckError(null);
+      setShowResend(false);
     }
+
+    setChecking(false);
   };
 
-  const N8N_WEBHOOK_PROFILES_CREATED =
-    "https://n8n.srv1285649.hstgr.cloud/webhook/profiles-created";
-
   const handleResendEmail = async () => {
-    console.debug("[RESEND_CLICK] clicked", { resending, profile });
-    if (!profile?.id || !profile?.email) {
-      console.debug("[RESEND_CLICK] early return - missing profile data", {
-        profileId: profile?.id,
-        profileEmail: profile?.email,
+    const userEmail = session?.user?.email;
+    if (!userEmail) {
+      toast({
+        title: "Erreur",
+        description: "Adresse email introuvable.",
+        variant: "destructive",
       });
       return;
     }
     setResending(true);
-    const url = N8N_WEBHOOK_PROFILES_CREATED;
-    const payload = {
-      userId: profile.id,
-      email: profile.email,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-    };
-    console.debug("[RESEND_FETCH] sending", { url, payload });
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: userEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/onboarding/client`,
+        },
       });
-      console.debug("[RESEND_FETCH] response", { status: response.status, ok: response.ok });
-      if (response.ok) {
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: error.message || "Impossible de renvoyer l'email.",
+          variant: "destructive",
+        });
+      } else {
         toast({
           title: "Email renvoyé",
           description: "Vérifiez votre boîte mail.",
         });
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Impossible de renvoyer l'email. Réessayez.",
-          variant: "destructive",
-        });
       }
-    } catch (err) {
-      console.debug("[RESEND_FETCH] error", err);
+    } catch {
       toast({
         title: "Erreur",
         description: "Impossible de renvoyer l'email. Réessayez.",
@@ -245,7 +255,7 @@ export default function ClientOnboarding() {
           </ul>
 
           {/* Actions selon l'étape */}
-          {authLoading || (hasSession && profileLoading) ? (
+          {authLoading || (hasSession && (emailCheckLoading || profileLoading)) ? (
             <div className="flex items-center justify-center gap-2 py-4">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span className="text-sm text-muted-foreground">Chargement...</span>
@@ -287,7 +297,7 @@ export default function ClientOnboarding() {
               {showResend && (
                 <Button
                   onClick={handleResendEmail}
-                  disabled={resending || !profile?.email}
+                  disabled={resending || !session?.user?.email}
                   variant="outline"
                   className="w-full"
                 >
