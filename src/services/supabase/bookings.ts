@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { ProfileService } from './profile';
+import { SupabaseVehiclesService } from '@/services/supabaseVehiclesService';
 
 type SupabaseBooking = Tables<'bookings'>;
 type SupabaseBookingInsert = TablesInsert<'bookings'>;
@@ -255,6 +256,53 @@ export class SupabaseBookingsService {
     } catch (error: any) {
       console.error('❌ [BookingsService] Erreur inattendue:', error);
       return { data: null, error: error.message || 'Erreur lors de la mise à jour' };
+    }
+  }
+
+  /**
+   * Mettre à jour une réservation en pending_payment avec snapshot caution.
+   * Utilisé uniquement à l'acceptation owner (pending → pending_payment).
+   */
+  static async updateBookingToPendingPaymentWithDepositSnapshot(
+    bookingId: string,
+    vehicleId: string
+  ): Promise<{
+    data: SupabaseBooking | null;
+    error: string | null;
+  }> {
+    try {
+      const { data: vehicle, error: vehicleError } = await SupabaseVehiclesService.getVehicleById(vehicleId);
+      if (vehicleError || !vehicle) {
+        return { data: null, error: vehicleError || 'Véhicule non trouvé' };
+      }
+      const depositAmount = (vehicle as { deposit_amount?: number | null }).deposit_amount ?? 1000;
+      const snapshot = depositAmount;
+      const depositStatus = snapshot > 0 ? 'pending' : 'not_required';
+
+      const updateData = {
+        status: 'pending_payment' as const,
+        updated_at: new Date().toISOString(),
+        deposit_amount_snapshot: snapshot,
+        deposit_status: depositStatus,
+      };
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .update(updateData as any)
+        .eq('id', bookingId)
+        .select();
+
+      if (error) {
+        console.error('❌ [BookingsService] Erreur snapshot caution:', error);
+        return { data: null, error: error.message };
+      }
+      if (!data || data.length === 0) {
+        return { data: null, error: 'Aucune réservation trouvée avec cet ID' };
+      }
+      return { data: data[0], error: null };
+    } catch (err: any) {
+      console.error('❌ [BookingsService] Erreur inattendue:', err);
+      return { data: null, error: err?.message || 'Erreur lors de la mise à jour' };
     }
   }
 

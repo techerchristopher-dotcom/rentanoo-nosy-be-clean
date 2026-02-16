@@ -625,7 +625,15 @@
       "totalLabel": "Totale:",
       "servicesTitle": "Servizi aggiuntivi:",
       "confirm": "Conferma",
-      "finalizeBooking": "Finalizza la mia prenotazione"
+      "finalizeBooking": "Finalizza la mia prenotazione",
+      "activateDeposit": "Attiva cauzione"
+    },
+    "deposit": {
+      "status": {
+        "activated": "Cauzione: attivata",
+        "todo": "Cauzione: da attivare",
+        "none": "Nessuna cauzione"
+      }
     },
     "status": {
       "paymentConfirmed": "Pagamento confermato",
@@ -957,6 +965,16 @@
     "error": "Errore",
     "errorGeneric": "Errore, riprova.",
     "fileTooLarge": "Il file non deve superare 10MB"
+  },
+  "depositModal": {
+    "title": "Attiva cauzione",
+    "description": "Nessun addebito immediato.\n\nRegistri semplicemente la tua carta per garantire la cauzione di {{amount}}.\nUn blocco potrà essere effettuato automaticamente 48h prima della partenza, poi rilasciato 48h dopo il ritorno se tutto è conforme.\n\nSemplice, sicuro e senza sorprese.",
+    "amountLabel": "Importo della cauzione: {{amount}}",
+    "learnMore": "Scopri di più su cauzione e danni",
+    "loading": "Caricamento modulo...",
+    "submit": "Registra la mia carta",
+    "submitting": "Registrazione...",
+    "cancel": "Annulla"
   },
   "sinistreCaution": {
     "metaTitle": "Danni e cauzione | RENTANOO - Noleggio Nosy Be",

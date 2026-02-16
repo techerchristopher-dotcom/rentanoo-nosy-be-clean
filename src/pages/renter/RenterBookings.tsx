@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import RenterBookingCard from "@/components/RenterBookingCard";
 import { PaymentFlowModal, type ReservationPayment } from "@/components/PaymentFlowModal";
+import { DepositFlowModal } from "@/components/DepositFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
 import { useTranslation } from "react-i18next";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
@@ -25,6 +26,10 @@ import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 interface BookingWithDetails extends Booking {
   vehicle?: Vehicle;
   primaryPhoto?: Photo;
+  depositStatus?: string | null;
+  depositAmount?: number | null;
+  depositAmountSnapshot?: number | null;
+  stripePaymentMethodId?: string | null;
 }
 
 type BookingFilter = 'all' | 'pending' | 'active' | 'upcoming' | 'past' | 'cancelled' | 'refused';
@@ -55,6 +60,21 @@ function isBookingPaid(booking: BookingWithDetails): boolean {
   return false;
 }
 
+/** Option A strict : modale caution uniquement si location payée et caution en attente */
+function canOpenDepositModal(booking: BookingWithDetails): boolean {
+  const status = booking.status;
+  const depositStatus = (booking as any).depositStatus ?? null;
+  const snapshot = Number((booking as any).depositAmount ?? (booking as any).depositAmountSnapshot ?? 0);
+  const stripePmId = (booking as any).stripePaymentMethodId ?? (booking as any).stripe_payment_method_id ?? null;
+  const allowedStatuses = ["confirmed", "accepted"];
+  return (
+    allowedStatuses.includes(status) &&
+    depositStatus === "pending" &&
+    snapshot > 0 &&
+    !stripePmId
+  );
+}
+
 export default function RenterBookings() {
   const { t } = useTranslation("common");
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
@@ -72,6 +92,8 @@ export default function RenterBookings() {
   const [modalMode, setModalMode] = useState<"avantPaiement"|"apresPaiement">("avantPaiement");
   const [step1Complete, setStep1Complete] = useState(comingFromStripeSuccess);
   const [reservationCourante, setReservationCourante] = useState<ReservationPayment | null>(null);
+  const [depositModalBooking, setDepositModalBooking] = useState<BookingWithDetails | null>(null);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
   useEffect(() => {
     loadCurrentUser();
@@ -485,9 +507,11 @@ export default function RenterBookings() {
                     JSON.parse(booking.selected_options) : 
                     booking.selected_options) : 
                   [],
-                // Ajouter depositStatus et depositAmount depuis Supabase
+                // Ajouter depositStatus, depositAmount, depositAmountSnapshot, stripePaymentMethodId depuis Supabase
                 depositStatus: (booking as any).deposit_status || null,
-                depositAmount: (booking as any).deposit_amount || null,
+                depositAmount: (booking as any).deposit_amount_snapshot ?? null,
+                depositAmountSnapshot: (booking as any).deposit_amount_snapshot ?? null,
+                stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null,
                 checkinDepart,
               };
               
@@ -531,9 +555,11 @@ export default function RenterBookings() {
                     JSON.parse(booking.selected_options) : 
                     booking.selected_options) : 
                   [],
-                // Ajouter depositStatus et depositAmount depuis Supabase
+                // Ajouter depositStatus, depositAmount, depositAmountSnapshot, stripePaymentMethodId depuis Supabase
                 depositStatus: (booking as any).deposit_status || null,
-                depositAmount: (booking as any).deposit_amount || null
+                depositAmount: (booking as any).deposit_amount_snapshot ?? null,
+                depositAmountSnapshot: (booking as any).deposit_amount_snapshot ?? null,
+                stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null
               };
             }
           })
@@ -871,6 +897,18 @@ export default function RenterBookings() {
                       setStep1Complete(false);
                       setIsModalOpen(true);
                     }}
+                    onRequestDeposit={(booking) => {
+                      if (!canOpenDepositModal(booking)) {
+                        toast({
+                          title: t("bookings.deposit.toastPayFirst", "Paiement requis"),
+                          description: t("bookings.deposit.toastPayFirstDesc", "Vous pourrez activer la caution après paiement de la location."),
+                          variant: "default",
+                        });
+                        return;
+                      }
+                      setDepositModalBooking(booking);
+                      setIsDepositModalOpen(true);
+                    }}
                   />
                 );
               })}
@@ -968,6 +1006,22 @@ export default function RenterBookings() {
           return booking ? isBookingPaid(booking) : false;
         })()}
       />
+
+      {depositModalBooking && (
+        <DepositFlowModal
+          isOpen={isDepositModalOpen}
+          onClose={() => {
+            setIsDepositModalOpen(false);
+            setDepositModalBooking(null);
+          }}
+          bookingId={depositModalBooking.id}
+          depositAmount={Number(depositModalBooking.depositAmount ?? depositModalBooking.depositAmountSnapshot ?? 0)}
+          onSuccess={() => {
+            loadBookings();
+            toast({ title: "Caution activée", description: "Votre carte a été enregistrée avec succès.", variant: "default" });
+          }}
+        />
+      )}
 
       <Footer />
     </div>

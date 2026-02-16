@@ -118,15 +118,46 @@ export default function Callback() {
       }
 
       try {
+        // DIAG: Verify authenticated user
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        console.log("[AuthCallback] DIAG auth user:", {
+          id: authUser?.id,
+          email: authUser?.email,
+          email_confirmed_at: authUser?.email_confirmed_at,
+        });
+
         // 1. Fetch profile to check current state
+        console.log("[AuthCallback] DIAG before SELECT profiles, userId:", userId);
+        
         const { data: profile, error: fetchError } = await supabase
           .from("profiles")
           .select("kyc_status, welcome_email_sent_at, email, first_name, last_name")
           .eq("id", userId)
           .single();
 
+        console.log("[AuthCallback] DIAG after SELECT profiles:", {
+          profile: profile ? {
+            kyc_status: profile.kyc_status,
+            email: profile.email,
+            first_name: profile.first_name,
+            welcome_email_sent_at: profile.welcome_email_sent_at,
+          } : null,
+          fetchError: fetchError ? {
+            code: fetchError.code,
+            message: fetchError.message,
+            details: fetchError.details,
+            hint: fetchError.hint,
+          } : null,
+        });
+
         if (fetchError || !profile) {
-          console.error("[AuthCallback] Failed to fetch profile:", fetchError);
+          console.error("[AuthCallback] Failed to fetch profile:", {
+            fetchError,
+            profileIsNull: !profile,
+            errorCode: fetchError?.code,
+            errorMessage: fetchError?.message,
+            errorDetails: fetchError?.details,
+          });
           return; // Don't lock, allow retry
         }
 
@@ -147,13 +178,30 @@ export default function Callback() {
         }
 
         // 3. Update kyc_status to verified
+        console.log("[AuthCallback] DIAG before UPDATE profiles: updating kyc_status to verified");
+        
         const { error: updateError } = await supabase
           .from("profiles")
           .update({ kyc_status: "verified" })
           .eq("id", userId);
 
+        console.log("[AuthCallback] DIAG after UPDATE profiles:", {
+          updateError: updateError ? {
+            code: updateError.code,
+            message: updateError.message,
+            details: updateError.details,
+            hint: updateError.hint,
+          } : null,
+        });
+
         if (updateError) {
-          console.error("[AuthCallback] UPDATE kyc_status FAILED:", updateError);
+          console.error("[AuthCallback] UPDATE kyc_status FAILED:", {
+            updateError,
+            errorCode: updateError.code,
+            errorMessage: updateError.message,
+            errorDetails: updateError.details,
+            errorHint: updateError.hint,
+          });
           return;
         }
 

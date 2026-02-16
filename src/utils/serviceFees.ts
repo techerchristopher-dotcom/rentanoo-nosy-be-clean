@@ -73,7 +73,7 @@ export function validateFeeCalculations(
   ownerFee: number,
   platformFee: number
 ): void {
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV !== "production") {
     const expectedRenterFee = calcServiceFeeRenter(subtotal);
     const expectedOwnerFee = calcServiceFeeOwner(subtotal);
     const expectedPlatformFee = calcPlatformTotalFee(subtotal);

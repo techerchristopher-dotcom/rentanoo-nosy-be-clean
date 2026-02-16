@@ -35,7 +35,10 @@ export interface Vehicle {
   high_season_surcharge: number | null;
   long_duration_discount_14: number | null;
   long_duration_discount_60: number | null;
-  
+
+  /** Montant caution (empreinte) en euros. 0 = pas de caution. */
+  deposit_amount: number | null;
+
   // 🆕 Services supplémentaires configurés par le propriétaire
   // 🛩️ Services Aéroport
   airport_pickup_service?: boolean | null;
@@ -364,6 +367,7 @@ export const SupabaseVehiclesService = {
     high_season_surcharge?: number;
     long_duration_discount_14?: number;
     long_duration_discount_60?: number;
+    deposit_amount?: number;
   }): Promise<{ data: Vehicle | null; error: string | null }> {
     try {
       console.log('SupabaseVehiclesService.updateVehicle - ID:', vehicleId);

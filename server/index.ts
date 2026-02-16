@@ -5,6 +5,7 @@ import cors from "cors";
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 import { getStripe, isStripeConfigured, getStripeKeyType } from "./lib/stripe";
+import { getAuthUserFromRequest } from "./lib/depositAuth";
 
 // Charger .env.local en développement uniquement (si fichier existe)
 // En production Railway, les variables sont dans process.env directement
@@ -25,6 +26,12 @@ console.log(`🔑 [Stripe] Configuration: ${stripeConfigured ? `✅ Présente (m
 if (!stripeConfigured) {
   console.warn("⚠️ [Stripe] STRIPE_SECRET_KEY non configurée. Les routes Stripe ne fonctionneront pas.");
 }
+
+// Supabase env (fallback VITE_* pour compat .env.local)
+const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+console.log(`📦 [Supabase] URL: ${SUPABASE_URL ? "✅" : "❌"} | ANON_KEY: ${SUPABASE_ANON_KEY ? "✅" : "❌"} | SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY ? "✅" : "❌"}`);
 
 const app = express();
 
@@ -56,8 +63,8 @@ app.use((req, res, next) => {
 
 // Supabase admin client (service role) pour mises à jour serveur
 const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  SUPABASE_URL as string,
+  SUPABASE_SERVICE_ROLE_KEY as string,
   { auth: { persistSession: false } }
 );
 
@@ -257,6 +264,167 @@ const upload = multer({
       cb(new Error("Type de fichier non autorisé. Formats acceptés: PDF, JPG, PNG, DOC, DOCX"));
     }
   },
+});
+
+// === Routes deposit Phase 3.2.2 (SetupIntent + attach PM, NO HOLD) ===
+app.post("/api/deposit/create-setup-intent", async (req, res) => {
+  try {
+    const authResult = await getAuthUserFromRequest(req);
+    if (!authResult.ok) {
+      return res.status(401).json({ ok: false, error: "UNAUTHORIZED", message: authResult.message, reason: authResult.reason });
+    }
+    const { user } = authResult;
+
+    const { bookingId } = req.body;
+    if (!bookingId || typeof bookingId !== "string") {
+      return res.status(400).json({ ok: false, error: "MISSING_BOOKING_ID", message: "bookingId requis" });
+    }
+
+    const { data: booking, error: bookingErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, user_id, status, deposit_status, deposit_amount_snapshot, stripe_payment_method_id")
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingErr || !booking) {
+      return res.status(404).json({ ok: false, error: "BOOKING_NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    if (booking.user_id !== user.id) {
+      return res.status(403).json({ ok: false, error: "FORBIDDEN", message: "Cette réservation ne vous appartient pas" });
+    }
+
+    const depositSnapshot = Number(booking.deposit_amount_snapshot ?? 0);
+    if (depositSnapshot <= 0) {
+      return res.status(400).json({ ok: false, error: "INVALID_DEPOSIT", message: "Caution non requise pour cette réservation" });
+    }
+
+    const allowedStatuses = ["confirmed", "accepted"];
+    if (!allowedStatuses.includes(booking.status)) {
+      return res.status(400).json({ ok: false, error: "INVALID_BOOKING_STATUS", message: "Statut de réservation incompatible" });
+    }
+
+    if (booking.deposit_status !== "pending") {
+      return res.status(400).json({ ok: false, error: "DEPOSIT_ALREADY_PROCESSED", message: "La caution a déjà été traitée" });
+    }
+
+    if (booking.stripe_payment_method_id) {
+      return res.status(400).json({ ok: false, error: "CARD_ALREADY_REGISTERED", message: "Une carte est déjà enregistrée pour cette caution" });
+    }
+
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, stripe_customer_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileErr || !profile) {
+      return res.status(500).json({ ok: false, error: "PROFILE_NOT_FOUND", message: "Profil introuvable" });
+    }
+
+    let stripeCustomerId = profile.stripe_customer_id;
+    if (!stripeCustomerId) {
+      const stripe = getStripe();
+      const customer = await stripe.customers.create({
+        email: profile.email || user.email || undefined,
+        metadata: { profileId: profile.id },
+      });
+      stripeCustomerId = customer.id;
+      await supabaseAdmin.from("profiles").update({ stripe_customer_id: stripeCustomerId, updated_at: new Date().toISOString() }).eq("id", user.id);
+    }
+
+    const stripe = getStripe();
+    const setupIntent = await stripe.setupIntents.create({
+      customer: stripeCustomerId,
+      payment_method_types: ["card"],
+      usage: "off_session",
+      metadata: { bookingId },
+    });
+
+    return res.status(200).json({ clientSecret: setupIntent.client_secret });
+  } catch (err: any) {
+    console.error("[deposit/create-setup-intent] 500", err);
+    const message = err?.message || "Impossible de créer le formulaire de caution. Veuillez réessayer.";
+    return res.status(500).json({ ok: false, error: "INTERNAL_SERVER_ERROR", message });
+  }
+});
+
+app.post("/api/deposit/attach-payment-method", async (req, res) => {
+  try {
+    const authResult = await getAuthUserFromRequest(req);
+    if (!authResult.ok) {
+      return res.status(401).json({ ok: false, error: "UNAUTHORIZED", message: authResult.message, reason: authResult.reason });
+    }
+    const { user } = authResult;
+
+    const { bookingId, paymentMethodId } = req.body;
+    if (!bookingId || typeof bookingId !== "string" || !paymentMethodId || typeof paymentMethodId !== "string") {
+      return res.status(400).json({ ok: false, error: "MISSING_PARAMS", message: "bookingId et paymentMethodId requis" });
+    }
+
+    const { data: booking, error: bookingErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, user_id, status, deposit_status, deposit_amount_snapshot, stripe_payment_method_id")
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingErr || !booking) {
+      return res.status(404).json({ ok: false, error: "BOOKING_NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    if (booking.user_id !== user.id) {
+      return res.status(403).json({ ok: false, error: "FORBIDDEN", message: "Cette réservation ne vous appartient pas" });
+    }
+
+    const depositSnapshot = Number(booking.deposit_amount_snapshot ?? 0);
+    if (depositSnapshot <= 0) {
+      return res.status(400).json({ ok: false, error: "INVALID_DEPOSIT", message: "Caution non requise pour cette réservation" });
+    }
+
+    if (booking.deposit_status !== "pending") {
+      return res.status(400).json({ ok: false, error: "DEPOSIT_ALREADY_PROCESSED", message: "La caution a déjà été traitée" });
+    }
+
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, stripe_customer_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileErr || !profile) {
+      return res.status(500).json({ ok: false, error: "PROFILE_NOT_FOUND", message: "Profil introuvable" });
+    }
+
+    if (!profile.stripe_customer_id) {
+      return res.status(400).json({ ok: false, error: "STRIPE_CUSTOMER_MISSING", message: "Erreur configuration Stripe. Veuillez réessayer." });
+    }
+
+    const stripe = getStripe();
+    const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+    if (pm.customer !== profile.stripe_customer_id) {
+      await stripe.paymentMethods.attach(paymentMethodId, { customer: profile.stripe_customer_id });
+    }
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        stripe_payment_method_id: paymentMethodId,
+        deposit_status: "card_registered",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", bookingId);
+
+    if (updateErr) {
+      console.error("[deposit/attach-payment-method] Update error:", updateErr);
+      return res.status(500).json({ ok: false, error: "UPDATE_FAILED", message: "Erreur lors de la mise à jour" });
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (err: any) {
+    console.error("[deposit/attach-payment-method] 500", err);
+    const message = err?.message || "Impossible d'enregistrer la carte. Veuillez réessayer.";
+    return res.status(500).json({ ok: false, error: "INTERNAL_SERVER_ERROR", message });
+  }
 });
 
 // Route contact form (JSON only, no multer)
@@ -904,12 +1072,13 @@ if (process.env.NODE_ENV === "production") {
     });
   });
 } else {
-  console.log(`🔧 Serveur en mode DÉVELOPPEMENT - Frontend sur ports 3012 (tenant) ou 3013 (owner) (Vite)`);
+  console.log(`🔧 Serveur en mode DÉVELOPPEMENT - Site sur http://localhost:3002 (Vite), API sur ce port`);
 }
 
+// Port 3000 par défaut en dev (proxy Vite /api → localhost:3000, frontend sur 3001)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 API backend démarrée sur http://localhost:${PORT}`);
+  console.log(`🚀 API listening on http://localhost:${PORT}`);
   console.log(`📧 Email provider: n8n (webhook: ${process.env.N8N_WEBHOOK_URL ? "✅ configuré" : "❌ non configuré"})`);
   if (process.env.NODE_ENV === "production") {
     console.log(`✅ Frontend et API disponibles sur le même port: ${PORT}`);

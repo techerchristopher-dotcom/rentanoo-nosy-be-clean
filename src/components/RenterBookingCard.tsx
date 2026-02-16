@@ -63,8 +63,10 @@ import { calcServiceFeeRenter, calcRenterTotal } from '@/utils/serviceFees'
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
   primaryPhoto?: Photo
-  depositStatus?: 'pending' | 'paid' | 'refunded' | null
+  depositStatus?: 'pending' | 'paid' | 'refunded' | 'card_registered' | 'not_required' | null
   depositAmount?: number | null
+  depositAmountSnapshot?: number | null
+  stripePaymentMethodId?: string | null
   checkinDepart?: CheckinDepartSummary
 }
 
@@ -87,6 +89,7 @@ type RenterBookingCardProps = {
     totalTTC: number
     extras?: Array<{ label: string; price: number }>
   }) => void
+  onRequestDeposit?: (booking: BookingWithDetails) => void
 }
 
 export default function RenterBookingCard({
@@ -98,6 +101,7 @@ export default function RenterBookingCard({
   onBookingDeleted,
   onBookingUpdated,
   onRequestPay,
+  onRequestDeposit,
 }: RenterBookingCardProps) {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -393,22 +397,28 @@ export default function RenterBookingCard({
     const startDate = new Date(booking.startDate)
     const endDate = new Date(booking.endDate)
     const depositStatus = (booking as any).depositStatus || null
-    const depositAmount = (booking as any).depositAmount || null
+    const depositAmount = (booking as any).depositAmount ?? (booking as any).depositAmountSnapshot ?? null
+    const stripePmId = (booking as any).stripePaymentMethodId ?? (booking as any).stripe_payment_method_id ?? null
+    const depositOk = depositStatus === 'paid' || depositStatus === 'card_registered'
 
-    // Cas A: confirmed + deposit_status pending
-    if (booking.status === 'confirmed' && depositStatus === 'pending') {
+    // Snapshot numeric: Number() pour éviter bug PostgREST string
+    const snapshot = Number(depositAmount ?? 0);
+
+    // Cas A: confirmed/accepted + deposit_status pending + deposit_amount_snapshot > 0 + pas de PM déjà enregistrée
+    const isPaidStatus = booking.status === 'confirmed' || booking.status === 'accepted';
+    if (isPaidStatus && depositStatus === 'pending' && snapshot > 0 && !stripePmId) {
       return {
         badgeLabel: t('bookings.status.paymentConfirmed'),
         badgeNote: t('bookings.status.depositPending'),
         badgeColorClass: 'bg-orange-100 text-orange-800 border border-orange-300 rounded-full px-3 py-1 text-sm font-medium',
         noteColorClass: 'text-orange-700 text-xs font-medium',
         showDepositCTA: true,
-        depositCTALabel: t('bookings.card.finalizeBooking')
+        depositCTALabel: t('bookings.card.activateDeposit', 'Activer la caution')
       }
     }
 
-    // Cas B: confirmed + deposit_status paid + start_date > now
-    if (booking.status === 'confirmed' && depositStatus === 'paid' && startDate > now) {
+    // Cas B: confirmed + deposit_status paid/card_registered + start_date > now
+    if (booking.status === 'confirmed' && depositOk && startDate > now) {
       return {
         badgeLabel: t('bookings.status.readyToGo'),
         badgeNote: t('bookings.status.paymentDepositValidated'),
@@ -418,9 +428,9 @@ export default function RenterBookingCard({
       }
     }
 
-    // Cas C: active OU (confirmed + deposit paid + dates chevauchantes)
+    // Cas C: active OU (confirmed + deposit paid/card_registered + dates chevauchantes)
     if (booking.status === 'active' || 
-        (booking.status === 'confirmed' && depositStatus === 'paid' && startDate <= now && endDate >= now)) {
+        (booking.status === 'confirmed' && depositOk && startDate <= now && endDate >= now)) {
       return {
         badgeLabel: t('bookings.status.active'),
         badgeNote: null,
@@ -744,9 +754,20 @@ export default function RenterBookingCard({
     }
   }
 
+  // DEBUG Phase 3.2.3 — Renter caution UI
+  console.log("BOOKING RENTER CARD 👉", {
+    id: booking.id,
+    status: booking.status,
+    depositStatus: (booking as any).depositStatus,
+    depositAmount: (booking as any).depositAmount,
+    depositAmountSnapshot: (booking as any).depositAmountSnapshot,
+    stripePaymentMethodId: (booking as any).stripePaymentMethodId,
+    rawBookingKeys: Object.keys(booking || {}),
+  });
+
   return (
     <>
-        <Collapsible
+    <Collapsible
           key={booking.id}
           open={isExpanded}
           onOpenChange={() => toggleExpanded(booking.id)}
@@ -1159,6 +1180,38 @@ export default function RenterBookingCard({
                         </Tooltip>
                       </TooltipProvider>
                     </div>
+                    {/* Caution snapshot (read-only) — Phase 3.2.3 */}
+                    {(() => {
+                      const status = (booking as any).depositStatus ?? null;
+                      const snapshotRaw = (booking as any).depositAmount ?? (booking as any).depositAmountSnapshot ?? null;
+                      const snapshot = Number(snapshotRaw ?? 0);
+                      if (status == null && snapshotRaw == null) return null;
+                      if (status === 'card_registered') {
+                        return (
+                          <div className="flex items-center text-sm">
+                            <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-green-600" />
+                            <span className="font-medium text-foreground">{t('bookings.deposit.status.activated', 'Caution : activée')}</span>
+                          </div>
+                        );
+                      }
+                      if (status === 'pending' && snapshot > 0) {
+                        return (
+                          <div className="flex items-center text-sm">
+                            <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
+                            <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {formatMoney(snapshot)}</span>
+                          </div>
+                        );
+                      }
+                      if (status === 'not_required' || snapshot === 0) {
+                        return (
+                          <div className="flex items-center text-sm">
+                            <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
+                            <span className="font-medium text-muted-foreground">{t('bookings.deposit.status.none', 'Caution : aucune')}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
 
@@ -1200,37 +1253,7 @@ export default function RenterBookingCard({
                         className="relative bg-gradient-lagoon hover:opacity-90 text-white shadow-lg hover:shadow-2xl transition-all flex-1 min-w-[200px] overflow-hidden group border-2 border-primary"
                         onClick={(e) => {
                           e.stopPropagation()
-                          // Ouvrir la modal de finalisation (étape 1: paiement, étape 2: caution)
-                          const start = new Date(booking.startDate)
-                          const end = new Date(booking.endDate)
-                          const startTime = (booking as any).startTime || '06:30'
-                          const endTime = (booking as any).endTime || '14:00'
-                          const [sh, sm] = startTime.split(':')
-                          const [eh, em] = endTime.split(':')
-                          start.setHours(parseInt(sh), parseInt(sm), 0, 0)
-                          end.setHours(parseInt(eh), parseInt(em), 0, 0)
-                          const hours = (end.getTime() - start.getTime()) / (1000*60*60)
-                          const days = Math.max(1, Math.ceil(hours / 24))
-                          const base = booking.vehicle?.dailyPrice ? Math.ceil(days * booking.vehicle.dailyPrice) : (booking.totalAmount || 0)
-                          // Extras issus des options sélectionnées s'ils existent
-                          const selectedExtras: Array<{ label: string; price: number }> = Array.isArray((booking as any).selectedOptions)
-                            ? ((booking as any).selectedOptions || []).map((opt: any) => ({ label: opt.name, price: opt.totalPrice }))
-                            : []
-                          const optionsTotal = selectedExtras.reduce((s, x) => s + (x.price || 0), 0)
-                          const subtotal = base + optionsTotal
-                          const fee = calcServiceFeeRenter(subtotal)
-                          const total = calcRenterTotal(subtotal)
-                          onRequestPay?.({
-                            id: booking.id,
-                            voiture: booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Véhicule',
-                            dateDebut: formatDate(booking.startDate),
-                            dateFin: formatDate(booking.endDate),
-                            duree: days === 1 ? '1 jour' : `${days} jours`,
-                            montantDeBase: base,
-                            fraisService: fee,
-                            totalTTC: total,
-                            extras: selectedExtras,
-                          })
+                          onRequestDeposit?.(booking)
                         }}
                       >
                         {/* Effet shimmer au hover */}

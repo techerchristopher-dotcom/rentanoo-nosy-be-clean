@@ -47,7 +47,9 @@ interface BookingWithDetails extends Omit<Booking, 'startTime' | 'endTime' | 'pi
   rentalDays?: number;
   pickupLocation?: string;
   totalPrice?: number;
-  depositStatus?: 'pending' | 'paid' | 'refunded' | null; // Statut de la caution
+  depositStatus?: 'pending' | 'paid' | 'refunded' | 'card_registered' | 'not_required' | null;
+  depositAmountSnapshot?: number | null;
+  stripePaymentMethodId?: string | null;
   checkinDepart?: CheckinDepartSummary;
   checkinReturn?: CheckinReturnSummary;
 }
@@ -211,7 +213,9 @@ const OwnerBookings = () => {
         pricePerDay: booking.price_per_day,
         rentalDays: booking.rental_days,
         totalPrice: booking.total_price,
-        depositStatus: (booking as any).deposit_status || null, // Statut de la caution
+        depositStatus: (booking as any).deposit_status || null,
+        depositAmountSnapshot: (booking as any).deposit_amount_snapshot ?? null,
+        stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null,
         checkinDepart,
         checkinReturn,
       };

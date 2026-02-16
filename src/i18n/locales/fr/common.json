@@ -723,7 +723,17 @@
       "totalLabel": "Total:",
       "servicesTitle": "Services supplémentaires:",
       "confirm": "Confirmer",
-      "finalizeBooking": "Finaliser ma réservation"
+      "finalizeBooking": "Finaliser ma réservation",
+      "activateDeposit": "Activer la caution"
+    },
+    "deposit": {
+      "status": {
+        "activated": "Caution : activée",
+        "todo": "Caution : à activer",
+        "none": "Caution : aucune"
+      },
+      "toastPayFirst": "Paiement requis",
+      "toastPayFirstDesc": "Vous pourrez activer la caution après paiement de la location."
     },
     "status": {
       "paymentConfirmed": "Paiement confirmé",
@@ -982,6 +992,16 @@
     "errorNetwork": "Impossible de contacter le serveur. Vérifiez votre connexion internet.",
     "errorTimeout": "La requête a pris trop de temps. Veuillez réessayer.",
     "fileTooLarge": "Le fichier ne doit pas dépasser 10MB"
+  },
+  "depositModal": {
+    "title": "Activer la caution",
+    "description": "Aucun débit immédiat.\n\nVous enregistrez simplement votre carte pour sécuriser la caution de {{amount}}.\nUne empreinte pourra être réalisée automatiquement 48h avant le départ, puis libérée 48h après le retour si tout est conforme.\n\nSimple, sécurisé et sans surprise.",
+    "amountLabel": "Montant de la caution : {{amount}}",
+    "learnMore": "En savoir plus sur la caution et les sinistres",
+    "loading": "Chargement du formulaire...",
+    "submit": "Enregistrer ma carte",
+    "submitting": "Enregistrement...",
+    "cancel": "Annuler"
   },
   "sinistreCaution": {
     "metaTitle": "Sinistre & caution | RENTANOO - Location Nosy Be",

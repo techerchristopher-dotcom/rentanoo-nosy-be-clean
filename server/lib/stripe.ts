@@ -54,7 +54,7 @@ export function getStripe(): Stripe {
                   "UNKNOWN";
 
   stripeInstance = new Stripe(secretKey, {
-    apiVersion: "2024-12-18.acacia",
+    apiVersion: "2025-10-29.clover",
   });
 
   console.log(`✅ [Stripe] Instance initialisée (mode ${keyType})`);

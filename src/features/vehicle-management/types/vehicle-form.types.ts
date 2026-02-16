@@ -27,6 +27,7 @@ export interface VehicleFormData {
   highSeasonSurcharge: string;
   longDurationDiscount14: string;
   longDurationDiscount60: string;
+  depositAmount: string;
 
   // Équipements
   hasAC: boolean;
@@ -153,6 +154,7 @@ export const initialFormData: VehicleFormData = {
   highSeasonSurcharge: "",
   longDurationDiscount14: "",
   longDurationDiscount60: "",
+  depositAmount: "1000",
   hasAC: false,
   hasGPS: false,
   hasCruiseControl: false,

@@ -625,7 +625,15 @@
       "totalLabel": "Gesamt:",
       "servicesTitle": "Zusätzliche Dienstleistungen:",
       "confirm": "Bestätigen",
-      "finalizeBooking": "Buchung abschließen"
+      "finalizeBooking": "Buchung abschließen",
+      "activateDeposit": "Kaution aktivieren"
+    },
+    "deposit": {
+      "status": {
+        "activated": "Kaution: aktiviert",
+        "todo": "Kaution: zu aktivieren",
+        "none": "Keine Kaution"
+      }
     },
     "status": {
       "paymentConfirmed": "Zahlung bestätigt",
@@ -957,6 +965,16 @@
     "error": "Fehler",
     "errorGeneric": "Fehler, bitte versuchen Sie es erneut.",
     "fileTooLarge": "Die Datei darf 10MB nicht überschreiten"
+  },
+  "depositModal": {
+    "title": "Kaution aktivieren",
+    "description": "Keine sofortige Belastung.\n\nSie registrieren einfach Ihre Karte zur Sicherung der Kaution von {{amount}}.\nEine Sperre kann automatisch 48h vor Abreise gesetzt und 48h nach Rückkehr freigegeben werden, wenn alles in Ordnung ist.\n\nEinfach, sicher und ohne Überraschungen.",
+    "amountLabel": "Kaution: {{amount}}",
+    "learnMore": "Mehr über Kaution und Schäden erfahren",
+    "loading": "Formular wird geladen...",
+    "submit": "Meine Karte registrieren",
+    "submitting": "Registrierung...",
+    "cancel": "Abbrechen"
   },
   "sinistreCaution": {
     "metaTitle": "Schaden & Kaution | RENTANOO - Vermietung Nosy Be",

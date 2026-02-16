@@ -59,6 +59,7 @@ import { ConversationsService } from '@/services/supabase/conversations'
 import { MessagesService } from '@/services/supabase/messages'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
 import { calcServiceFeeOwner, calcServiceFeeRenter, calcOwnerPayout, calcRenterTotal } from '@/utils/serviceFees'
+import { useTranslation } from 'react-i18next'
 
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
@@ -100,6 +101,7 @@ export default function OwnerBookingCard({
 }: OwnerBookingCardProps) {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { t } = useTranslation("common")
   const [renter, setRenter] = useState<User | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -257,7 +259,7 @@ export default function OwnerBookingCard({
   const handleAccept = async () => {
     setIsUpdating(true)
     try {
-      const result = await SupabaseBookingsService.updateBookingStatus(booking.id, 'pending_payment')
+      const result = await SupabaseBookingsService.updateBookingToPendingPaymentWithDepositSnapshot(booking.id, booking.vehicleId)
       
       if (result.error) {
         toast({
@@ -735,6 +737,16 @@ export default function OwnerBookingCard({
     }
   }
 
+  // DEBUG Phase 3.2.3 — Owner caution UI
+  console.log("BOOKING OWNER CARD 👉", {
+    id: booking.id,
+    status: booking.status,
+    depositStatus: (booking as any).depositStatus,
+    depositAmountSnapshot: (booking as any).depositAmountSnapshot,
+    stripePaymentMethodId: (booking as any).stripePaymentMethodId,
+    rawBookingKeys: Object.keys(booking || {}),
+  });
+
   return (
     <>
     <Collapsible
@@ -1062,6 +1074,38 @@ export default function OwnerBookingCard({
                           </Tooltip>
                         </TooltipProvider>
                       </div>
+                      {/* Caution snapshot (read-only) — Phase 3.2.3 */}
+                      {(() => {
+                        const status = (booking as any).depositStatus ?? null;
+                        const snapshotRaw = (booking as any).depositAmountSnapshot ?? (booking as any).depositAmount ?? null;
+                        const snapshot = Number(snapshotRaw ?? 0);
+                        if (status == null && snapshotRaw == null) return null;
+                        if (status === 'card_registered') {
+                          return (
+                            <div className="flex items-center text-sm">
+                              <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-green-600" />
+                              <span className="font-medium text-foreground">{t('bookings.deposit.status.activated', 'Caution : activée')}</span>
+                            </div>
+                          );
+                        }
+                        if (status === 'pending' && snapshot > 0) {
+                          return (
+                            <div className="flex items-center text-sm">
+                              <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
+                              <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {snapshot.toFixed(2)}€</span>
+                            </div>
+                          );
+                        }
+                        if (status === 'not_required' || snapshot === 0) {
+                          return (
+                            <div className="flex items-center text-sm">
+                              <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
+                              <span className="font-medium text-muted-foreground">{t('bookings.deposit.status.none', 'Caution : aucune')}</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
 

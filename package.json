@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:local": "concurrently -n api,vite -c blue,green \"cross-env PORT=3000 npm run dev:api\" \"npm run dev\"",
     "dev:renter": "vite --port 3000",
     "dev:tenant": "cross-env VITE_APP_CONTEXT=tenant vite --port 3012",
     "dev:owner": "cross-env VITE_APP_CONTEXT=owner vite --port 3013",
@@ -107,6 +108,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "dotenv": "^17.2.3",

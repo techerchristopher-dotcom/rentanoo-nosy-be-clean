@@ -109,6 +109,7 @@ export function useManageVehicle(
         highSeasonSurcharge: (vehicleData.high_season_surcharge || 20).toString(),
         longDurationDiscount14: (vehicleData.long_duration_discount_14 || 15).toString(),
         longDurationDiscount60: (vehicleData.long_duration_discount_60 || 25).toString(),
+        depositAmount: ((vehicleData as { deposit_amount?: number | null }).deposit_amount ?? 1000).toString(),
         // 🆕 CHARGER TOUS LES ÉQUIPEMENTS DEPUIS LA BASE DE DONNÉES
         hasAC: vehicleData.has_ac || false,
         hasGPS: vehicleData.has_gps || false,

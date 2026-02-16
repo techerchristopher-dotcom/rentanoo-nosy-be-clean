@@ -903,6 +903,14 @@ export default function ManageVehicle() {
           error = "La remise doit être entre 0 et 100%";
         }
         break;
+      case "depositAmount":
+        if (value) {
+          const deposit = parseFloat(value);
+          if (isNaN(deposit) || deposit < 0) {
+            error = "Le montant doit être un nombre ≥ 0";
+          }
+        }
+        break;
     }
     
     setValidationErrors(prev => ({
@@ -1279,12 +1287,17 @@ export default function ManageVehicle() {
         status: formData.status as 'active' | 'inactive' | 'review',
       };
 
-      // Préparer les données de remises (nouvelles colonnes)
+      // Préparer les données de remises (nouvelles colonnes) + caution
+      // deposit_amount : vide/NaN/<0 → 1000 (aligné DEFAULT DB), sinon parseFloat
+      const depositRaw = formData.depositAmount?.trim();
+      const parsed = depositRaw ? parseFloat(depositRaw) : NaN;
+      const depositAmount = (!depositRaw || isNaN(parsed) || parsed < 0) ? 1000 : parsed;
       const pricingUpdateData = {
         low_season_discount: parseFloat(formData.lowSeasonDiscount) || undefined,
         high_season_surcharge: parseFloat(formData.highSeasonSurcharge) || undefined,
         long_duration_discount_14: parseFloat(formData.longDurationDiscount14) || undefined,
         long_duration_discount_60: parseFloat(formData.longDurationDiscount60) || undefined,
+        deposit_amount: depositAmount,
       };
 
       console.log("Données à envoyer à Supabase (base):", baseUpdateData);
@@ -2112,6 +2125,25 @@ export default function ManageVehicle() {
                   />
                   {validationErrors.pricePerDay && (
                     <p className="text-xs text-red-500">{validationErrors.pricePerDay}</p>
+                  )}
+                </div>
+
+                {/* Montant caution */}
+                <div className="space-y-2">
+                  <Label htmlFor="depositAmount">Montant caution (€)</Label>
+                  <Input
+                    id="depositAmount"
+                    type="number"
+                    value={formData.depositAmount}
+                    onChange={(e) => handleInputChange("depositAmount", e.target.value)}
+                    placeholder="1000"
+                    min="0"
+                    step="1"
+                    className={validationErrors.depositAmount ? "border-red-500 focus:border-red-500" : ""}
+                  />
+                  <p className="text-xs text-muted-foreground">Empreinte bancaire : 0€ = pas de caution.</p>
+                  {validationErrors.depositAmount && (
+                    <p className="text-xs text-red-500">{validationErrors.depositAmount}</p>
                   )}
                 </div>
 

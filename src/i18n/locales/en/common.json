@@ -720,7 +720,17 @@
       "totalLabel": "Total:",
       "servicesTitle": "Additional services:",
       "confirm": "Confirm",
-      "finalizeBooking": "Finalize my booking"
+      "finalizeBooking": "Finalize my booking",
+      "activateDeposit": "Activate deposit"
+    },
+    "deposit": {
+      "status": {
+        "activated": "Deposit: activated",
+        "todo": "Deposit: to activate",
+        "none": "No deposit"
+      },
+      "toastPayFirst": "Payment required",
+      "toastPayFirstDesc": "You can activate the deposit after paying for the rental."
     },
     "status": {
       "paymentConfirmed": "Payment confirmed",
@@ -979,6 +989,16 @@
     "errorNetwork": "Unable to contact the server. Please check your internet connection.",
     "errorTimeout": "The request took too long. Please try again.",
     "fileTooLarge": "File must not exceed 10MB"
+  },
+  "depositModal": {
+    "title": "Activate deposit",
+    "description": "No immediate charge.\n\nYou are simply registering your card to secure the deposit of {{amount}}.\nA hold may be placed automatically 48h before departure, then released 48h after return if everything is in order.\n\nSimple, secure and no surprises.",
+    "amountLabel": "Deposit amount: {{amount}}",
+    "learnMore": "Learn more about deposit and damage",
+    "loading": "Loading form...",
+    "submit": "Register my card",
+    "submitting": "Registering...",
+    "cancel": "Cancel"
   },
   "sinistreCaution": {
     "metaTitle": "Damage & deposit | RENTANOO - Nosy Be rental",
