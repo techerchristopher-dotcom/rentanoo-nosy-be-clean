@@ -85,42 +85,43 @@ export class ErrorBoundary extends Component<Props, State> {
 
   handleResourceError = (event: ErrorEvent) => {
     // Capturer uniquement les erreurs de chargement de ressources (404, etc.)
-    if (event.target && (event.target as HTMLElement).tagName) {
-      const target = event.target as HTMLElement;
-      const tagName = target.tagName.toLowerCase();
-      
-      // Vérifier si c'est une ressource (img, link, script, etc.)
-      if (['img', 'link', 'script', 'style'].includes(tagName)) {
-        const src = (target as HTMLImageElement).src || 
-                   (target as HTMLLinkElement).href || 
-                   (target as HTMLScriptElement).src || '';
-        
-        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.error('[ErrorBoundary] ❌ Erreur de chargement de ressource');
-        console.error('[ErrorBoundary] 📦 Type:', tagName);
-        console.error('[ErrorBoundary] 📦 URL:', src);
-        console.error('[ErrorBoundary] 📦 Message:', event.message);
-        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    if (!event.target || !(event.target as HTMLElement).tagName) return;
 
-        // ⚠️ Cas particulier des images :
-        // Une image 404 ne doit PAS faire crasher toute l'application.
-        // On loggue simplement l'erreur, le composant d'image gère le fallback (placeholder).
-        if (tagName === 'img') {
-          return;
-        }
+    const target = event.target as HTMLElement;
+    const tagName = target.tagName.toUpperCase();
 
-        // Créer une erreur spécifique pour les ressources manquantes
-        const error = new Error(
-          `Ressource non trouvée (404): ${tagName.toUpperCase()} - ${src || 'URL inconnue'}`
-        );
-        
-        this.setState({
-          hasError: true,
-          error,
-          errorInfo: null,
-        });
-      }
+    // Ignorer IMG : les composants ont déjà onError/fallback, évite de spammer la console
+    if (tagName === 'IMG') return;
+
+    // Ignorer LINK rel=icon / apple-touch-icon (icônes favicon)
+    if (tagName === 'LINK') {
+      const rel = (target as HTMLLinkElement).rel?.toLowerCase() || '';
+      if (rel.includes('icon') || rel.includes('apple-touch-icon')) return;
     }
+
+    // Vérifier si c'est une ressource (link, script, style)
+    const tagLower = tagName.toLowerCase();
+    if (!['link', 'script', 'style'].includes(tagLower)) return;
+
+    const src = (target as HTMLImageElement).src ||
+                (target as HTMLLinkElement).href ||
+                (target as HTMLScriptElement).src || '';
+
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('[ErrorBoundary] ❌ Erreur de chargement de ressource');
+    console.error('[ErrorBoundary] 📦 Type:', tagLower);
+    console.error('[ErrorBoundary] 📦 URL:', src);
+    console.error('[ErrorBoundary] 📦 Message:', event.message);
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    const error = new Error(
+      `Ressource non trouvée (404): ${tagName} - ${src || 'URL inconnue'}`
+    );
+    this.setState({
+      hasError: true,
+      error,
+      errorInfo: null,
+    });
   };
 
   static getDerivedStateFromError(error: Error): State {
