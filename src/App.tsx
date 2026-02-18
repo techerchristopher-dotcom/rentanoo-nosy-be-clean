@@ -10,22 +10,24 @@ import { PageLoader } from "@/components/ui/page-loader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navbar } from "@/components/layout/navbar";
 
-// Routes critiques (chargées immédiatement)
+// Home : import direct pour premier paint rapide
 import Index from "./pages/Index";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import Callback from "./pages/auth/Callback";
-import Profile from "./pages/Profile";
-import ClientOnboarding from "./pages/onboarding/ClientOnboarding";
-import ProfileTest from "./pages/ProfileTest";
-import BookingDiscussion from "./pages/booking/BookingDiscussion";
-import MessageToOwners from "./pages/booking/MessageToOwners";
-import Legal from "./pages/legal/Legal";
-import SinistreCaution from "./pages/sinistre-caution/SinistreCaution";
-import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
-// Routes non critiques (lazy-loaded)
+// Routes non-Home : lazy-loaded pour réduire le bundle initial
+const Login = lazy(() => import("./pages/auth/Login"));
+const Register = lazy(() => import("./pages/auth/Register"));
+const Callback = lazy(() => import("./pages/auth/Callback"));
+const Profile = lazy(() => import("./pages/Profile"));
+const ClientOnboarding = lazy(() => import("./pages/onboarding/ClientOnboarding"));
+const ProfileTest = lazy(() => import("./pages/ProfileTest"));
+const BookingDiscussion = lazy(() => import("./pages/booking/BookingDiscussion"));
+const MessageToOwners = lazy(() => import("./pages/booking/MessageToOwners"));
+const Legal = lazy(() => import("./pages/legal/Legal"));
+const SinistreCaution = lazy(() => import("./pages/sinistre-caution/SinistreCaution"));
+const Contact = lazy(() => import("./pages/Contact"));
+
+// Autres routes lourdes (déjà lazy)
 const VehicleDetails = lazy(() => import("./pages/vehicles/VehicleDetails"));
 const MotoVehicleDetails = lazy(() => import("./pages/vehicles/MotoVehicleDetails"));
 const RenterBookings = lazy(() => import("./pages/renter/RenterBookings"));
@@ -71,24 +73,27 @@ const App = () => (
               {/* Navbar - Rendu directement pour éviter les problèmes de ErrorBoundary */}
               <Navbar />
               <Routes>
-            {/* Routes critiques (chargées immédiatement) */}
+            {/* Home : chargement immédiat */}
             <Route path="/" element={<Index />} />
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
-            <Route path="/auth/callback" element={<Callback />} />
-            <Route path="/onboarding/client" element={<ClientOnboarding />} />
+            {/* Routes non-Home : lazy avec Suspense */}
+            <Route path="/auth/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
+            <Route path="/auth/register" element={<Suspense fallback={<PageLoader />}><Register /></Suspense>} />
+            <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><Callback /></Suspense>} />
+            <Route path="/onboarding/client" element={<Suspense fallback={<PageLoader />}><ClientOnboarding /></Suspense>} />
             <Route path="/profile" element={
-              <ErrorBoundary>
-                <Profile />
-              </ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <ErrorBoundary>
+                  <Profile />
+                </ErrorBoundary>
+              </Suspense>
             } />
-            <Route path="/profile-test" element={<ProfileTest />} />
-            <Route path="/vehicle/:license/booking/discussion" element={<BookingDiscussion />} />
-            <Route path="/moto/:license/booking/discussion" element={<BookingDiscussion />} />
-            <Route path="/booking/message" element={<MessageToOwners />} />
-            <Route path="/legal" element={<Legal />} />
-            <Route path="/sinistre-caution" element={<SinistreCaution />} />
-            <Route path="/contact" element={<Contact />} />
+            <Route path="/profile-test" element={<Suspense fallback={<PageLoader />}><ProfileTest /></Suspense>} />
+            <Route path="/vehicle/:license/booking/discussion" element={<Suspense fallback={<PageLoader />}><BookingDiscussion /></Suspense>} />
+            <Route path="/moto/:license/booking/discussion" element={<Suspense fallback={<PageLoader />}><BookingDiscussion /></Suspense>} />
+            <Route path="/booking/message" element={<Suspense fallback={<PageLoader />}><MessageToOwners /></Suspense>} />
+            <Route path="/legal" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
+            <Route path="/sinistre-caution" element={<Suspense fallback={<PageLoader />}><SinistreCaution /></Suspense>} />
+            <Route path="/contact" element={<Suspense fallback={<PageLoader />}><Contact /></Suspense>} />
             
             {/* Routes non critiques (lazy-loaded) */}
             <Route path="/vehicle/:license" element={
