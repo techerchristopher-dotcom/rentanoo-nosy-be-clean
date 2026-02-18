@@ -1,3 +1,4 @@
+import "@/styles/ios-picker.css";
 import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 

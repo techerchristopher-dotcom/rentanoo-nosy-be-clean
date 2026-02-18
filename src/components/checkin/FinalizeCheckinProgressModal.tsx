@@ -1,3 +1,4 @@
+import "@/styles/modal-animations.css";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertCircle, CheckCircle2, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

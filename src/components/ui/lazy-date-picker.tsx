@@ -6,10 +6,11 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import type { ReactDatePickerProps } from "react-datepicker";
 
 // Lazy-load du composant DatePicker
-const DatePicker = lazy(() => 
+const DatePicker = lazy(() =>
   Promise.all([
     import("react-datepicker"),
-    import("react-datepicker/dist/react-datepicker.css")
+    import("react-datepicker/dist/react-datepicker.css"),
+    import("@/styles/datepicker-overrides.css")
   ]).then(([module]) => ({ default: module.default }))
 );
 

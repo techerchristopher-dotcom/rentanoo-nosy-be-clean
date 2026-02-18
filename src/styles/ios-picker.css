@@ -1,0 +1,49 @@
+/* Styles pour le mobile date picker / iOS picker (chargé avec IOSPicker) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-container {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 20%,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(0, 0, 0, 0.4) 80%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+.scroll-snap-y-mandatory {
+  scroll-snap-type: y mandatory;
+}
+
+.scroll-snap-align-center {
+  scroll-snap-align: center;
+}
+
+/* iOS Picker Variables */
+:root {
+  --picker-row-height: 44px;
+  --picker-accent: #007AFF;
+  --picker-separator: #E5E5EA;
+  --picker-border: #C7C7CC;
+  --picker-bg: #FFF;
+  --picker-text: #111;
+  --picker-secondary: #8E8E93;
+}
+
+.dark {
+  --picker-bg: #1C1C1E;
+  --picker-text: #FFFFFF;
+  --picker-secondary: #8E8E93;
+  --picker-separator: #38383A;
+  --picker-border: #48484A;
+}

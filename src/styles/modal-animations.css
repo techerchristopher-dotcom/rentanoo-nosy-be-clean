@@ -1,0 +1,66 @@
+/* Animations modales (chargées avec Login, RentMyCarLanding, FinalizeCheckinProgressModal, InteractiveCalendar) */
+@keyframes scale-in {
+  0% { transform: scale(0); opacity: 0; }
+  80% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out forwards;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 12px hsl(var(--primary) / 0.5)); opacity: 1; }
+  50% { filter: drop-shadow(0 0 20px hsl(var(--primary) / 0.9)); opacity: 0.95; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+@keyframes pulse-glow-busy {
+  0%, 100% { filter: drop-shadow(0 0 16px hsl(var(--primary) / 0.7)); opacity: 1; }
+  50% { filter: drop-shadow(0 0 24px hsl(var(--primary) / 1)); opacity: 0.95; }
+}
+
+.animate-pulse-glow-busy {
+  animation: pulse-glow-busy 1.5s ease-in-out infinite;
+}
+
+@keyframes modal-shimmer {
+  0% { opacity: 0.1; transform: rotate(0deg); }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.1; transform: rotate(360deg); }
+}
+
+.animate-shimmer {
+  animation: modal-shimmer 2s linear infinite;
+}
+
+@keyframes dots {
+  0%, 20% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.animate-dots > span:nth-child(1) { animation: dots 1.4s ease-in-out infinite; }
+.animate-dots > span:nth-child(2) { animation: dots 1.4s ease-in-out infinite 0.2s; }
+.animate-dots > span:nth-child(3) { animation: dots 1.4s ease-in-out infinite 0.4s; }
