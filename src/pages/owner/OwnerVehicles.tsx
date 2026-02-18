@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { VehicleTypeModal } from "@/components/owner/VehicleTypeModal";
+import { getOptimizedImageUrl } from "@/utils/imageOptimization";
 
 const OwnerVehicles = () => {
   const { t } = useTranslation("common");
@@ -379,14 +380,20 @@ const OwnerVehicles = () => {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {vehicles.map((vehicle) => (
                 <Card key={vehicle.id} className="hover:shadow-xl hover:scale-105 transition-all duration-300 relative overflow-hidden group border-0 shadow-lg">
-                  {/* Fond avec photo */}
+                  {/* Fond avec photo — img + lazy au lieu de background-image pour optimiser */}
                   {vehicle.imageUrl && (
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-500 group-hover:scale-110"
-                      style={{
-                        backgroundImage: `url(${vehicle.imageUrl})`,
-                        opacity: '0.60'
-                      }}
+                    <img
+                      src={
+                        vehicle.imageUrl.includes("supabase.co/storage")
+                          ? getOptimizedImageUrl(vehicle.imageUrl, 600, 400)
+                          : vehicle.imageUrl
+                      }
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 opacity-60"
+                      loading="lazy"
+                      decoding="async"
+                      width={600}
+                      height={400}
                     />
                   )}
                   

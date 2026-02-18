@@ -91,3 +91,35 @@ export async function attachPaymentMethod(bookingId: string, paymentMethodId: st
   }
   return { ok: json?.ok === true };
 }
+
+/**
+ * Force la caution comme déposée (propriétaire uniquement).
+ * Utilisé pour : paiement offline, tests, état des lieux sans carte.
+ */
+export async function forceDepositForOwner(bookingId: string): Promise<{ ok: boolean; error?: string }> {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    return { ok: false, error: "Vous devez être connecté." };
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/bookings/${encodeURIComponent(bookingId)}/force-deposit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    const raw = await res.text();
+    const json = raw ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : null;
+
+    if (!res.ok) {
+      const msg = (json?.message as string) || (json?.error as string) || "Erreur lors de la mise à jour";
+      return { ok: false, error: msg };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: "API indisponible. Vérifiez votre connexion." };
+  }
+}

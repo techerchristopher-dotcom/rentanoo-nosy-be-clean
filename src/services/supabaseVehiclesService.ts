@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { debug } from "@/utils/logger";
 
 export interface Vehicle {
   id: string;
@@ -341,7 +342,7 @@ export const SupabaseVehiclesService = {
    * Récupère un véhicule par son ID
    */
   async getVehicleById(vehicleId: string): Promise<{ data: Vehicle | null; error: string | null }> {
-    console.log("[SupabaseVehiclesService] getVehicleById called with vehicleId =", vehicleId);
+    debug("[SupabaseVehiclesService] getVehicleById called with vehicleId =", vehicleId);
     try {
       const { data, error } = await supabase
         .from('vehicles')
@@ -349,14 +350,14 @@ export const SupabaseVehiclesService = {
         .eq('id', vehicleId)
         .single();
 
-      console.log("[SupabaseVehiclesService] Supabase raw response - data:", data, ", error:", error);
+      debug("[SupabaseVehiclesService] Supabase raw response - data:", data, ", error:", error);
 
       if (error) {
         console.error('[SupabaseVehiclesService] ❌ Supabase error:', error);
         return { data: null, error: error.message };
       }
 
-      console.log("[SupabaseVehiclesService] ✅ Vehicle found, returning data");
+      debug("[SupabaseVehiclesService] ✅ Vehicle found, returning data");
       return { data, error: null };
     } catch (error) {
       console.error('[SupabaseVehiclesService] ❌ Exception caught:', error);
@@ -397,15 +398,15 @@ export const SupabaseVehiclesService = {
     deposit_amount?: number;
   }): Promise<{ data: Vehicle | null; error: string | null }> {
     try {
-      console.log('SupabaseVehiclesService.updateVehicle - ID:', vehicleId);
-      console.log('SupabaseVehiclesService.updateVehicle - Données:', updateData);
+      debug('SupabaseVehiclesService.updateVehicle - ID:', vehicleId);
+      debug('SupabaseVehiclesService.updateVehicle - Données:', updateData);
 
       const finalUpdateData = {
         ...updateData,
         updated_at: new Date().toISOString()
       };
 
-      console.log('SupabaseVehiclesService.updateVehicle - Données finales:', finalUpdateData);
+      debug('SupabaseVehiclesService.updateVehicle - Données finales:', finalUpdateData);
 
       // La colonne 'location' n'existe pas dans la table 'vehicles' :
       // on la retire du payload pour éviter l'erreur de schema cache.
@@ -419,7 +420,7 @@ export const SupabaseVehiclesService = {
         .select()
         .single();
 
-      console.log('SupabaseVehiclesService.updateVehicle - Réponse Supabase:', { data, error });
+      debug('SupabaseVehiclesService.updateVehicle - Réponse Supabase:', { data, error });
 
       if (error) {
         console.error('Erreur Supabase lors de la mise à jour du véhicule:', error);
@@ -430,7 +431,7 @@ export const SupabaseVehiclesService = {
         return { data: null, error: error.message };
       }
 
-      console.log('SupabaseVehiclesService.updateVehicle - Succès:', data);
+      debug('SupabaseVehiclesService.updateVehicle - Succès:', data);
       return { data, error: null };
     } catch (error) {
       console.error('Erreur lors de la mise à jour du véhicule:', error);
@@ -500,8 +501,8 @@ export const SupabaseVehiclesService = {
         );
       }
 
-      console.log('🔍 Recherche véhicules - Filtres:', filters);
-      console.log('✅ Véhicules disponibles trouvés:', availableVehicles.length);
+      debug('🔍 Recherche véhicules - Filtres:', filters);
+      debug('✅ Véhicules disponibles trouvés:', availableVehicles.length);
 
       return availableVehicles;
     } catch (error) {

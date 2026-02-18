@@ -10,6 +10,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  getOptimizedImageUrl,
+  generateSrcSet,
+} from "@/utils/imageOptimization";
+
+const SUPABASE_BASE =
+  "https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page";
 
 function IllustrationPlaceholder({
   title,
@@ -110,9 +117,15 @@ export default function SinistreCaution() {
 
             <div className="w-full max-w-xl aspect-[16/9] overflow-hidden rounded-2xl">
               <img
-                src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page/couple-serain-.webp"
+                src={getOptimizedImageUrl(`${SUPABASE_BASE}/couple-serain-.webp`, 640, 360)}
+                srcSet={generateSrcSet(`${SUPABASE_BASE}/couple-serain-.webp`, [400, 640, 960])}
+                sizes="(max-width: 640px) 100vw, 576px"
                 alt="Location Rentanoo — gestion sereine d'un sinistre"
                 className="h-full w-full object-cover"
+                fetchPriority="high"
+                decoding="async"
+                width={640}
+                height={360}
               />
             </div>
           </div>
@@ -146,9 +159,15 @@ export default function SinistreCaution() {
 
           <div className="w-full max-w-xl mx-auto">
             <img
-              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page/timeline.webp"
+              src={getOptimizedImageUrl(`${SUPABASE_BASE}/timeline.webp`, 640)}
+              srcSet={generateSrcSet(`${SUPABASE_BASE}/timeline.webp`, [400, 640])}
+              sizes="(max-width: 640px) 100vw, 576px"
               alt="Étapes de gestion d'un sinistre Rentanoo"
               className="w-full h-auto rounded-2xl"
+              loading="lazy"
+              decoding="async"
+              width={640}
+              height={360}
             />
           </div>
         </div>
@@ -159,11 +178,15 @@ export default function SinistreCaution() {
         <div className="grid gap-8 md:grid-cols-2 md:items-center">
           <div className="order-2 md:order-1 w-full max-w-xl mx-auto">
             <img
-              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page/justificatif.webp"
+              src={getOptimizedImageUrl(`${SUPABASE_BASE}/justificatif.webp`, 640)}
+              srcSet={generateSrcSet(`${SUPABASE_BASE}/justificatif.webp`, [400, 640])}
+              sizes="(max-width: 640px) 100vw, 576px"
               alt="La caution sert uniquement à couvrir les frais réellement justifiés"
               className="w-full h-auto rounded-2xl"
               loading="lazy"
               decoding="async"
+              width={640}
+              height={360}
             />
           </div>
 
@@ -200,10 +223,15 @@ export default function SinistreCaution() {
 
           <div className="w-full flex justify-center">
             <img
-              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page/asurance%20.webp"
+              src={getOptimizedImageUrl(`${SUPABASE_BASE}/asurance%20.webp`, 520)}
+              srcSet={generateSrcSet(`${SUPABASE_BASE}/asurance%20.webp`, [400, 520])}
+              sizes="(max-width: 640px) 100vw, 520px"
               alt="Protection par assurance carte bancaire Rentanoo"
               className="w-full max-w-[520px] rounded-xl mx-auto shadow-sm"
               loading="lazy"
+              decoding="async"
+              width={520}
+              height={340}
             />
           </div>
         </div>
@@ -214,10 +242,15 @@ export default function SinistreCaution() {
         <div className="grid gap-8 md:grid-cols-2 md:items-center">
           <div className="order-2 md:order-1 w-full max-w-xl mx-auto">
             <img
-              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page/devis%20facture.webp"
+              src={getOptimizedImageUrl(`${SUPABASE_BASE}/devis%20facture.webp`, 640)}
+              srcSet={generateSrcSet(`${SUPABASE_BASE}/devis%20facture.webp`, [400, 640])}
+              sizes="(max-width: 640px) 100vw, 576px"
               alt="Documents de réparation – devis et facture mis à disposition par Rentanoo"
               className="w-full h-auto rounded-2xl"
               loading="lazy"
+              decoding="async"
+              width={640}
+              height={360}
             />
           </div>
 
@@ -262,11 +295,15 @@ export default function SinistreCaution() {
 
           <div className="md:col-span-1">
             <img
-              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page/relax.webp"
+              src={getOptimizedImageUrl(`${SUPABASE_BASE}/relax.webp`, 400)}
+              srcSet={generateSrcSet(`${SUPABASE_BASE}/relax.webp`, [300, 400])}
+              sizes="(max-width: 768px) 100vw, 33vw"
               alt="Client rassuré au téléphone avec le service Rentanoo"
               className="w-full h-auto rounded-2xl shadow-sm border border-slate-200/60 object-cover"
               loading="lazy"
               decoding="async"
+              width={400}
+              height={300}
             />
           </div>
         </div>

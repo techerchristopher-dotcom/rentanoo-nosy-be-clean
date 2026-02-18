@@ -4,6 +4,8 @@
  * MAIS réinitialise au rafraîchissement de la page (F5)
  */
 
+import { debug } from "@/utils/logger";
+
 // Clés du localStorage
 const SEARCH_STORAGE_KEY = "lagon_search_criteria";
 const PAGE_REFRESH_KEY = "lagon_page_refresh_flag";
@@ -47,7 +49,7 @@ export interface SearchCriteria {
 export function markPageRefresh(): void {
   try {
     sessionStorage.setItem('lagon_page_refresh_flag', 'true');
-    console.log('🔄 [localStorage] Flag de rafraîchissement marqué dans sessionStorage');
+    debug('🔄 [localStorage] Flag de rafraîchissement marqué dans sessionStorage');
   } catch (error) {
     console.error('❌ [localStorage] Erreur lors du marquage du rafraîchissement:', error);
   }
@@ -59,11 +61,11 @@ export function markPageRefresh(): void {
 export function isPageRefreshed(): boolean {
   try {
     const isRefreshed = sessionStorage.getItem(PAGE_REFRESH_KEY) === 'true';
-    console.log('🔍 [localStorage] Vérification du rafraîchissement:', { isRefreshed, sessionStorageValue: sessionStorage.getItem(PAGE_REFRESH_KEY) });
+    debug('🔍 [localStorage] Vérification du rafraîchissement:', { isRefreshed, sessionStorageValue: sessionStorage.getItem(PAGE_REFRESH_KEY) });
     if (isRefreshed) {
       // Supprimer le flag après vérification
       sessionStorage.removeItem(PAGE_REFRESH_KEY);
-      console.log('🗑️ [localStorage] Flag de rafraîchissement supprimé');
+      debug('🗑️ [localStorage] Flag de rafraîchissement supprimé');
     }
     return isRefreshed;
   } catch (error) {
@@ -83,7 +85,7 @@ export function saveSearchCriteria(criteria: Omit<SearchCriteria, 'savedAt'>): v
     };
     
     localStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(criteriaWithTimestamp));
-    console.log('💾 [localStorage] Critères de recherche sauvegardés:', criteriaWithTimestamp);
+    debug('💾 [localStorage] Critères de recherche sauvegardés:', criteriaWithTimestamp);
   } catch (error) {
     console.error('❌ [localStorage] Erreur lors de la sauvegarde des critères:', error);
   }
@@ -99,7 +101,7 @@ export function getSearchCriteria(): SearchCriteria | null {
     const refreshFlag = sessionStorage.getItem('lagon_page_refresh_flag');
     const isPageRefresh = refreshFlag === 'true';
     
-    console.log('🔍 [localStorage] Détection du rafraîchissement:', { 
+    debug('🔍 [localStorage] Détection du rafraîchissement:', { 
       refreshFlag,
       isPageRefresh,
       url: window.location.href
@@ -107,7 +109,7 @@ export function getSearchCriteria(): SearchCriteria | null {
     
     // Si c'est un rafraîchissement marqué, ne pas restaurer les critères ET nettoyer les services
     if (isPageRefresh) {
-      console.log('🔄 [localStorage] Rafraîchissement marqué détecté - critères non restaurés');
+      debug('🔄 [localStorage] Rafraîchissement marqué détecté - critères non restaurés');
       
       // Supprimer le flag après utilisation
       sessionStorage.removeItem('lagon_page_refresh_flag');
@@ -116,7 +118,7 @@ export function getSearchCriteria(): SearchCriteria | null {
       try {
         import('./bookingStorage').then(({ clearBookingDraft }) => {
           clearBookingDraft();
-          console.log('🔄 [localStorage] Services supplémentaires nettoyés lors du rafraîchissement');
+          debug('🔄 [localStorage] Services supplémentaires nettoyés lors du rafraîchissement');
         });
       } catch (error) {
         console.warn('⚠️ [localStorage] Impossible de nettoyer les services lors du rafraîchissement:', error);
@@ -127,12 +129,12 @@ export function getSearchCriteria(): SearchCriteria | null {
     
     const stored = localStorage.getItem(SEARCH_STORAGE_KEY);
     if (!stored) {
-      console.log('ℹ️ [localStorage] Aucun critère de recherche trouvé');
+      debug('ℹ️ [localStorage] Aucun critère de recherche trouvé');
       return null;
     }
     
     const criteria = JSON.parse(stored) as SearchCriteria;
-    console.log('📖 [localStorage] Critères de recherche récupérés:', criteria);
+    debug('📖 [localStorage] Critères de recherche récupérés:', criteria);
     return criteria;
   } catch (error) {
     console.error('❌ [localStorage] Erreur lors de la récupération des critères:', error);
@@ -146,14 +148,14 @@ export function getSearchCriteria(): SearchCriteria | null {
 export function clearSearchCriteria(): void {
   try {
     localStorage.removeItem(SEARCH_STORAGE_KEY);
-    console.log('🗑️ [localStorage] Critères de recherche supprimés');
+    debug('🗑️ [localStorage] Critères de recherche supprimés');
     
     // Nettoyer aussi les services dans bookingStorage
     try {
       // Import dynamique pour éviter les dépendances circulaires
       import('./bookingStorage').then(({ clearBookingDraft }) => {
         clearBookingDraft();
-        console.log('🗑️ [localStorage] Services supplémentaires supprimés');
+        debug('🗑️ [localStorage] Services supplémentaires supprimés');
       });
     } catch (error) {
       console.warn('⚠️ [localStorage] Impossible de nettoyer les services:', error);
@@ -199,7 +201,7 @@ export function isSearchCriteriaExpired(): boolean {
  */
 export function cleanupExpiredSearchCriteria(): void {
   if (isSearchCriteriaExpired()) {
-    console.log('🧹 [localStorage] Nettoyage des critères expirés');
+    debug('🧹 [localStorage] Nettoyage des critères expirés');
     clearSearchCriteria();
   }
 }

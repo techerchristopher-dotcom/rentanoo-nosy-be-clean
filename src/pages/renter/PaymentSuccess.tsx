@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  sendPurchaseConversion,
+  hasPurchaseConversionBeenSent,
+  markPurchaseConversionSent,
+} from "@/lib/gtag";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
@@ -28,17 +35,35 @@ export default function PaymentSuccess() {
       console.warn("⚠️ [PaymentSuccess] session_id manquant dans l'URL");
     }
 
-    // Vérifier le paiement : attendre un peu pour laisser le webhook traiter
+    // Vérifier le paiement (backend Stripe) + conversion Google Ads + redirection
     const verifyPayment = async () => {
       try {
+        // 1) Récupérer les détails de la session (backend-confirmed : Stripe vérifie payment_status)
+        if (sessionIdFromUrl) {
+          const res = await fetch(
+            `${API_BASE}/api/stripe/session-details?session_id=${encodeURIComponent(sessionIdFromUrl)}`
+          );
+          const data = await res.json();
+
+          if (data.ok && data.amount !== undefined) {
+            // Paiement confirmé côté Stripe → envoyer conversion Google Ads (avec anti-double)
+            if (!hasPurchaseConversionBeenSent(sessionIdFromUrl)) {
+              sendPurchaseConversion({
+                value: data.amount,
+                currency: data.currency || "EUR",
+                transaction_id: sessionIdFromUrl,
+              });
+              markPurchaseConversionSent(sessionIdFromUrl);
+            }
+          }
+        }
+
+        // 2) Attendre pour laisser le webhook mettre à jour la DB
         console.log("⏳ [PaymentSuccess] Attente webhook (2s)...");
-        // Attendre 2 secondes pour laisser le webhook Stripe traiter checkout.session.completed
-        // Le webhook met à jour le status de la réservation en "confirmed"
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         console.log("✅ [PaymentSuccess] Redirection vers bookings...");
         setIsVerifying(false);
-        // Rediriger vers les bookings avec le flag afterPayment
         navigate("/me/renter/bookings?afterPayment=1");
       } catch (err) {
         console.error("❌ [PaymentSuccess] Erreur vérification paiement:", err);

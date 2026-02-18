@@ -77,68 +77,24 @@ if (isDev) {
   });
 }
 
-// Whitelist des origines PROD autorisées
-// Peut être surchargée via env var CORS_ALLOWED_ORIGINS (séparées par des virgules)
-const PROD_ALLOWED_ORIGINS = Deno.env.get("CORS_ALLOWED_ORIGINS")
-  ? Deno.env.get("CORS_ALLOWED_ORIGINS")!.split(",").map(o => o.trim())
-  : [
-      "https://rentanoo.com",
-      "https://www.rentanoo.com",
-      // rentanoo.yt retiré (ancien domaine, migration vers rentanoo.com)
-      // Ajouter d'autres domaines de production si nécessaire
-    ];
-
-// Headers CORS pour toutes les réponses
-// En DEV: autoriser localhost:3013 (owner) et localhost:3012 (tenant)
-// En PROD: whitelist stricte des origines autorisées
-function getCorsHeaders(origin?: string | null): Record<string, string> {
-  if (isDev) {
-    // DEV: autoriser localhost
-    const devOrigins = ["http://localhost:3013", "http://localhost:3012", "http://localhost:3000"];
-    const allowOrigin = origin && devOrigins.includes(origin)
-      ? origin
-      : "http://localhost:3013"; // Default en DEV
-    
-    return {
-      "Access-Control-Allow-Origin": allowOrigin,
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      "Access-Control-Max-Age": "86400", // Cache preflight 24h
-      "Vary": "Origin", // Important pour le cache du navigateur
-    };
-  }
-
-  // PROD: whitelist stricte
-  // Si l'origine est dans la whitelist, l'autoriser
-  // Sinon, utiliser la première origine autorisée comme fallback (pour compatibilité)
-  // MAIS loguer un avertissement si l'origine n'est pas autorisée
-  const isOriginAllowed = origin && PROD_ALLOWED_ORIGINS.includes(origin);
-  const allowOrigin = isOriginAllowed ? origin : PROD_ALLOWED_ORIGINS[0];
-  
-  // Log d'avertissement si origine non autorisée (pour debug)
-  if (origin && !isOriginAllowed) {
-    console.warn("⚠️ [CORS] Origine non autorisée:", {
-      origin,
-      allowedOrigins: PROD_ALLOWED_ORIGINS,
-      fallbackUsed: allowOrigin,
-      isDev,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  return {
-    "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Max-Age": "86400", // Cache preflight 24h
-    "Vary": "Origin", // CRITIQUE: Indique au navigateur que la réponse varie selon l'Origin
-  };
-}
+// Whitelist des origines CORS (dev + prod)
+const allowedOrigins = new Set([
+  "https://rentanoo.com",
+  "http://localhost:3002",
+  "http://localhost:5173",
+]);
 
 Deno.serve(async (req) => {
-  const origin = req.headers.get("origin");
+  const origin = req.headers.get("origin") ?? "";
   const method = req.method;
-  const corsHeaders = getCorsHeaders(origin);
+
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin)
+      ? origin
+      : "https://rentanoo.com",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
 
   // ============================================
   // LOG DIAGNOSTIC: Début du handler
@@ -171,10 +127,7 @@ Deno.serve(async (req) => {
       allowOrigin: corsHeaders["Access-Control-Allow-Origin"],
       isDev,
     });
-    return new Response(null, {
-      status: 204, // No Content (plus standard que 200 pour OPTIONS)
-      headers: corsHeaders,
-    });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   // ============================================
@@ -223,6 +176,19 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           ...corsHeaders
         }
+      }
+    );
+  }
+
+  // Auth guard : accepter Authorization OU apikey (anon key)
+  const authHeader = req.headers.get("authorization");
+  const apiKeyHeader = req.headers.get("apikey");
+  if (!authHeader && !apiKeyHeader) {
+    return new Response(
+      JSON.stringify({ code: 401, message: "En-tête d'autorisation manquant" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }
@@ -305,7 +271,7 @@ Deno.serve(async (req) => {
     
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
-      .select("subtotal, base_price, options_total, vehicle_id, start_date, end_date")
+      .select("subtotal, base_price, options_total, vehicle_id, start_date, end_date, user_id")
       .eq("id", bookingId)
       .single();
 
@@ -348,6 +314,21 @@ Deno.serve(async (req) => {
           }
         }
       );
+    }
+
+    const userId = booking?.user_id ?? null;
+    let profile: { stripe_customer_id: string | null; email: string | null } | null = null;
+
+    if (userId) {
+      const { data: profileData, error: profileErr } = await supabaseAdmin
+        .from("profiles")
+        .select("stripe_customer_id, email")
+        .eq("id", userId)
+        .single();
+
+      if (!profileErr && profileData) {
+        profile = profileData;
+      }
     }
 
     // ============================================
@@ -504,7 +485,7 @@ Deno.serve(async (req) => {
     // UNITÉ : Stripe attend les montants en CENTIMES
     const unitAmountCents = Math.round(amountTTC * 100);
     
-    const session = await stripe.checkout.sessions.create({
+    const sessionOptions: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       payment_method_types: ["card"],
       line_items: [
@@ -514,7 +495,7 @@ Deno.serve(async (req) => {
             product_data: {
               name: description,
             },
-            unit_amount: unitAmountCents, // Convertir euros → centimes
+            unit_amount: unitAmountCents,
           },
           quantity: 1,
         },
@@ -524,7 +505,42 @@ Deno.serve(async (req) => {
       metadata: {
         bookingId: String(bookingId),
       },
-    });
+      payment_intent_data: { setup_future_usage: "off_session" },
+    };
+
+    // ✅ Garantir un Customer si possible
+    if (profile?.stripe_customer_id) {
+      sessionOptions.customer = profile.stripe_customer_id;
+    } else if (profile?.email) {
+      sessionOptions.customer_email = profile.email;
+      sessionOptions.customer_creation = "always";
+    }
+
+    let session: Stripe.Checkout.Session;
+
+    try {
+      session = await stripe.checkout.sessions.create(sessionOptions);
+    } catch (err: any) {
+      const msg = String(err?.message ?? "");
+      const isNoSuchCustomer = msg.includes("No such customer");
+
+      if (isNoSuchCustomer) {
+        const fallbackOptions: Stripe.Checkout.SessionCreateParams = { ...sessionOptions };
+
+        // On retire customer (invalide)
+        delete (fallbackOptions as any).customer;
+
+        // On force la création d'un customer via email si dispo
+        if (profile?.email) {
+          fallbackOptions.customer_email = profile.email;
+          fallbackOptions.customer_creation = "always";
+        }
+
+        session = await stripe.checkout.sessions.create(fallbackOptions);
+      } else {
+        throw err;
+      }
+    }
 
     console.log("✅ [create-checkout-session] Session créée avec succès:", {
       sessionId: session.id,

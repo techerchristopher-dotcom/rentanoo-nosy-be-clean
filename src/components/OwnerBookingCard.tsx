@@ -60,6 +60,7 @@ import { MessagesService } from '@/services/supabase/messages'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
 import { calcServiceFeeOwner, calcServiceFeeRenter, calcOwnerPayout, calcRenterTotal } from '@/utils/serviceFees'
 import { useTranslation } from 'react-i18next'
+import { forceDepositForOwner } from '@/lib/depositCaution'
 
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
@@ -113,7 +114,8 @@ export default function OwnerBookingCard({
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancellationReason, setCancellationReason] = useState('')
   const [isStartingCheckin, setIsStartingCheckin] = useState(false)
-  
+  const [isForcingDeposit, setIsForcingDeposit] = useState(false)
+
   // Afficher la durée calculée depuis les heures réelles
   const calculateRealDuration = () => {
     const startDate = new Date(booking.startDate)
@@ -599,6 +601,23 @@ export default function OwnerBookingCard({
     }
   }
 
+  const handleForceDeposit = async () => {
+    setIsForcingDeposit(true)
+    try {
+      const result = await forceDepositForOwner(booking.id)
+      if (result.ok) {
+        toast({ title: 'Caution forcée', description: 'La caution est maintenant marquée comme déposée. Vous pouvez effectuer l\'état des lieux.' })
+        onBookingUpdated?.(booking.id)
+      } else {
+        toast({ title: 'Erreur', description: result.error || 'Impossible de forcer la caution', variant: 'destructive' })
+      }
+    } catch (e) {
+      toast({ title: 'Erreur', description: 'Impossible de forcer la caution', variant: 'destructive' })
+    } finally {
+      setIsForcingDeposit(false)
+    }
+  }
+
   // Fonction pour générer le badge de statut enrichi selon les règles métier
   const getEnrichedStatusBadge = () => {
     const now = new Date()
@@ -616,8 +635,9 @@ export default function OwnerBookingCard({
       }
     }
 
-    // Règle 2: confirmed + deposit_status paid + startDate > now
-    if (booking.status === 'confirmed' && depositStatus === 'paid' && startDate > now) {
+    // Règle 2: confirmed + deposit_status paid/card_registered + startDate > now
+    const depositOk = depositStatus === 'paid' || depositStatus === 'card_registered'
+    if (booking.status === 'confirmed' && depositOk && startDate > now) {
       return {
         badgeLabel: 'Prêt à partir',
         badgeColor: 'bg-green-100 text-green-800 border border-green-300',
@@ -626,9 +646,9 @@ export default function OwnerBookingCard({
       }
     }
 
-    // Règle 3: active OU (confirmed + deposit paid + dates chevauchantes)
+    // Règle 3: active OU (confirmed + deposit paid/card_registered + dates chevauchantes)
     if (booking.status === 'active' || 
-        (booking.status === 'confirmed' && depositStatus === 'paid' && startDate <= now && endDate >= now)) {
+        (booking.status === 'confirmed' && depositOk && startDate <= now && endDate >= now)) {
       return {
         badgeLabel: 'En cours',
         badgeColor: 'bg-green-100 text-green-800 border border-green-300',
@@ -1090,9 +1110,31 @@ export default function OwnerBookingCard({
                         }
                         if (status === 'pending' && snapshot > 0) {
                           return (
-                            <div className="flex items-center text-sm">
-                              <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
-                              <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {snapshot.toFixed(2)}€</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center text-sm">
+                                <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
+                                <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {snapshot.toFixed(2)}€</span>
+                              </div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => { e.stopPropagation(); handleForceDeposit(); }}
+                                      disabled={isForcingDeposit}
+                                      className="text-xs"
+                                    >
+                                      {isForcingDeposit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+                                      {isForcingDeposit ? '…' : 'Forcer caution (état des lieux)'}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Marquer la caution comme déposée pour pouvoir effectuer l&apos;état des lieux</p>
+                                    <p className="text-xs text-muted-foreground">Paiement offline, tests, etc.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           );
                         }

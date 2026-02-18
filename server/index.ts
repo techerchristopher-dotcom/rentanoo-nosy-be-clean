@@ -427,6 +427,66 @@ app.post("/api/deposit/attach-payment-method", async (req, res) => {
   }
 });
 
+/**
+ * Force la caution comme déposée (owner uniquement)
+ * Utilisé pour : paiement offline, tests, état des lieux sans carte enregistrée.
+ * Met deposit_status à 'card_registered' (valeur autorisée par la contrainte CHECK).
+ * Note : 'paid' n'est PAS autorisé en DB — utiliser 'card_registered'.
+ */
+app.post("/api/bookings/:bookingId/force-deposit", async (req, res) => {
+  try {
+    const authResult = await getAuthUserFromRequest(req);
+    if (!authResult.ok) {
+      return res.status(401).json({ ok: false, error: "UNAUTHORIZED", message: authResult.message });
+    }
+    const { user } = authResult;
+    const bookingId = req.params.bookingId;
+
+    if (!bookingId) {
+      return res.status(400).json({ ok: false, error: "MISSING_BOOKING_ID", message: "bookingId requis" });
+    }
+
+    const { data: booking, error: bookingErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, vehicle_id, deposit_status, deposit_amount_snapshot")
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingErr || !booking) {
+      return res.status(404).json({ ok: false, error: "BOOKING_NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    const { data: vehicle, error: vehicleErr } = await supabaseAdmin
+      .from("vehicles")
+      .select("owner_id")
+      .eq("id", booking.vehicle_id)
+      .single();
+
+    if (vehicleErr || !vehicle || vehicle.owner_id !== user.id) {
+      return res.status(403).json({ ok: false, error: "FORBIDDEN", message: "Vous devez être le propriétaire du véhicule pour cette réservation" });
+    }
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        deposit_status: "card_registered",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", bookingId);
+
+    if (updateErr) {
+      console.error("[force-deposit] Update error:", updateErr);
+      return res.status(500).json({ ok: false, error: "UPDATE_FAILED", message: updateErr.message });
+    }
+
+    console.log("[force-deposit] Caution forcée:", { bookingId, userId: user.id });
+    return res.status(200).json({ ok: true, message: "Caution marquée comme déposée" });
+  } catch (err: any) {
+    console.error("[force-deposit] 500", err);
+    return res.status(500).json({ ok: false, error: "INTERNAL_SERVER_ERROR", message: err?.message || "Erreur serveur" });
+  }
+});
+
 // Route contact form (JSON only, no multer)
 app.post("/api/contact", async (req, res) => {
   try {
@@ -702,6 +762,47 @@ app.get("/api/stripe-health", async (_req, res) => {
     });
   } catch (e: any) {
     res.status(500).json({ ok: false, error: e?.message || "Stripe health check failed" });
+  }
+});
+
+/**
+ * API pour récupérer les détails d'une Checkout Session (conversion Google Ads).
+ * Utilisée par la page /success après paiement pour envoyer value + transaction_id.
+ * Vérifie payment_status === 'paid' côté Stripe (backend-confirmed).
+ */
+app.get("/api/stripe/session-details", async (req, res) => {
+  try {
+    const sessionId = (req.query.session_id as string)?.trim();
+    if (!sessionId || !sessionId.startsWith("cs_")) {
+      return res.status(400).json({ ok: false, error: "session_id requis (format cs_xxx)" });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["line_items"],
+    }) as any;
+
+    if (session.payment_status !== "paid") {
+      return res.status(400).json({ ok: false, error: "PAYMENT_NOT_COMPLETED", paid: false });
+    }
+
+    const bookingId = session.metadata?.bookingId || null;
+    const amountTotal = session.amount_total ? session.amount_total / 100 : 0;
+    const currency = (session.currency || "eur").toUpperCase();
+
+    return res.status(200).json({
+      ok: true,
+      amount: amountTotal,
+      currency,
+      transaction_id: sessionId,
+      booking_id: bookingId,
+    });
+  } catch (e: any) {
+    if (e?.code === "resource_missing_the_id" || e?.type === "StripeInvalidRequestError") {
+      return res.status(404).json({ ok: false, error: "SESSION_NOT_FOUND" });
+    }
+    console.error("[stripe/session-details]", e?.message);
+    return res.status(500).json({ ok: false, error: e?.message || "Failed to retrieve session" });
   }
 });
 
@@ -1044,7 +1145,16 @@ if (process.env.NODE_ENV === "production") {
   console.log(`📦 Serveur en mode PRODUCTION - Frontend servi depuis: ${distPath}`);
   
   // Servir les fichiers statiques (CSS, JS, images, etc.)
-  app.use(express.static(distPath));
+  // Assets hashés : cache long + immutable pour FCP/LCP
+  app.use(
+    express.static(distPath, {
+      setHeaders: (res, path) => {
+        if (path.includes(path.sep + "assets" + path.sep)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    })
+  );
   
   // SPA fallback : toutes les routes non-API redirigent vers index.html
   // Cette route DOIT être déclarée APRÈS express.static pour capturer les routes non trouvées

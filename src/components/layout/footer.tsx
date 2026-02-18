@@ -15,9 +15,11 @@ export function Footer() {
           <div className="md:col-span-2">
             <div className="flex items-center mb-2 md:mb-4">
               <Link to="/">
-                <img 
-                  src="/brand/rentanoo-logo.svg" 
-                  alt="Rentanoo" 
+                <img
+                  src="/brand/rentanoo-logo.svg"
+                  alt="Rentanoo"
+                  width={100}
+                  height={30}
                   className="h-6 md:h-7 w-auto"
                   loading="lazy"
                 />

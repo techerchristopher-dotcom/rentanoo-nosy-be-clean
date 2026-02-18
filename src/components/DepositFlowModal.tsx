@@ -5,6 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { STRIPE_PUBLISHABLE_KEY } from "@/lib/stripePublicKey";
 import { createSetupIntentClientSecret, attachPaymentMethod } from "@/lib/depositCaution";
+import {
+  sendDepositConversion,
+  hasDepositConversionBeenSent,
+  markDepositConversionSent,
+} from "@/lib/gtag";
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -139,6 +144,16 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
   }, [isOpen, bookingId]);
 
   const handleSuccess = () => {
+    // Conversion Google Ads "deposit" (caution activée)
+    const txId = `deposit_${bookingId}`;
+    if (!hasDepositConversionBeenSent(txId)) {
+      sendDepositConversion({
+        value: depositAmount,
+        currency: "EUR",
+        transaction_id: txId,
+      });
+      markDepositConversionSent(txId);
+    }
     onSuccess();
   };
 

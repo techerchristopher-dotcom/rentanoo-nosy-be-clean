@@ -905,11 +905,12 @@ export default function VehicleDetails() {
                         srcSet={srcSet}
                         sizes={sizes}
                         alt={`${vehicle.brand} ${vehicle.model}`}
-                        className="w-full h-full object-cover"
-                        loading="eager"
-                        decoding="async"
                         width={800}
                         height={600}
+                        className="w-full h-full object-cover"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
                       />
                     );
                   })()}
@@ -961,11 +962,11 @@ export default function VehicleDetails() {
                             srcSet={srcSet}
                             sizes={IMAGE_SIZES.THUMBNAIL}
                             alt={`Vue ${photo.angle}`}
+                            width={150}
+                            height={150}
                             className="w-full h-full object-cover"
                             loading="lazy"
                             decoding="async"
-                            width={150}
-                            height={150}
                           />
                         </button>
                       );
