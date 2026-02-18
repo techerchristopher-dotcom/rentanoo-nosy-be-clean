@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Preconnect pour réduire le temps de connexion aux domaines critiques -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="preconnect" href="https://tbsgzykqcksmqxpimwry.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://zykwfjxurwmputxwlkxs.supabase.co" />
     <title>RENTANOO</title>
     <meta name="description" content="location de voiture entre particulier & pros sur l'ile de Mayotte">
     <meta name="author" content="Lovable" />
@@ -33,14 +37,7 @@
   <meta property="og:description" content="location de voiture entre particulier &amp; pros sur l&#39;ile de Mayotte">
   <meta name="twitter:description" content="location de voiture entre particulier &amp; pros sur l&#39;ile de Mayotte">
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17959989720"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'AW-17959989720');
-  </script>
+  <!-- Google tag (gtag.js) chargé de façon différée via main.tsx après requestIdleCallback -->
 </head>
 
   <body>
