@@ -179,8 +179,13 @@ export class PhotoService {
         return { data: [], error: null };
       }
 
+      // Ignorer les .heic (non supportés par le navigateur, dégradation LCP)
+      const supportedFiles = files.filter(
+        (f) => !f.name.toLowerCase().endsWith('.heic')
+      );
+
       // Construction des URLs publiques avec le chemin complet
-      const photos: UploadedPhoto[] = files.map((file, index) => {
+      const photos: UploadedPhoto[] = supportedFiles.map((file, index) => {
         // CHANGEMENT : Chemin complet avec dossier
         const { data: urlData } = supabase.storage
           .from(this.BUCKET_NAME)
@@ -255,18 +260,26 @@ export class PhotoService {
 
       const result: Record<string, UploadedPhoto> = {};
 
+      const isHeic = (url: string | null | undefined, path?: string | null) => {
+        const u = (url || path || '').toLowerCase();
+        return u.endsWith('.heic') || u.includes('.heic?');
+      };
+
       for (const [vehicleId, rows] of Object.entries(byVehicle)) {
+        const validRows = rows.filter((r) => !isHeic(r.photo_url, r.storage_path));
+        if (validRows.length === 0) continue;
+
         // 1) Essayer de trouver une photo marquée principale
-        let chosen = rows.find((r) => r.is_primary) as any | undefined;
+        let chosen = validRows.find((r) => r.is_primary) as any | undefined;
 
         // 2) Sinon, prendre la plus petite display_order
         if (!chosen) {
-          rows.sort((a, b) => {
+          validRows.sort((a, b) => {
             const da = a.display_order ?? Number.MAX_SAFE_INTEGER;
             const db = b.display_order ?? Number.MAX_SAFE_INTEGER;
             return da - db;
           });
-          chosen = rows[0];
+          chosen = validRows[0];
         }
 
         if (!chosen) continue;
