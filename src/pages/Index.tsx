@@ -47,6 +47,7 @@ const Index = () => {
   const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
   const [selectedTransmissions, setSelectedTransmissions] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showResults, setShowResults] = useState(false);
 
   // Variables pour le calcul de location (structure structurée)
   const [rentalCalculation, setRentalCalculation] = useState<RentalCalculation | null>(null);
@@ -138,6 +139,16 @@ const Index = () => {
     };
 
     loadVehicles();
+  }, []);
+
+  // LCP: laisser le hero (H1 + SearchBar) peindre avant la grille
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setShowResults(true));
+    const t = setTimeout(() => setShowResults(true), 200);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
   }, []);
 
   // Restaurer les critères de recherche depuis localStorage au montage
@@ -522,9 +533,13 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Filters & Results */}
+        {/* Filters & Results — rendu différé pour LCP (H1 prioritaire) */}
         <section className="py-12">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            {!showResults ? (
+              <div className="min-h-[400px]" aria-hidden="true" />
+            ) : (
+              <>
             {/* Filters */}
             <div className="mb-8">
               <div className="flex flex-wrap gap-4 items-center">
@@ -687,6 +702,8 @@ const Index = () => {
                 </Card>
               ) : null}
             </div>
+              </>
+            )}
           </div>
         </section>
       </main>
