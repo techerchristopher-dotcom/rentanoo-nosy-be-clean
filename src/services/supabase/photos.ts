@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { compressForUpload } from "@/utils/compressForUpload";
 
 export interface PhotoUpload {
   file: File;
@@ -36,16 +37,23 @@ export class PhotoService {
         return { data: null, error: 'Le fichier ne doit pas dépasser 10MB' };
       }
 
-      // Génération d'un nom de fichier unique
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `${vehicleId}/${photoType}_${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExtension}`;
+      // Compression EDL avant upload (réutilise le même mécanisme que checkin-photos)
+      const compressed = await compressForUpload(file, () => {});
+      if (!compressed) {
+        return { data: null, error: 'Photo trop lourde après compression. Réessayez.' };
+      }
+      const fileToUpload = compressed;
+
+      // Génération d'un nom de fichier unique (compressForUpload sort du JPEG → .jpg)
+      const fileName = `${vehicleId}/${photoType}_${Date.now()}_${Math.random().toString(36).substring(2)}.jpg`;
 
       // Upload vers Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(this.BUCKET_NAME)
-        .upload(fileName, file, {
+        .upload(fileName, fileToUpload, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: 'image/jpeg',
         });
 
       if (uploadError) {
