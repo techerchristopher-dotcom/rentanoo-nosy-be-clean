@@ -33,6 +33,8 @@ interface MotoVehicleCardProps {
   rentalInfo?: VehicleRentalInfo;
   /** Index dans la liste pour déterminer si lazy-load (0 = eager, autres = lazy) */
   index?: number;
+  /** Si true : loading="lazy" pour toutes les images, pas de fetchPriority (0 image au 1er écran) */
+  deferImages?: boolean;
 }
 
 const PLACEHOLDER_URL =
@@ -57,6 +59,7 @@ export function MotoVehicleCard({
   className,
   rentalInfo,
   index = 0,
+  deferImages = false,
 }: MotoVehicleCardProps) {
   const { t } = useTranslation();
 
@@ -162,20 +165,22 @@ export function MotoVehicleCard({
           const srcSet = isSupabaseUrl ? generateSrcSet(imageUrl, IMAGE_WIDTHS.CARD) : undefined;
           const sizes = IMAGE_SIZES.CARD_GRID;
           const optimizedSrc = isSupabaseUrl ? getOptimizedImageUrl(imageUrl, 400) : imageUrl;
-          // Lazy load sauf pour les 3 premières images (above the fold)
-          const loading = index < 3 ? 'eager' : 'lazy';
-          
+          // deferImages: tout en lazy, pas de fetchPriority (0 image au 1er écran)
+          const loading = deferImages ? 'lazy' : (index < 3 ? 'eager' : 'lazy');
+          const fetchPriority = deferImages ? undefined : (index === 0 ? 'high' : undefined);
+
           return (
             <img
               src={optimizedSrc}
               srcSet={srcSet}
               sizes={sizes}
               alt={`${vehicle.brand} ${vehicle.model}`}
-              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-              loading={loading}
-              decoding="async"
               width={400}
               height={300}
+              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+              loading={loading}
+              {...(fetchPriority ? { fetchPriority } : {})}
+              decoding="async"
               onError={handleImageError}
             />
           );
