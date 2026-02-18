@@ -1,11 +1,16 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useTranslation } from 'react-i18next';
 import { Search, MapPin, Calendar, X, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale/fr";
+import type { Locale } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
-import { it as itLocale } from "date-fns/locale/it";
-import { de as deLocale } from "date-fns/locale/de";
+
+const getDateLocale = (lang: string): Promise<Locale> => {
+  if (lang.startsWith("fr")) return import("date-fns/locale/fr").then((m) => m.fr);
+  if (lang.startsWith("it")) return import("date-fns/locale/it").then((m) => m.it);
+  if (lang.startsWith("de")) return import("date-fns/locale/de").then((m) => m.de);
+  return import("date-fns/locale/en-US").then((m) => m.enUS);
+};
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -85,13 +90,11 @@ export function SearchBarAirbnb({
     i18n,
   } = useTranslation('common');
 
-  // Locale du calendrier / formatage des dates en fonction de la langue active
-  const currentLang = i18n.language || "fr";
-  const dateLocale =
-    currentLang.startsWith("fr") ? fr :
-    currentLang.startsWith("it") ? itLocale :
-    currentLang.startsWith("de") ? deLocale :
-    enUS;
+  // Locale date-fns chargée à la demande (lazy)
+  const [dateLocale, setDateLocale] = useState<Locale>(enUS);
+  useEffect(() => {
+    getDateLocale(i18n.language || "fr").then(setDateLocale);
+  }, [i18n.language]);
 
   const [hoveredField, setHoveredField] = useState<'destination' | 'dates' | 'travelers' | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);

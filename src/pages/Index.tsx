@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
-import { Search, Filter, Calendar, MapPin, X } from "lucide-react";
+import { Filter } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Footer } from "@/components/layout/footer";
+const Footer = lazy(() => import("@/components/layout/footer").then((m) => ({ default: m.Footer })));
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { MotoVehicleCard } from "@/components/vehicles/moto-vehicle-card";
-import { SingleLocationModal } from "@/components/ui/single-location-modal";
 import { Vehicle, VehicleFilters, RentalCalculation, VehicleRentalInfo } from "@/types";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { useToast } from "@/hooks/use-toast";
@@ -707,7 +706,9 @@ const Index = () => {
           </div>
         </section>
       </main>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
   );
 };
