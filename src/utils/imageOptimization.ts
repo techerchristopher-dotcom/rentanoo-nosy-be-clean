@@ -1,24 +1,29 @@
 /**
  * Utilitaires pour l'optimisation des images véhicules
- * 
+ *
  * Stratégie:
- * - Utilise les transformations Supabase Storage si disponibles
- * - Fallback vers URL originale si transformations non supportées
- * - Génère srcset pour responsive images
+ * - object/public : retour URL telle quelle (pas de params) — render/image renvoie 403 sur ce projet
+ * - render/image/public : conserve les params width/height/quality si déjà utilisés
+ * - non-Supabase : retour URL telle quelle
+ *
+ * IMPORTANT: Les transformations Supabase (render/image) renvoient 403 sur ce projet.
+ * Les params ?width=&height= sur object/public sont IGNORÉS par Supabase et causaient des erreurs.
  */
+
+const OBJECT_PUBLIC = '/storage/v1/object/public/';
+const RENDER_IMAGE_PUBLIC = '/storage/v1/render/image/public/';
 
 /**
  * Génère une URL optimisée pour une image Supabase Storage
- * 
+ *
  * @param originalUrl - URL originale de l'image
  * @param width - Largeur cible en pixels
  * @param height - Hauteur cible en pixels (optionnel, calculée depuis width si ratio 4/3)
  * @param quality - Qualité (1-100, défaut: 80)
  * @returns URL optimisée ou URL originale en fallback
- * 
- * Note: Supabase Storage supporte les transformations via query params:
- * - ?width=400&height=300&resize=cover
- * - Si le bucket n'est pas configuré pour les transformations, retourne l'URL originale
+ *
+ * - object/public : URL telle quelle (évite erreurs 403)
+ * - render/image/public : ajoute width/height/quality si pas déjà présents
  */
 export function getOptimizedImageUrl(
   originalUrl: string,
@@ -26,29 +31,34 @@ export function getOptimizedImageUrl(
   height?: number,
   quality: number = 80
 ): string {
-  // Si ce n'est pas une URL Supabase Storage, retourner l'originale
   if (!originalUrl || !originalUrl.includes('supabase.co/storage')) {
     return originalUrl;
   }
 
-  // Calculer la hauteur si non fournie (ratio 4/3 par défaut pour les véhicules)
-  const targetHeight = height || Math.round(width * 0.75);
-
-  try {
-    // Construire l'URL avec transformations Supabase
-    // Format: ?width=400&height=300&resize=cover&quality=80
-    const url = new URL(originalUrl);
-    url.searchParams.set('width', width.toString());
-    url.searchParams.set('height', targetHeight.toString());
-    url.searchParams.set('resize', 'cover'); // cover maintient le ratio et remplit
-    url.searchParams.set('quality', quality.toString());
-
-    return url.toString();
-  } catch (error) {
-    // Si erreur de parsing URL, retourner l'originale
-    console.warn('[imageOptimization] Erreur parsing URL:', error);
+  // object/public : ne jamais ajouter de query params (transformations non dispo → 403)
+  if (originalUrl.includes(OBJECT_PUBLIC)) {
     return originalUrl;
   }
+
+  // render/image/public : OK pour ajouter les params
+  if (originalUrl.includes(RENDER_IMAGE_PUBLIC)) {
+    const targetHeight = height ?? Math.round(width * 0.75);
+    try {
+      const url = new URL(originalUrl);
+      // Ne pas écraser des params existants (éviter duplication)
+      if (!url.searchParams.has('width')) url.searchParams.set('width', width.toString());
+      if (!url.searchParams.has('height')) url.searchParams.set('height', targetHeight.toString());
+      if (!url.searchParams.has('resize')) url.searchParams.set('resize', 'cover');
+      if (!url.searchParams.has('quality')) url.searchParams.set('quality', quality.toString());
+      return url.toString();
+    } catch (error) {
+      console.warn('[imageOptimization] Erreur parsing URL:', error);
+      return originalUrl;
+    }
+  }
+
+  // Autre path Supabase (fallback)
+  return originalUrl;
 }
 
 /**
