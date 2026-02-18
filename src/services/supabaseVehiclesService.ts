@@ -88,6 +88,18 @@ export interface Vehicle {
   
   created_at: string | null;
   updated_at: string | null;
+
+  /** URL de la photo principale (dénormalisée depuis vehicle_photos, pour éviter 2e requête) */
+  primaryPhotoUrl?: string | null;
+}
+
+/** Règles de sélection photo principale (alignées avec PhotoService.getPrimaryPhotosForVehicles) */
+function pickPrimaryPhotoUrl(photos: Array<{ photo_url?: string; is_primary?: boolean; display_order?: number }> | null): string | null {
+  if (!photos || photos.length === 0) return null;
+  const primary = photos.find((p) => p.is_primary);
+  if (primary?.photo_url) return primary.photo_url;
+  const sorted = [...photos].sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
+  return sorted[0]?.photo_url ?? null;
 }
 
 export const SupabaseVehiclesService = {
@@ -102,7 +114,7 @@ export const SupabaseVehiclesService = {
     try {
       let query = supabase
         .from('vehicles')
-        .select('*')
+        .select('*, vehicle_photos(photo_url, is_primary, display_order)')
         .eq('available', true);
 
       // Appliquer les filtres si fournis
@@ -125,7 +137,12 @@ export const SupabaseVehiclesService = {
         throw error;
       }
 
-      return data || [];
+      // Enrichir chaque véhicule avec primaryPhotoUrl (évite getPrimaryPhotosForVehicles)
+      const rows = (data || []) as Array<Vehicle & { vehicle_photos?: Array<{ photo_url?: string; is_primary?: boolean; display_order?: number }> }>;
+      return rows.map(({ vehicle_photos, ...v }) => ({
+        ...v,
+        primaryPhotoUrl: pickPrimaryPhotoUrl(vehicle_photos) ?? null,
+      })) as Vehicle[];
     } catch (error) {
       console.error('Erreur lors de la récupération des véhicules:', error);
       return [];
@@ -420,10 +437,10 @@ export const SupabaseVehiclesService = {
     endDate?: string;
   }): Promise<Vehicle[]> {
     try {
-      // 1. Récupérer les véhicules disponibles uniquement
+      // 1. Récupérer les véhicules disponibles (avec photo principale en un seul appel)
       let query = supabase
         .from('vehicles')
-        .select('*')
+        .select('*, vehicle_photos(photo_url, is_primary, display_order)')
         .eq('available', true);
 
       const { data: vehiclesData, error: vehiclesError } = await query
@@ -434,7 +451,11 @@ export const SupabaseVehiclesService = {
         throw vehiclesError;
       }
 
-      let availableVehicles = vehiclesData || [];
+      const rows = (vehiclesData || []) as Array<Vehicle & { vehicle_photos?: Array<{ photo_url?: string; is_primary?: boolean; display_order?: number }> }>;
+      let availableVehicles = rows.map(({ vehicle_photos, ...v }) => ({
+        ...v,
+        primaryPhotoUrl: pickPrimaryPhotoUrl(vehicle_photos) ?? null,
+      })) as Vehicle[];
 
       // 2. Filtre par localisation dans pickup_zones (côté client)
       if (filters.location && filters.location.trim()) {

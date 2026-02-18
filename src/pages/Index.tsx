@@ -19,10 +19,8 @@ import { Footer } from "@/components/layout/footer";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { MotoVehicleCard } from "@/components/vehicles/moto-vehicle-card";
 import { SingleLocationModal } from "@/components/ui/single-location-modal";
-import { VehiclesService, PhotosService } from "@/services";
-import { Vehicle, Photo, VehicleFilters, RentalCalculation, VehicleRentalInfo } from "@/types";
+import { Vehicle, VehicleFilters, RentalCalculation, VehicleRentalInfo } from "@/types";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
-import { PhotoService } from "@/services/supabase/photos";
 import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
 import { FEATURES } from "@/config/features";
@@ -38,7 +36,6 @@ const Index = () => {
 
   const [vehicles, setVehicles] = useState<SupabaseVehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<SupabaseVehicle[]>([]);
-  const [photos, setPhotos] = useState<Record<string, Photo>>({});
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [filters, setFilters] = useState<VehicleFilters>({});
@@ -142,60 +139,6 @@ const Index = () => {
 
     loadVehicles();
   }, []);
-
-  // Charger les photos principales (covers) pour les véhicules affichés
-  useEffect(() => {
-    let isCancelled = false;
-
-    const loadPrimaryPhotos = async () => {
-      try {
-        // IDs des véhicules qui n'ont pas encore de cover en mémoire
-        const vehicleIdsToFetch = vehicles
-          .map((v) => v.id)
-          .filter((id) => id && !photos[id]);
-
-        if (vehicleIdsToFetch.length === 0) {
-          return;
-        }
-
-        const { data, error } = await PhotoService.getPrimaryPhotosForVehicles(vehicleIdsToFetch);
-
-        if (error) {
-          console.error("Erreur lors du chargement des photos principales:", error);
-          return;
-        }
-
-        if (isCancelled || !data) return;
-
-        const mapped: Record<string, Photo> = {};
-
-        Object.entries(data).forEach(([vehicleId, uploaded]) => {
-          mapped[vehicleId] = {
-            id: uploaded.id,
-            vehicleId: uploaded.vehicleId,
-            url: uploaded.url,
-            angle: (uploaded.photoType === "frontLeft" ? "front" : "other") as any,
-            position: uploaded.position ?? 1,
-            isPrimary: uploaded.isPrimary,
-            createdAt: new Date().toISOString(),
-          };
-        });
-
-        setPhotos((prev) => ({
-          ...prev,
-          ...mapped,
-        }));
-      } catch (error) {
-        console.error("Erreur inattendue lors du chargement des photos principales:", error);
-      }
-    };
-
-    loadPrimaryPhotos();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [vehicles, photos]);
 
   // Restaurer les critères de recherche depuis localStorage au montage
   useEffect(() => {
@@ -702,11 +645,14 @@ const Index = () => {
                       ? mapToMotoVehicle(vehicle)
                       : mapToCarVehicle(vehicle);
 
+                    const primaryPhoto = vehicle.primaryPhotoUrl
+                      ? { id: vehicle.id, vehicleId: vehicle.id, url: vehicle.primaryPhotoUrl, angle: 'front' as const, position: 1, isPrimary: true, createdAt: '' }
+                      : null;
                     return isMotoVehicle ? (
                       <MotoVehicleCard
                         key={vehicle.id}
                         vehicle={mappedVehicle}
-                        primaryPhoto={photos[vehicle.id] ?? null}
+                        primaryPhoto={primaryPhoto}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}
                         index={index}
@@ -715,7 +661,7 @@ const Index = () => {
                       <VehicleCard
                         key={vehicle.id}
                         vehicle={mappedVehicle}
-                        primaryPhoto={photos[vehicle.id] ?? null}
+                        primaryPhoto={primaryPhoto}
                         rentalInfo={vehicleRentalInfo}
                         onClick={() => handleVehicleClick(vehicle)}
                         index={index}
