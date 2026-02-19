@@ -69,6 +69,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "compression": "^1.8.1",
     "date-fns": "3.6.0",
     "embla-carousel-react": "^8.6.0",
     "html2canvas": "^1.4.1",
@@ -100,6 +101,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jscodeshift": "^17.3.0",

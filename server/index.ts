@@ -2,6 +2,7 @@ import path from "path";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 import { getStripe, isStripeConfigured, getStripeKeyType } from "./lib/stripe";
@@ -39,6 +40,8 @@ const app = express();
 app.set("trust proxy", true);
 
 app.use(cors());
+// Compression gzip pour text/css, application/javascript, application/json, image/svg+xml, etc.
+app.use(compression());
 
 // Redirection www → non-www (canonique: https://rentanoo.com)
 // DOIT être déclaré AVANT toutes les routes pour capturer toutes les requêtes www
@@ -1145,12 +1148,23 @@ if (process.env.NODE_ENV === "production") {
   console.log(`📦 Serveur en mode PRODUCTION - Frontend servi depuis: ${distPath}`);
   
   // Servir les fichiers statiques (CSS, JS, images, etc.)
-  // Assets hashés : cache long + immutable pour FCP/LCP
+  // Cache-Control : assets hashés 1 an, manifest/robots/sitemap 1 jour, HTML no-cache
+  const sep = path.sep;
   app.use(
     express.static(distPath, {
-      setHeaders: (res, path) => {
-        if (path.includes(path.sep + "assets" + path.sep)) {
+      setHeaders: (res, filePath) => {
+        const basename = path.basename(filePath);
+        if (filePath.includes(sep + "assets" + sep)) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (
+          basename === "site.webmanifest" ||
+          basename === "robots.txt" ||
+          basename === "sitemap.xml" ||
+          basename === "favicon.ico"
+        ) {
+          res.setHeader("Cache-Control", "public, max-age=86400");
+        } else if (basename === "index.html") {
+          res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         }
       },
     })
@@ -1172,7 +1186,8 @@ if (process.env.NODE_ENV === "production") {
       return res.status(404).send("File not found");
     }
     
-    // Sinon, c'est une route SPA → servir index.html
+    // Sinon, c'est une route SPA → servir index.html (no-cache pour éviter stale HTML)
+    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
     console.log(`🔄 [SPA Fallback] Route SPA détectée: ${req.path} → index.html`);
     res.sendFile(path.join(distPath, "index.html"), (err) => {
       if (err) {
