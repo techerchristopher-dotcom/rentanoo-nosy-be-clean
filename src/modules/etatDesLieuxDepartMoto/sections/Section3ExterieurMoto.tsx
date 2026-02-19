@@ -372,6 +372,9 @@ export function Section3ExterieurMoto({
       // ⭐ Step 3A : Récupérer damageReports depuis RHF
       const currentDamageReports = getValues("damageReports") || [];
 
+      // ⭐ Persister zonesPhotos dans le form pour Section8ValidationMoto (sauvegarde avant finalisation)
+      setValue("step3ZonesPhotos" as any, zonesPhotos, { shouldDirty: false, shouldTouch: false });
+
       // Préparer le payload Step 3
       const step3Payload: Step3MotoData & { damageReports?: any[] } = {
         zonesPhotos,

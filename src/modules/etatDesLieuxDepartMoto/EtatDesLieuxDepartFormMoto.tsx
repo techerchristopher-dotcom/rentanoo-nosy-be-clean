@@ -112,6 +112,7 @@ export function EtatDesLieuxDepartFormMoto({
       ownerSignature: "",
       driverSignature: "",
       damageReports: [], // ⭐ Step 1 : Initialisation damageReports pour hydratation
+      step3ZonesPhotos: {}, // ⭐ Persistance zones photos pour sauvegarde Step3 avant finalisation
     }),
     [] // ⭐ Pas de dépendance - valeurs statiques
   );
@@ -331,6 +332,15 @@ export function EtatDesLieuxDepartFormMoto({
               completedAt: step3.completedAt,
               degats: step3.degats,
             });
+
+            // ⭐ Hydrater step3ZonesPhotos pour Section8ValidationMoto (sauvegarde avant finalisation)
+            if (Object.keys(mappedZonesPhotos).length > 0 && !cancelled) {
+              methods.setValue("step3ZonesPhotos" as any, mappedZonesPhotos, {
+                shouldDirty: false,
+                shouldTouch: false,
+                shouldValidate: false,
+              });
+            }
 
             console.log("[Moto Draft] ✅ Step 3 hydraté:", {
               zones: Object.keys(mappedZonesPhotos),
@@ -861,7 +871,7 @@ export function EtatDesLieuxDepartFormMoto({
           ) : (
             <div />
           )}
-          {currentStepIndex < visibleSteps.length ? (
+          {currentStepIndex < visibleSteps.length && currentStep !== 3 ? (
             <Button
               type="button"
               onClick={nextStep}
@@ -870,6 +880,9 @@ export function EtatDesLieuxDepartFormMoto({
               Suivant
               <ChevronRight className="h-4 w-4" />
             </Button>
+          ) : currentStep === 3 ? (
+            /* Step 3 : seul le bouton dans Section3ExterieurMoto permet d'avancer (force la sauvegarde) */
+            <div />
           ) : (
             <Button
               type="button"

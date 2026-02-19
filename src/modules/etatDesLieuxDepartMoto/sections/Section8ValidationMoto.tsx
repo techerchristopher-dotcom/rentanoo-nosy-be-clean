@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { finalizeCheckinDepart, saveStep2Draft, type Step2Payload } from "@/services/checkinDepartService";
+import { finalizeCheckinDepart, saveStep2Draft, saveStep3DraftMoto, type Step2Payload } from "@/services/checkinDepartService";
 import { useFormContext } from "react-hook-form";
 import { SignatureCanvas } from "@/components/checkin/SignatureCanvas";
 import { SupabaseCheckinService } from "@/services/supabaseCheckinService";
@@ -361,6 +361,42 @@ export function Section8ValidationMoto({
         }
       }
 
+      // ============================================================================
+      // ⭐ PHASE 3 : Garantir persistance Step3 (extérieur moto) avant snapshot
+      // ============================================================================
+      setFinalizeProgress(12);
+      setFinalizeLabel("Enregistrement des photos et dégâts…");
+
+      const step3ZonesPhotos = getValues("step3ZonesPhotos" as any);
+      const step3DamageReports = getValues("damageReports") || [];
+      const hasStep3Data = step3ZonesPhotos && typeof step3ZonesPhotos === "object" && Object.keys(step3ZonesPhotos).length > 0;
+
+      if (hasStep3Data && bookingId) {
+        try {
+          const step3Payload = {
+            zonesPhotos: step3ZonesPhotos,
+            completedAt: new Date().toISOString(),
+            damageReports: step3DamageReports,
+          };
+
+          await saveStep3DraftMoto({
+            bookingId,
+            ownerId: ownerId || null,
+            renterId: renterId || null,
+            checkinId: checkinId || null,
+            step3: step3Payload,
+          });
+
+          console.log("[Moto Validation] ✅ Step3 sauvegardé avant finalisation");
+        } catch (step3Error: any) {
+          console.error("[Moto Validation] ❌ Erreur sauvegarde Step3:", step3Error);
+          setFinalizeError(
+            step3Error.message || "Impossible de sauvegarder les photos et dégâts. La finalisation est annulée."
+          );
+          return;
+        }
+      }
+
       // ⭐ FINALISATION COMPLÈTE : Step 7 + Snapshot légal + Status "completed"
       setFinalizeProgress(20);
       setFinalizeLabel("Enregistrement des signatures…");
@@ -401,7 +437,9 @@ export function Section8ValidationMoto({
         // Afficher un avertissement si le PDF a échoué (mais ne pas bloquer)
         if (result.pdfError) {
           console.warn("[Moto Validation] ⚠️ PDF error during finalizeCheckinDepart:", result.pdfError);
-          // On continue quand même, juste un warning visuel dans la modale
+          toast.warning("État des lieux finalisé, mais le document PDF n'a pas pu être généré", {
+            description: "Il pourra être régénéré ultérieurement depuis la fiche de réservation.",
+          });
         }
 
         // Le PDF est généré dans finalizeCheckinDepart (non-bloquant)
