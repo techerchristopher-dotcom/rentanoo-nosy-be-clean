@@ -221,3 +221,4 @@ content: ["./index.html", "./src/**/*.{ts,tsx}"]
 
 - `DIAG-PHASE1-IMAGES-PERF.md` — audit images existant  
 - `DIAG-ETAPE1-SYSTEME-REDUCTION-IMAGES-EDL.md` — flux EDL  
+
