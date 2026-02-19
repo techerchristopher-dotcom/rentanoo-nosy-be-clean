@@ -68,6 +68,8 @@ export const MultiVehicleModal: React.FC<MultiVehicleModalProps> = ({
                       <img 
                         src={selectedVehicleImage} 
                         alt={selectedVehicleName || "Véhicule sélectionné"}
+                        width={96}
+                        height={96}
                         className="w-full h-full object-cover"
                       />
                     ) : (
