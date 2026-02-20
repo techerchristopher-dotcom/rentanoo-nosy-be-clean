@@ -107,6 +107,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 (target as HTMLLinkElement).href ||
                 (target as HTMLScriptElement).src || '';
 
+    // Ignorer gtag/GA4/Google Ads : échec = best-effort, ne jamais bloquer l'app
+    if (tagName === 'SCRIPT' && src && /googletagmanager\.com/.test(src)) return;
+
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.error('[ErrorBoundary] ❌ Erreur de chargement de ressource');
     console.error('[ErrorBoundary] 📦 Type:', tagLower);

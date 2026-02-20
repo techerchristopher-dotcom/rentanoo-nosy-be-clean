@@ -2,21 +2,50 @@
  * Google Analytics 4 + Google Ads (gtag.js) - Analytics et conversions
  *
  * Mode "best effort" : GA4/Ads ne doivent JAMAIS empêcher l'app de démarrer.
- * Le tag est chargé de façon différée après requestIdleCallback.
+ * L'échec du chargement d'un script externe n'est jamais une erreur applicative.
  */
 
 const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
 const GOOGLE_ADS_ID = "AW-17959989720";
 
-/** URLs de fallback pour gtag.js (certains réseaux bloquent www) */
-const GTAG_URLS = [
-  "https://googletagmanager.com/gtag/js?id=" + GA4_MEASUREMENT_ID,
-  "https://www.googletagmanager.com/gtag/js?id=" + GA4_MEASUREMENT_ID,
-];
+const GTAG_SCRIPT_URL = "https://www.googletagmanager.com/gtag/js?id=" + GA4_MEASUREMENT_ID;
+
+function isGtagAvailable(): boolean {
+  return typeof window !== "undefined" && typeof window.gtag === "function";
+}
 
 /**
- * Initialise dataLayer, gtag stub et charge le script gtag après requestIdleCallback (fallback 2s).
- * Ne throw jamais : échec = warning + app continue.
+ * Charge le script gtag. Promise toujours resolve (jamais reject).
+ * onload => resolve(true), onerror => console.warn + resolve(false).
+ */
+function loadGtagScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      const s = document.createElement("script");
+      s.async = true;
+      s.src = GTAG_SCRIPT_URL;
+      s.onload = () => {
+        try {
+          resolve(true);
+        } catch {
+          resolve(false);
+        }
+      };
+      s.onerror = () => {
+        console.warn("[gtag] Script load failed (app continues):", GTAG_SCRIPT_URL);
+        resolve(false);
+      };
+      document.head.appendChild(s);
+    } catch (e) {
+      console.warn("[gtag] Script injection failed (app continues):", e);
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Initialise dataLayer, gtag stub, charge le script en arrière-plan.
+ * Ne throw jamais. Ne bloque jamais l'app sur le résultat du loader.
  */
 export function initGtag(): void {
   try {
@@ -34,30 +63,15 @@ export function initGtag(): void {
     gtagFn("config", GA4_MEASUREMENT_ID);
     gtagFn("config", GOOGLE_ADS_ID);
 
-    const loadGtagScript = (urlIndex = 0) => {
-      try {
-        const url = GTAG_URLS[urlIndex];
-        if (!url) return;
-        const s = document.createElement("script");
-        s.async = true;
-        s.src = url;
-        s.onerror = () => {
-          console.warn("[gtag] Script load failed:", url);
-          if (urlIndex + 1 < GTAG_URLS.length) {
-            loadGtagScript(urlIndex + 1);
-          }
-        };
-        document.head.appendChild(s);
-      } catch (e) {
-        console.warn("[gtag] Script injection failed:", e);
-      }
+    // Chargement différé, sans await : l'app démarre immédiatement
+    const schedule = () => {
+      loadGtagScript(); // fire-and-forget, résultat ignoré
     };
-
     if ("requestIdleCallback" in window) {
       (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout?: number }) => void })
-        .requestIdleCallback(() => loadGtagScript(), { timeout: 2000 });
+        .requestIdleCallback(schedule, { timeout: 2000 });
     } else {
-      setTimeout(() => loadGtagScript(), 2000);
+      setTimeout(schedule, 2000);
     }
   } catch (e) {
     console.warn("[gtag] Init failed (app continues):", e);
@@ -69,9 +83,9 @@ export function initGtag(): void {
  * No-op si gtag indisponible ou erreur.
  */
 export function sendPageView(path: string, title?: string): void {
-  if (!window.gtag) return;
+  if (!isGtagAvailable()) return;
   try {
-    window.gtag("event", "page_view", {
+    window.gtag!("event", "page_view", {
       page_path: path,
       page_title: title ?? document.title,
       send_to: GA4_MEASUREMENT_ID,
@@ -114,7 +128,7 @@ const STORAGE_KEY_DEPOSIT = "gtag_deposit_sent";
  * Utilise transaction_id pour déduplication Google Ads.
  */
 export function sendPurchaseConversion(params: PurchaseConversionParams): void {
-  if (!window.gtag) return;
+  if (!isGtagAvailable()) return;
 
   const label = CONVERSION_LABEL_PURCHASE;
   if (!label) {
@@ -125,7 +139,7 @@ export function sendPurchaseConversion(params: PurchaseConversionParams): void {
   }
 
   try {
-    window.gtag("event", "conversion", {
+    window.gtag!("event", "conversion", {
       send_to: `${GOOGLE_ADS_ID}/${label}`,
       value: params.value,
       currency: params.currency,
@@ -144,7 +158,7 @@ export function sendPurchaseConversion(params: PurchaseConversionParams): void {
  * À appeler après succès de l'attachement de la carte pour la caution.
  */
 export function sendDepositConversion(params: DepositConversionParams): void {
-  if (!window.gtag) return;
+  if (!isGtagAvailable()) return;
 
   const label = CONVERSION_LABEL_DEPOSIT;
   if (!label) {
@@ -155,7 +169,7 @@ export function sendDepositConversion(params: DepositConversionParams): void {
   }
 
   try {
-    window.gtag("event", "conversion", {
+    window.gtag!("event", "conversion", {
       send_to: `${GOOGLE_ADS_ID}/${label}`,
       value: params.value,
       currency: params.currency,
