@@ -489,6 +489,19 @@ const Index = () => {
         title={t("seo.home.title")}
         description={t("seo.home.description")}
         canonical="https://rentanoo.com"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: "Rentanoo",
+          url: "https://rentanoo.com",
+          image: "https://rentanoo.com/og-rentanoo-nosy-be.webp",
+          description:
+            "Location scooter Nosy Be avec livraison à l'aéroport ou à l'hôtel. Assurance et casque inclus.",
+          areaServed: {
+            "@type": "Place",
+            name: "Nosy Be, Madagascar",
+          },
+        }}
       />
       <main className="flex-1">
         {/* Hero Section */}

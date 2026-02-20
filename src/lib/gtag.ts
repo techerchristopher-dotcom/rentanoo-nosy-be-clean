@@ -1,10 +1,11 @@
 /**
- * Google Ads (gtag.js) - Utilitaires pour les conversions
+ * Google Analytics 4 + Google Ads (gtag.js) - Analytics et conversions
  *
  * Le tag est chargé de façon différée après requestIdleCallback pour limiter
  * l'impact des scripts tiers sur le chargement initial.
  */
 
+const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
 const GOOGLE_ADS_ID = "AW-17959989720";
 
 /**
@@ -19,12 +20,13 @@ export function initGtag(): void {
   window.gtag = gtagFn;
 
   gtagFn("js", new Date());
+  gtagFn("config", GA4_MEASUREMENT_ID);
   gtagFn("config", GOOGLE_ADS_ID);
 
   const loadGtagScript = () => {
     const s = document.createElement("script");
     s.async = true;
-    s.src = `https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`;
     document.head.appendChild(s);
   };
 
@@ -34,6 +36,19 @@ export function initGtag(): void {
   } else {
     setTimeout(loadGtagScript, 2000);
   }
+}
+
+/**
+ * Envoie un page_view GA4 à chaque changement de route (SPA).
+ * À appeler depuis un composant qui écoute useLocation().
+ */
+export function sendPageView(path: string, title?: string): void {
+  if (!window.gtag) return;
+  window.gtag("event", "page_view", {
+    page_path: path,
+    page_title: title ?? document.title,
+    send_to: GA4_MEASUREMENT_ID,
+  });
 }
 
 declare global {

@@ -10,13 +10,16 @@ export interface SeoProps {
   description?: string;
   canonical?: string;
   ogImage?: string;
+  /** JSON-LD structured data (Schema.org) — injecté en script type="application/ld+json" */
+  structuredData?: object;
 }
 
 /**
  * Injects SEO meta tags (title, description, og, twitter, canonical) via react-helmet-async.
  * Uses defaults from index.html when props are absent.
+ * Optionally injects JSON-LD structured data when structuredData is provided.
  */
-export function Seo({ title, description, canonical, ogImage }: SeoProps) {
+export function Seo({ title, description, canonical, ogImage, structuredData }: SeoProps) {
   const effectiveTitle = title ?? DEFAULT_TITLE;
   const effectiveDescription = description ?? DEFAULT_DESCRIPTION;
   const effectiveOgImage = ogImage ?? DEFAULT_OG_IMAGE;
@@ -33,6 +36,11 @@ export function Seo({ title, description, canonical, ogImage }: SeoProps) {
       <meta name="twitter:description" content={effectiveDescription} />
       <meta name="twitter:image" content={effectiveOgImage} />
       {canonical && <link rel="canonical" href={canonical} />}
+      {structuredData && (
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      )}
     </Helmet>
   );
 }

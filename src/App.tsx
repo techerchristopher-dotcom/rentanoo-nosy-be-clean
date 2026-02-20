@@ -1,11 +1,12 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { sendPageView } from "@/lib/gtag";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navbar } from "@/components/layout/navbar";
@@ -56,6 +57,20 @@ const I18nDebug = lazy(() => import("./pages/__I18nDebug"));
 
 const queryClient = new QueryClient();
 
+/** Envoie un page_view GA4 à chaque changement de route (SPA). La 1re page est déjà envoyée par gtag('config'). */
+function RouteChangeTracker() {
+  const location = useLocation();
+  const isInitial = useRef(true);
+  useEffect(() => {
+    if (isInitial.current) {
+      isInitial.current = false;
+      return;
+    }
+    sendPageView(location.pathname + location.search, document.title);
+  }, [location.pathname, location.search]);
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -64,6 +79,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <RouteChangeTracker />
             {/* Wrapper to allow a fixed dev language switcher on all pages */}
             <div className="relative">
               {/* Dev-only floating language switcher, visible on all pages */}
