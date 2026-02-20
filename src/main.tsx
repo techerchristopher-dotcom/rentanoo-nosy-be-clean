@@ -7,7 +7,11 @@ import { initGtag } from "@/lib/gtag";
 import { initLcpLogger } from "@/utils/lcpLogger";
 import { setupRemoveChildDiagnostic } from "@/utils/removeChildDiagnostic";
 
-initGtag();
+try {
+  initGtag();
+} catch {
+  // GA4/Ads best-effort : ne jamais bloquer le démarrage
+}
 initLcpLogger();
 
 // ⭐ Diagnostic removeChild (dev only)
