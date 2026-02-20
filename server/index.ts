@@ -1156,13 +1156,18 @@ if (process.env.NODE_ENV === "production") {
         const basename = path.basename(filePath);
         if (filePath.includes(sep + "assets" + sep)) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (basename === "robots.txt" || basename === "sitemap.xml") {
+          res.setHeader("Cache-Control", "public, max-age=86400");
         } else if (
           basename === "site.webmanifest" ||
-          basename === "robots.txt" ||
-          basename === "sitemap.xml" ||
-          basename === "favicon.ico"
+          basename === "favicon.ico" ||
+          basename === "favicon-32x32.png" ||
+          basename === "favicon-16x16.png" ||
+          basename === "apple-touch-icon.png" ||
+          basename === "android-chrome-192x192.png" ||
+          basename === "android-chrome-512x512.png"
         ) {
-          res.setHeader("Cache-Control", "public, max-age=86400");
+          res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         } else if (basename === "index.html") {
           res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         }
