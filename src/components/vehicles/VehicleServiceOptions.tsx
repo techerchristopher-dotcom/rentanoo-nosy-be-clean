@@ -76,7 +76,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
       services.push({
         id: 'airport-pickup-retrieval',
         name: 'Récupération à l\'aéroport',
-        description: 'Le propriétaire vous amène le véhicule à l\'aéroport de Mayotte',
+        description: 'Le propriétaire vous amène le véhicule à l\'aéroport de Nosy Be (Fascène)',
         icon: Plane,
         type: 'flat_rate',
         pricePerDay: 0,
@@ -91,7 +91,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
       services.push({
         id: 'airport-pickup-return',
         name: 'Retour à l\'aéroport',
-        description: 'Vous rendez le véhicule directement à l\'aéroport de Mayotte',
+        description: 'Vous rendez le véhicule directement à l\'aéroport de Nosy Be (Fascène)',
         icon: Plane,
         type: 'flat_rate',
         pricePerDay: 0,

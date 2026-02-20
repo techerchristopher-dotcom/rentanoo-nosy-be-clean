@@ -48,7 +48,7 @@ function IllustrationPlaceholder({
 
 const DEFAULT_TITLE = "RENTANOO";
 const DEFAULT_DESCRIPTION =
-  "location de voiture entre particulier & pros sur l'ile de Mayotte";
+  "Louez votre scooter à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Casques et assurance inclus.";
 
 export default function SinistreCaution() {
   const { t } = useTranslation();

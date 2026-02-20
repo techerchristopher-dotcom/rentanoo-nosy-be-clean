@@ -110,7 +110,7 @@ export default function Register() {
               <Car className="h-7 w-7 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
-              MayCar
+              Rentanoo
             </span>
           </Link>
         </div>
@@ -119,7 +119,7 @@ export default function Register() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">S'inscrire</CardTitle>
             <CardDescription>
-              Créez votre compte MayCar et rejoignez la communauté
+              Créez votre compte Rentanoo et rejoignez la communauté
             </CardDescription>
           </CardHeader>
           

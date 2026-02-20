@@ -213,7 +213,7 @@ const MessageToOwners = () => {
                   <p className="text-foreground leading-relaxed">
                     Êtes-vous flexible sur les horaires ? Est-ce que vous prenez l'avion ? 
                     Avez-vous une barge à prendre ? Accordez-vous avec le propriétaire sur 
-                    le lieu et l'heure exacts de rendez-vous pour récupérer la voiture.
+                    le lieu et l'heure exacts de rendez-vous pour récupérer le véhicule.
                   </p>
                 </CardContent>
               </Card>

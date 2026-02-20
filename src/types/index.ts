@@ -1,4 +1,4 @@
-// MayCar Types - Complete type definitions for the car sharing platform
+// Rentanoo Types - Type definitions for the scooter rental platform
 
 export type Role = "renter" | "owner" | "admin";
 
@@ -190,7 +190,7 @@ export interface Booking {
   endTime: string; // Format HH:MM (ex: "14:00")
   
   // Lieu de prise en charge
-  pickupLocation: string; // "Aéroport", "Mamoudzou", etc.
+  pickupLocation: string; // "Aéroport", "Hell-Ville", etc.
   
   // Montant et statut
   totalAmount: number;

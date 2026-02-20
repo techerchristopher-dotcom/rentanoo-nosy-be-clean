@@ -1,7 +1,7 @@
 {
   "name": "RENTANOO",
   "short_name": "RENTANOO",
-  "description": "Location de voiture entre particulier & pros sur l'ile de Mayotte",
+  "description": "Louez votre scooter à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Casques et assurance inclus.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

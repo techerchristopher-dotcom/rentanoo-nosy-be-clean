@@ -244,7 +244,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
         {/* Zones de prise en charge & Price */}
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            {vehicle.location && vehicle.location !== "Mamoudzou, Mayotte" ? (
+            {vehicle.location && vehicle.location !== "Nosy Be, Madagascar" ? (
               <div className="flex flex-wrap gap-1">
                 {vehicle.location.split(', ').slice(0, 2).map((zone, index) => {
                   const IconComponent = getLocationIcon(zone.trim());
@@ -264,7 +264,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
             ) : (
               <div className="flex items-center text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 mr-1" />
-                <span>{t('common.mayotte')}</span>
+                <span>{t('common.nosy_be', 'Nosy Be, Madagascar')}</span>
               </div>
             )}
           </div>

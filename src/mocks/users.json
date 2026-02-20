@@ -34,7 +34,7 @@
   },
   {
     "id": "user_4",
-    "email": "jean.proprietaire@mayotte.yt",
+    "email": "jean.proprietaire@demo.fr",
     "firstName": "Jean",
     "lastName": "Dupont", 
     "phone": "+262 692 44 55 66",
@@ -45,7 +45,7 @@
   },
   {
     "id": "user_5",
-    "email": "anna.locataire@mayotte.yt",
+    "email": "anna.locataire@demo.fr",
     "firstName": "Anna", 
     "lastName": "Locataire",
     "phone": "+262 692 33 44 55",

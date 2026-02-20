@@ -214,7 +214,7 @@ export default function VehicleDetails() {
           description: vehicle.description || undefined, // Description du véhicule
           location: vehicle.pickup_zones && vehicle.pickup_zones.length > 0 
             ? vehicle.pickup_zones.join(', ') 
-            : "Mamoudzou, Mayotte", // Utiliser les zones de prise en charge
+            : "Nosy Be, Madagascar", // Utiliser les zones de prise en charge
           
           // 🆕 Services supplémentaires - MAPPING COMPLET
           // 🛩️ Services Aéroport
@@ -1044,7 +1044,7 @@ export default function VehicleDetails() {
                       ) : (
                         <Badge variant="secondary" className="flex items-center gap-1 px-2 py-1">
                           <MapPin className="h-3 w-3" />
-                          Mamoudzou, Mayotte
+                          Nosy Be, Madagascar
                         </Badge>
                       )}
                     </div>
@@ -1081,7 +1081,7 @@ export default function VehicleDetails() {
                       <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Car className="h-5 w-5 text-primary" />
-                          Description de la voiture
+                          Description du véhicule
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 p-4">

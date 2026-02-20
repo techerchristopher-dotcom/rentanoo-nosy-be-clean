@@ -444,7 +444,7 @@ export default function RenterBookings() {
                 description: vehicle.description || undefined,
                 location: vehicle.pickup_zones && vehicle.pickup_zones.length > 0 
                   ? vehicle.pickup_zones.join(', ') 
-                  : "Mamoudzou, Mayotte",
+                  : "Nosy Be, Madagascar",
                 // Services supplémentaires (simplifiés pour l'affichage)
                 airport_pickup_service: vehicle.airport_pickup_service || false,
                 airport_pickup_retrieval: vehicle.airport_pickup_retrieval || false,

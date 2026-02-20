@@ -89,7 +89,7 @@ export default function Login() {
       if (authData.user) {
         toast({
           title: "Connexion réussie",
-          description: "Bienvenue sur MayCar !",
+          description: "Bienvenue sur Rentanoo !",
         });
         navigate("/onboarding/client");
       }
@@ -153,7 +153,7 @@ export default function Login() {
               <Car className="h-7 w-7 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
-              MayCar
+              Rentanoo
             </span>
           </Link>
         </div>
@@ -162,7 +162,7 @@ export default function Login() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Se connecter</CardTitle>
             <CardDescription>
-              Accédez à votre compte MayCar
+              Accédez à votre compte Rentanoo
             </CardDescription>
           </CardHeader>
           

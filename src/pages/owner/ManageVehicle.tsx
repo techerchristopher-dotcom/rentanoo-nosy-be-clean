@@ -3528,7 +3528,7 @@ export default function ManageVehicle() {
                             <div className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-primary" />
-                                <span className="font-medium">{formData.location || "Mamoudzou, Mayotte"}</span>
+                                <span className="font-medium">{formData.location || "Nosy Be, Madagascar"}</span>
                               </div>
                               <div className="h-24 bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg flex items-center justify-center border border-muted/40">
                                 <div className="text-center text-muted-foreground">
@@ -3596,7 +3596,7 @@ export default function ManageVehicle() {
                                 <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                                 <CardTitle className="text-lg flex items-center gap-2">
                                   <Car className="h-5 w-5 text-primary" />
-                                  Description de la voiture
+                                  Description du véhicule
                                 </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-0 p-4">

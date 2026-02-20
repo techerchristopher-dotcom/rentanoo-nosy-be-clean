@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { STRATEGIC_POINTS, MAYOTTE_COMMUNES, getLocationIcon } from '@/data/locations';
+import { NOSYBE_STRATEGIC_POINTS, NOSYBE_LOCATIONS, getLocationIcon } from '@/data/locations';
 
 interface PickupZonesModalProps {
   selectedZones: string[];
@@ -58,7 +58,7 @@ export const PickupZonesModal: React.FC<PickupZonesModalProps> = ({
   };
 
   const handleSelectAll = () => {
-    setTempSelectedZones([...STRATEGIC_POINTS, ...MAYOTTE_COMMUNES]);
+    setTempSelectedZones([...NOSYBE_STRATEGIC_POINTS, ...NOSYBE_LOCATIONS]);
   };
 
   const handleClearAll = () => {
@@ -148,7 +148,7 @@ export const PickupZonesModal: React.FC<PickupZonesModalProps> = ({
               <h4 className="text-sm font-semibold text-primary">Points stratégiques</h4>
             </div>
             <div className="grid grid-cols-1 gap-2">
-              {STRATEGIC_POINTS.map((zone) => {
+              {NOSYBE_STRATEGIC_POINTS.map((zone) => {
                 const IconComponent = getLocationIcon(zone);
                 const isSelected = tempSelectedZones.includes(zone);
                 return (
@@ -189,7 +189,7 @@ export const PickupZonesModal: React.FC<PickupZonesModalProps> = ({
               <h4 className="text-sm font-semibold text-secondary-foreground">Communes</h4>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {MAYOTTE_COMMUNES.map((zone) => {
+              {NOSYBE_LOCATIONS.map((zone) => {
                 const IconComponent = getLocationIcon(zone);
                 const isSelected = tempSelectedZones.includes(zone);
                 return (

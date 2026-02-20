@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { STRATEGIC_POINTS, MAYOTTE_COMMUNES, getLocationIcon } from '@/data/locations';
+import { NOSYBE_STRATEGIC_POINTS, NOSYBE_LOCATIONS, getLocationIcon } from '@/data/locations';
 
 interface SingleLocationModalProps {
   selectedLocation: string;
@@ -95,7 +95,7 @@ export const SingleLocationModal: React.FC<SingleLocationModalProps> = ({
               <h4 className="text-sm font-semibold text-primary">{t('common.points_stratgiques')}</h4>
             </div>
             <div className="grid grid-cols-1 gap-2">
-              {STRATEGIC_POINTS.map((location) => {
+              {NOSYBE_STRATEGIC_POINTS.map((location) => {
                 const IconComponent = getLocationIcon(location);
                 const isSelected = tempSelectedLocation === location;
                 return (
@@ -136,7 +136,7 @@ export const SingleLocationModal: React.FC<SingleLocationModalProps> = ({
               <h4 className="text-sm font-semibold text-secondary-foreground">{t('common.communes')}</h4>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {MAYOTTE_COMMUNES.map((location) => {
+              {NOSYBE_LOCATIONS.map((location) => {
                 const IconComponent = getLocationIcon(location);
                 const isSelected = tempSelectedLocation === location;
                 return (

@@ -327,7 +327,7 @@ export default function Callback() {
               <Car className="h-7 w-7 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
-              MayCar
+              Rentanoo
             </span>
           </Link>
         </div>

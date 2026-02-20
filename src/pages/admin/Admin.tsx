@@ -66,7 +66,7 @@ const Admin = () => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Administration</h1>
             <p className="text-muted-foreground">
-              Tableau de bord et gestion de la plateforme MayCar
+              Tableau de bord et gestion de la plateforme Rentanoo
             </p>
           </div>
 

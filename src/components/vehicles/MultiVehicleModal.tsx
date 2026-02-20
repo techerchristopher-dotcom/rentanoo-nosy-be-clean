@@ -45,9 +45,9 @@ export const MultiVehicleModal: React.FC<MultiVehicleModalProps> = ({
       <DialogPortal>
         <DialogOverlay />
         <DialogContent className="max-w-lg w-full mx-4 p-0 gap-0 sm:rounded-2xl">
-          <DialogTitle className="sr-only">Confirmez votre trajet plus vite en choisissant plus de voitures</DialogTitle>
+          <DialogTitle className="sr-only">Confirmez votre trajet plus vite en choisissant plus de véhicules</DialogTitle>
           <DialogDescription className="sr-only">
-            Choisissez d'ajouter plus de voitures pour augmenter vos chances d'acceptation ou envoyez directement votre demande pour le véhicule sélectionné.
+            Choisissez d'ajouter plus de véhicules pour augmenter vos chances d'acceptation ou envoyez directement votre demande pour le véhicule sélectionné.
           </DialogDescription>
           {/* Close button */}
           <button
@@ -94,7 +94,7 @@ export const MultiVehicleModal: React.FC<MultiVehicleModalProps> = ({
 
             {/* Title */}
             <h2 className="text-xl font-bold text-foreground mb-6 text-center leading-tight">
-              Confirmez votre trajet plus vite en choisissant plus de voitures
+              Confirmez votre trajet plus vite en choisissant plus de véhicules
             </h2>
 
             {/* Explanatory text */}
@@ -104,7 +104,7 @@ export const MultiVehicleModal: React.FC<MultiVehicleModalProps> = ({
               </p>
               
               <p>
-                Augmentez vos chances que votre demande soit acceptée rapidement en ajoutant 2 voitures de propriétaires différents.
+                Augmentez vos chances que votre demande soit acceptée rapidement en ajoutant 2 véhicules de propriétaires différents.
               </p>
               
               <p className="text-sm text-muted-foreground/80">
@@ -119,7 +119,7 @@ export const MultiVehicleModal: React.FC<MultiVehicleModalProps> = ({
                 size="lg"
                 className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 text-primary-foreground font-semibold py-3"
               >
-                Choisir plus de voitures
+                Choisir plus de véhicules
               </Button>
               
               <Button

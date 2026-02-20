@@ -106,7 +106,7 @@ function MyComponent() {
 2. **Utiliser des clés hiérarchiques** : `section.subsection.key` plutôt que `section_subsection_key`
 3. **Garder les clés descriptives** : `nav.dictionary` plutôt que `nav.dict`
 4. **Grouper par contexte** : `nav.*`, `common.*`, `booking.*`, `vehicle.*`, etc.
-5. **Ne pas traduire les noms propres** : "MayCar", "Stripe", etc.
+5. **Ne pas traduire les noms propres** : "Rentanoo", "Stripe", etc.
 
 ## 🎯 Où ajouter les traductions pour le dictionnaire
 

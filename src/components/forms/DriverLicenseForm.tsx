@@ -16,7 +16,7 @@ interface DriverLicenseFormData {
 
 const countries = [
   { value: 'FR', label: 'France' },
-  { value: 'YT', label: 'Mayotte' },
+  { value: 'MG', label: 'Madagascar' },
   { value: 'RE', label: 'La Réunion' },
   { value: 'GP', label: 'Guadeloupe' },
   { value: 'MQ', label: 'Martinique' },

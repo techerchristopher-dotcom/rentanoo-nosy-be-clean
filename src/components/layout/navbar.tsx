@@ -67,7 +67,7 @@ export function Navbar() {
     await signOut();
     toast({
       title: "Déconnexion réussie",
-      description: "À bientôt sur MayCar !",
+      description: "À bientôt sur Rentanoo !",
     });
     navigate("/");
   };

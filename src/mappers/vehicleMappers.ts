@@ -23,7 +23,7 @@ export const mapToCarVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   location:
     vehicle.pickup_zones && vehicle.pickup_zones.length > 0
       ? vehicle.pickup_zones.join(", ")
-      : "Mamoudzou, Mayotte", // Utiliser les zones de prise en charge
+      : "Nosy Be, Madagascar", // Utiliser les zones de prise en charge
   createdAt: vehicle.created_at || new Date().toISOString(),
   updatedAt: vehicle.updated_at || new Date().toISOString(),
 });

@@ -1582,7 +1582,7 @@ export default function Profile() {
                   <SelectContent>
                       <SelectItem value="France">{t("profile.countries.france", "France")}</SelectItem>
                       <SelectItem value="La Réunion">{t("profile.countries.reunion", "La Réunion")}</SelectItem>
-                      <SelectItem value="Mayotte">{t("profile.countries.mayotte", "Mayotte")}</SelectItem>
+                      <SelectItem value="Nosy Be, Madagascar">{t("profile.countries.mayotte", "Nosy Be, Madagascar")}</SelectItem>
                       <SelectItem value="Guadeloupe">{t("profile.countries.guadeloupe", "Guadeloupe")}</SelectItem>
                       <SelectItem value="Martinique">{t("profile.countries.martinique", "Martinique")}</SelectItem>
                       <SelectItem value="Guyane">{t("profile.countries.guyane", "Guyane")}</SelectItem>
@@ -1679,7 +1679,7 @@ export default function Profile() {
                     <SelectContent>
                       <SelectItem value="France">France</SelectItem>
                       <SelectItem value="La Réunion">La Réunion</SelectItem>
-                      <SelectItem value="Mayotte">Mayotte</SelectItem>
+                      <SelectItem value="Nosy Be, Madagascar">Nosy Be, Madagascar</SelectItem>
                       <SelectItem value="Belgique">Belgique</SelectItem>
                       <SelectItem value="Suisse">Suisse</SelectItem>
                       <SelectItem value="Allemagne">Allemagne</SelectItem>
@@ -1965,7 +1965,7 @@ export default function Profile() {
                   <SelectContent>
                     <SelectItem value="France">France</SelectItem>
                     <SelectItem value="La Réunion">La Réunion</SelectItem>
-                    <SelectItem value="Mayotte">Mayotte</SelectItem>
+                    <SelectItem value="Nosy Be, Madagascar">Nosy Be, Madagascar</SelectItem>
                     <SelectItem value="Belgique">Belgique</SelectItem>
                     <SelectItem value="Suisse">Suisse</SelectItem>
                     <SelectItem value="Allemagne">Allemagne</SelectItem>

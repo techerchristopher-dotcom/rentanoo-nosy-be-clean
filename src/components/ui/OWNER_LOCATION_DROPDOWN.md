@@ -42,7 +42,7 @@ function OwnerRegistrationForm() {
 
 ## Fonctionnalités
 
-- ✅ **Autocomplétion** : Filtrage intelligent des villes de Mayotte (version filtrée)
+- ✅ **Autocomplétion** : Filtrage intelligent des villes de Nosy Be (version filtrée)
 - ✅ **Icônes spécifiques** : 
   - 📍 Épingle de carte pour tous les lieux (les icônes avion et bateau sont exclues)
 - ✅ **Navigation clavier** : Flèches haut/bas, Entrée, Échap
@@ -53,7 +53,7 @@ function OwnerRegistrationForm() {
 
 ## Liste des lieux disponibles
 
-Le composant inclut toutes les villes de Mayotte **SAUF** :
+Le composant inclut toutes les villes de Nosy Be **SAUF** :
 
 ### ❌ Villes exclues (non adaptées pour résidence de loueurs)
 - ✈️ Aéroport (lieu de prise en charge, pas de résidence)
@@ -74,7 +74,7 @@ Le composant inclut toutes les villes de Mayotte **SAUF** :
 - 📍 Kavani
 - 📍 Koungou
 - 📍 M'Tsangamouji
-- 📍 Mamoudzou
+- 📍 Hell-Ville
 - 📍 Mtsamboro
 - 📍 Ouangani
 - 📍 Pamandzi
@@ -97,7 +97,7 @@ Pour ajouter de nouveaux lieux disponibles pour les loueurs, modifiez le filtre 
 
 ```typescript
 // Modifier la liste des villes exclues si nécessaire
-const OWNER_MAYOTTE_CITIES = MAYOTTE_CITIES.filter(city => 
+const OWNER_NOSYBE_CITIES = NOSYBE_CITIES.filter(city => 
   !["Aéroport", "Barge Petite Terre", "Barge Grande Terre", "NouvelleVilleExclue"].includes(city)
 );
 ```

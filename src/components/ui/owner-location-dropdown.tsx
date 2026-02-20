@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MAYOTTE_CITIES, getLocationIcon } from "@/data/locations";
+import { NOSYBE_CITIES, getLocationIcon } from "@/data/locations";
 
 // Liste des villes pour les loueurs (3 villes supprimées : Aéroport, Barge Petite Terre, Barge Grande Terre)
-const OWNER_MAYOTTE_CITIES = MAYOTTE_CITIES.filter(city => 
+const OWNER_NOSYBE_CITIES = NOSYBE_CITIES.filter(city => 
   !["Aéroport", "Barge Petite Terre", "Barge Grande Terre"].includes(city)
 );
 
@@ -74,7 +74,7 @@ export const OwnerLocationDropdown = forwardRef<HTMLInputElement, OwnerLocationD
       
       if (inputValue.trim().length >= 1) {
         // Filtrer les villes qui contiennent le texte tapé
-        const filtered = OWNER_MAYOTTE_CITIES.filter(city =>
+        const filtered = OWNER_NOSYBE_CITIES.filter(city =>
           city.toLowerCase().includes(inputValue.toLowerCase())
         );
         setFilteredCities(filtered);
@@ -82,7 +82,7 @@ export const OwnerLocationDropdown = forwardRef<HTMLInputElement, OwnerLocationD
         setSelectedCityIndex(-1);
       } else {
         // Si le champ est vide, afficher toutes les villes
-        setFilteredCities(OWNER_MAYOTTE_CITIES);
+        setFilteredCities(OWNER_NOSYBE_CITIES);
         setShowCityDropdown(true);
         setSelectedCityIndex(-1);
       }
@@ -92,13 +92,13 @@ export const OwnerLocationDropdown = forwardRef<HTMLInputElement, OwnerLocationD
     const handleSearchFocus = () => {
       if (value.trim() === "") {
         // Si le champ est vide, afficher toutes les villes
-        setFilteredCities(OWNER_MAYOTTE_CITIES);
+        setFilteredCities(OWNER_NOSYBE_CITIES);
         setShowCityDropdown(true);
         setShowFullCityList(false);
         setSelectedCityIndex(-1);
       } else {
         // Si le champ a du contenu, afficher les résultats filtrés
-        const filtered = OWNER_MAYOTTE_CITIES.filter(city =>
+        const filtered = OWNER_NOSYBE_CITIES.filter(city =>
           city.toLowerCase().includes(value.toLowerCase())
         );
         setFilteredCities(filtered);
@@ -115,7 +115,7 @@ export const OwnerLocationDropdown = forwardRef<HTMLInputElement, OwnerLocationD
       } else {
         setShowFullCityList(true);
         setShowCityDropdown(true);
-        setFilteredCities(OWNER_MAYOTTE_CITIES);
+        setFilteredCities(OWNER_NOSYBE_CITIES);
         setSelectedCityIndex(-1);
         // Vider le champ de recherche pour afficher toutes les villes
         onChange("");
@@ -227,8 +227,8 @@ export const OwnerLocationDropdown = forwardRef<HTMLInputElement, OwnerLocationD
             {/* En-tête du dropdown */}
             <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
               <h3 className="text-xs font-medium text-gray-600">
-                {showFullCityList ? "Villes de Mayotte (Loueurs)" : 
-                 filteredCities.length === OWNER_MAYOTTE_CITIES.length ? "Villes de Mayotte (Loueurs)" : "Suggestions"}
+                {showFullCityList ? "Zones de Nosy Be (Loueurs)" : 
+                 filteredCities.length === OWNER_NOSYBE_CITIES.length ? "Zones de Nosy Be (Loueurs)" : "Suggestions"}
               </h3>
             </div>
         

@@ -1,4 +1,4 @@
-// MayCar Services - Simulated service layer with localStorage persistence
+// Rentanoo Services - Service layer with localStorage persistence
 
 import { 
   User, Vehicle, Photo, Booking, Payment, Notification,

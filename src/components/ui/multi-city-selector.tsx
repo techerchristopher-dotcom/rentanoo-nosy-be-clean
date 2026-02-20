@@ -3,7 +3,7 @@ import { MapPin, Plane, Ship, Check, X, Search, RotateCcw, Trash2, CheckCircle, 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MAYOTTE_CITIES, STRATEGIC_POINTS, MAYOTTE_COMMUNES, getLocationIcon, isStrategicPoint, isCommune } from "@/data/locations";
+import { NOSYBE_CITIES, NOSYBE_STRATEGIC_POINTS, NOSYBE_LOCATIONS, getLocationIcon, isStrategicPoint, isCommune } from "@/data/locations";
 
 interface MultiCitySelectorProps {
   selectedCities: string[];
@@ -22,11 +22,11 @@ export const MultiCitySelector = ({
   const [searchTerm, setSearchTerm] = useState("");
 
   // Filtrer les villes selon le terme de recherche
-  const filteredStrategicPoints = STRATEGIC_POINTS.filter(city =>
+  const filteredStrategicPoints = NOSYBE_STRATEGIC_POINTS.filter(city =>
     city.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const filteredCommunes = MAYOTTE_COMMUNES.filter(city =>
+  const filteredCommunes = NOSYBE_LOCATIONS.filter(city =>
     city.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
@@ -73,7 +73,7 @@ export const MultiCitySelector = ({
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-primary/60 group-focus-within:text-primary transition-colors" />
         <input
           type="text"
-          placeholder="🔍 Rechercher une ville de Mayotte..."
+          placeholder="🔍 Rechercher une zone de Nosy Be..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-12 pr-4 py-3 bg-gradient-to-r from-background to-muted/20 border-2 border-primary/20 rounded-xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-300 placeholder:text-muted-foreground/70 font-medium"
@@ -157,7 +157,7 @@ export const MultiCitySelector = ({
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
             <h4 className="text-sm font-semibold text-foreground">
-              {searchTerm ? `Résultats pour "${searchTerm}"` : "Points stratégiques et communes de Mayotte"}
+              {searchTerm ? `Résultats pour "${searchTerm}"` : "Points stratégiques et zones de Nosy Be"}
             </h4>
           </div>
           {!searchTerm && (

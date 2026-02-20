@@ -949,7 +949,7 @@ export default function MotoVehicleDetails() {
                             className="flex items-center gap-1 px-2 py-1"
                           >
                             <MapPin className="h-3 w-3" />
-                            Mamoudzou, Mayotte
+                            Nosy Be, Madagascar
                           </Badge>
                         )}
                       </div>

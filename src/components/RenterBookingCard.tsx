@@ -1431,7 +1431,7 @@ export default function RenterBookingCard({
                 <Car className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
-                MayCar
+                Rentanoo
               </span>
             </div>
           </div>

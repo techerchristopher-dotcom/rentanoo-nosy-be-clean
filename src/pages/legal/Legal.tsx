@@ -27,22 +27,23 @@ export default function Legal() {
               <CardContent className="prose prose-slate max-w-none">
                 <h3>1. Objet</h3>
                 <p>
-                  MayCar est une plateforme de démonstration d'autopartage entre particuliers 
-                  spécialement conçue pour Mayotte. Cette application est un prototype technique 
-                  sans backend réel, utilisant des données simulées.
+                  Rentanoo est un service de location de scooters à Nosy Be, Madagascar. 
+                  La plateforme permet de réserver et louer des scooters en ligne, 
+                  avec livraison possible à l'aéroport ou à l'hôtel.
                 </p>
 
                 <h3>2. Utilisation de la plateforme</h3>
                 <p>
-                  Cette application est fournie à titre de démonstration uniquement. 
-                  Aucune transaction réelle ne peut être effectuée, et aucune donnée 
-                  personnelle n'est collectée ou transmise à des serveurs externes.
+                  L'utilisation du site Rentanoo permet de consulter les véhicules disponibles, 
+                  effectuer des réservations et gérer vos locations. Les transactions sont 
+                  sécurisées et les données personnelles traitées conformément à notre politique de confidentialité.
                 </p>
 
                 <h3>3. Responsabilité</h3>
                 <p>
-                  L'utilisation de cette démonstration se fait sous votre propre responsabilité. 
-                  L'application est fournie "en l'état" sans aucune garantie.
+                  L'utilisation du service se fait sous votre propre responsabilité. 
+                  Rentanoo s'engage à fournir des véhicules en bon état et une assistance 
+                  en cas de besoin pendant la durée de la location.
                 </p>
 
                 <h3>4. Propriété intellectuelle</h3>
@@ -53,8 +54,8 @@ export default function Legal() {
 
                 <h3>5. Contact</h3>
                 <p>
-                  Pour toute question concernant cette démonstration technique, 
-                  veuillez nous contacter via les canaux appropriés.
+                  Pour toute question concernant nos services de location à Nosy Be, 
+                  veuillez nous contacter via la page contact ou les coordonnées indiquées sur le site.
                 </p>
               </CardContent>
             </Card>
@@ -70,67 +71,66 @@ export default function Legal() {
               <CardContent className="prose prose-slate max-w-none">
                 <h3>1. Collecte des données</h3>
                 <p>
-                  Cette application de démonstration utilise uniquement le stockage local 
-                  de votre navigateur (localStorage). Aucune donnée n'est transmise à 
-                  des serveurs externes ou à des tiers.
+                  Rentanoo collecte les données nécessaires à la réservation et à la location 
+                  de scooters (identité, coordonnées, informations de paiement). Ces données 
+                  sont transmises de manière sécurisée et utilisées uniquement pour le service de location.
                 </p>
 
                 <h3>2. Utilisation des données</h3>
                 <p>
-                  Les données mockées utilisées dans cette démonstration sont fictives 
-                  et servent uniquement à illustrer les fonctionnalités de la plateforme.
+                  Les données collectées servent à gérer vos réservations, communiquer avec vous 
+                  et améliorer notre service de location à Nosy Be. Nous ne partageons pas vos 
+                  données avec des tiers à des fins commerciales sans votre consentement.
                 </p>
 
-                <h3>3. Stockage local</h3>
+                <h3>3. Stockage et sécurité</h3>
                 <p>
-                  Les données de session sont stockées localement dans votre navigateur 
-                  et peuvent être supprimées à tout moment en effaçant les données 
-                  de navigation ou le localStorage.
+                  Vos données sont stockées de manière sécurisée. Nous mettons en œuvre les 
+                  mesures techniques appropriées pour protéger vos informations personnelles.
                 </p>
 
-                <h3>4. Sécurité</h3>
+                <h3>4. Durée de conservation</h3>
                 <p>
-                  Bien qu'aucune donnée réelle ne soit collectée, l'application 
-                  implémente les meilleures pratiques de sécurité front-end.
+                  Les données sont conservées pendant la durée nécessaire au service et aux 
+                  obligations légales (facturation, litiges éventuels).
                 </p>
 
                 <h3>5. Vos droits</h3>
                 <p>
-                  Vous pouvez à tout moment supprimer toutes les données simulées 
-                  en effaçant les données de votre navigateur.
+                  Conformément à la réglementation en vigueur, vous disposez d'un droit d'accès, 
+                  de rectification et de suppression de vos données. Contactez-nous pour exercer ces droits.
                 </p>
               </CardContent>
             </Card>
 
-            {/* Informations sur Mayotte */}
+            {/* Informations sur Nosy Be */}
             <Card>
               <CardHeader>
-                <CardTitle>À propos de Mayotte</CardTitle>
+                <CardTitle>À propos de Nosy Be</CardTitle>
                 <CardDescription>
-                  Cette démonstration technique honore le 101ème département français
+                  L'île aux parfums, destination incontournable de Madagascar
                 </CardDescription>
               </CardHeader>
               <CardContent className="prose prose-slate max-w-none">
-                <h3>Mayotte, le lagon aux eaux turquoise</h3>
+                <h3>Nosy Be, perle de l'océan Indien</h3>
                 <p>
-                  Mayotte est un département et région d'outre-mer français situé dans 
-                  l'archipel des Comores, dans l'océan Indien. Devenu le 101ème département 
-                  français en 2011, Mayotte est réputée pour son lagon exceptionnel, 
-                  l'un des plus beaux au monde.
+                  Nosy Be est une île de Madagascar située dans le canal du Mozambique, 
+                  réputée pour ses plages de sable blanc, ses lémuriens et ses eaux turquoise. 
+                  C'est une destination prisée des touristes du monde entier.
                 </p>
 
-                <h3>Une inspiration naturelle</h3>
+                <h3>Notre service de location</h3>
                 <p>
-                  Le design de MayCar s'inspire directement des couleurs du lagon mahorais : 
-                  les bleus turquoise de ses eaux cristallines, les verts de sa végétation 
-                  luxuriante, et les tons dorés de ses plages de sable fin.
+                  Rentanoo propose la location de scooters à Nosy Be pour explorer l'île 
+                  en toute liberté. Livraison à l'aéroport de Fascène ou à votre hôtel, 
+                  casques et assurance inclus.
                 </p>
 
-                <h3>Vision technique</h3>
+                <h3>Notre engagement</h3>
                 <p>
-                  Cette application démontre comment une solution d'autopartage pourrait 
-                  s'adapter aux spécificités insulaires de Mayotte, en tenant compte de 
-                  ses défis logistiques uniques et de sa communauté soudée.
+                  Nous nous adaptons aux besoins des voyageurs qui visitent Nosy Be : 
+                  réservation simple en ligne, véhicules entretenus et assistance locale 
+                  tout au long de votre séjour.
                 </p>
               </CardContent>
             </Card>

@@ -3818,7 +3818,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            {isExistingOwner ? 'Ajouter un véhicule' : 'Louer ma voiture'}
+            {isExistingOwner ? 'Ajouter un véhicule' : 'Louer mon véhicule'}
           </h1>
           <p className="text-muted-foreground">
             {isExistingOwner 

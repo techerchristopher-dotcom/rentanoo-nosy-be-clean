@@ -14,7 +14,7 @@ const NotFound = () => {
               <Car className="h-7 w-7 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-lagoon bg-clip-text text-transparent">
-              MayCar
+              Rentanoo
             </span>
           </Link>
         </div>
@@ -88,7 +88,7 @@ const NotFound = () => {
 
         {/* Footer Note */}
         <p className="text-xs text-muted-foreground mt-6">
-          MayCar - Autopartage à Mayotte
+          Rentanoo - Location de scooters à Nosy Be
         </p>
       </div>
     </div>

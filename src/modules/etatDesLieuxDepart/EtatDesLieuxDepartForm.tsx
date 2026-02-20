@@ -244,7 +244,7 @@ function mapCountryNameToCode(countryName: string | null | undefined): string {
     "Portugal": "PT",
     "Royaume-Uni": "GB",
     "La Réunion": "FR",
-    "Mayotte": "FR",
+    "Madagascar": "MG",
     "Guadeloupe": "FR",
     "Martinique": "FR",
     "Guyane": "FR",

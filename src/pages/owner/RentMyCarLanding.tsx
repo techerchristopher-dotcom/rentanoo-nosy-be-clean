@@ -25,7 +25,7 @@ const RentMyCarLanding = () => {
     {
       icon: Calendar,
       title: "Mes disponibilités & mes photos",
-      description: "Je choisis les jours où ma voiture est disponible et j'ajoute mes photos.",
+      description: "Je choisis les jours où mon véhicule est disponible et j'ajoute mes photos.",
       details: ["Calendrier interactif", "Photos du véhicule", "Vérification d'identité"]
     }
   ];
@@ -43,10 +43,10 @@ const RentMyCarLanding = () => {
         {/* Header Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-lagoon bg-clip-text text-transparent animate-fade-in">
-            Louez votre voiture en toute simplicité
+            Louez votre scooter ou voiture à Nosy Be
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '200ms' }}>
-            Un processus rapide en 3 étapes pour mettre votre véhicule en location et commencer à gagner de l'argent dès aujourd'hui.
+            Un processus rapide en 3 étapes pour mettre votre véhicule en location sur Rentanoo et commencer à gagner de l'argent dès aujourd'hui.
           </p>
           
           {/* CTA Principal */}
@@ -133,7 +133,7 @@ const RentMyCarLanding = () => {
         {/* Benefits Section */}
         <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-3xl p-8 md:p-12 mb-16">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4">Pourquoi choisir MayCar ?</h2>
+            <h2 className="text-3xl font-bold mb-4">Pourquoi choisir Rentanoo ?</h2>
             <p className="text-muted-foreground text-lg">Rejoignez les propriétaires qui font confiance à notre plateforme</p>
           </div>
           

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MAYOTTE_CITIES, getLocationIcon } from "@/data/locations";
+import { NOSYBE_CITIES, getLocationIcon } from "@/data/locations";
 
 interface LocationDropdownProps {
   value: string;
@@ -69,7 +69,7 @@ export const LocationDropdown = forwardRef<HTMLInputElement, LocationDropdownPro
       
       if (inputValue.trim().length >= 1) {
         // Filtrer les villes qui contiennent le texte tapé
-        const filtered = MAYOTTE_CITIES.filter(city =>
+        const filtered = NOSYBE_CITIES.filter(city =>
           city.toLowerCase().includes(inputValue.toLowerCase())
         );
         setFilteredCities(filtered);
@@ -77,7 +77,7 @@ export const LocationDropdown = forwardRef<HTMLInputElement, LocationDropdownPro
         setSelectedCityIndex(-1);
       } else {
         // Si le champ est vide, afficher toutes les villes
-        setFilteredCities(MAYOTTE_CITIES);
+        setFilteredCities(NOSYBE_CITIES);
         setShowCityDropdown(true);
         setSelectedCityIndex(-1);
       }
@@ -87,13 +87,13 @@ export const LocationDropdown = forwardRef<HTMLInputElement, LocationDropdownPro
     const handleSearchFocus = () => {
       if (value.trim() === "") {
         // Si le champ est vide, afficher toutes les villes
-        setFilteredCities(MAYOTTE_CITIES);
+        setFilteredCities(NOSYBE_CITIES);
         setShowCityDropdown(true);
         setShowFullCityList(false);
         setSelectedCityIndex(-1);
       } else {
         // Si le champ a du contenu, afficher les résultats filtrés
-        const filtered = MAYOTTE_CITIES.filter(city =>
+        const filtered = NOSYBE_CITIES.filter(city =>
           city.toLowerCase().includes(value.toLowerCase())
         );
         setFilteredCities(filtered);
@@ -110,7 +110,7 @@ export const LocationDropdown = forwardRef<HTMLInputElement, LocationDropdownPro
       } else {
         setShowFullCityList(true);
         setShowCityDropdown(true);
-        setFilteredCities(MAYOTTE_CITIES);
+        setFilteredCities(NOSYBE_CITIES);
         setSelectedCityIndex(-1);
         // Vider le champ de recherche pour afficher toutes les villes
         onChange("");
@@ -222,8 +222,8 @@ export const LocationDropdown = forwardRef<HTMLInputElement, LocationDropdownPro
             {/* En-tête du dropdown */}
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
               <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                {showFullCityList ? "Toutes les villes de Mayotte" : 
-                 filteredCities.length === MAYOTTE_CITIES.length ? "Toutes les villes de Mayotte" : "Suggestions"}
+                {showFullCityList ? "Toutes les zones de Nosy Be" : 
+                 filteredCities.length === NOSYBE_CITIES.length ? "Toutes les zones de Nosy Be" : "Suggestions"}
               </h3>
             </div>
         

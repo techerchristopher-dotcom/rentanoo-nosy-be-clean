@@ -1,6 +1,6 @@
 # LocationDropdown Component
 
-Un composant réutilisable pour sélectionner un lieu de prise en charge à Mayotte avec autocomplétion et icônes spécifiques.
+Un composant réutilisable pour sélectionner un lieu de prise en charge à Nosy Be avec autocomplétion et icônes spécifiques.
 
 ## Utilisation
 
@@ -38,7 +38,7 @@ function MyComponent() {
 
 ## Fonctionnalités
 
-- ✅ **Autocomplétion** : Filtrage intelligent des villes de Mayotte
+- ✅ **Autocomplétion** : Filtrage intelligent des villes de Nosy Be
 - ✅ **Icônes spécifiques** : 
   - ✈️ Avion pour "Aéroport"
   - 🚢 Bateau pour "Barge Petite Terre" et "Barge Grande Terre"
@@ -51,7 +51,7 @@ function MyComponent() {
 
 ## Liste des lieux disponibles
 
-Le composant inclut automatiquement toutes les villes de Mayotte :
+Le composant inclut automatiquement toutes les villes de Nosy Be :
 
 - Aéroport ✈️
 - Barge Petite Terre 🚢
@@ -69,7 +69,7 @@ Le composant inclut automatiquement toutes les villes de Mayotte :
 - Kavani 📍
 - Koungou 📍
 - M'Tsangamouji 📍
-- Mamoudzou 📍
+- Hell-Ville 📍
 - Mtsamboro 📍
 - Ouangani 📍
 - Pamandzi 📍
@@ -84,7 +84,7 @@ Le composant inclut automatiquement toutes les villes de Mayotte :
 Pour ajouter de nouveaux lieux, modifiez le fichier `src/data/locations.ts` :
 
 ```typescript
-export const MAYOTTE_CITIES = [
+export const NOSYBE_CITIES = [
   // ... lieux existants
   "Nouveau Lieu",
 ];
