@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
 import { FEATURES } from "@/config/features";
 import { isMoto } from "@/utils/vehicleType";
+import { Seo } from "@/components/seo/Seo";
 
 
 const Index = () => {
@@ -484,6 +485,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft">
+      <Seo
+        title={t("seo.home.title")}
+        description={t("seo.home.description")}
+        canonical="https://rentanoo.com"
+      />
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-gradient-lagoon text-white py-16 lg:py-24">

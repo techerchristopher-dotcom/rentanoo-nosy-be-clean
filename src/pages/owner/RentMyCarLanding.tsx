@@ -1,6 +1,8 @@
 import "@/styles/modal-animations.css";
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Footer } from '@/components/layout/footer';
@@ -8,6 +10,7 @@ import { Car, Euro, Calendar, ArrowRight, CheckCircle } from 'lucide-react';
 
 const RentMyCarLanding = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
 
   const steps = [
     {
@@ -39,6 +42,11 @@ const RentMyCarLanding = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20">
+      <Seo
+        title={t("seo.rentMyCar.title")}
+        description={t("seo.rentMyCar.description")}
+        canonical="https://rentanoo.com/rent-my-car"
+      />
       <main className="container mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="text-center mb-16">

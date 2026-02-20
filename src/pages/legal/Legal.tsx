@@ -1,9 +1,17 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Footer } from "@/components/layout/footer";
+import { Seo } from "@/components/seo/Seo";
 
 export default function Legal() {
+  const { t } = useTranslation("common");
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft">
+      <Seo
+        title={t("seo.legal.title")}
+        description={t("seo.legal.description")}
+        canonical="https://rentanoo.com/legal"
+      />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           <div className="text-center mb-12">

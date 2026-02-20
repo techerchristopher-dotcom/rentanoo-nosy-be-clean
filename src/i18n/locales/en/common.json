@@ -1001,6 +1001,44 @@
     "submitting": "Registering...",
     "cancel": "Cancel"
   },
+  "seo": {
+    "home": {
+      "title": "Scooter rental Nosy Be – Online booking | Rentanoo",
+      "description": "Rent your scooter in Nosy Be in a few clicks. Delivery to airport or hotel. Helmets and insurance included. Book online."
+    },
+    "contact": {
+      "title": "Contact – Scooter rental Nosy Be | Rentanoo",
+      "description": "Questions about your scooter rental in Nosy Be? Contact Rentanoo: booking, airport or hotel delivery, assistance."
+    },
+    "legal": {
+      "title": "Legal notice – Rentanoo Nosy Be",
+      "description": "Legal notice, terms of use and privacy policy of Rentanoo, scooter rental service in Nosy Be, Madagascar."
+    },
+    "rentMyCar": {
+      "title": "Become an owner – Scooter or car in Nosy Be | Rentanoo",
+      "description": "List your scooter or car for rent in Nosy Be with Rentanoo. Simple process, easy management, extra income."
+    },
+    "rentMyCarRegister": {
+      "title": "Owner registration – Nosy Be | Rentanoo",
+      "description": "Create your Rentanoo owner account and list your vehicle for rent in Nosy Be. Info and conditions in minutes."
+    },
+    "sinistreCaution": {
+      "title": "Damage & deposit – Scooter rental Nosy Be | Rentanoo",
+      "description": "In case of incident during your scooter rental in Nosy Be: procedure, deposit, documents and insurance. Rentanoo supports you."
+    },
+    "notFound": {
+      "title": "Page not found – Rentanoo",
+      "description": "This page does not exist. Return to the homepage to rent a scooter in Nosy Be with Rentanoo."
+    },
+    "vehicleLoading": {
+      "title": "Loading… | Rentanoo",
+      "description": "Rent your scooter in Nosy Be in a few clicks. Delivery to airport or hotel. Helmets and insurance included. Book online."
+    },
+    "vehicleNotFound": {
+      "title": "Vehicle not found – Rentanoo",
+      "description": "This vehicle does not exist or is no longer available. Return to the homepage to discover our scooters in Nosy Be."
+    }
+  },
   "sinistreCaution": {
     "metaTitle": "Damage & deposit | RENTANOO - Nosy Be rental",
     "metaDescription": "In case of incident during your rental: damage and deposit procedure, card insurance, documents to provide. Rentanoo supports you.",

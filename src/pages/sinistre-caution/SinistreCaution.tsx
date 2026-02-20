@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/layout/footer";
@@ -14,6 +13,7 @@ import {
   getOptimizedImageUrl,
   generateSrcSet,
 } from "@/utils/imageOptimization";
+import { Seo } from "@/components/seo/Seo";
 
 const SUPABASE_BASE =
   "https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page";
@@ -46,35 +46,18 @@ function IllustrationPlaceholder({
   );
 }
 
-const DEFAULT_TITLE = "RENTANOO";
-const DEFAULT_DESCRIPTION =
-  "Louez votre scooter à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Casques et assurance inclus.";
-
 export default function SinistreCaution() {
   const { t } = useTranslation();
   const sinistreMailSubject = t("sinistreCaution.mailSubject");
   const supportEmail = "support@rentanoo.com";
 
-  useEffect(() => {
-    const metaTitle = t("sinistreCaution.metaTitle");
-    const metaDescription = t("sinistreCaution.metaDescription");
-    document.title = metaTitle;
-    const metaDescEl = document.querySelector('meta[name="description"]');
-    if (metaDescEl) {
-      const prevContent = metaDescEl.getAttribute("content");
-      metaDescEl.setAttribute("content", metaDescription);
-      return () => {
-        document.title = DEFAULT_TITLE;
-        if (metaDescEl) metaDescEl.setAttribute("content", prevContent ?? DEFAULT_DESCRIPTION);
-      };
-    }
-    return () => {
-      document.title = DEFAULT_TITLE;
-    };
-  }, [t]);
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Seo
+        title={t("seo.sinistreCaution.title")}
+        description={t("seo.sinistreCaution.description")}
+        canonical="https://rentanoo.com/sinistre-caution"
+      />
       {/* HERO */}
       <section className="relative overflow-hidden">
         {/* Fond "lagoon / soft" (safe, sans dépendre d'une classe custom) */}

@@ -977,6 +977,44 @@
     "submitting": "Registrierung...",
     "cancel": "Abbrechen"
   },
+  "seo": {
+    "home": {
+      "title": "Rollervermietung Nosy Be – Online-Buchung | Rentanoo",
+      "description": "Mieten Sie Ihren Roller in Nosy Be in wenigen Klicks. Lieferung zum Flughafen oder Hotel. Helme und Versicherung inklusive. Online buchen."
+    },
+    "contact": {
+      "title": "Kontakt – Rollervermietung Nosy Be | Rentanoo",
+      "description": "Fragen zu Ihrer Rollervermietung in Nosy Be? Kontaktieren Sie Rentanoo: Buchung, Lieferung zum Flughafen oder Hotel, Unterstützung."
+    },
+    "legal": {
+      "title": "Impressum – Rentanoo Nosy Be",
+      "description": "Impressum, AGB und Datenschutzerklärung von Rentanoo, Rollervermietung in Nosy Be, Madagaskar."
+    },
+    "rentMyCar": {
+      "title": "Vermieter werden – Roller oder Auto in Nosy Be | Rentanoo",
+      "description": "Vermieten Sie Ihren Roller oder Ihr Auto in Nosy Be mit Rentanoo. Einfacher Prozess, einfache Verwaltung, Zusatzeinkommen."
+    },
+    "rentMyCarRegister": {
+      "title": "Vermieter-Anmeldung – Nosy Be | Rentanoo",
+      "description": "Erstellen Sie Ihr Rentanoo-Vermieterkonto und stellen Sie Ihr Fahrzeug in Nosy Be zur Verfügung. Infos und Bedingungen in Minuten."
+    },
+    "sinistreCaution": {
+      "title": "Schaden & Kaution – Rollervermietung Nosy Be | Rentanoo",
+      "description": "Bei Schaden während Ihrer Rollervermietung in Nosy Be: Verfahren, Kaution, Dokumente und Versicherung. Rentanoo begleitet Sie."
+    },
+    "notFound": {
+      "title": "Seite nicht gefunden – Rentanoo",
+      "description": "Diese Seite existiert nicht. Kehren Sie zur Startseite zurück, um in Nosy Be einen Roller bei Rentanoo zu mieten."
+    },
+    "vehicleLoading": {
+      "title": "Laden… | Rentanoo",
+      "description": "Mieten Sie Ihren Roller in Nosy Be in wenigen Klicks. Lieferung zum Flughafen oder Hotel. Helme und Versicherung inklusive. Online buchen."
+    },
+    "vehicleNotFound": {
+      "title": "Fahrzeug nicht gefunden – Rentanoo",
+      "description": "Dieses Fahrzeug existiert nicht oder ist nicht mehr verfügbar. Kehren Sie zur Startseite zurück, um unsere Roller in Nosy Be zu entdecken."
+    }
+  },
   "sinistreCaution": {
     "metaTitle": "Schaden & Kaution | RENTANOO - Vermietung Nosy Be",
     "metaDescription": "Bei Schaden während Ihrer Miete: Verfahren, Kaution, Kartenversicherung, erforderliche Unterlagen. Rentanoo begleitet Sie.",

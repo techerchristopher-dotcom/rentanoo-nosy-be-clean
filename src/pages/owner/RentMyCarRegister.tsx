@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
+import { Seo } from '@/components/seo/Seo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -39,6 +41,7 @@ import photoAvGauchePlaceholder from "@/assets/photo-av-gauche-placeholder.png";
 const RentMyCar = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation('common');
   const [searchParams] = useSearchParams();
   const isExistingOwner = searchParams.get('existingOwner') === 'true';
   const [currentStep, setCurrentStep] = useState(1);
@@ -3781,6 +3784,11 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title={t("seo.rentMyCarRegister.title")}
+        description={t("seo.rentMyCarRegister.description")}
+        canonical="https://rentanoo.com/rent-my-car/register"
+      />
       {/* Bouton de développement temporaire - À SUPPRIMER EN PRODUCTION */}
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed top-20 right-4 z-50 bg-yellow-400 text-black p-2 rounded-lg shadow-lg">

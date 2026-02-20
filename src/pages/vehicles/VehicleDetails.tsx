@@ -74,6 +74,12 @@ import {
   IMAGE_SIZES, 
   IMAGE_WIDTHS 
 } from "@/utils/imageOptimization";
+import { Seo } from "@/components/seo/Seo";
+import {
+  buildVehicleSeoTitle,
+  buildVehicleSeoDescription,
+  buildVehicleCanonical,
+} from "@/utils/vehicleSeo";
 
 // Fonction pour obtenir l'icône appropriée selon la zone
 const getLocationIcon = (zone: string) => {
@@ -726,10 +732,15 @@ export default function VehicleDetails() {
   };
 
   if (loading || !vehicle) {
-    console.log('🚫 [DEBUG] Loading:', loading, 'Vehicle:', vehicle);
-    console.log('🚫 [DEBUG] License param:', license);
+    const isNotFound = !loading && !vehicle;
     return (
       <div className="min-h-screen flex flex-col bg-gradient-soft">
+        <Seo
+          title={t(isNotFound ? "seo.vehicleNotFound.title" : "seo.vehicleLoading.title")}
+          description={t(
+            isNotFound ? "seo.vehicleNotFound.description" : "seo.vehicleLoading.description"
+          )}
+        />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -870,8 +881,22 @@ export default function VehicleDetails() {
     </Card>
   );
 
+  const seoInput = {
+    brand: vehicle.brand,
+    model: vehicle.model,
+    year: vehicle.year,
+    pricePerDay: vehicle.dailyPrice,
+    isMoto: false,
+    license: license || vehicle.license,
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background pb-20 lg:pb-0">{/* pb-20 pour laisser l'espace au sticky mobile */}
+      <Seo
+        title={buildVehicleSeoTitle(seoInput)}
+        description={buildVehicleSeoDescription(seoInput)}
+        canonical={buildVehicleCanonical(seoInput.license, false)}
+      />
       <main className="flex-1 py-4 md:py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
           {/* Back Button */}

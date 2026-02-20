@@ -1,5 +1,6 @@
 import { useState, startTransition } from "react";
 import { useTranslation } from "react-i18next";
+import { Seo } from "@/components/seo/Seo";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -379,6 +380,11 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-soft" translate="no">
+      <Seo
+        title={t("seo.contact.title")}
+        description={t("seo.contact.description")}
+        canonical="https://rentanoo.com/contact"
+      />
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
           <div className="text-center mb-8">

@@ -977,6 +977,44 @@
     "submitting": "Registrazione...",
     "cancel": "Annulla"
   },
+  "seo": {
+    "home": {
+      "title": "Noleggio scooter Nosy Be – Prenotazione online | Rentanoo",
+      "description": "Noleggia il tuo scooter a Nosy Be in pochi clic. Consegna in aeroporto o in hotel. Caschi e assicurazione inclusi. Prenota online."
+    },
+    "contact": {
+      "title": "Contatti – Noleggio scooter Nosy Be | Rentanoo",
+      "description": "Domande sul tuo noleggio scooter a Nosy Be? Contatta Rentanoo: prenotazione, consegna in aeroporto o hotel, assistenza."
+    },
+    "legal": {
+      "title": "Note legali – Rentanoo Nosy Be",
+      "description": "Note legali, condizioni d'uso e privacy policy di Rentanoo, servizio di noleggio scooter a Nosy Be, Madagascar."
+    },
+    "rentMyCar": {
+      "title": "Diventa proprietario – Scooter o auto a Nosy Be | Rentanoo",
+      "description": "Metti il tuo scooter o la tua auto in noleggio a Nosy Be con Rentanoo. Processo semplice, gestione facile, entrate extra."
+    },
+    "rentMyCarRegister": {
+      "title": "Registrazione proprietario – Nosy Be | Rentanoo",
+      "description": "Crea il tuo account proprietario Rentanoo e metti il tuo veicolo in noleggio a Nosy Be. Info e condizioni in pochi minuti."
+    },
+    "sinistreCaution": {
+      "title": "Danni e cauzione – Noleggio scooter Nosy Be | Rentanoo",
+      "description": "In caso di incidente durante il noleggio scooter a Nosy Be: procedura, cauzione, documenti e assicurazione. Rentanoo ti accompagna."
+    },
+    "notFound": {
+      "title": "Pagina non trovata – Rentanoo",
+      "description": "Questa pagina non esiste. Torna alla home per noleggiare uno scooter a Nosy Be con Rentanoo."
+    },
+    "vehicleLoading": {
+      "title": "Caricamento… | Rentanoo",
+      "description": "Noleggia il tuo scooter a Nosy Be in pochi clic. Consegna in aeroporto o in hotel. Caschi e assicurazione inclusi. Prenota online."
+    },
+    "vehicleNotFound": {
+      "title": "Veicolo non trovato – Rentanoo",
+      "description": "Questo veicolo non esiste o non è più disponibile. Torna alla home per scoprire i nostri scooter a Nosy Be."
+    }
+  },
   "sinistreCaution": {
     "metaTitle": "Danni e cauzione | RENTANOO - Noleggio Nosy Be",
     "metaDescription": "In caso di incidente durante il noleggio: procedura sinistro e cauzione, assicurazione carta, documenti da fornire. Rentanoo ti accompagna.",

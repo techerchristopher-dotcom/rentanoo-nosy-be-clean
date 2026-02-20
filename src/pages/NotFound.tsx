@@ -1,11 +1,18 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Home, ArrowLeft, Car } from "lucide-react";
+import { Seo } from "@/components/seo/Seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const NotFound = () => {
+  const { t } = useTranslation("common");
   return (
     <div className="min-h-screen bg-gradient-soft flex items-center justify-center p-4">
+      <Seo
+        title={t("seo.notFound.title")}
+        description={t("seo.notFound.description")}
+      />
       <div className="max-w-md w-full text-center">
         {/* Logo */}
         <div className="mb-8">

@@ -78,6 +78,12 @@ import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptio
 import { useToast } from "@/hooks/use-toast";
 import { mapToMotoVehicle } from "@/mappers/vehicleMappers";
 import { isMoto } from "@/utils/vehicleType";
+import { Seo } from "@/components/seo/Seo";
+import {
+  buildVehicleSeoTitle,
+  buildVehicleSeoDescription,
+  buildVehicleCanonical,
+} from "@/utils/vehicleSeo";
 
 const fuelLabels = {
   gasoline: "Essence",
@@ -686,10 +692,15 @@ export default function MotoVehicleDetails() {
   };
 
   if (loading || !vehicle) {
-    console.log("🏍️ [DEBUG] Loading:", loading, "Vehicle:", vehicle);
-    console.log("🏍️ [DEBUG] License param:", license);
+    const isNotFound = !loading && !vehicle;
     return (
       <div className="min-h-screen flex flex-col bg-gradient-soft">
+        <Seo
+          title={t(isNotFound ? "seo.vehicleNotFound.title" : "seo.vehicleLoading.title")}
+          description={t(
+            isNotFound ? "seo.vehicleNotFound.description" : "seo.vehicleLoading.description"
+          )}
+        />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -805,8 +816,22 @@ export default function MotoVehicleDetails() {
     </Card>
   );
 
+  const seoInput = {
+    brand: vehicle.brand,
+    model: vehicle.model,
+    year: vehicle.year,
+    pricePerDay: vehicle.dailyPrice,
+    isMoto: true,
+    license: license || vehicle.license,
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background pb-20 lg:pb-0">
+      <Seo
+        title={buildVehicleSeoTitle(seoInput)}
+        description={buildVehicleSeoDescription(seoInput)}
+        canonical={buildVehicleCanonical(seoInput.license, true)}
+      />
       <main className="flex-1 py-4 md:py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
           <Button
