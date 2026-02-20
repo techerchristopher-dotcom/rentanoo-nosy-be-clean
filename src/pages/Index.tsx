@@ -526,6 +526,20 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Bloc texte SEO — location scooter Nosy Be, livraison, assurance */}
+        <section className="py-10">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-xl font-semibold text-foreground mb-3">
+                {t("home.seoBlockTitle")}
+              </h2>
+              <p className="text-muted-foreground text-base leading-relaxed">
+                {t("home.seoBlock")}
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Filters & Results — lazy + rendu différé pour LCP (H1 prioritaire) */}
         {!showResults ? (
           <div className="min-h-[400px]" aria-hidden="true" />
