@@ -1,11 +1,13 @@
 /**
- * Google Tag (gtag.js) - Tag principal GT-TXZW7HG8
+ * Google Tag (gtag.js) - Tag principal GT-TXZW7HG8 + GA4 + Ads
  *
  * Mode "best effort" : ne jamais empêcher l'app de démarrer.
  * L'échec du chargement d'un script externe n'est jamais une erreur applicative.
  */
 
 const GOOGLE_TAG_ID = "GT-TXZW7HG8";
+const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
+const GOOGLE_ADS_ID = "AW-17959989720";
 
 const GTAG_SCRIPT_URL = "https://www.googletagmanager.com/gtag/js?id=" + GOOGLE_TAG_ID;
 
@@ -78,15 +80,15 @@ export function initGtag(): void {
 
 /**
  * Envoie un page_view à chaque changement de route (SPA).
- * No-op si gtag indisponible ou erreur.
+ * send_to GA4 pour forcer /g/collect.
  */
 export function sendPageView(path: string, title?: string): void {
   if (!isGtagAvailable()) return;
   try {
     window.gtag!("event", "page_view", {
+      send_to: GA4_MEASUREMENT_ID,
       page_path: path,
       page_title: title ?? document.title,
-      send_to: GOOGLE_TAG_ID,
     });
   } catch {
     // no-op
@@ -100,10 +102,9 @@ declare global {
   }
 }
 
-/** Label conversion Purchase - configuré dans le tag GTM si besoin */
+/** Label conversion Purchase - configuré dans Google Ads > Mesures > Conversions */
 const CONVERSION_LABEL_PURCHASE = import.meta.env.VITE_GOOGLE_ADS_CONVERSION_LABEL_PURCHASE || "";
 const CONVERSION_LABEL_DEPOSIT = import.meta.env.VITE_GOOGLE_ADS_CONVERSION_LABEL_DEPOSIT || "";
-const GOOGLE_ADS_ID = "AW-17959989720"; // pour send_to des conversions (tag GTM peut router)
 
 interface PurchaseConversionParams {
   value: number;
