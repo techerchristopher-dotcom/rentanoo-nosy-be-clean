@@ -80,6 +80,7 @@ import {
   buildVehicleSeoDescription,
   buildVehicleCanonical,
 } from "@/utils/vehicleSeo";
+import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 
 // Fonction pour obtenir l'icône appropriée selon la zone
 const getLocationIcon = (zone: string) => {
@@ -890,12 +891,27 @@ export default function VehicleDetails() {
     license: license || vehicle.license,
   };
 
+  const canonical = buildVehicleCanonical(seoInput.license, false);
+  const structuredData = buildVehicleProductSchema({
+    canonical,
+    license: seoInput.license,
+    brand: vehicle.brand,
+    model: vehicle.model,
+    year: vehicle.year ?? undefined,
+    description: vehicle.description,
+    pricePerDay: vehicle.dailyPrice,
+    currency: "EUR",
+    images: photos.map((p) => p.url).filter(Boolean),
+    isMoto: false,
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background pb-20 lg:pb-0">{/* pb-20 pour laisser l'espace au sticky mobile */}
       <Seo
         title={buildVehicleSeoTitle(seoInput)}
         description={buildVehicleSeoDescription(seoInput)}
-        canonical={buildVehicleCanonical(seoInput.license, false)}
+        canonical={canonical}
+        structuredData={structuredData}
       />
       <main className="flex-1 py-4 md:py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
