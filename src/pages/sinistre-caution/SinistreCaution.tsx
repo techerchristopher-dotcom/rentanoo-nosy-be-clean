@@ -16,7 +16,7 @@ import {
 import { Seo } from "@/components/seo/Seo";
 
 const SUPABASE_BASE =
-  "https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre%20caution%20page";
+  "https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/sinistre-caution-page";
 
 function IllustrationPlaceholder({
   title,
@@ -100,8 +100,8 @@ export default function SinistreCaution() {
 
             <div className="w-full max-w-xl aspect-[16/9] overflow-hidden rounded-2xl">
               <img
-                src={getOptimizedImageUrl(`${SUPABASE_BASE}/couple-serain-.webp`, 640, 360)}
-                srcSet={generateSrcSet(`${SUPABASE_BASE}/couple-serain-.webp`, [400, 640, 960])}
+                src={getOptimizedImageUrl(`${SUPABASE_BASE}/couple-serein.webp`, 640, 360)}
+                srcSet={generateSrcSet(`${SUPABASE_BASE}/couple-serein.webp`, [400, 640, 960])}
                 sizes="(max-width: 640px) 100vw, 576px"
                 alt="Location Rentanoo — gestion sereine d'un sinistre"
                 className="h-full w-full object-cover"
@@ -206,8 +206,8 @@ export default function SinistreCaution() {
 
           <div className="w-full flex justify-center">
             <img
-              src={getOptimizedImageUrl(`${SUPABASE_BASE}/asurance%20.webp`, 520)}
-              srcSet={generateSrcSet(`${SUPABASE_BASE}/asurance%20.webp`, [400, 520])}
+              src={getOptimizedImageUrl(`${SUPABASE_BASE}/assurance.webp`, 520)}
+              srcSet={generateSrcSet(`${SUPABASE_BASE}/assurance.webp`, [400, 520])}
               sizes="(max-width: 640px) 100vw, 520px"
               alt="Protection par assurance carte bancaire Rentanoo"
               className="w-full max-w-[520px] rounded-xl mx-auto shadow-sm"
@@ -225,8 +225,8 @@ export default function SinistreCaution() {
         <div className="grid gap-8 md:grid-cols-2 md:items-center">
           <div className="order-2 md:order-1 w-full max-w-xl mx-auto">
             <img
-              src={getOptimizedImageUrl(`${SUPABASE_BASE}/devis%20facture.webp`, 640)}
-              srcSet={generateSrcSet(`${SUPABASE_BASE}/devis%20facture.webp`, [400, 640])}
+              src={getOptimizedImageUrl(`${SUPABASE_BASE}/devis-facture.webp`, 640)}
+              srcSet={generateSrcSet(`${SUPABASE_BASE}/devis-facture.webp`, [400, 640])}
               sizes="(max-width: 640px) 100vw, 576px"
               alt="Documents de réparation – devis et facture mis à disposition par Rentanoo"
               className="w-full h-auto rounded-2xl"

@@ -8,13 +8,13 @@
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/email-asset/R%20rentanoo%20favison%20.png",
+      "src": "/favicon-rentanoo.png",
       "sizes": "32x32",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/email-asset/R%20rentanoo%20favison%20.png",
+      "src": "/favicon-rentanoo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
