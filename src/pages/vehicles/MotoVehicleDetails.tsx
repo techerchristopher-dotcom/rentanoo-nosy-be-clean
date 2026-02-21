@@ -83,6 +83,7 @@ import {
   buildVehicleSeoTitle,
   buildVehicleSeoDescription,
   buildVehicleCanonical,
+  buildVehicleH1Title,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 
@@ -937,7 +938,12 @@ export default function MotoVehicleDetails() {
                 </div>
 
                 <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                  {vehicle.brand} {vehicle.model} {vehicle.year}
+                  {buildVehicleH1Title({
+                    brand: vehicle.brand,
+                    model: vehicle.model,
+                    engineCapacity: vehicle.engineCapacity,
+                    vehicleType: vehicle.vehicleType,
+                  })}
                 </h1>
 
                 <div className="flex flex-wrap items-center gap-4 text-muted-foreground mb-4">

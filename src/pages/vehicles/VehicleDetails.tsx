@@ -79,6 +79,7 @@ import {
   buildVehicleSeoTitle,
   buildVehicleSeoDescription,
   buildVehicleCanonical,
+  buildVehicleH1Title,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 
@@ -219,6 +220,8 @@ export default function VehicleDetails() {
           longitude: 0, // À ajouter dans la DB plus tard
           status: "available" as any,
           description: vehicle.description || undefined, // Description du véhicule
+          engineCapacity: vehicle.engine_capacity || undefined,
+          vehicleType: (vehicle.vehicle_type as 'car' | 'moto' | 'scooter') || 'car',
           location: vehicle.pickup_zones && vehicle.pickup_zones.length > 0 
             ? vehicle.pickup_zones.join(', ') 
             : "Nosy Be, Madagascar", // Utiliser les zones de prise en charge
@@ -1033,7 +1036,12 @@ export default function VehicleDetails() {
                 </div>
                 
                 <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                  {vehicle.brand} {vehicle.model} {vehicle.year}
+                  {buildVehicleH1Title({
+                    brand: vehicle.brand,
+                    model: vehicle.model,
+                    engineCapacity: vehicle.engineCapacity,
+                    vehicleType: vehicle.vehicleType,
+                  })}
                 </h1>
                 
                 <div className="flex flex-wrap items-center gap-4 text-muted-foreground mb-4">

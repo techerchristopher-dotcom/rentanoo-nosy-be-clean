@@ -20,6 +20,8 @@ export const mapToCarVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   latitude: 0, // À ajouter dans la DB plus tard
   longitude: 0, // À ajouter dans la DB plus tard
   status: "available" as any,
+  engineCapacity: vehicle.engine_capacity || undefined,
+  vehicleType: (vehicle.vehicle_type as 'car' | 'moto' | 'scooter') || 'car',
   location:
     vehicle.pickup_zones && vehicle.pickup_zones.length > 0
       ? vehicle.pickup_zones.join(", ")
@@ -78,6 +80,7 @@ export const mapToMotoVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   // On ne force plus 2 places par défaut : l'UI affichera "Non spécifié" si nécessaire
   seats: (vehicle.seats ?? undefined) as any,
   engineCapacity: vehicle.engine_capacity || undefined,
+  vehicleType: (vehicle.vehicle_type as 'car' | 'moto' | 'scooter') || 'moto',
   // 🆕 Services supplémentaires - MAPPING COMPLET (identique à voiture)
   // 🛩️ Services Aéroport
   airport_pickup_service: vehicle.airport_pickup_service || false,

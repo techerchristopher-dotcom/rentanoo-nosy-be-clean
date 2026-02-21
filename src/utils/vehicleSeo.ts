@@ -50,6 +50,48 @@ export function buildVehicleSeoDescription(input: VehicleSeoInput): string {
   return `Louez ce ${brandModel} à Nosy Be. ${pricePart}Réservation en ligne, livraison possible à l'hôtel ou à l'aéroport. Rentanoo.`;
 }
 
+const QUAD_MODEL_KEYWORDS = ["maxxer", "quad", "atv"];
+
+/**
+ * Détecte si le modèle indique un quad (ex: KYMCO MAXXER).
+ * Priorité sur vehicle_type pour le H1 SEO.
+ */
+function isQuadByModel(model?: string | null): boolean {
+  const m = (model || "").toLowerCase();
+  return QUAD_MODEL_KEYWORDS.some((kw) => m.includes(kw));
+}
+
+/**
+ * typeLabel pour H1 selon vehicle_type : scooter | moto | voiture
+ */
+function getTypeLabel(vehicleType?: string | null): string {
+  const t = (vehicleType || "").toLowerCase();
+  if (t === "scooter") return "scooter";
+  if (t === "moto") return "moto";
+  return "voiture";
+}
+
+/**
+ * Construit le H1 SEO pour une page véhicule.
+ * Format: {brand} {model} ({engine_capacity} CC) – Location {typeLabel} à Nosy Be
+ * Règle quad : si model contient maxxer/quad/atv → typeLabel = "quad"
+ */
+export function buildVehicleH1Title(
+  input: {
+    brand: string;
+    model: string;
+    engineCapacity?: string | null;
+    vehicleType?: string | null;
+  }
+): string {
+  const { brand, model, engineCapacity, vehicleType } = input;
+  const brandModel = [brand, model].filter(Boolean).join(" ") || "Véhicule";
+  const rawCc = String(engineCapacity || "").trim().replace(/\s*cc$/i, "") || "";
+  const enginePart = rawCc ? ` (${rawCc} CC)` : "";
+  const typeLabel = isQuadByModel(model) ? "quad" : getTypeLabel(vehicleType);
+  return `${brandModel}${enginePart} – Location ${typeLabel} à Nosy Be`;
+}
+
 /**
  * Construit l'URL canonique pour une page véhicule.
  */
