@@ -80,6 +80,7 @@ import {
   buildVehicleSeoDescription,
   buildVehicleCanonical,
   buildVehicleH1Title,
+  getVehicleTypeLabel,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 
@@ -1134,6 +1135,9 @@ export default function VehicleDetails() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 p-4">
+                        <h2 className="text-lg font-semibold mb-3">
+                          Location de ce {getVehicleTypeLabel({ model: vehicle.model, vehicleType: vehicle.vehicleType })} à Nosy Be
+                        </h2>
                         <p className="text-gray-700 leading-relaxed text-sm">
                           {vehicle.description}
                         </p>

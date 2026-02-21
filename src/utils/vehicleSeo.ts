@@ -72,6 +72,17 @@ function getTypeLabel(vehicleType?: string | null): string {
 }
 
 /**
+ * Retourne le typeLabel (quad / scooter / moto / voiture) pour affichage SEO.
+ * Même logique que buildVehicleH1Title (quad prioritaire si model contient maxxer/quad/atv).
+ */
+export function getVehicleTypeLabel(input: {
+  model?: string | null;
+  vehicleType?: string | null;
+}): string {
+  return isQuadByModel(input.model) ? "quad" : getTypeLabel(input.vehicleType);
+}
+
+/**
  * Construit le H1 SEO pour une page véhicule.
  * Format: {brand} {model} ({engine_capacity} CC) – Location {typeLabel} à Nosy Be
  * Règle quad : si model contient maxxer/quad/atv → typeLabel = "quad"
