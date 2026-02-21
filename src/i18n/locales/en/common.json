@@ -206,7 +206,7 @@
   "motoDetails": {
     "back": "Back",
     "loading": "Loading vehicle...",
-    "descriptionTitle": "Motorbike description",
+    "descriptionTitle": "Vehicle description",
     "technicalTitle": "Technical specifications",
     "technical": {
       "fuel": "Fuel",

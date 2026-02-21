@@ -156,7 +156,7 @@
   "motoDetails": {
     "back": "Indietro",
     "loading": "Caricamento del veicolo...",
-    "descriptionTitle": "Descrizione della moto",
+    "descriptionTitle": "Descrizione del veicolo",
     "technicalTitle": "Caratteristiche tecniche",
     "technical": {
       "fuel": "Carburante",

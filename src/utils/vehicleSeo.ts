@@ -83,6 +83,15 @@ export function getVehicleTypeLabel(input: {
 }
 
 /**
+ * Retourne l'article pour "Location de {article} {type} à Nosy Be".
+ * moto, voiture => "cette" ; quad, scooter => "ce"
+ */
+export function getLocationArticle(typeLabel: string): "ce" | "cette" {
+  const t = (typeLabel || "").toLowerCase();
+  return t === "moto" || t === "voiture" ? "cette" : "ce";
+}
+
+/**
  * Construit le H1 SEO pour une page véhicule.
  * Format: {brand} {model} ({engine_capacity} CC) – Location {typeLabel} à Nosy Be
  * Règle quad : si model contient maxxer/quad/atv → typeLabel = "quad"

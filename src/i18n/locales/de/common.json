@@ -156,7 +156,7 @@
   "motoDetails": {
     "back": "Zurück",
     "loading": "Fahrzeug wird geladen...",
-    "descriptionTitle": "Beschreibung des Rollers",
+    "descriptionTitle": "Fahrzeugbeschreibung",
     "technicalTitle": "Technische Daten",
     "technical": {
       "fuel": "Kraftstoff",

@@ -81,6 +81,7 @@ import {
   buildVehicleCanonical,
   buildVehicleH1Title,
   getVehicleTypeLabel,
+  getLocationArticle,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 
@@ -1136,7 +1137,10 @@ export default function VehicleDetails() {
                       </CardHeader>
                       <CardContent className="pt-0 p-4">
                         <h2 className="text-lg font-semibold mb-3">
-                          Location de ce {getVehicleTypeLabel({ model: vehicle.model, vehicleType: vehicle.vehicleType })} à Nosy Be
+                          {(() => {
+                            const typeLabel = getVehicleTypeLabel({ model: vehicle.model, vehicleType: vehicle.vehicleType });
+                            return `Location de ${getLocationArticle(typeLabel)} ${typeLabel} à Nosy Be`;
+                          })()}
                         </h2>
                         <p className="text-gray-700 leading-relaxed text-sm">
                           {vehicle.description}
