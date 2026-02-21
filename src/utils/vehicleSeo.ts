@@ -122,3 +122,46 @@ export function buildVehicleCanonical(
   const path = isMoto ? `/moto/${license}` : `/vehicle/${license}`;
   return `${CANONICAL_BASE}${path}`;
 }
+
+const HOME_URL = `${CANONICAL_BASE}/`;
+
+/**
+ * Construit le JSON-LD schema.org BreadcrumbList pour une page véhicule.
+ * OPTION B : Accueil > Location {typeLabel} à Nosy Be > {brand} {model} ({year})
+ */
+export function buildVehicleBreadcrumbSchema(input: {
+  typeLabel: string;
+  brand: string;
+  model: string;
+  year?: number | null;
+  canonical: string;
+}): object {
+  const { typeLabel, brand, model, year, canonical } = input;
+  const brandModel = [brand, model].filter(Boolean).join(" ") || "Véhicule";
+  const yearPart = year ? ` (${year})` : "";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Accueil",
+        item: HOME_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: `Location ${typeLabel} à Nosy Be`,
+        item: HOME_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: `${brandModel}${yearPart}`,
+        item: canonical,
+      },
+    ],
+  };
+}

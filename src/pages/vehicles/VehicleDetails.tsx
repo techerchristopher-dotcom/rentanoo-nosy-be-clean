@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { 
   Car, 
   Fuel, 
@@ -82,8 +82,17 @@ import {
   buildVehicleH1Title,
   getVehicleTypeLabel,
   getLocationArticle,
+  buildVehicleBreadcrumbSchema,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 // Fonction pour obtenir l'icône appropriée selon la zone
 const getLocationIcon = (zone: string) => {
@@ -897,6 +906,7 @@ export default function VehicleDetails() {
   };
 
   const canonical = buildVehicleCanonical(seoInput.license, false);
+  const typeLabel = getVehicleTypeLabel({ model: vehicle.model, vehicleType: vehicle.vehicleType });
   const structuredData = buildVehicleProductSchema({
     canonical,
     license: seoInput.license,
@@ -909,6 +919,13 @@ export default function VehicleDetails() {
     images: photos.map((p) => p.url).filter(Boolean),
     isMoto: false,
   });
+  const breadcrumbSchema = buildVehicleBreadcrumbSchema({
+    typeLabel,
+    brand: vehicle.brand,
+    model: vehicle.model,
+    year: vehicle.year ?? undefined,
+    canonical,
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-20 lg:pb-0">{/* pb-20 pour laisser l'espace au sticky mobile */}
@@ -917,6 +934,7 @@ export default function VehicleDetails() {
         description={buildVehicleSeoDescription(seoInput)}
         canonical={canonical}
         structuredData={structuredData}
+        extraStructuredData={breadcrumbSchema}
       />
       <main className="flex-1 py-4 md:py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
@@ -929,6 +947,29 @@ export default function VehicleDetails() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
+
+          <Breadcrumb className="mb-4">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/">Accueil</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/">Location {typeLabel} à Nosy Be</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>
+                  {vehicle.brand} {vehicle.model}
+                  {vehicle.year ? ` (${vehicle.year})` : ""}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
             {/* Main Content */}
