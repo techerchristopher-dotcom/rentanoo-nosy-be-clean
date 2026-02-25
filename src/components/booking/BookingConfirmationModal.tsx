@@ -186,7 +186,8 @@ export function BookingConfirmationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:max-w-3xl lg:max-h-[95vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh] sm:max-w-3xl lg:max-h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
         <DialogHeader className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="p-2 bg-primary rounded-full">
@@ -433,14 +434,9 @@ export function BookingConfirmationModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button 
-            variant="outline" 
-            onClick={onClose}
-            className="w-full sm:w-auto"
-          >
-            {t("common.modify")}
-          </Button>
+        </div>
+
+        <DialogFooter className="flex-shrink-0 flex-col sm:flex-row gap-2 p-4 pt-0 border-t bg-background">
           <Button 
             onClick={onConfirm}
             className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"

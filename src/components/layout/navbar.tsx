@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Car, User, LogOut, LayoutDashboard, MoreVertical } from "lucide-react";
+import { Car, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { setCurrentLang } from "@/i18n/language";
 import type { LangCode } from "@/types/dictionary";
@@ -35,6 +35,7 @@ export function Navbar() {
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserType | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Charger le profil utilisateur pour vérifier le rôle
   useEffect(() => {
@@ -155,17 +156,29 @@ export function Navbar() {
             
             {user ? (
               <div className="flex items-center space-x-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 h-auto hover:bg-black/5 focus:outline-none"
+                <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="font-medium hover:bg-black/5"
+                      onClick={() => setUserMenuOpen(true)}
                       aria-haspopup="menu"
-                      data-testid="user-button"
+                      aria-expanded={userMenuOpen}
                     >
-                      <UserAvatar size={28} showName={true} />
+                      {t('common.mon_espace', 'Mon espace')}
                     </Button>
-                  </DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 h-auto hover:bg-black/5 focus:outline-none"
+                        aria-haspopup="menu"
+                        data-testid="user-button"
+                      >
+                        <UserAvatar size={28} showName={true} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </div>
                   <DropdownMenuContent className="w-56" align="end">
                     <div className="px-3 py-2">
                       <p className="text-sm font-medium">{user.email}</p>
@@ -217,17 +230,17 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile User Menu - Kebab */}
+          {/* Mobile User Menu - Mon espace */}
           <div className="md:hidden flex items-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label="Menu utilisateur"
+                  size="sm"
+                  className="font-medium h-9 px-3"
+                  aria-label={t('common.mon_espace', 'Mon espace')}
                 >
-                  <MoreVertical className="h-5 w-5" />
+                  {t('common.mon_espace', 'Mon espace')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">

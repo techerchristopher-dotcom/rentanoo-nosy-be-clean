@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Euro, Calendar, ShieldCheck, Lock } from "lucide-react";
+import { Euro, Calendar, ShieldCheck, Hourglass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -39,6 +39,18 @@ export function PaymentFlowModal({
   bookingStatus?: string; // Statut de la réservation ("accepted", "pending_payment", etc.)
   bookingPaid?: boolean; // Indique explicitement si la réservation est déjà payée
 }) {
+  const [isPaying, setIsPaying] = useState(false);
+
+  const handlePayNow = async () => {
+    if (!onPayNow || isPaying) return;
+    setIsPaying(true);
+    try {
+      await onPayNow(reservation);
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
   // Déterminer si l'étape 1 est complète selon le statut réel de la réservation et le paiement
   const isStep1ActuallyComplete = bookingPaid || bookingStatus === "accepted" || step1Complete;
   
@@ -71,14 +83,24 @@ export function PaymentFlowModal({
                   {!isStep1ActuallyComplete ? (
                     <button
                       type="button"
-                      className="rounded-full px-3 py-1.5 text-sm font-semibold bg-gradient-lagoon text-white hover:opacity-90 shadow-soft"
+                      disabled={isPaying}
+                      className="rounded-full px-3 py-1.5 text-sm font-semibold bg-gradient-lagoon text-white hover:opacity-90 shadow-soft disabled:opacity-70 disabled:cursor-wait inline-flex items-center gap-1.5"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        onPayNow?.(reservation);
+                        handlePayNow();
                       }}
                     >
-                      <span className="mr-1">🔒</span> Payer {reservation.totalTTC.toFixed(2)} € via Stripe
+                      {isPaying ? (
+                        <>
+                          <Hourglass className="h-4 w-4 animate-spin" />
+                          Chargement...
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-1">🔒</span> Payer {reservation.totalTTC.toFixed(2)} € via Stripe
+                        </>
+                      )}
                     </button>
                   ) : (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-sm font-semibold">✅ Payé</span>
@@ -174,10 +196,20 @@ export function PaymentFlowModal({
               {!isStep1ActuallyComplete ? (
                 <div className="flex flex-col sm:flex-row gap-3 mt-4">
                   <Button
-                    className={cn("w-full sm:flex-1 justify-center bg-gradient-lagoon hover:opacity-90 text-white font-bold py-3")}
-                    onClick={() => onPayNow?.(reservation)}
+                    disabled={isPaying}
+                    className={cn("w-full sm:flex-1 justify-center bg-gradient-lagoon hover:opacity-90 text-white font-bold py-3 disabled:opacity-70 disabled:cursor-wait")}
+                    onClick={handlePayNow}
                   >
-                    <span className="mr-2">🔒</span> Payer {reservation.totalTTC.toFixed(2)} € via Stripe et confirmer ma location
+                    {isPaying ? (
+                      <>
+                        <Hourglass className="h-5 w-5 mr-2 animate-spin" />
+                        Chargement...
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-2">🔒</span> Payer {reservation.totalTTC.toFixed(2)} € via Stripe et confirmer ma location
+                      </>
+                    )}
                   </Button>
                   <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Annuler</Button>
                 </div>
@@ -195,54 +227,6 @@ export function PaymentFlowModal({
             <div className="pt-2 text-center text-sm text-[#9CA3AF]">
               ✅ Transactions vérifiées — 🔐 Paiement crypté — 🕒 Confirmation instantanée
             </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Étape 2 — Payer ma caution */}
-          <Collapsible defaultOpen={shouldHighlightStep2}>
-            <CollapsibleTrigger asChild>
-              <div className={cn(
-                "flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors",
-                shouldHighlightStep2 
-                  ? "bg-emerald-50 ring-2 ring-emerald-400 hover:bg-emerald-100" 
-                  : isStep1ActuallyComplete 
-                    ? "bg-card hover:bg-muted/30" 
-                    : "bg-gray-50 text-gray-400 cursor-not-allowed"
-              )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</div>
-                  <div className="font-semibold">Étape 2 — Payer ma caution</div>
-                </div>
-                <div className="text-sm">
-                  {isStep1ActuallyComplete ? "🔓 Disponible" : <span className="flex items-center gap-1 text-muted-foreground"><Lock className="h-4 w-4" /> Verrouillé</span>}
-                </div>
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              {isStep1ActuallyComplete ? (
-                <div className={cn("space-y-4", shouldHighlightStep2 && "p-2")}>
-                  <div className="text-sm text-muted-foreground">
-                    Pour finaliser ta réservation et accéder aux informations de retrait du véhicule, tu dois maintenant sécuriser ta caution. Le montant n'est pas débité tout de suite : il sert uniquement de garantie en cas de dommage.
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant={shouldHighlightStep2 ? "default" : "secondary"}
-                      className={cn(
-                        shouldHighlightStep2 && "bg-gradient-lagoon hover:opacity-90 text-white font-bold shadow-lagoon"
-                      )}
-                      onClick={() => console.log("TODO caution")}
-                    >
-                      🔐 Bloquer ma caution
-                    </Button>
-                    <Button variant="outline" onClick={onClose}>Fermer</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground p-4 pointer-events-none">
-                  Cette étape sera disponible une fois votre paiement de location confirmé. La caution sert uniquement de garantie et n'est pas débitée immédiatement.
-                </div>
-              )}
             </CollapsibleContent>
           </Collapsible>
         </div>
