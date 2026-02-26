@@ -33,6 +33,7 @@ function DepositPaymentForm({
   onError,
   isSubmitting,
   setIsSubmitting,
+  children,
 }: {
   bookingId: string;
   onSuccess: () => void;
@@ -40,6 +41,7 @@ function DepositPaymentForm({
   onError: (msg: string) => void;
   isSubmitting: boolean;
   setIsSubmitting: (v: boolean) => void;
+  children: React.ReactNode;
 }) {
   const { t } = useTranslation("common");
   const stripe = useStripe();
@@ -88,32 +90,46 @@ function DepositPaymentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 min-w-0">
-      <div className="min-w-0 overflow-hidden">
-        <PaymentElement
-          options={{
-            layout: "tabs",
-          }}
-        />
+    <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 min-w-0">
+      {/* Body scrollable — seul le contenu scrolle, pas le footer */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden min-w-0 pb-4">
+        <div className="flex flex-col gap-4">
+          {children}
+          <div className="min-w-0 overflow-hidden">
+            <PaymentElement
+              options={{
+                layout: "tabs",
+              }}
+            />
+          </div>
+        </div>
       </div>
-      <div className="flex flex-col sm:flex-row gap-2 pt-2">
-        <Button
-          type="submit"
-          disabled={!stripe || isSubmitting}
-          className="w-full sm:flex-1 bg-gradient-lagoon hover:opacity-90 text-white"
-        >
-          {isSubmitting ? t("depositModal.submitting", "Enregistrement...") : t("depositModal.submit", "Enregistrer ma carte")}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          disabled={isSubmitting}
-          className="w-full sm:w-auto"
-        >
-          {t("depositModal.cancel", "Annuler")}
-        </Button>
-      </div>
+      {/* Footer sticky — toujours visible en bas, safe-area iOS */}
+      <footer
+        className={cn(
+          "sticky bottom-0 shrink-0 bg-background/95 backdrop-blur border-t p-4",
+          "pb-[calc(1rem+env(safe-area-inset-bottom,0px))]"
+        )}
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button
+            type="submit"
+            disabled={!stripe || isSubmitting}
+            className="w-full sm:flex-1 bg-gradient-lagoon hover:opacity-90 text-white order-2 sm:order-1"
+          >
+            {isSubmitting ? t("depositModal.submitting", "Enregistrement...") : t("depositModal.submit", "Enregistrer ma carte")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="w-full sm:w-auto order-1 sm:order-2"
+          >
+            {t("depositModal.cancel", "Annuler")}
+          </Button>
+        </div>
+      </footer>
     </form>
   );
 }
@@ -174,57 +190,25 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
         className={cn(
           "w-[95vw] max-w-[calc(100vw-2rem)] sm:max-w-xl md:max-w-2xl",
           "fixed left-1/2 top-[2rem] sm:top-1/2 -translate-x-1/2 sm:-translate-y-1/2",
-          "max-h-[calc(100vh-4rem)] overflow-y-auto flex flex-col gap-4",
+          "max-h-[calc(100dvh-4rem)] flex flex-col gap-0 overflow-hidden",
           "rounded-2xl shadow-xl bg-white dark:bg-background",
           "p-4 sm:p-6 md:p-8"
         )}
       >
-        {/* HEADER */}
-        <DialogHeader>
+        {/* HEADER — shrink-0 */}
+        <DialogHeader className="shrink-0">
           <DialogTitle id="deposit-modal-title" className="text-xl font-bold">
             {t("depositModal.title", "Activer la caution")}
           </DialogTitle>
         </DialogHeader>
 
-        {/* BODY — Texte rassurant */}
-        <div className="flex flex-col gap-4 overflow-y-auto min-h-0 flex-1 min-w-0">
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-            {t("depositModal.description", "Aucun débit immédiat.\n\nVous enregistrez simplement votre carte pour sécuriser la caution de {{amount}}.\nUne empreinte pourra être réalisée automatiquement 48h avant le départ, puis libérée 48h après le retour si tout est conforme.\n\nSimple, sécurisé et sans surprise.", {
-              amount: formattedAmount,
-            })}
-          </p>
-
-          {/* BLOC INFO — Montant caution */}
-          <div className="bg-muted/60 rounded-lg p-3 text-sm min-w-0">
-            <span className="font-medium text-foreground break-words">
-              {t("depositModal.amountLabel", "Montant de la caution : {{amount}}", { amount: formattedAmount })}
-            </span>
-          </div>
-
-          {/* LIEN */}
-          <a
-            href="/sinistre-caution"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium min-w-0 break-words"
-          >
-            {t("depositModal.learnMore", "En savoir plus sur la caution et les sinistres")}
-            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
-          </a>
-
-          {error && (
-            <div className="text-sm text-destructive font-medium bg-destructive/10 p-3 rounded-lg border border-destructive/20">
-              {error}
-            </div>
-          )}
-
-          {loading && !clientSecret && (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
+        {/* BODY + FOOTER — flex container : body scrollable + footer sticky */}
+        <div className="flex-1 flex flex-col min-h-0 mt-4">
+          {loading && !clientSecret ? (
+            <div className="flex-1 flex items-center justify-center py-8 text-muted-foreground">
               <span className="text-sm">{t("depositModal.loading", "Chargement du formulaire...")}</span>
             </div>
-          )}
-
-          {clientSecret && stripePromise && (
+          ) : clientSecret && stripePromise ? (
             <Elements
               stripe={stripePromise}
               options={{
@@ -239,8 +223,46 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
                 onError={handleError}
                 isSubmitting={isSubmitting}
                 setIsSubmitting={setIsSubmitting}
-              />
+              >
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {t("depositModal.description", "Aucun débit immédiat.\n\nVous enregistrez simplement votre carte pour sécuriser la caution de {{amount}}.\nUne empreinte pourra être réalisée automatiquement 48h avant le départ, puis libérée 48h après le retour si tout est conforme.\n\nSimple, sécurisé et sans surprise.", {
+                    amount: formattedAmount,
+                  })}
+                </p>
+                <div className="bg-muted/60 rounded-lg p-3 text-sm min-w-0">
+                  <span className="font-medium text-foreground break-words">
+                    {t("depositModal.amountLabel", "Montant de la caution : {{amount}}", { amount: formattedAmount })}
+                  </span>
+                </div>
+                <a
+                  href="/sinistre-caution"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium min-w-0 break-words"
+                >
+                  {t("depositModal.learnMore", "En savoir plus sur la caution et les sinistres")}
+                  <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                </a>
+                {error && (
+                  <div className="text-sm text-destructive font-medium bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                    {error}
+                  </div>
+                )}
+              </DepositPaymentForm>
             </Elements>
+          ) : (
+            <div className="flex-1 flex flex-col gap-4">
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                {t("depositModal.description", "Aucun débit immédiat.\n\nVous enregistrez simplement votre carte pour sécuriser la caution de {{amount}}.\nUne empreinte pourra être réalisée automatiquement 48h avant le départ, puis libérée 48h après le retour si tout est conforme.\n\nSimple, sécurisé et sans surprise.", {
+                  amount: formattedAmount,
+                })}
+              </p>
+              {error && (
+                <div className="text-sm text-destructive font-medium bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                  {error}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </DialogContent>
