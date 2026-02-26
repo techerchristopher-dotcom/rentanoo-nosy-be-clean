@@ -88,12 +88,14 @@ function DepositPaymentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement
-        options={{
-          layout: "tabs",
-        }}
-      />
+    <form onSubmit={handleSubmit} className="space-y-4 min-w-0">
+      <div className="min-w-0 overflow-hidden">
+        <PaymentElement
+          options={{
+            layout: "tabs",
+          }}
+        />
+      </div>
       <div className="flex flex-col sm:flex-row gap-2 pt-2">
         <Button
           type="submit"
@@ -170,9 +172,9 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
         aria-modal="true"
         aria-labelledby="deposit-modal-title"
         className={cn(
-          "w-full max-w-lg mx-4",
-          "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
-          "max-h-[90vh] overflow-y-auto flex flex-col gap-4",
+          "w-[95vw] max-w-[calc(100vw-2rem)] sm:max-w-xl md:max-w-2xl",
+          "fixed left-1/2 top-[2rem] sm:top-1/2 -translate-x-1/2 sm:-translate-y-1/2",
+          "max-h-[calc(100vh-4rem)] overflow-y-auto flex flex-col gap-4",
           "rounded-2xl shadow-xl bg-white dark:bg-background",
           "p-4 sm:p-6 md:p-8"
         )}
@@ -185,7 +187,7 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
         </DialogHeader>
 
         {/* BODY — Texte rassurant */}
-        <div className="flex flex-col gap-4 overflow-y-auto min-h-0 flex-1">
+        <div className="flex flex-col gap-4 overflow-y-auto min-h-0 flex-1 min-w-0">
           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
             {t("depositModal.description", "Aucun débit immédiat.\n\nVous enregistrez simplement votre carte pour sécuriser la caution de {{amount}}.\nUne empreinte pourra être réalisée automatiquement 48h avant le départ, puis libérée 48h après le retour si tout est conforme.\n\nSimple, sécurisé et sans surprise.", {
               amount: formattedAmount,
@@ -193,8 +195,8 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
           </p>
 
           {/* BLOC INFO — Montant caution */}
-          <div className="bg-muted/60 rounded-lg p-3 text-sm">
-            <span className="font-medium text-foreground">
+          <div className="bg-muted/60 rounded-lg p-3 text-sm min-w-0">
+            <span className="font-medium text-foreground break-words">
               {t("depositModal.amountLabel", "Montant de la caution : {{amount}}", { amount: formattedAmount })}
             </span>
           </div>
@@ -204,7 +206,7 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
             href="/sinistre-caution"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
+            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium min-w-0 break-words"
           >
             {t("depositModal.learnMore", "En savoir plus sur la caution et les sinistres")}
             <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
