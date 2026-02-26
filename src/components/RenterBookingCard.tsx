@@ -785,9 +785,9 @@ export default function RenterBookingCard({
             "p-4",
             (booking.status === 'cancelled' || booking.status === 'declined' || booking.status === 'terminated') ? "cursor-default" : "cursor-pointer"
           )}>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               {/* Informations principales */}
-              <div className="flex items-center space-x-4 flex-1">
+              <div className="flex items-center space-x-4 flex-1 min-w-0">
                 {/* Mini photo */}
                 <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
                   <img
@@ -838,9 +838,9 @@ export default function RenterBookingCard({
                 </div>
               </div>
 
-              {/* Actions et statut - alignement parfait */}
-              <div className="flex flex-col items-end gap-2 h-16">
-                <div className="flex items-center gap-3">
+              {/* Actions et statut — flex-wrap sur mobile pour éviter débordement */}
+              <div className="flex flex-col sm:flex-col items-end gap-2 min-w-0 shrink-0">
+                <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                   <div className="flex flex-col items-end gap-1">
                     {/* Badge statut enrichi */}
                     {(() => {
@@ -1242,7 +1242,7 @@ export default function RenterBookingCard({
               </div>
 
               {/* Actions supplémentaires */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-2 border-t border-border/50">
                 {/* Bouton "Finaliser ma réservation" si nécessaire */}
                 {(() => {
                   const statusUI = getUserBookingStatusUI()
@@ -1250,7 +1250,7 @@ export default function RenterBookingCard({
                     return (
                       <Button
                         size="lg"
-                        className="relative bg-gradient-lagoon hover:opacity-90 text-white shadow-lg hover:shadow-2xl transition-all flex-1 min-w-[200px] overflow-hidden group border-2 border-primary"
+                        className="relative bg-gradient-lagoon hover:opacity-90 text-white shadow-lg hover:shadow-2xl transition-all w-full min-w-0 sm:min-w-[200px] sm:flex-1 overflow-hidden group border-2 border-primary"
                         onClick={(e) => {
                           e.stopPropagation()
                           onRequestDeposit?.(booking)
@@ -1274,7 +1274,7 @@ export default function RenterBookingCard({
                 {booking.status === 'pending_payment' && (
                   <Button
                     size="lg"
-                    className="relative bg-gradient-lagoon hover:opacity-90 text-white shadow-lg hover:shadow-2xl transition-all flex-1 min-w-[200px] overflow-hidden group border-2 border-primary"
+                    className="relative bg-gradient-lagoon hover:opacity-90 text-white shadow-lg hover:shadow-2xl transition-all w-full min-w-0 sm:min-w-[200px] sm:flex-1 overflow-hidden group border-2 border-primary"
                     onClick={(e) => {
                       e.stopPropagation()
                       // Préparer les données de réservation pour la modale de paiement

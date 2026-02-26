@@ -761,9 +761,9 @@ export default function RenterBookings() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-soft">
-      <main className="flex-1 py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+    <div className="min-h-screen flex flex-col bg-gradient-soft min-w-0">
+      <main className="flex-1 py-8 min-w-0">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl min-w-0">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
@@ -786,10 +786,10 @@ export default function RenterBookings() {
             </Button>
           </div>
 
-          {/* Filters */}
+          {/* Filters — scroll horizontal mobile pour éviter débordement (Option A) */}
           {bookings.length > 0 && (
-            <div className="mb-8">
-              <div className="flex flex-wrap gap-2">
+            <div className="mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-2 overflow-x-auto pb-2 sm:overflow-visible sm:flex-wrap">
                 {(['all', 'pending', 'active', 'upcoming', 'past', 'cancelled', 'refused'] as BookingFilter[]).map((filter) => (
                   <Button
                     key={filter}
@@ -797,7 +797,7 @@ export default function RenterBookings() {
                     size="sm"
                     onClick={() => setActiveFilter(filter)}
                     className={cn(
-                      "flex items-center gap-2 transition-all duration-300 relative",
+                      "flex items-center gap-2 transition-all duration-300 relative shrink-0",
                       activeFilter === filter 
                         ? "bg-gradient-lagoon hover:opacity-90 shadow-lagoon text-white" 
                         : "hover:bg-primary-soft hover:text-primary"
