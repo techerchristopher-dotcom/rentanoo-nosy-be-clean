@@ -58,7 +58,7 @@ export function PaymentFlowModal({
   const shouldHighlightStep2 = highlightStep2 || isStep1ActuallyComplete;
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="w-[min(95vw,960px)] sm:max-w-3xl sm:rounded-2xl shadow-xl p-6 sm:p-8">
+      <DialogContent className="w-[95vw] max-w-[calc(100vw-2rem)] sm:max-w-xl md:max-w-2xl sm:rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
         <div className="space-y-6 overflow-y-auto flex-1 min-h-0">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Confirmer et payer</DialogTitle>
@@ -67,24 +67,24 @@ export function PaymentFlowModal({
           <Collapsible defaultOpen={!shouldHighlightStep2}>
             <CollapsibleTrigger asChild>
               <div className={cn(
-                "flex justify-between items-start md:items-center gap-2 flex-wrap p-4 rounded-xl border cursor-pointer transition-colors",
+                "flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors min-w-0",
                 shouldHighlightStep2 
                   ? "bg-muted/50 opacity-60" 
                   : "bg-card hover:bg-muted/30"
               )}>
-                <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">1</div>
-                  <div className="font-semibold">Étape 1 — Payer ma location</div>
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shrink-0">1</div>
+                  <div className="font-semibold min-w-0 truncate">Étape 1 — Payer ma location</div>
                   {isStep1ActuallyComplete && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold">✅ Terminé</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold shrink-0">✅ Terminé</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
                   {!isStep1ActuallyComplete ? (
                     <button
                       type="button"
                       disabled={isPaying}
-                      className="rounded-full px-3 py-1.5 text-sm font-semibold bg-gradient-lagoon text-white hover:opacity-90 shadow-soft disabled:opacity-70 disabled:cursor-wait inline-flex items-center gap-1.5"
+                      className="rounded-full px-3 py-1.5 text-sm font-semibold bg-gradient-lagoon text-white hover:opacity-90 shadow-soft disabled:opacity-70 disabled:cursor-wait inline-flex items-center gap-1.5 whitespace-normal break-words"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -93,12 +93,13 @@ export function PaymentFlowModal({
                     >
                       {isPaying ? (
                         <>
-                          <Hourglass className="h-4 w-4 animate-spin" />
+                          <Hourglass className="h-4 w-4 shrink-0 animate-spin" />
                           Chargement...
                         </>
                       ) : (
                         <>
-                          <span className="mr-1">🔒</span> Payer {reservation.totalTTC.toFixed(2)} € via Stripe
+                          <span className="shrink-0">🔒</span>
+                          <span>Payer {reservation.totalTTC.toFixed(2)} € via Stripe</span>
                         </>
                       )}
                     </button>
@@ -110,22 +111,22 @@ export function PaymentFlowModal({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="text-xs text-muted-foreground mb-2 mt-2">Résumé de votre réservation</div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <div className="text-sm text-muted-foreground">Véhicule</div>
-              <div className="font-semibold text-foreground">{reservation.voiture}</div>
+              <div className="font-semibold text-foreground break-words">{reservation.voiture}</div>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="p-3 rounded-lg border border-border">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="p-3 rounded-lg border border-border min-w-0">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" /> Début
+                  <Calendar className="h-4 w-4 shrink-0" /> Début
                 </div>
-                <div className="mt-1 font-medium">{reservation.dateDebut}</div>
+                <div className="mt-1 font-medium break-words">{reservation.dateDebut}</div>
               </div>
-              <div className="p-3 rounded-lg border border-border">
+              <div className="p-3 rounded-lg border border-border min-w-0">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" /> Fin
+                  <Calendar className="h-4 w-4 shrink-0" /> Fin
                 </div>
-                <div className="mt-1 font-medium">{reservation.dateFin}</div>
+                <div className="mt-1 font-medium break-words">{reservation.dateFin}</div>
               </div>
             </div>
             <div className="text-sm">
@@ -133,32 +134,32 @@ export function PaymentFlowModal({
               <span className="font-medium">{reservation.duree}</span>
             </div>
             <Separator />
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Montant de base</span>
-                <span className="font-medium">{reservation.montantDeBase.toFixed(2)}€</span>
+            <div className="space-y-2 min-w-0">
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate">Montant de base</span>
+                <span className="font-medium shrink-0">{reservation.montantDeBase.toFixed(2)}€</span>
               </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Frais de service (15%)</span>
-                <span>+{reservation.fraisService.toFixed(2)}€</span>
+              <div className="flex justify-between gap-3 text-sm text-muted-foreground">
+                <span className="min-w-0 truncate">Frais de service (15%)</span>
+                <span className="shrink-0">+{reservation.fraisService.toFixed(2)}€</span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t">
-                <span className="font-semibold">Total TTC à payer</span>
-                <span className="text-xl font-bold text-primary flex items-center gap-1">
-                  <Euro className="h-4 w-4" /> {reservation.totalTTC.toFixed(2)}€
+              <div className="flex justify-between items-center gap-3 pt-2 border-t">
+                <span className="font-semibold min-w-0 truncate">Total TTC à payer</span>
+                <span className="text-xl font-bold text-primary flex items-center gap-1 shrink-0">
+                  <Euro className="h-4 w-4 shrink-0" /> {reservation.totalTTC.toFixed(2)}€
                 </span>
               </div>
             </div>
               {/* Services supplémentaires (toujours affiché) */}
-              <div className="rounded-lg p-3 md:p-4 bg-gray-50 border border-gray-200 space-y-2 mt-4 mb-4">
+              <div className="rounded-lg p-3 md:p-4 bg-gray-50 border border-gray-200 space-y-2 mt-4 mb-4 min-w-0">
                 <div className="font-semibold text-foreground">Services supplémentaires</div>
                 {reservation.extras && reservation.extras.length > 0 ? (
                   <>
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0">
                       {reservation.extras.map((extra, idx) => (
-                        <div key={idx} className="flex justify-between text-sm">
-                          <span className="text-foreground">{extra.label}</span>
-                          <span className="font-medium text-foreground">+{extra.price.toFixed(2)}€</span>
+                        <div key={idx} className="flex justify-between gap-3 text-sm">
+                          <span className="text-foreground min-w-0 truncate">{extra.label}</span>
+                          <span className="font-medium text-foreground shrink-0">+{extra.price.toFixed(2)}€</span>
                         </div>
                       ))}
                     </div>
@@ -172,11 +173,11 @@ export function PaymentFlowModal({
                 )}
               </div>
             {/* Bloc réassurance Stripe */}
-              <div className="rounded-xl p-4 bg-gray-50 border border-border/50 flex items-start gap-3 mt-4 mb-4">
+              <div className="rounded-xl p-4 bg-gray-50 border border-border/50 flex items-start gap-3 mt-4 mb-4 min-w-0">
               <div className="pt-0.5">
                 <ShieldCheck className="h-5 w-5 text-green-500" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="font-semibold text-foreground">Paiement 100% sécurisé par Stripe</div>
                 <div className="text-sm text-[#6B7280] mt-1">
                   Vos informations bancaires sont protégées par chiffrement SSL et ne sont jamais stockées sur notre site.
@@ -193,34 +194,6 @@ export function PaymentFlowModal({
               </div>
             </div>
 
-              {!isStep1ActuallyComplete ? (
-                <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                  <Button
-                    disabled={isPaying}
-                    className={cn("w-full sm:flex-1 justify-center bg-gradient-lagoon hover:opacity-90 text-white font-bold py-3 disabled:opacity-70 disabled:cursor-wait")}
-                    onClick={handlePayNow}
-                  >
-                    {isPaying ? (
-                      <>
-                        <Hourglass className="h-5 w-5 mr-2 animate-spin" />
-                        Chargement...
-                      </>
-                    ) : (
-                      <>
-                        <span className="mr-2">🔒</span> Payer {reservation.totalTTC.toFixed(2)} € via Stripe et confirmer ma location
-                      </>
-                    )}
-                  </Button>
-                  <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Annuler</Button>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                  <div className="w-full sm:flex-1 flex items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-700 font-semibold py-3">
-                    Paiement effectué ✅
-                  </div>
-                  <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fermer</Button>
-                </div>
-              )}
             <div className="text-xs text-[#6B7280] text-center">
               Vous serez redirigé vers une page Stripe sécurisée pour effectuer votre paiement, puis automatiquement renvoyé ici.
             </div>
@@ -229,6 +202,38 @@ export function PaymentFlowModal({
             </div>
             </CollapsibleContent>
           </Collapsible>
+        </div>
+        {/* Footer CTA sticky — toujours visible, accessible sans scroll excessif */}
+        <div className="flex-shrink-0 border-t bg-background pt-4 mt-4 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 pb-0">
+          {!isStep1ActuallyComplete ? (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                disabled={isPaying}
+                className={cn("w-full min-w-0 sm:flex-1 justify-center bg-gradient-lagoon hover:opacity-90 text-white font-bold py-3 disabled:opacity-70 disabled:cursor-wait whitespace-normal break-words")}
+                onClick={handlePayNow}
+              >
+                {isPaying ? (
+                  <>
+                    <Hourglass className="h-5 w-5 shrink-0 mr-2 animate-spin" />
+                    Chargement...
+                  </>
+                ) : (
+                  <>
+                    <span className="shrink-0 mr-2">🔒</span>
+                    Payer {reservation.totalTTC.toFixed(2)} € via Stripe et confirmer ma location
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Annuler</Button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="w-full sm:flex-1 flex items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-700 font-semibold py-3">
+                Paiement effectué ✅
+              </div>
+              <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fermer</Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
