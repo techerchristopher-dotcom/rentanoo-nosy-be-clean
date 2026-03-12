@@ -1,9 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Mail } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
 
 const WHATSAPP_NUMBER = "+33633707569"; // Format international sans espaces pour le lien
 const WHATSAPP_DISPLAY = "+33 (0) 6 33 70 75 69"; // Format affiché
+const DIRECT_LINE_NUMBER = "+261373437912"; // Format E.164 pour tel:
+const DIRECT_LINE_DISPLAY = "+261 37 34 379 12"; // Format affiché
 
 // Icône WhatsApp officielle (SVG)
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -51,6 +53,28 @@ export function WhatsAppHeader() {
               →
             </span>
           </button>
+
+          <div className="h-4 w-px bg-white/30 hidden sm:block flex-shrink-0" />
+
+          <a
+            href={`tel:${DIRECT_LINE_NUMBER}`}
+            className="flex items-center gap-2 md:gap-3 hover:bg-[#25D366]/20 transition-colors duration-200 group px-2 py-1 rounded min-w-0 max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#128C7E]"
+            aria-label={t("whatsapp.directLineAria", "Appelez-nous au +261 37 34 379 12")}
+          >
+            <Phone className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+            <span className="font-bold text-sm md:text-base tracking-tight truncate">
+              {DIRECT_LINE_DISPLAY}
+            </span>
+            <span className="text-xs md:text-sm opacity-90 hidden sm:inline truncate">
+              {t("whatsapp.directLine", "Ligne directe")}
+            </span>
+            <span className="text-xs opacity-90 sm:hidden truncate">
+              {t("whatsapp.directLineShort", "Appelez-nous")}
+            </span>
+            <span className="text-xs opacity-75 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              →
+            </span>
+          </a>
 
           <div className="h-4 w-px bg-white/30 hidden sm:block flex-shrink-0" />
 

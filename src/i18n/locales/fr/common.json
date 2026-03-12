@@ -967,7 +967,10 @@
   "whatsapp": {
     "contactOnly": "Contact WhatsApp uniquement",
     "contactOnlyShort": "WhatsApp uniquement",
-    "sendEmail": "Envoyez un email"
+    "sendEmail": "Envoyez un email",
+    "directLine": "Ligne directe",
+    "directLineShort": "Appelez-nous",
+    "directLineAria": "Appelez-nous au +261 37 34 379 12"
   },
   "contact": {
     "title": "Nous contacter",

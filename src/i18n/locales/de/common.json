@@ -942,6 +942,10 @@
   "whatsapp": {
     "contactOnly": "Nur WhatsApp-Kontakt",
     "contactOnlyShort": "Nur WhatsApp",
+    "sendEmail": "E-Mail senden",
+    "directLine": "Direkte Linie",
+    "directLineShort": "Rufen Sie uns an",
+    "directLineAria": "Rufen Sie uns an unter +261 37 34 379 12",
     "sendEmail": "E-Mail senden"
   },
   "contact": {

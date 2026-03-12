@@ -964,7 +964,10 @@
   "whatsapp": {
     "contactOnly": "WhatsApp contact only",
     "contactOnlyShort": "WhatsApp only",
-    "sendEmail": "Send an email"
+    "sendEmail": "Send an email",
+    "directLine": "Direct line",
+    "directLineShort": "Call us",
+    "directLineAria": "Call us at +261 37 34 379 12"
   },
   "contact": {
     "title": "Contact us",
