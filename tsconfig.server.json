@@ -11,5 +11,5 @@
     "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["server/**/*", "src/utils/serviceFees.ts"]
+  "include": ["server/**/*", "src/utils/serviceFees.ts", "src/utils/rentalPriceFromDates.ts"]
 }

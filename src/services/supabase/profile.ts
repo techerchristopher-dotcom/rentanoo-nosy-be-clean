@@ -1,10 +1,25 @@
 // Service Supabase pour la gestion des profils utilisateur
 import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@/types';
+import type { Role, User } from '@/types';
 import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
 type SupabaseProfile = Tables<'profiles'>;
 type SupabaseProfileUpdate = TablesUpdate<'profiles'>;
+
+function normalizeRole(raw: string | null | undefined): Role {
+  if (raw === "owner" || raw === "admin" || raw === "renter") return raw;
+  return "renter";
+}
+
+/** Rôle métier + admin plateforme (`is_admin` / `admin_role`, ou `role = admin` legacy). */
+function rolesFromProfile(profile: SupabaseProfile): Role[] {
+  const base = normalizeRole(profile.role);
+  const set = new Set<Role>([base]);
+  if (profile.is_admin === true || profile.admin_role === "admin" || profile.role === "admin") {
+    set.add("admin");
+  }
+  return Array.from(set);
+}
 
 export interface ProfileUpdateData {
   firstName?: string;
@@ -74,7 +89,9 @@ export class ProfileService {
         lastName: profile.last_name || '',
         phone: profile.phone || undefined,
         bio: profile.bio || undefined,
-        roles: profile.role ? [profile.role] : ['renter'], // Convertir le rôle unique en tableau pour compatibilité
+        roles: rolesFromProfile(profile),
+        isAdmin: profile.is_admin === true,
+        adminRole: profile.admin_role ?? null,
         kycStatus: profile.kyc_status || 'pending',
         avatarUrl: profile.avatar_url || undefined,
         birthDate: profile.birthdate || undefined,
@@ -154,9 +171,23 @@ export class ProfileService {
         lastName: profile.last_name || '',
         phone: profile.phone || undefined,
         bio: profile.bio || undefined,
-        roles: profile.role ? [profile.role] : ['renter'],
+        roles: rolesFromProfile(profile),
+        isAdmin: profile.is_admin === true,
+        adminRole: profile.admin_role ?? null,
         kycStatus: profile.kyc_status || 'pending',
         avatarUrl: profile.avatar_url || undefined,
+        birthDate: profile.birthdate || undefined,
+        placeOfBirth: profile.place_of_birth || undefined,
+        driverLicenseNumber: profile.driver_license_number || undefined,
+        driverLicenseIssueDate: profile.driver_license_issue_date || undefined,
+        driverLicenseExpirationDate: profile.driver_license_expiration_date || undefined,
+        driverLicenseCategory: profile.driver_license_category || undefined,
+        driverLicenseCountry: profile.driver_license_country || undefined,
+        driverLicenseFilePath: profile.driver_license_file_path || undefined,
+        addressLine1: profile.address_line1 || undefined,
+        postalCode: profile.postal_code || undefined,
+        city: profile.city || undefined,
+        country: profile.country || undefined,
         createdAt: profile.created_at || new Date().toISOString(),
         updatedAt: profile.updated_at || new Date().toISOString(),
       };
@@ -244,15 +275,18 @@ export class ProfileService {
         return { data: null, error: error.message };
       }
 
-      // Convertir le format Supabase vers le format de l'application
       const user: User = {
         id: updatedProfile.id,
         email: updatedProfile.email || '',
         firstName: updatedProfile.first_name || '',
         lastName: updatedProfile.last_name || '',
         phone: updatedProfile.phone || undefined,
-        role: updatedProfile.role || 'renter',
+        bio: updatedProfile.bio || undefined,
+        roles: rolesFromProfile(updatedProfile),
+        isAdmin: updatedProfile.is_admin === true,
+        adminRole: updatedProfile.admin_role ?? null,
         kycStatus: updatedProfile.kyc_status || 'pending',
+        avatarUrl: updatedProfile.avatar_url || undefined,
         birthDate: updatedProfile.birthdate || undefined,
         placeOfBirth: updatedProfile.place_of_birth || undefined,
         driverLicenseNumber: updatedProfile.driver_license_number || undefined,
@@ -303,19 +337,20 @@ export class ProfileService {
         return { data: null, error: error.message };
       }
 
-      // Convertir le format Supabase vers le format de l'application
-          const user: User = {
-            id: newProfile.id,
-            email: newProfile.email || '',
-            firstName: newProfile.first_name || '',
-            lastName: newProfile.last_name || '',
-            phone: newProfile.phone || undefined,
-            bio: newProfile.bio || undefined,
-            roles: newProfile.role ? [newProfile.role] : ['renter'], // Convertir le rôle unique en tableau pour compatibilité
-            kycStatus: newProfile.kyc_status || 'pending',
+      const user: User = {
+        id: newProfile.id,
+        email: newProfile.email || '',
+        firstName: newProfile.first_name || '',
+        lastName: newProfile.last_name || '',
+        phone: newProfile.phone || undefined,
+        bio: newProfile.bio || undefined,
+        roles: rolesFromProfile(newProfile),
+        isAdmin: newProfile.is_admin === true,
+        adminRole: newProfile.admin_role ?? null,
+        kycStatus: newProfile.kyc_status || 'pending',
         birthDate: newProfile.birthdate || undefined,
         createdAt: newProfile.created_at,
-        updatedAt: newProfile.updated_at || newProfile.created_at
+        updatedAt: newProfile.updated_at || newProfile.created_at,
       };
 
       return { data: user, error: null };

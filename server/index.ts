@@ -7,6 +7,7 @@ import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 import { getStripe, isStripeConfigured, getStripeKeyType } from "./lib/stripe";
 import { getAuthUserFromRequest } from "./lib/depositAuth";
+import { registerAdminRoutes } from "./routes/adminRoutes";
 
 // Charger .env.local en développement uniquement (si fichier existe)
 // En production Railway, les variables sont dans process.env directement
@@ -250,6 +251,8 @@ app.use(
   })
 );
 
+registerAdminRoutes(app, supabaseAdmin);
+
 // Configuration multer pour les fichiers
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -273,7 +276,7 @@ const upload = multer({
 app.post("/api/deposit/create-setup-intent", async (req, res) => {
   try {
     const authResult = await getAuthUserFromRequest(req);
-    if (!authResult.ok) {
+    if (authResult.ok === false) {
       return res.status(401).json({ ok: false, error: "UNAUTHORIZED", message: authResult.message, reason: authResult.reason });
     }
     const { user } = authResult;
@@ -355,7 +358,7 @@ app.post("/api/deposit/create-setup-intent", async (req, res) => {
 app.post("/api/deposit/attach-payment-method", async (req, res) => {
   try {
     const authResult = await getAuthUserFromRequest(req);
-    if (!authResult.ok) {
+    if (authResult.ok === false) {
       return res.status(401).json({ ok: false, error: "UNAUTHORIZED", message: authResult.message, reason: authResult.reason });
     }
     const { user } = authResult;
@@ -439,7 +442,7 @@ app.post("/api/deposit/attach-payment-method", async (req, res) => {
 app.post("/api/bookings/:bookingId/force-deposit", async (req, res) => {
   try {
     const authResult = await getAuthUserFromRequest(req);
-    if (!authResult.ok) {
+    if (authResult.ok === false) {
       return res.status(401).json({ ok: false, error: "UNAUTHORIZED", message: authResult.message });
     }
     const { user } = authResult;

@@ -161,7 +161,10 @@ export type Database = {
           first_name: string | null
           last_name: string | null
           phone: string | null
+          bio: string | null
           role: "renter" | "owner" | "admin" | null
+          is_admin: boolean | null
+          admin_role: "user" | "admin" | null
           kyc_status: "pending" | "verified" | "rejected" | null
           avatar_url: string | null
           birthdate: string | null
@@ -174,6 +177,8 @@ export type Database = {
           country: string | null
           driver_license_number: string | null
           driver_license_issue_date: string | null
+          driver_license_expiration_date: string | null
+          driver_license_category: string | null
           driver_license_country: string | null
           driver_license_file_path: string | null
           full_name: string | null
@@ -185,7 +190,10 @@ export type Database = {
           first_name?: string | null
           last_name?: string | null
           phone?: string | null
+          bio?: string | null
           role?: "renter" | "owner" | "admin" | null
+          is_admin?: boolean | null
+          admin_role?: "user" | "admin" | null
           kyc_status?: "pending" | "verified" | "rejected" | null
           avatar_url?: string | null
           birthdate?: string | null
@@ -198,6 +206,8 @@ export type Database = {
           country?: string | null
           driver_license_number?: string | null
           driver_license_issue_date?: string | null
+          driver_license_expiration_date?: string | null
+          driver_license_category?: string | null
           driver_license_country?: string | null
           driver_license_file_path?: string | null
           full_name?: string | null
@@ -209,7 +219,10 @@ export type Database = {
           first_name?: string | null
           last_name?: string | null
           phone?: string | null
+          bio?: string | null
           role?: "renter" | "owner" | "admin" | null
+          is_admin?: boolean | null
+          admin_role?: "user" | "admin" | null
           kyc_status?: "pending" | "verified" | "rejected" | null
           avatar_url?: string | null
           birthdate?: string | null
@@ -222,6 +235,8 @@ export type Database = {
           country?: string | null
           driver_license_number?: string | null
           driver_license_issue_date?: string | null
+          driver_license_expiration_date?: string | null
+          driver_license_category?: string | null
           driver_license_country?: string | null
           driver_license_file_path?: string | null
           full_name?: string | null

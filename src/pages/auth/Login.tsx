@@ -1,6 +1,6 @@
 import "@/styles/modal-animations.css";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleIcon, FacebookIcon, AppleIcon } from "@/components/ui/social-icons";
 import { AUTH_CALLBACK_URL } from "@/lib/config";
+import { safeRedirectPath } from "@/lib/safeRedirectPath";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
@@ -45,6 +46,7 @@ export default function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   const form = useForm<LoginFormData>({
@@ -91,7 +93,8 @@ export default function Login() {
           title: "Connexion réussie",
           description: "Bienvenue sur Rentanoo !",
         });
-        navigate("/onboarding/client");
+        const next = safeRedirectPath(searchParams.get("redirect"));
+        navigate(next ?? "/onboarding/client");
       }
     } catch (error) {
       toast({

@@ -44,7 +44,22 @@ const AddVehicle = lazy(() => import("./pages/owner/AddVehicle"));
 const AddMotoPlaceholder = lazy(() => import("./pages/owner/AddMotoPlaceholder"));
 const RentMyCarLanding = lazy(() => import("./pages/owner/RentMyCarLanding"));
 const RentMyCarRegister = lazy(() => import("./pages/owner/RentMyCarRegister"));
-const Admin = lazy(() => import("./pages/admin/Admin"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminBookingNew = lazy(() => import("./pages/admin/bookings/AdminBookingNew"));
+const AdminBookingDetail = lazy(() => import("./pages/admin/bookings/AdminBookingDetail"));
+const AdminPlaceholderUsers = lazy(() =>
+  import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderUsers }))
+);
+const AdminPlaceholderVehicles = lazy(() =>
+  import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderVehicles }))
+);
+const AdminPlaceholderBookings = lazy(() =>
+  import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderBookings }))
+);
+const AdminPlaceholderPayments = lazy(() =>
+  import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderPayments }))
+);
 const Checking = lazy(() => import("./pages/Checking"));
 const CheckinReturnPage = lazy(() => import("./pages/checkin-return/[bookingId]"));
 const DictionaryIndex = lazy(() => import("./pages/dictionary/DictionaryIndex"));
@@ -187,11 +202,71 @@ const App = () => (
                 <RentMyCarRegister />
               </Suspense>
             } />
-            <Route path="/admin" element={
-              <Suspense fallback={<PageLoader />}>
-                <Admin />
-              </Suspense>
-            } />
+            <Route
+              path="/admin"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <AdminLayout />
+                </Suspense>
+              }
+            >
+              <Route
+                index
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminDashboard />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="users"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminPlaceholderUsers />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="vehicles"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminPlaceholderVehicles />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="bookings"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminPlaceholderBookings />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="bookings/new"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminBookingNew />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="bookings/:bookingId"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminBookingDetail />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="payments"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminPlaceholderPayments />
+                  </Suspense>
+                }
+              />
+            </Route>
             <Route path="/checking/:bookingId" element={
               <Suspense fallback={<PageLoader />}>
                 <Checking />

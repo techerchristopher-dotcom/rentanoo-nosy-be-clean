@@ -92,6 +92,9 @@ export interface User {
   country?: string;
   createdAt: string;
   updatedAt: string;
+  /** Colonnes DB `is_admin` / `admin_role` (admin peut avoir `role` = renter ou owner) */
+  isAdmin?: boolean;
+  adminRole?: string | null;
 }
 
 export interface Vehicle {
@@ -318,9 +321,14 @@ export const UserRoleUtils = {
 
   /**
    * Vérifie si l'utilisateur peut accéder aux fonctions d'administration
+   * (rôle legacy `role = admin`, ou flags DB `is_admin` / `admin_role = admin`)
    */
   isAdmin: (user: User | null): boolean => {
-    return UserRoleUtils.hasRole(user, 'admin');
+    if (!user) return false;
+    if (user.roles.includes("admin")) return true;
+    if (user.isAdmin === true) return true;
+    if (user.adminRole === "admin") return true;
+    return false;
   }
 };
 
