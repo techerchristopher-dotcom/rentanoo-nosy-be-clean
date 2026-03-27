@@ -1,6 +1,7 @@
 // Service Supabase pour la gestion des réservations
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import type { BookingPricingMode } from '@/types';
 import { ProfileService } from './profile';
 import { SupabaseVehiclesService } from '@/services/supabaseVehiclesService';
 
@@ -29,6 +30,8 @@ export interface BookingData {
   subtotal?: number;
   pricePerDay?: number;
   rentalDays?: number;
+  /** Optionnel : aligné sur `bookings.pricing_mode` (défaut DB `web` si absent à l’insertion) */
+  pricingMode?: BookingPricingMode;
 }
 
 export interface BookingResponse {

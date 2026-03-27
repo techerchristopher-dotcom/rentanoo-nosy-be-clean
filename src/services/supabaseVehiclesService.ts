@@ -10,6 +10,8 @@ export interface Vehicle {
   year: number;
   mileage: number | null;
   price_per_day: number;
+  /** Colonne DB `price_per_day_agency` (nullable) */
+  price_per_day_agency?: number | null;
   description: string | null;
   image_url: string | null;
   location: string | null;
@@ -380,6 +382,7 @@ export const SupabaseVehiclesService = {
     doors?: number;
     engine_capacity?: string;
     price_per_day?: number;
+    price_per_day_agency?: number | null;
     description?: string;
     location?: string;
     available?: boolean;

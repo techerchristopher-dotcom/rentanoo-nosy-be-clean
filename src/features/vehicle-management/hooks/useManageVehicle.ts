@@ -76,6 +76,7 @@ export function useManageVehicle(
         transmission: (vehicleData.transmission as any) || "manual",
         mileage: vehicleData.mileage || 0,
         dailyPrice: vehicleData.price_per_day,
+        pricePerDayAgency: vehicleData.price_per_day_agency ?? null,
         currency: "EUR",
         latitude: 0,
         longitude: 0,
@@ -100,6 +101,10 @@ export function useManageVehicle(
         seats: (vehicleData.seats || 5).toString(),
         doors: (vehicleData.doors || vehicleData.seats || 5).toString(),
         pricePerDay: vehicleData.price_per_day.toString(),
+        pricePerDayAgency:
+          vehicleData.price_per_day_agency != null
+            ? String(vehicleData.price_per_day_agency)
+            : "",
         description: vehicleData.description || "",
         location: vehicleData.location || "",
         status: (vehicleData.status as "active" | "inactive" | "review") || "active",

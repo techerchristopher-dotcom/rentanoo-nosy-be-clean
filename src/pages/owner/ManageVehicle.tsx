@@ -895,6 +895,15 @@ export default function ManageVehicle() {
           error = "Le prix doit être un nombre positif";
         }
         break;
+      case "pricePerDayAgency": {
+        const raw = typeof value === "string" ? value.trim() : "";
+        if (!raw) break;
+        const agency = parseFloat(raw);
+        if (isNaN(agency) || agency <= 0) {
+          error = "Le tarif agence doit être un nombre positif, ou laissez vide";
+        }
+        break;
+      }
       case "lowSeasonDiscount":
       case "highSeasonSurcharge":
       case "longDurationDiscount14":
@@ -1267,6 +1276,11 @@ export default function ManageVehicle() {
         type: typeof formData.year 
       });
       
+      const agencyRaw = formData.pricePerDayAgency?.trim() ?? "";
+      const agencyNum = agencyRaw ? parseFloat(agencyRaw) : NaN;
+      const price_per_day_agency =
+        !agencyRaw || Number.isNaN(agencyNum) || agencyNum <= 0 ? null : agencyNum;
+
       const baseUpdateData = {
         brand: formData.brand,
         model: formData.model,
@@ -1277,6 +1291,7 @@ export default function ManageVehicle() {
         transmission: formData.transmission,
         seats: parseInt(formData.seats),
         price_per_day: parseFloat(formData.pricePerDay),
+        price_per_day_agency,
         description: formData.description,
         location: formData.location,
         available: formData.available,
@@ -2126,6 +2141,37 @@ export default function ManageVehicle() {
                   />
                   {validationErrors.pricePerDay && (
                     <p className="text-xs text-red-500">{validationErrors.pricePerDay}</p>
+                  )}
+                </div>
+
+                {/* Tarif agence (réservations passées en agence / admin) */}
+                <div className="space-y-2">
+                  <Label htmlFor="pricePerDayAgency" className="flex items-center gap-2">
+                    Tarif journalier agence (€)
+                    {validationErrors.pricePerDayAgency ? (
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                    ) : formData.pricePerDayAgency?.trim() ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : null}
+                  </Label>
+                  <Input
+                    id="pricePerDayAgency"
+                    type="number"
+                    value={formData.pricePerDayAgency}
+                    onChange={(e) => handleInputChange("pricePerDayAgency", e.target.value)}
+                    placeholder="Ex. 27 (optionnel)"
+                    min="0"
+                    step="0.01"
+                    className={
+                      validationErrors.pricePerDayAgency ? "border-red-500 focus:border-red-500" : ""
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Utilisé pour les locations en agence (sans commission locataire de 15 % sur ce tarif).
+                    Laissez vide si identique au tarif internet ou non applicable.
+                  </p>
+                  {validationErrors.pricePerDayAgency && (
+                    <p className="text-xs text-red-500">{validationErrors.pricePerDayAgency}</p>
                   )}
                 </div>
 

@@ -13,7 +13,14 @@ import {
 } from "@/services/adminApi";
 import { SupabaseVehiclesService, type Vehicle } from "@/services/supabaseVehiclesService";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
-import { calcRenterTotal, calcServiceFeeRenter } from "@/utils/serviceFees";
+
+function agencyPricePerDayFromVehicle(v: Vehicle): number | null {
+  const raw = v.price_per_day_agency;
+  if (raw === null || raw === undefined) return null;
+  const n = typeof raw === "number" ? raw : parseFloat(String(raw));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
 
 function combineYmdTime(ymd: string, hm: string): Date | null {
   if (!ymd || ymd.length < 8) return null;
@@ -77,17 +84,16 @@ export default function AdminBookingNew() {
   const selectedVehicle = useMemo(() => vehicles.find((v) => v.id === vehicleId) ?? null, [vehicles, vehicleId]);
 
   const pricePreview = useMemo(() => {
-    if (!selectedVehicle?.price_per_day) return null;
+    if (!selectedVehicle) return null;
+    const ppd = agencyPricePerDayFromVehicle(selectedVehicle);
+    if (ppd == null) return null;
     const start = combineYmdTime(startDate, startTime);
     const end = combineYmdTime(endDate, endTime);
     if (!start || !end || end.getTime() <= start.getTime()) return null;
-    const ppd = Number(selectedVehicle.price_per_day);
-    if (!Number.isFinite(ppd) || ppd <= 0) return null;
     const { basePrice, rentalDays } = computeBaseRentalPrice(ppd, start, end);
     const subtotal = basePrice;
-    const fee = calcServiceFeeRenter(subtotal);
-    const total = calcRenterTotal(subtotal);
-    return { basePrice, rentalDays, subtotal, fee, total };
+    const total = subtotal;
+    return { basePrice, rentalDays, subtotal, total, agencyPpd: ppd };
   }, [selectedVehicle, startDate, endDate, startTime, endTime]);
 
   const runSearch = async () => {
@@ -182,8 +188,9 @@ export default function AdminBookingNew() {
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">Nouvelle réservation (agence)</h1>
         <p className="text-muted-foreground text-sm">
-          Recherche ou création d’un locataire, puis réservation en son nom. L’API vérifie le téléphone, la dispo
-          véhicule (dates) et applique les mêmes règles de prix / frais que le parcours client.
+          Recherche ou création d’un locataire, puis réservation en son nom. Tarification :{" "}
+          <strong>tarif journalier agence</strong> du véhicule (aucun frais service locataire 15 %), total = sous-total.
+          Le véhicule doit avoir un tarif agence renseigné dans « Tarifs & conditions ».
         </p>
         <p className="mt-2 text-sm">
           <Link to="/admin" className="text-primary font-medium hover:underline">
@@ -299,11 +306,14 @@ export default function AdminBookingNew() {
               onChange={(e) => setVehicleId(e.target.value)}
             >
               <option value="">— Choisir —</option>
-              {vehicles.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.brand} {v.model} — {v.price_per_day}€/j
-                </option>
-              ))}
+              {vehicles.map((v) => {
+                const ap = agencyPricePerDayFromVehicle(v);
+                return (
+                  <option key={v.id} value={v.id}>
+                    {v.brand} {v.model} — agence {ap != null ? `${ap}€/j` : "(tarif agence requis)"}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -331,16 +341,24 @@ export default function AdminBookingNew() {
           {pricePreview ? (
             <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
               <div>
-                Estimation : <strong>{pricePreview.basePrice.toFixed(2)} €</strong> base ({pricePreview.rentalDays} j.
-                facturés)
+                Tarif agence retenu : <strong>{pricePreview.agencyPpd.toFixed(2)} €</strong> / jour
               </div>
               <div>
-                Frais service locataire : <strong>{pricePreview.fee.toFixed(2)} €</strong>
+                Location (base) : <strong>{pricePreview.basePrice.toFixed(2)} €</strong> ({pricePreview.rentalDays}{" "}
+                j. facturés)
               </div>
               <div>
-                Total à payer (locataire) : <strong>{pricePreview.total.toFixed(2)} €</strong>
+                Frais service locataire (agence) : <strong>0,00 €</strong>
+              </div>
+              <div>
+                Total locataire : <strong>{pricePreview.total.toFixed(2)} €</strong> (= sous-total)
               </div>
             </div>
+          ) : selectedVehicle && agencyPricePerDayFromVehicle(selectedVehicle) == null ? (
+            <p className="text-sm text-amber-700 dark:text-amber-500">
+              Ce véhicule n’a pas de tarif agence : complétez-le côté propriétaire avant de créer une réservation
+              admin.
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">Saisissez véhicule et plage valide pour voir l’estimation.</p>
           )}
@@ -348,7 +366,18 @@ export default function AdminBookingNew() {
       </Card>
 
       <div className="flex flex-wrap gap-3">
-        <Button type="button" size="lg" onClick={runCreateBooking} disabled={submitLoading || !selectedClient || !vehicleId}>
+        <Button
+          type="button"
+          size="lg"
+          onClick={runCreateBooking}
+          disabled={
+            submitLoading ||
+            !selectedClient ||
+            !vehicleId ||
+            !selectedVehicle ||
+            agencyPricePerDayFromVehicle(selectedVehicle) == null
+          }
+        >
           {submitLoading ? "Création…" : "Créer la réservation"}
         </Button>
       </div>

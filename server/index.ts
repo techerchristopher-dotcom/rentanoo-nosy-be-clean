@@ -252,6 +252,9 @@ app.use(
 );
 
 registerAdminRoutes(app, supabaseAdmin);
+console.log(
+  "✅ [AdminRoutes] Monté : POST /api/admin/bookings utilise la logique agence (tarif price_per_day_agency, pricing_mode=admin, service_fee=0)."
+);
 
 // Configuration multer pour les fichiers
 const upload = multer({

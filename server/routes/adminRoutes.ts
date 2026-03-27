@@ -1,8 +1,10 @@
 import type { Express, Request, Response } from "express";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "../lib/adminAuth";
-import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
+
+/** Identifiant de build côté admin booking — doit apparaître dans les logs et l’en-tête HTTP si ce code est exécuté. */
+const ADMIN_BOOKING_CREATE_BUILD_ID = "agency-v2-20260327";
 
 const CANCEL_LIKE = new Set(["cancelled", "declined", "rejected", "terminated"]);
 
@@ -264,6 +266,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const gate = await requireAdmin(req, supabaseAdmin);
     if (gate.ok === false) return res.status(gate.status).json(gate.body);
 
+    console.log(`[ADMIN_BOOKINGS][${ADMIN_BOOKING_CREATE_BUILD_ID}] POST /api/admin/bookings — entrée handler (logique agence)`);
+
     const renterUserId = typeof req.body?.renterUserId === "string" ? req.body.renterUserId.trim() : "";
     const vehicleId = typeof req.body?.vehicleId === "string" ? req.body.vehicleId.trim() : "";
     const startDateRaw = typeof req.body?.startDate === "string" ? req.body.startDate.trim() : "";
@@ -307,7 +311,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
     const { data: vehicle, error: vehErr } = await supabaseAdmin
       .from("vehicles")
-      .select("id, price_per_day, available, brand, model")
+      .select("id, price_per_day, price_per_day_agency, available, brand, model")
       .eq("id", vehicleId)
       .maybeSingle();
 
@@ -315,13 +319,34 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       return res.status(404).json({ ok: false, error: "VEHICLE_NOT_FOUND", message: "Véhicule introuvable" });
     }
 
+    console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] vehicle_id=${vehicleId}`, {
+      price_per_day: vehicle.price_per_day,
+      price_per_day_agency: vehicle.price_per_day_agency,
+      brand: vehicle.brand,
+      model: vehicle.model,
+    });
+
     if (vehicle.available === false) {
       return res.status(400).json({ ok: false, error: "VEHICLE_UNAVAILABLE", message: "Véhicule indisponible (available=false)" });
     }
 
-    const pricePerDay = Number(vehicle.price_per_day);
-    if (!Number.isFinite(pricePerDay) || pricePerDay <= 0) {
-      return res.status(400).json({ ok: false, error: "INVALID_VEHICLE_PRICE", message: "Prix/jour invalide" });
+    const rawAgency = vehicle.price_per_day_agency;
+    if (rawAgency === null || rawAgency === undefined || rawAgency === "") {
+      return res.status(400).json({
+        ok: false,
+        error: "AGENCY_PRICE_REQUIRED",
+        message:
+          "Tarif journalier agence manquant sur ce véhicule : complétez-le dans Gérer le véhicule (Tarifs & conditions).",
+      });
+    }
+    const agencyPricePerDay =
+      typeof rawAgency === "string" ? parseFloat(rawAgency) : Number(rawAgency);
+    if (!Number.isFinite(agencyPricePerDay) || agencyPricePerDay <= 0) {
+      return res.status(400).json({
+        ok: false,
+        error: "INVALID_AGENCY_PRICE",
+        message: "Tarif journalier agence invalide (doit être un montant > 0).",
+      });
     }
 
     const startDt = combineLocalDateTime(startDateRaw, startTime);
@@ -358,11 +383,11 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       }
     }
 
-    const { basePrice, rentalDays } = computeBaseRentalPrice(pricePerDay, startDt, endDt);
+    const { basePrice, rentalDays } = computeBaseRentalPrice(agencyPricePerDay, startDt, endDt);
     const optionsTotal = 0;
     const subtotal = basePrice + optionsTotal;
-    const serviceFee = calcServiceFeeRenter(subtotal);
-    const totalPrice = calcRenterTotal(subtotal);
+    const serviceFee = 0;
+    const totalPrice = subtotal;
 
     const insertPayload = {
       user_id: renterUserId,
@@ -379,18 +404,29 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       options_total: optionsTotal,
       service_fee: serviceFee,
       subtotal,
-      price_per_day: pricePerDay,
+      price_per_day: agencyPricePerDay,
       rental_days: rentalDays,
+      pricing_mode: "admin" as const,
       updated_at: new Date().toISOString(),
     };
 
-    const { data: inserted, error: insErr } = await supabaseAdmin.from("bookings").insert(insertPayload).select("id, status, created_at").single();
+    console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] pricing_mode avant insert =`, insertPayload.pricing_mode);
+    console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] objet insertPayload (exact):`, JSON.stringify(insertPayload));
+
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("bookings")
+      .insert(insertPayload)
+      .select("id, status, created_at, price_per_day, base_price, subtotal, service_fee, total_price, pricing_mode")
+      .single();
 
     if (insErr || !inserted) {
       console.error("[admin/bookings] insert", insErr);
       return res.status(500).json({ ok: false, error: "INSERT_FAILED", message: insErr?.message ?? "Insertion impossible" });
     }
 
+    console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] ligne retournée par Supabase après insert:`, JSON.stringify(inserted));
+
+    res.setHeader("X-Rentanoo-Admin-Booking-Build", ADMIN_BOOKING_CREATE_BUILD_ID);
     return res.status(201).json({
       ok: true,
       booking: {
@@ -417,7 +453,11 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
 
     const [{ data: vehicle }, { data: renter }] = await Promise.all([
-      supabaseAdmin.from("vehicles").select("id, brand, model, price_per_day").eq("id", booking.vehicle_id).maybeSingle(),
+      supabaseAdmin
+        .from("vehicles")
+        .select("id, brand, model, price_per_day, price_per_day_agency")
+        .eq("id", booking.vehicle_id)
+        .maybeSingle(),
       supabaseAdmin.from("profiles").select("id, email, first_name, last_name, phone").eq("id", booking.user_id).maybeSingle(),
     ]);
 

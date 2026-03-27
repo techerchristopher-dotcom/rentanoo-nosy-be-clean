@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
 export type AdminClientRow = {
   id: string;
@@ -7,6 +8,24 @@ export type AdminClientRow = {
   last_name: string | null;
   phone: string | null;
   role: string | null;
+};
+
+/** Véhicule réduit renvoyé avec le détail réservation admin (champs retournés par l’API) */
+export type AdminBookingVehicleSnippet = {
+  id: string;
+  brand: string;
+  model: string;
+  price_per_day: number;
+  /** Présent dès que l’API inclut la colonne dans le `select` */
+  price_per_day_agency?: number | null;
+};
+
+export type AdminBookingRenterSnippet = {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
 };
 
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -91,14 +110,14 @@ export async function adminCreateBooking(payload: {
 }
 
 export async function adminGetBooking(bookingId: string): Promise<{
-  booking: Record<string, unknown>;
-  vehicle: Record<string, unknown> | null;
-  renter: Record<string, unknown> | null;
+  booking: Tables<"bookings">;
+  vehicle: AdminBookingVehicleSnippet | null;
+  renter: AdminBookingRenterSnippet | null;
 }> {
   const data = await adminFetch<{
-    booking: Record<string, unknown>;
-    vehicle: Record<string, unknown> | null;
-    renter: Record<string, unknown> | null;
+    booking: Tables<"bookings">;
+    vehicle: AdminBookingVehicleSnippet | null;
+    renter: AdminBookingRenterSnippet | null;
   }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}`);
   return { booking: data.booking, vehicle: data.vehicle, renter: data.renter };
 }

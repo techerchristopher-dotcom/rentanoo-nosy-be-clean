@@ -17,6 +17,8 @@ export interface VehicleFormData {
   seats: string;
   doors: string;
   pricePerDay: string;
+  /** Tarif jour agence (réservations admin) — optionnel, voir `vehicles.price_per_day_agency` */
+  pricePerDayAgency: string;
   description: string;
   location: string;
   status: "active" | "inactive" | "review";
@@ -146,6 +148,7 @@ export const initialFormData: VehicleFormData = {
   seats: "",
   doors: "",
   pricePerDay: "",
+  pricePerDayAgency: "",
   description: "",
   location: "",
   status: "active",

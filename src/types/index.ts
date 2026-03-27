@@ -25,6 +25,9 @@ export type PaymentStatus =
 
 export type VehicleStatus = "draft" | "published" | "suspended";
 
+/** Aligné sur `bookings.pricing_mode` (contrainte SQL `web` | `admin`) */
+export type BookingPricingMode = "web" | "admin";
+
 export type Transmission = "manual" | "automatic";
 
 export type FuelType = "gasoline" | "diesel" | "electric" | "hybrid";
@@ -111,6 +114,8 @@ export interface Vehicle {
   transmission: Transmission;
   mileage: number;
   dailyPrice: number;
+  /** Tarif jour agence (`vehicles.price_per_day_agency`), distinct du tarif web */
+  pricePerDayAgency?: number | null;
   currency: "EUR";
   latitude: number;
   longitude: number;
@@ -212,6 +217,8 @@ export interface Booking {
   // Métadonnées
   createdAt: string;
   updatedAt: string;
+  /** Mode de pricing (`bookings.pricing_mode`) */
+  pricingMode?: BookingPricingMode;
   // État des lieux de départ associé (optionnel)
   checkinDepart?: CheckinDepartSummary;
 }
