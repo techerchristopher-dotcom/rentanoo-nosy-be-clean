@@ -90,6 +90,8 @@ export class SupabaseBookingsService {
         subtotal: bookingData.subtotal || 0,
         price_per_day: bookingData.pricePerDay || 0,
         rental_days: bookingData.rentalDays || null,
+        /** Parcours web uniquement (admin passe par l’API Express). */
+        pricing_mode: 'web',
       };
 
       const { data, error } = await supabase

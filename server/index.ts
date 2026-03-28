@@ -253,7 +253,7 @@ app.use(
 
 registerAdminRoutes(app, supabaseAdmin);
 console.log(
-  "✅ [AdminRoutes] Monté : POST /api/admin/bookings utilise la logique agence (tarif price_per_day_agency, pricing_mode=admin, service_fee=0)."
+  "✅ [AdminRoutes] Monté : POST /api/admin/bookings — build debug agency-v2-debug-20260328 (JSON debug_handler + en-têtes X-Rentanoo-*)."
 );
 
 // Configuration multer pour les fichiers

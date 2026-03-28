@@ -28,6 +28,30 @@ export type AdminBookingRenterSnippet = {
   phone: string | null;
 };
 
+/**
+ * Base URL du backend Express pour **tout** l’espace admin (`/api/admin/*`).
+ *
+ * - **Production** : définir `VITE_API_URL` (sans slash final) sur l’URL publique du service Express
+ *   (ex. `https://rentanoo-api.up.railway.app`) puis **rebuild** le front. Sinon les appels restent relatifs
+ *   à l’origine du SPA (`/api/...`), ce qui peut cibler un mauvais reverse-proxy.
+ * - **Développement** : laisser vide pour utiliser `/api/...` + proxy Vite → `localhost:3000`.
+ */
+let warnedMissingViteApiUrl = false;
+
+function resolveAdminApiUrl(path: string): string {
+  const base = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "") ?? "";
+  const p = path.startsWith("/") ? path : `/${path}`;
+
+  if (import.meta.env.PROD && !base && !warnedMissingViteApiUrl) {
+    warnedMissingViteApiUrl = true;
+    console.warn(
+      "[adminApi] VITE_API_URL n’est pas défini : POST/GET /api/admin/* partent sur l’origine actuelle du site. Pour forcer le bon Express, définissez VITE_API_URL dans le build front et redéployez."
+    );
+  }
+
+  return base ? `${base}${p}` : p;
+}
+
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const {
     data: { session },
@@ -36,7 +60,12 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error("Session expirée : reconnectez-vous.");
   }
 
-  const res = await fetch(path, {
+  const url = resolveAdminApiUrl(path);
+  if (import.meta.env.DEV) {
+    console.debug("[adminApi] fetch", init?.method ?? "GET", url);
+  }
+
+  const res = await fetch(url, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -65,7 +94,18 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`${msg}${suffix}`);
   }
 
-  return json as T;
+  const out = json as T & { debug_handler?: string };
+  if (out && typeof out === "object" && "debug_handler" in out) {
+    console.info("[adminApi] Preuve runtime handler admin booking:", {
+      requestUrl: url,
+      responseHeaderBuild: res.headers.get("X-Rentanoo-Admin-Booking-Build"),
+      responseHeaderHandler: res.headers.get("X-Rentanoo-Admin-Booking-Handler"),
+      debug_handler: (out as { debug_handler?: string }).debug_handler,
+      debug_build: (out as { debug_build?: string }).debug_build,
+    });
+  }
+
+  return out as T;
 }
 
 export async function adminSearchClients(q: string, limit = 20): Promise<AdminClientRow[]> {
@@ -86,6 +126,15 @@ export async function adminCreateWalkInClient(payload: {
   const data = await adminFetch<{ ok: boolean; client: AdminClientRow }>("/api/admin/clients/walk-in", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+  return data.client;
+}
+
+/** Met à jour le téléphone d’un locataire (service role côté serveur). POST comme les autres routes admin. */
+export async function adminUpdateRenterPhone(userId: string, phone: string): Promise<AdminClientRow> {
+  const data = await adminFetch<{ ok: boolean; client: AdminClientRow }>("/api/admin/clients/update-phone", {
+    method: "POST",
+    body: JSON.stringify({ userId, phone }),
   });
   return data.client;
 }

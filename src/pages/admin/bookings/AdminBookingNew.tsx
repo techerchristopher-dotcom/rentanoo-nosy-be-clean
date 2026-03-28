@@ -9,6 +9,7 @@ import {
   adminCreateBooking,
   adminCreateWalkInClient,
   adminSearchClients,
+  adminUpdateRenterPhone,
   type AdminClientRow,
 } from "@/services/adminApi";
 import { SupabaseVehiclesService, type Vehicle } from "@/services/supabaseVehiclesService";
@@ -69,6 +70,8 @@ export default function AdminBookingNew() {
   const [pickupLocation, setPickupLocation] = useState("Agence");
 
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [renterPhoneDraft, setRenterPhoneDraft] = useState("");
+  const [phoneSaveLoading, setPhoneSaveLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,6 +83,10 @@ export default function AdminBookingNew() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    setRenterPhoneDraft(selectedClient?.phone?.trim() ?? "");
+  }, [selectedClient?.id, selectedClient?.phone]);
 
   const selectedVehicle = useMemo(() => vehicles.find((v) => v.id === vehicleId) ?? null, [vehicles, vehicleId]);
 
@@ -183,6 +190,29 @@ export default function AdminBookingNew() {
     }
   };
 
+  const runSaveRenterPhone = async () => {
+    if (!selectedClient?.id) return;
+    const trimmed = renterPhoneDraft.trim();
+    if (!trimmed) {
+      toast({ title: "Téléphone requis", description: "Saisissez un numéro pour ce locataire.", variant: "destructive" });
+      return;
+    }
+    setPhoneSaveLoading(true);
+    try {
+      const client = await adminUpdateRenterPhone(selectedClient.id, trimmed);
+      setSelectedClient(client);
+      toast({ title: "Téléphone enregistré", description: "Le profil locataire a été mis à jour." });
+    } catch (e: unknown) {
+      toast({
+        title: "Enregistrement impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+    } finally {
+      setPhoneSaveLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl space-y-8">
       <div>
@@ -206,14 +236,42 @@ export default function AdminBookingNew() {
         </CardHeader>
         <CardContent className="space-y-6">
           {selectedClient ? (
-            <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
-              <div className="font-medium text-foreground">Sélectionné</div>
-              <div className="mt-1">
-                {(selectedClient.first_name || "") + " " + (selectedClient.last_name || "")}
+            <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm space-y-4">
+              <div>
+                <div className="font-medium text-foreground">Sélectionné</div>
+                <div className="mt-1">
+                  {(selectedClient.first_name || "") + " " + (selectedClient.last_name || "")}
+                </div>
+                <div className="text-muted-foreground">{selectedClient.email}</div>
               </div>
-              <div className="text-muted-foreground">{selectedClient.email}</div>
-              <div className="text-muted-foreground">{selectedClient.phone || "—"}</div>
-              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setSelectedClient(null)}>
+              <div className="space-y-2 pt-1 border-t border-border">
+                <Label htmlFor="admin-renter-phone">Téléphone (obligatoire pour créer la réservation)</Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <Input
+                    id="admin-renter-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="+33 6 12 34 56 78"
+                    value={renterPhoneDraft}
+                    onChange={(e) => setRenterPhoneDraft(e.target.value)}
+                    className="sm:max-w-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={phoneSaveLoading || renterPhoneDraft.trim() === (selectedClient.phone?.trim() ?? "")}
+                    onClick={runSaveRenterPhone}
+                  >
+                    {phoneSaveLoading ? "…" : "Enregistrer"}
+                  </Button>
+                </div>
+                {!selectedClient.phone?.trim() ? (
+                  <p className="text-xs text-amber-700 dark:text-amber-500">
+                    Aucun numéro en base : complétez-le avant de créer la réservation.
+                  </p>
+                ) : null}
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setSelectedClient(null)}>
                 Changer de client
               </Button>
             </div>

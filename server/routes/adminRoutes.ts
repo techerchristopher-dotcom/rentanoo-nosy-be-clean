@@ -3,8 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "../lib/adminAuth";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
 
-/** Identifiant de build côté admin booking — doit apparaître dans les logs et l’en-tête HTTP si ce code est exécuté. */
-const ADMIN_BOOKING_CREATE_BUILD_ID = "agency-v2-20260327";
+/** Build id — doit correspondre aux en-têtes HTTP et au champ debug de la réponse 201. */
+const ADMIN_BOOKING_CREATE_BUILD_ID = "agency-v2-debug-20260328";
+
+/** Identifiant fixe du handler (preuve runtime dans le JSON). */
+const DEBUG_HANDLER_ID = "admin-bookings-agency-v2";
 
 const CANCEL_LIKE = new Set(["cancelled", "declined", "rejected", "terminated"]);
 
@@ -262,6 +265,56 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
   });
 
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  /** POST (pas PATCH) : même style que search/walk-in/bookings — évite 404 sur certains proxys / hébergeurs statiques. */
+  app.post("/api/admin/clients/update-phone", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const userId = typeof req.body?.userId === "string" ? req.body.userId.trim() : "";
+    if (!userId || !uuidRe.test(userId)) {
+      return res.status(400).json({ ok: false, error: "INVALID_USER_ID", message: "Identifiant client invalide" });
+    }
+
+    const phone = typeof req.body?.phone === "string" ? req.body.phone.trim() : "";
+    if (!phone) {
+      return res.status(400).json({ ok: false, error: "PHONE_REQUIRED", message: "Téléphone requis" });
+    }
+
+    const { data: renter, error: renterErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, first_name, last_name, phone, role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (renterErr || !renter) {
+      return res.status(404).json({ ok: false, error: "CLIENT_NOT_FOUND", message: "Locataire introuvable" });
+    }
+    if (renter.role !== "renter") {
+      return res.status(400).json({ ok: false, error: "INVALID_ROLE", message: "Le compte cible doit être un locataire" });
+    }
+
+    const now = new Date().toISOString();
+    const { data: updated, error: updErr } = await supabaseAdmin
+      .from("profiles")
+      .update({ phone, updated_at: now })
+      .eq("id", userId)
+      .select("id, email, first_name, last_name, phone, role")
+      .single();
+
+    if (updErr || !updated) {
+      console.error("[admin/clients] update-phone", updErr);
+      return res.status(500).json({
+        ok: false,
+        error: "UPDATE_FAILED",
+        message: updErr?.message ?? "Mise à jour impossible",
+      });
+    }
+
+    return res.status(200).json({ ok: true, client: updated });
+  });
+
   app.post("/api/admin/bookings", async (req: Request, res: Response) => {
     const gate = await requireAdmin(req, supabaseAdmin);
     if (gate.ok === false) return res.status(gate.status).json(gate.body);
@@ -413,6 +466,26 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] pricing_mode avant insert =`, insertPayload.pricing_mode);
     console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] objet insertPayload (exact):`, JSON.stringify(insertPayload));
 
+    const webPpdForLog =
+      typeof vehicle.price_per_day === "string"
+        ? parseFloat(vehicle.price_per_day)
+        : Number(vehicle.price_per_day);
+    console.log("[ADMIN_BOOKINGS][PRE_INSERT_RUNTIME]", JSON.stringify({
+      build: ADMIN_BOOKING_CREATE_BUILD_ID,
+      handler: DEBUG_HANDLER_ID,
+      vehicle_id: vehicleId,
+      price_per_day_web: vehicle.price_per_day,
+      price_per_day_web_parsed: webPpdForLog,
+      price_per_day_agency_raw: vehicle.price_per_day_agency,
+      agencyPricePerDay_used_for_compute: agencyPricePerDay,
+      pricing_mode: insertPayload.pricing_mode,
+      service_fee: insertPayload.service_fee,
+      total_price: insertPayload.total_price,
+      base_price: insertPayload.base_price,
+      subtotal: insertPayload.subtotal,
+      insertPayload_exact: insertPayload,
+    }));
+
     const { data: inserted, error: insErr } = await supabaseAdmin
       .from("bookings")
       .insert(insertPayload)
@@ -426,7 +499,14 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
     console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] ligne retournée par Supabase après insert:`, JSON.stringify(inserted));
 
+    const debugInsertPayload = JSON.parse(JSON.stringify(insertPayload)) as Record<string, unknown>;
+    const webPpdNum =
+      typeof vehicle.price_per_day === "string"
+        ? parseFloat(vehicle.price_per_day)
+        : Number(vehicle.price_per_day);
+
     res.setHeader("X-Rentanoo-Admin-Booking-Build", ADMIN_BOOKING_CREATE_BUILD_ID);
+    res.setHeader("X-Rentanoo-Admin-Booking-Handler", "registerAdminRoutes.ts POST /api/admin/bookings");
     return res.status(201).json({
       ok: true,
       booking: {
@@ -434,6 +514,13 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
         status: inserted.status,
         createdAt: inserted.created_at,
       },
+      debug_handler: DEBUG_HANDLER_ID,
+      debug_build: ADMIN_BOOKING_CREATE_BUILD_ID,
+      debug_price_per_day_agency: agencyPricePerDay,
+      debug_price_per_day_web: Number.isFinite(webPpdNum) ? webPpdNum : vehicle.price_per_day,
+      debug_pricing_mode_before_insert: insertPayload.pricing_mode,
+      debug_insert_payload: debugInsertPayload,
+      debug_row_after_insert: inserted,
     });
   });
 

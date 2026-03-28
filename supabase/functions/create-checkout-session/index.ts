@@ -16,10 +16,10 @@
  *   "bookingId": string      // ID de la réservation (REQUIS)
  * }
  * 
- * La fonction lit la réservation depuis la DB et calcule le montant TTC :
- * - Montant TTC = subtotal + (subtotal × 0.15) [service fee renter 15%]
- * - Tous les montants sont en EUROS dans la DB
- * - Conversion en centimes pour Stripe : Math.round(amount * 100)
+ * La fonction lit la réservation depuis la DB (source de vérité) :
+ * - pricing_mode 'web' (ou absent / non 'admin') : TTC = subtotal + 15 % locataire (comportement historique).
+ * - pricing_mode 'admin' : pas de frais checkout — TTC = total_price du booking tel qu’en base.
+ * - EUROS en DB ; centimes Stripe : Math.round(amount * 100)
  * 
  * Réponse :
  * - 200 : { "url": "https://checkout.stripe.com/..." }
@@ -271,7 +271,9 @@ Deno.serve(async (req) => {
     
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
-      .select("subtotal, base_price, options_total, vehicle_id, start_date, end_date, user_id")
+      .select(
+        "subtotal, base_price, options_total, vehicle_id, start_date, end_date, user_id, pricing_mode, total_price",
+      )
       .eq("id", bookingId)
       .single();
 
@@ -293,28 +295,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Valider les données de prix
-    const subtotal = Number(booking.subtotal || 0);
-    
-    if (!subtotal || subtotal <= 0) {
-      console.error("❌ [create-checkout-session][FAIL][INVALID_SUBTOTAL] Subtotal invalide:", {
-        bookingId,
-        subtotal,
-        base_price: booking.base_price,
-        options_total: booking.options_total,
-        timestamp: new Date().toISOString(),
-      });
-      return new Response(
-        JSON.stringify({ ok: false, error: "Booking subtotal is invalid or missing" }),
-        { 
-          status: 400,
-          headers: { 
-            "Content-Type": "application/json",
-            ...corsHeaders
-          }
-        }
-      );
-    }
+    const pricingModeRaw = booking.pricing_mode;
+    const isAdminPricing = pricingModeRaw === "admin";
 
     const userId = booking?.user_id ?? null;
     let profile: { stripe_customer_id: string | null; email: string | null } | null = null;
@@ -332,37 +314,88 @@ Deno.serve(async (req) => {
     }
 
     // ============================================
-    // CALCUL DU MONTANT TTC (MÊME LOGIQUE QUE WEBHOOK)
+    // CALCUL DU MONTANT TTC (selon pricing_mode)
     // ============================================
-    
-    // Fonctions de calcul des fees (identique au webhook)
     const SERVICE_FEE_PERCENT_RENTER = 0.15;
-    
+
     function calcServiceFeeRenter(subtotal: number): number {
       return Math.round(subtotal * SERVICE_FEE_PERCENT_RENTER * 100) / 100;
     }
-    
+
     function calcRenterTotal(subtotal: number): number {
       const serviceFee = calcServiceFeeRenter(subtotal);
       return Math.round((subtotal + serviceFee) * 100) / 100;
     }
 
-    // Calculer le montant TTC à facturer
-    // UNITÉ : Tous les montants sont en EUROS dans la DB
-    const amountTTC = calcRenterTotal(subtotal); // euros
-    
-    console.log("💰 [create-checkout-session] Calcul montant depuis DB:", {
-      bookingId,
-      subtotal_DB: subtotal, // euros
-      service_fee_renter: calcServiceFeeRenter(subtotal), // euros
-      amountTTC: amountTTC, // euros
-      amountTTC_cents: Math.round(amountTTC * 100), // centimes (pour Stripe)
-    });
+    const subtotal = Number(booking.subtotal || 0);
+    let amountTTC: number;
+
+    if (isAdminPricing) {
+      const totalFromDb = Number(booking.total_price ?? 0);
+      if (!totalFromDb || totalFromDb <= 0) {
+        console.error("❌ [create-checkout-session][FAIL][INVALID_ADMIN_TOTAL] total_price invalide (admin):", {
+          bookingId,
+          pricing_mode: pricingModeRaw,
+          total_price: booking.total_price,
+          timestamp: new Date().toISOString(),
+        });
+        return new Response(
+          JSON.stringify({ ok: false, error: "Booking total_price is invalid or missing for admin pricing" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              ...corsHeaders,
+            },
+          },
+        );
+      }
+      amountTTC = Math.round(totalFromDb * 100) / 100;
+      console.log("💰 [create-checkout-session] Montant admin (total_price, sans frais checkout):", {
+        bookingId,
+        pricing_mode: pricingModeRaw,
+        total_price_DB: totalFromDb,
+        amountTTC,
+        amountTTC_cents: Math.round(amountTTC * 100),
+      });
+    } else {
+      if (!subtotal || subtotal <= 0) {
+        console.error("❌ [create-checkout-session][FAIL][INVALID_SUBTOTAL] Subtotal invalide:", {
+          bookingId,
+          pricing_mode: pricingModeRaw,
+          subtotal,
+          base_price: booking.base_price,
+          options_total: booking.options_total,
+          timestamp: new Date().toISOString(),
+        });
+        return new Response(
+          JSON.stringify({ ok: false, error: "Booking subtotal is invalid or missing" }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              ...corsHeaders,
+            },
+          },
+        );
+      }
+      amountTTC = calcRenterTotal(subtotal);
+      console.log("💰 [create-checkout-session] Montant web (subtotal + 15 %):", {
+        bookingId,
+        pricing_mode: pricingModeRaw ?? "web (default)",
+        subtotal_DB: subtotal,
+        service_fee_renter: calcServiceFeeRenter(subtotal),
+        amountTTC,
+        amountTTC_cents: Math.round(amountTTC * 100),
+      });
+    }
 
     // Générer la description depuis les données du booking
     const startDate = booking.start_date ? new Date(booking.start_date).toLocaleDateString("fr-FR") : "";
     const endDate = booking.end_date ? new Date(booking.end_date).toLocaleDateString("fr-FR") : "";
-    const description = `Location véhicule${startDate && endDate ? ` du ${startDate} au ${endDate}` : ""}`;
+    const description = `Location véhicule${isAdminPricing ? " (agence)" : ""}${
+      startDate && endDate ? ` du ${startDate} au ${endDate}` : ""
+    }`;
 
     // Vérifier les variables d'environnement
     const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY");

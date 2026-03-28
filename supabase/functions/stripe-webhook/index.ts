@@ -7,8 +7,11 @@
  *
  * Reçoit l'event checkout.session.completed
  * -> Récupère bookingId dans metadata
- * -> Calcule les montants
+ * -> Calcule les montants selon pricing_mode du booking (snapshots DB)
  * -> Met à jour la table 'bookings'
+ *
+ * - pricing_mode 'web' (ou autre que 'admin') : 15 % locataire + 15 % propriétaire sur subtotal (logique historique).
+ * - pricing_mode 'admin' : frais et commissions à 0 ; owner_payout_amount = subtotal ; platform_total_fee = 0.
  *
  * Variables d'environnement nécessaires :
  * - STRIPE_SECRET_KEY
@@ -140,7 +143,7 @@ Deno.serve(async (req: Request) => {
   // 6. On va chercher la réservation pour calculer les frais
   const { data: bookingRow, error: fetchErr } = await supabaseAdmin
     .from("bookings")
-    .select("subtotal")
+    .select("subtotal, pricing_mode")
     .eq("id", bookingId)
     .single();
 
@@ -156,35 +159,51 @@ Deno.serve(async (req: Request) => {
   }
 
   const commissionBase = Number(bookingRow?.subtotal || 0);
+  const isAdminPricing = bookingRow?.pricing_mode === "admin";
 
-  // 15% locataire / 15% propriétaire
-  // Fonctions de calcul des fees (inline pour éviter import externe)
+  // 15% locataire / 15% propriétaire (web uniquement)
   const SERVICE_FEE_PERCENT_RENTER = 0.15;
   const SERVICE_FEE_PERCENT_OWNER = 0.15;
-  
+
   function calcServiceFeeRenter(subtotal: number): number {
     return Math.round(subtotal * SERVICE_FEE_PERCENT_RENTER * 100) / 100;
   }
-  
+
   function calcServiceFeeOwner(subtotal: number): number {
     return Math.round(subtotal * SERVICE_FEE_PERCENT_OWNER * 100) / 100;
   }
-  
+
   function calcOwnerPayout(subtotal: number): number {
     const serviceFee = calcServiceFeeOwner(subtotal);
     return Math.round((subtotal - serviceFee) * 100) / 100;
   }
-  
+
   function calcPlatformTotalFee(subtotal: number): number {
     const renterFee = calcServiceFeeRenter(subtotal);
     const ownerFee = calcServiceFeeOwner(subtotal);
     return Math.round((renterFee + ownerFee) * 100) / 100;
   }
-  
-  const serviceFeeRenter = calcServiceFeeRenter(commissionBase);
-  const serviceFeeOwner = calcServiceFeeOwner(commissionBase);
-  const ownerPayoutAmount = calcOwnerPayout(commissionBase);
-  const platformTotalFee = calcPlatformTotalFee(commissionBase);
+
+  let serviceFeeRenter: number;
+  let serviceFeeOwner: number;
+  let ownerPayoutAmount: number;
+  let platformTotalFee: number;
+
+  if (isAdminPricing) {
+    serviceFeeRenter = 0;
+    serviceFeeOwner = 0;
+    ownerPayoutAmount = round2(commissionBase);
+    platformTotalFee = 0;
+    console.log("💰 [stripe-webhook] pricing_mode=admin — frais à 0, payout propriétaire = subtotal:", {
+      bookingId,
+      subtotal: commissionBase,
+    });
+  } else {
+    serviceFeeRenter = calcServiceFeeRenter(commissionBase);
+    serviceFeeOwner = calcServiceFeeOwner(commissionBase);
+    ownerPayoutAmount = calcOwnerPayout(commissionBase);
+    platformTotalFee = calcPlatformTotalFee(commissionBase);
+  }
 
   const now = new Date().toISOString();
 
