@@ -68,8 +68,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
       const rawQ = typeof req.body?.q === "string" ? req.body.q : "";
       const inner = sanitizeIlikePattern(rawQ);
-      if (inner.length < 2) {
-        return res.status(400).json({ ok: false, error: "QUERY_TOO_SHORT", message: "Saisir au moins 2 caractères" });
+      if (inner.length < 1) {
+        return res.status(400).json({ ok: false, error: "QUERY_TOO_SHORT", message: "Saisir au moins 1 caractère" });
       }
 
       const limit = Math.min(50, Math.max(1, Number(req.body?.limit) || 20));
@@ -82,8 +82,10 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
         last_name: string | null;
         phone: string | null;
         role: string | null;
+        created_at?: string;
       };
-      const sel = "id, email, first_name, last_name, phone, role";
+      // Inclure created_at : requis pour order() fiable côté PostgREST / certains projets Supabase
+      const sel = "id, email, first_name, last_name, phone, role, created_at";
       const base = () =>
         supabaseAdmin.from("profiles").select(sel).eq("role", "renter").order("created_at", { ascending: false }).limit(limit);
 

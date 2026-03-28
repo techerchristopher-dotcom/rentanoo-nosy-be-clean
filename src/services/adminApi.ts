@@ -31,15 +31,28 @@ export type AdminBookingRenterSnippet = {
 /**
  * Base URL du backend Express pour **tout** l’espace admin (`/api/admin/*`).
  *
- * - **Production** : définir `VITE_API_URL` (sans slash final) sur l’URL publique du service Express
- *   (ex. `https://rentanoo-api.up.railway.app`) puis **rebuild** le front. Sinon les appels restent relatifs
- *   à l’origine du SPA (`/api/...`), ce qui peut cibler un mauvais reverse-proxy.
+ * - **Production** : définir `VITE_API_URL` sur l’**origine** du service Express, sans `/api` à la fin
+ *   (ex. `https://rentanoo-api.up.railway.app`). Si vous mettez par erreur `.../api`, elle est corrigée
+ *   automatiquement. Rebuild obligatoire après changement.
  * - **Développement** : laisser vide pour utiliser `/api/...` + proxy Vite → `localhost:3000`.
  */
 let warnedMissingViteApiUrl = false;
 
+/**
+ * Base sans slash final. Si l’URL se termine par `/api`, on l’enlève : les chemins passés ici
+ * commencent déjà par `/api/...` — sinon on obtient `/api/api/admin/...` → 404 sur tout l’admin.
+ */
+function normalizeAdminApiBase(raw: string): string {
+  let s = raw.trim().replace(/\/+$/, "");
+  if (!s) return "";
+  if (s.endsWith("/api")) {
+    s = s.slice(0, -4).replace(/\/+$/, "");
+  }
+  return s;
+}
+
 function resolveAdminApiUrl(path: string): string {
-  const base = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "") ?? "";
+  const base = normalizeAdminApiBase(import.meta.env.VITE_API_URL ?? "");
   const p = path.startsWith("/") ? path : `/${path}`;
 
   if (import.meta.env.PROD && !base && !warnedMissingViteApiUrl) {

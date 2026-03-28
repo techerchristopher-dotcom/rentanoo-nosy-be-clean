@@ -286,7 +286,7 @@ export default function AdminBookingNew() {
                     value={searchQ}
                     onChange={(e) => setSearchQ(e.target.value)}
                   />
-                  <Button type="button" onClick={runSearch} disabled={searchLoading || searchQ.trim().length < 2}>
+                  <Button type="button" onClick={runSearch} disabled={searchLoading || searchQ.trim().length < 1}>
                     {searchLoading ? "…" : "Rechercher"}
                   </Button>
                 </div>
