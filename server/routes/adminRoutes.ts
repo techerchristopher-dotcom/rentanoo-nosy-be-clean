@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "../lib/adminAuth";
+import { getStripe } from "../lib/stripe";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
 
 /** Build id — doit correspondre aux en-têtes HTTP et au champ debug de la réponse 201. */
@@ -366,7 +367,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
     const { data: vehicle, error: vehErr } = await supabaseAdmin
       .from("vehicles")
-      .select("id, price_per_day, price_per_day_agency, available, brand, model")
+      .select("id, price_per_day, price_per_day_agency, available, brand, model, deposit_amount")
       .eq("id", vehicleId)
       .maybeSingle();
 
@@ -501,6 +502,39 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
     console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] ligne retournée par Supabase après insert:`, JSON.stringify(inserted));
 
+    // ============================================================================
+    // AUTO-TRANSITION AGENCE : pending -> pending_payment + snapshot caution
+    // (équivalent à l'acceptation owner côté web)
+    // ============================================================================
+    const depositAmountRaw = (vehicle as { deposit_amount?: number | null })?.deposit_amount;
+    const depositAmountSnapshot =
+      typeof depositAmountRaw === "number" && Number.isFinite(depositAmountRaw)
+        ? depositAmountRaw
+        : 1000;
+    const depositStatus = depositAmountSnapshot > 0 ? "pending" : "not_required";
+    const nowIso = new Date().toISOString();
+
+    const { data: afterTransition, error: transitionErr } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        status: "pending_payment",
+        deposit_amount_snapshot: depositAmountSnapshot,
+        deposit_status: depositStatus,
+        updated_at: nowIso,
+      })
+      .eq("id", inserted.id)
+      .select("id, status, created_at, pricing_mode, deposit_amount_snapshot, deposit_status")
+      .single();
+
+    if (transitionErr || !afterTransition) {
+      console.error("[admin/bookings] auto-transition pending -> pending_payment failed", transitionErr);
+      return res.status(500).json({
+        ok: false,
+        error: "AUTO_TRANSITION_FAILED",
+        message: transitionErr?.message ?? "Transition automatique vers pending_payment impossible",
+      });
+    }
+
     const debugInsertPayload = JSON.parse(JSON.stringify(insertPayload)) as Record<string, unknown>;
     const webPpdNum =
       typeof vehicle.price_per_day === "string"
@@ -512,9 +546,9 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     return res.status(201).json({
       ok: true,
       booking: {
-        id: inserted.id,
-        status: inserted.status,
-        createdAt: inserted.created_at,
+        id: afterTransition.id,
+        status: afterTransition.status,
+        createdAt: afterTransition.created_at,
       },
       debug_handler: DEBUG_HANDLER_ID,
       debug_build: ADMIN_BOOKING_CREATE_BUILD_ID,
@@ -523,6 +557,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       debug_pricing_mode_before_insert: insertPayload.pricing_mode,
       debug_insert_payload: debugInsertPayload,
       debug_row_after_insert: inserted,
+      debug_row_after_transition: afterTransition,
     });
   });
 
@@ -556,5 +591,168 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       vehicle: vehicle ?? null,
       renter: renter ?? null,
     });
+  });
+
+  // ============================================================================
+  // Admin-only deposit actions (agence) — opérées par un admin pour le locataire
+  // ============================================================================
+  app.post("/api/admin/deposit/create-setup-intent", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.body?.bookingId === "string" ? req.body.bookingId.trim() : "";
+    if (!bookingId) {
+      return res.status(400).json({ ok: false, error: "MISSING_BOOKING_ID", message: "bookingId requis" });
+    }
+
+    const { data: booking, error: bookingErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, user_id, status, deposit_status, deposit_amount_snapshot, stripe_payment_method_id, pricing_mode")
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingErr || !booking) {
+      return res.status(404).json({ ok: false, error: "BOOKING_NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    if (booking.pricing_mode !== "admin") {
+      return res.status(400).json({ ok: false, error: "NOT_ADMIN_PRICING", message: "Action caution admin uniquement (pricing_mode=admin)" });
+    }
+
+    const depositSnapshot = Number(booking.deposit_amount_snapshot ?? 0);
+    if (depositSnapshot <= 0) {
+      return res.status(400).json({ ok: false, error: "INVALID_DEPOSIT", message: "Caution non requise pour cette réservation" });
+    }
+
+    // Caution après paiement location : booking doit être confirmé
+    if (booking.status !== "confirmed") {
+      return res.status(400).json({ ok: false, error: "PAYMENT_REQUIRED", message: "Le paiement de la location doit être confirmé avant la caution" });
+    }
+
+    if (booking.deposit_status !== "pending") {
+      return res.status(400).json({ ok: false, error: "DEPOSIT_ALREADY_PROCESSED", message: "La caution a déjà été traitée" });
+    }
+
+    if (booking.stripe_payment_method_id) {
+      return res.status(400).json({ ok: false, error: "CARD_ALREADY_REGISTERED", message: "Une carte est déjà enregistrée pour cette caution" });
+    }
+
+    const renterId = booking.user_id;
+    if (!renterId) {
+      return res.status(400).json({ ok: false, error: "MISSING_RENTER", message: "Locataire manquant sur la réservation" });
+    }
+
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, stripe_customer_id")
+      .eq("id", renterId)
+      .single();
+
+    if (profileErr || !profile) {
+      return res.status(500).json({ ok: false, error: "PROFILE_NOT_FOUND", message: "Profil locataire introuvable" });
+    }
+
+    let stripeCustomerId = profile.stripe_customer_id;
+    if (!stripeCustomerId) {
+      const stripe = getStripe();
+      const customer = await stripe.customers.create({
+        email: profile.email || undefined,
+        metadata: { profileId: profile.id },
+      });
+      stripeCustomerId = customer.id;
+      await supabaseAdmin
+        .from("profiles")
+        .update({ stripe_customer_id: stripeCustomerId, updated_at: new Date().toISOString() })
+        .eq("id", renterId);
+    }
+
+    const stripe = getStripe();
+    const setupIntent = await stripe.setupIntents.create({
+      customer: stripeCustomerId,
+      payment_method_types: ["card"],
+      usage: "off_session",
+      metadata: { bookingId },
+    });
+
+    return res.status(200).json({ clientSecret: setupIntent.client_secret });
+  });
+
+  app.post("/api/admin/deposit/attach-payment-method", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.body?.bookingId === "string" ? req.body.bookingId.trim() : "";
+    const paymentMethodId = typeof req.body?.paymentMethodId === "string" ? req.body.paymentMethodId.trim() : "";
+    if (!bookingId || !paymentMethodId) {
+      return res.status(400).json({ ok: false, error: "MISSING_PARAMS", message: "bookingId et paymentMethodId requis" });
+    }
+
+    const { data: booking, error: bookingErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, user_id, status, deposit_status, deposit_amount_snapshot, stripe_payment_method_id, pricing_mode")
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingErr || !booking) {
+      return res.status(404).json({ ok: false, error: "BOOKING_NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    if (booking.pricing_mode !== "admin") {
+      return res.status(400).json({ ok: false, error: "NOT_ADMIN_PRICING", message: "Action caution admin uniquement (pricing_mode=admin)" });
+    }
+
+    const depositSnapshot = Number(booking.deposit_amount_snapshot ?? 0);
+    if (depositSnapshot <= 0) {
+      return res.status(400).json({ ok: false, error: "INVALID_DEPOSIT", message: "Caution non requise pour cette réservation" });
+    }
+
+    if (booking.status !== "confirmed") {
+      return res.status(400).json({ ok: false, error: "PAYMENT_REQUIRED", message: "Le paiement de la location doit être confirmé avant la caution" });
+    }
+
+    if (booking.deposit_status !== "pending") {
+      return res.status(400).json({ ok: false, error: "DEPOSIT_ALREADY_PROCESSED", message: "La caution a déjà été traitée" });
+    }
+
+    const renterId = booking.user_id;
+    if (!renterId) {
+      return res.status(400).json({ ok: false, error: "MISSING_RENTER", message: "Locataire manquant sur la réservation" });
+    }
+
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, stripe_customer_id")
+      .eq("id", renterId)
+      .single();
+
+    if (profileErr || !profile) {
+      return res.status(500).json({ ok: false, error: "PROFILE_NOT_FOUND", message: "Profil locataire introuvable" });
+    }
+
+    if (!profile.stripe_customer_id) {
+      return res.status(400).json({ ok: false, error: "STRIPE_CUSTOMER_MISSING", message: "Le client Stripe n'est pas initialisé pour ce locataire" });
+    }
+
+    const stripe = getStripe();
+    const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+    if (pm.customer !== profile.stripe_customer_id) {
+      await stripe.paymentMethods.attach(paymentMethodId, { customer: profile.stripe_customer_id });
+    }
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        stripe_payment_method_id: paymentMethodId,
+        deposit_status: "card_registered",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", bookingId);
+
+    if (updateErr) {
+      console.error("[admin/deposit/attach-payment-method] Update error:", updateErr);
+      return res.status(500).json({ ok: false, error: "UPDATE_FAILED", message: "Erreur lors de la mise à jour" });
+    }
+
+    return res.status(200).json({ ok: true });
   });
 }

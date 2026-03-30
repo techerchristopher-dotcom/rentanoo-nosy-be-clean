@@ -1,14 +1,22 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { adminGetBooking } from "@/services/adminApi";
 import { PageLoader } from "@/components/ui/page-loader";
+import { payerLocation } from "@/lib/payerLocation";
+import { DepositFlowModal } from "@/components/DepositFlowModal";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminBookingDetail() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const payRequested = searchParams.get("pay") === "1";
+  const autoPayAttemptedRef = useRef(false);
+  const [payLoading, setPayLoading] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [payload, setPayload] = useState<{
     booking: Record<string, unknown>;
@@ -75,6 +83,145 @@ export default function AdminBookingDetail() {
         ? String(b.total_price)
         : "—";
 
+  const canPayNow = status === "pending_payment";
+  const pricingMode = typeof (b as any).pricing_mode === "string" ? String((b as any).pricing_mode) : null;
+  const isAdminPricing = pricingMode === "admin";
+  const depositStatus = typeof (b as any).deposit_status === "string" ? String((b as any).deposit_status) : null;
+  const depositAmountSnapshot = Number((b as any).deposit_amount_snapshot ?? 0);
+  const stripePaymentMethodId = (b as any).stripe_payment_method_id ?? null;
+  const canTakeDeposit =
+    isAdminPricing &&
+    status === "confirmed" &&
+    depositStatus === "pending" &&
+    depositAmountSnapshot > 0 &&
+    !stripePaymentMethodId;
+  const paymentLabel = useMemo(() => {
+    if (status === "pending_payment") return "En attente de paiement";
+    if (status === "confirmed") return "Payée (confirmée)";
+    return status;
+  }, [status]);
+
+  const reservationForPayment = useMemo(() => {
+    if (!bookingId) return null;
+    if (!b || !v) return null;
+
+    const brand = typeof (v as any).brand === "string" ? (v as any).brand : "";
+    const model = typeof (v as any).model === "string" ? (v as any).model : "";
+    const voiture = `${brand} ${model}`.trim() || "Véhicule";
+
+    const startDate = String((b as any).start_date ?? "");
+    const endDate = String((b as any).end_date ?? "");
+    const dateDebut = startDate || "—";
+    const dateFin = endDate || "—";
+
+    // Affichage simple (le paiement n'utilise que reservation.id)
+    const montantDeBase = Number((b as any).subtotal ?? (b as any).total_price ?? 0) || 0;
+    const totalTTC = Number((b as any).total_price ?? (b as any).subtotal ?? 0) || 0;
+
+    return {
+      id: bookingId,
+      voiture,
+      dateDebut,
+      dateFin,
+      duree: "—",
+      montantDeBase,
+      fraisService: 0,
+      totalTTC,
+      extras: [],
+    };
+  }, [bookingId, b, v]);
+
+  const runPayNow = async () => {
+    if (!reservationForPayment) return;
+    if (!canPayNow) {
+      toast({
+        title: "Paiement indisponible",
+        description: `Statut actuel: ${status}. Le paiement est disponible uniquement en pending_payment.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPayLoading(true);
+    try {
+      await payerLocation(reservationForPayment);
+    } catch (e: unknown) {
+      toast({
+        title: "Paiement impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+    } finally {
+      setPayLoading(false);
+    }
+  };
+
+  const adminCreateSetupIntentClientSecret = async (bookingId: string): Promise<{ clientSecret: string }> => {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError || !session?.access_token) {
+      throw new Error("Session expirée : reconnectez-vous.");
+    }
+
+    const res = await fetch("/api/admin/deposit/create-setup-intent", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ bookingId }),
+    });
+    const raw = await res.text();
+    const json = raw ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : null;
+    if (!res.ok) {
+      const msg = (json?.message as string) || (json?.error as string) || `Erreur ${res.status}`;
+      throw new Error(msg);
+    }
+    if (!json?.clientSecret) {
+      throw new Error("Réponse serveur invalide (clientSecret manquant)");
+    }
+    return { clientSecret: String(json.clientSecret) };
+  };
+
+  const adminAttachPaymentMethod = async (bookingId: string, paymentMethodId: string): Promise<{ ok: boolean }> => {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError || !session?.access_token) {
+      throw new Error("Session expirée : reconnectez-vous.");
+    }
+
+    const res = await fetch("/api/admin/deposit/attach-payment-method", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ bookingId, paymentMethodId }),
+    });
+    const raw = await res.text();
+    const json = raw ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : null;
+    if (!res.ok) {
+      const msg = (json?.message as string) || (json?.error as string) || `Erreur ${res.status}`;
+      throw new Error(msg);
+    }
+    return { ok: json?.ok === true };
+  };
+
+  // Enchaînement naturel après création admin: /admin/bookings/:id?pay=1
+  useEffect(() => {
+    if (!payRequested) return;
+    if (autoPayAttemptedRef.current) return;
+    if (!canPayNow) return;
+    if (!reservationForPayment) return;
+    autoPayAttemptedRef.current = true;
+    void runPayNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payRequested, canPayNow, reservationForPayment]);
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
@@ -100,7 +247,7 @@ export default function AdminBookingDetail() {
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
               <div className="text-muted-foreground">Statut</div>
-              <div className="font-medium">{status}</div>
+              <div className="font-medium">{paymentLabel}</div>
             </div>
             <div>
               <div className="text-muted-foreground">Total (locataire)</div>
@@ -147,6 +294,38 @@ export default function AdminBookingDetail() {
             </div>
           ) : null}
 
+          <div className="border-t border-border pt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-muted-foreground">
+              {canPayNow
+                ? "La réservation est prête à payer (pending_payment)."
+                : status === "confirmed"
+                  ? "Paiement confirmé (confirmed)."
+                  : "Paiement disponible uniquement quand le statut est pending_payment."}
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button
+                type="button"
+                onClick={runPayNow}
+                disabled={!canPayNow || payLoading || !reservationForPayment}
+              >
+                {payLoading ? "Ouverture Stripe…" : "Passer au paiement"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDepositOpen(true)}
+                disabled={!canTakeDeposit}
+                title={
+                  canTakeDeposit
+                    ? "Activer la caution (enregistrement carte)"
+                    : "La caution est disponible après paiement confirmé, si une caution est requise et non déjà enregistrée."
+                }
+              >
+                Prendre la caution
+              </Button>
+            </div>
+          </div>
+
           <div className="border-t border-border pt-4 flex flex-wrap gap-3">
             <Button asChild variant="outline" size="sm">
               <Link to={`/checking/${bookingId}`}>État des lieux départ</Link>
@@ -157,6 +336,27 @@ export default function AdminBookingDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {bookingId ? (
+        <DepositFlowModal
+          isOpen={depositOpen}
+          onClose={() => setDepositOpen(false)}
+          bookingId={bookingId}
+          depositAmount={Number.isFinite(depositAmountSnapshot) ? depositAmountSnapshot : 0}
+          onSuccess={async () => {
+            try {
+              const data = await adminGetBooking(bookingId);
+              setPayload(data);
+              toast({ title: "Caution activée", description: "Carte enregistrée (deposit_status=card_registered)." });
+            } catch {
+              // Non-bloquant
+            }
+          }}
+          createClientSecretFn={adminCreateSetupIntentClientSecret}
+          attachPaymentMethodFn={adminAttachPaymentMethod}
+          returnUrl={`${window.location.origin}/admin/bookings/${encodeURIComponent(bookingId)}`}
+        />
+      ) : null}
     </div>
   );
 }

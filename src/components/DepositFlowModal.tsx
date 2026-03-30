@@ -24,6 +24,14 @@ interface DepositFlowModalProps {
   bookingId: string;
   depositAmount: number;
   onSuccess: () => void;
+  /**
+   * Optionnel : override des appels API (ex: mode admin/agence).
+   * Par défaut, utilise `/api/deposit/*` (mode locataire).
+   */
+  createClientSecretFn?: (bookingId: string) => Promise<{ clientSecret: string }>;
+  attachPaymentMethodFn?: (bookingId: string, paymentMethodId: string) => Promise<{ ok: boolean }>;
+  /** Optionnel : URL de retour Stripe (confirmSetup) */
+  returnUrl?: string;
 }
 
 function DepositPaymentForm({
@@ -34,6 +42,8 @@ function DepositPaymentForm({
   isSubmitting,
   setIsSubmitting,
   children,
+  attachPaymentMethodFn,
+  returnUrl,
 }: {
   bookingId: string;
   onSuccess: () => void;
@@ -42,6 +52,8 @@ function DepositPaymentForm({
   isSubmitting: boolean;
   setIsSubmitting: (v: boolean) => void;
   children: React.ReactNode;
+  attachPaymentMethodFn: (bookingId: string, paymentMethodId: string) => Promise<{ ok: boolean }>;
+  returnUrl: string;
 }) {
   const { t } = useTranslation("common");
   const stripe = useStripe();
@@ -56,7 +68,7 @@ function DepositPaymentForm({
       const { error, setupIntent } = await stripe.confirmSetup({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/me/renter/bookings`,
+          return_url: returnUrl,
         },
         redirect: "if_required",
       });
@@ -78,7 +90,7 @@ function DepositPaymentForm({
         return;
       }
 
-      await attachPaymentMethod(bookingId, pmId);
+      await attachPaymentMethodFn(bookingId, pmId);
       onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -134,12 +146,24 @@ function DepositPaymentForm({
   );
 }
 
-export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, onSuccess }: DepositFlowModalProps) {
+export function DepositFlowModal({
+  isOpen,
+  onClose,
+  bookingId,
+  depositAmount,
+  onSuccess,
+  createClientSecretFn,
+  attachPaymentMethodFn,
+  returnUrl,
+}: DepositFlowModalProps) {
   const { t } = useTranslation("common");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const createSecret = createClientSecretFn ?? createSetupIntentClientSecret;
+  const attachPm = attachPaymentMethodFn ?? attachPaymentMethod;
+  const resolvedReturnUrl = returnUrl ?? `${window.location.origin}/me/renter/bookings`;
 
   useEffect(() => {
     if (!isOpen || !bookingId) return;
@@ -148,7 +172,7 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
     setClientSecret(null);
     setLoading(true);
 
-    createSetupIntentClientSecret(bookingId)
+    createSecret(bookingId)
       .then(({ clientSecret: secret }) => {
         setClientSecret(secret);
       })
@@ -223,6 +247,8 @@ export function DepositFlowModal({ isOpen, onClose, bookingId, depositAmount, on
                 onError={handleError}
                 isSubmitting={isSubmitting}
                 setIsSubmitting={setIsSubmitting}
+                attachPaymentMethodFn={attachPm}
+                returnUrl={resolvedReturnUrl}
               >
                 <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                   {t("depositModal.description", "Aucun débit immédiat.\n\nVous enregistrez simplement votre carte pour sécuriser la caution de {{amount}}.\nUne empreinte pourra être réalisée automatiquement 48h avant le départ, puis libérée 48h après le retour si tout est conforme.\n\nSimple, sécurisé et sans surprise.", {
