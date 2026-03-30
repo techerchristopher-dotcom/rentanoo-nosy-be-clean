@@ -52,28 +52,11 @@ export default function AdminBookingDetail() {
     };
   }, [bookingId]);
 
-  if (!bookingId) {
-    return <p className="text-muted-foreground">ID manquant.</p>;
-  }
-
-  if (loading) {
-    return <PageLoader />;
-  }
-
-  if (!payload?.booking) {
-    return (
-      <div className="max-w-xl space-y-4">
-        <p className="text-muted-foreground">Réservation introuvable ou accès refusé.</p>
-        <Button asChild variant="outline">
-          <Link to="/admin/bookings/new">Nouvelle réservation</Link>
-        </Button>
-      </div>
-    );
-  }
-
-  const b = payload.booking;
-  const v = payload.vehicle;
-  const r = payload.renter;
+  // IMPORTANT: Tous les hooks ci-dessous doivent être appelés à chaque render
+  // (ne pas les placer après un return anticipé).
+  const b = payload?.booking ?? ({} as Record<string, unknown>);
+  const v = payload?.vehicle ?? null;
+  const r = payload?.renter ?? null;
 
   const status = typeof b.status === "string" ? b.status : "—";
   const total =
@@ -103,7 +86,7 @@ export default function AdminBookingDetail() {
 
   const reservationForPayment = useMemo(() => {
     if (!bookingId) return null;
-    if (!b || !v) return null;
+    if (!v) return null;
 
     const brand = typeof (v as any).brand === "string" ? (v as any).brand : "";
     const model = typeof (v as any).model === "string" ? (v as any).model : "";
@@ -221,6 +204,25 @@ export default function AdminBookingDetail() {
     void runPayNow();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [payRequested, canPayNow, reservationForPayment]);
+
+  if (!bookingId) {
+    return <p className="text-muted-foreground">ID manquant.</p>;
+  }
+
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  if (!payload?.booking) {
+    return (
+      <div className="max-w-xl space-y-4">
+        <p className="text-muted-foreground">Réservation introuvable ou accès refusé.</p>
+        <Button asChild variant="outline">
+          <Link to="/admin/bookings/new">Nouvelle réservation</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
