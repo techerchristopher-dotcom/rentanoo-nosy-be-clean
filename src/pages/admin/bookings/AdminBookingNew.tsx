@@ -178,7 +178,7 @@ export default function AdminBookingNew() {
         pickupLocation: pickupLocation.trim() || "Agence",
       });
       toast({ title: "Réservation créée", description: `Réf. ${booking.id.slice(0, 8)}…` });
-      navigate(`/admin/bookings/${booking.id}?pay=1`);
+      navigate(`/admin/bookings/${booking.id}`);
     } catch (e: unknown) {
       toast({
         title: "Création impossible",

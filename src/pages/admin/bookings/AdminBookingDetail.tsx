@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -12,9 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 export default function AdminBookingDetail() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
-  const payRequested = searchParams.get("pay") === "1";
-  const autoPayAttemptedRef = useRef(false);
   const [payLoading, setPayLoading] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -193,17 +190,6 @@ export default function AdminBookingDetail() {
     }
     return { ok: json?.ok === true };
   };
-
-  // Enchaînement naturel après création admin: /admin/bookings/:id?pay=1
-  useEffect(() => {
-    if (!payRequested) return;
-    if (autoPayAttemptedRef.current) return;
-    if (!canPayNow) return;
-    if (!reservationForPayment) return;
-    autoPayAttemptedRef.current = true;
-    void runPayNow();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payRequested, canPayNow, reservationForPayment]);
 
   if (!bookingId) {
     return <p className="text-muted-foreground">ID manquant.</p>;
