@@ -5,6 +5,7 @@ import {
   hasPurchaseConversionBeenSent,
   markPurchaseConversionSent,
 } from "@/lib/gtag";
+import { adminGetBooking } from "@/services/adminApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
@@ -38,6 +39,8 @@ export default function PaymentSuccess() {
     // Vérifier le paiement (backend Stripe) + conversion Google Ads + redirection
     const verifyPayment = async () => {
       try {
+        let bookingIdFromStripe: string | null = null;
+
         // 1) Récupérer les détails de la session (backend-confirmed : Stripe vérifie payment_status)
         if (sessionIdFromUrl) {
           const res = await fetch(
@@ -56,13 +59,41 @@ export default function PaymentSuccess() {
               markPurchaseConversionSent(sessionIdFromUrl);
             }
           }
+
+          bookingIdFromStripe = typeof data?.booking_id === "string" ? data.booking_id : null;
         }
 
         // 2) Attendre pour laisser le webhook mettre à jour la DB
         console.log("⏳ [PaymentSuccess] Attente webhook (2s)...");
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        console.log("✅ [PaymentSuccess] Redirection vers bookings...");
+
+        // 3) Retour spécifique admin/agence (fallback obligatoire vers web)
+        if (bookingIdFromStripe) {
+          try {
+            const adminPayload = await adminGetBooking(bookingIdFromStripe);
+            const pricingMode =
+              typeof (adminPayload?.booking as any)?.pricing_mode === "string"
+                ? String((adminPayload.booking as any).pricing_mode)
+                : null;
+
+            if (pricingMode === "admin") {
+              console.log("✅ [PaymentSuccess] Retour admin détecté, redirection vers fiche admin", {
+                bookingId: bookingIdFromStripe,
+              });
+              setIsVerifying(false);
+              navigate(`/admin/bookings/${encodeURIComponent(bookingIdFromStripe)}?afterPayment=1`);
+              return;
+            }
+          } catch (e) {
+            // Silent fallback vers le comportement web existant
+            console.warn("⚠️ [PaymentSuccess] Détection admin impossible, fallback web", {
+              bookingId: bookingIdFromStripe,
+              message: e instanceof Error ? e.message : String(e),
+            });
+          }
+        }
+
+        console.log("✅ [PaymentSuccess] Redirection vers bookings (web)...");
         setIsVerifying(false);
         navigate("/me/renter/bookings?afterPayment=1");
       } catch (err) {
