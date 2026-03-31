@@ -23,6 +23,12 @@ export default function AdminLayout() {
             <Link to="/admin/drafts" className="hover:text-primary transition-colors">
               Mes brouillons
             </Link>
+            <span aria-hidden className="text-border">
+              /
+            </span>
+            <Link to="/admin/planning" className="hover:text-primary transition-colors">
+              Planning
+            </Link>
           </nav>
           <Outlet />
         </div>

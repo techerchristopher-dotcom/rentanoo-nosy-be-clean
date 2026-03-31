@@ -67,7 +67,161 @@ function generateStrongPassword(): string {
   return crypto.randomBytes(18).toString("base64url");
 }
 
+function isValidYmd(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [ys, ms, ds] = s.split("-");
+  const y = Number(ys);
+  const m = Number(ms);
+  const d = Number(ds);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return false;
+  if (m < 1 || m > 12) return false;
+  if (d < 1 || d > 31) return false;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
 export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient) {
+  // ============================================================================
+  // Admin planning (Phase 1 backend) — source de vérité pour futur Gantt admin
+  // ============================================================================
+  app.get("/api/admin/planning", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const start = typeof req.query?.start === "string" ? req.query.start.trim() : "";
+    const end = typeof req.query?.end === "string" ? req.query.end.trim() : "";
+    if (!start) return res.status(400).json({ ok: false, error: "MISSING_START", message: "Paramètre 'start' requis (YYYY-MM-DD)" });
+    if (!end) return res.status(400).json({ ok: false, error: "MISSING_END", message: "Paramètre 'end' requis (YYYY-MM-DD)" });
+    if (!isValidYmd(start)) return res.status(400).json({ ok: false, error: "INVALID_START", message: "Paramètre 'start' invalide (YYYY-MM-DD)" });
+    if (!isValidYmd(end)) return res.status(400).json({ ok: false, error: "INVALID_END", message: "Paramètre 'end' invalide (YYYY-MM-DD)" });
+    if (end < start) return res.status(400).json({ ok: false, error: "INVALID_RANGE", message: "La fin doit être >= au début" });
+
+    const qRaw = typeof req.query?.q === "string" ? req.query.q : "";
+    const q = sanitizeIlikePattern(qRaw);
+    const vehicleType = typeof req.query?.vehicle_type === "string" ? req.query.vehicle_type.trim() : "";
+    const includeInactiveRaw = typeof req.query?.include_inactive === "string" ? req.query.include_inactive.trim() : "";
+    const includeInactive = includeInactiveRaw === "0" ? false : true; // défaut "1"
+
+    type PlanningVehicleRow = {
+      id: string;
+      brand: string;
+      model: string;
+      available: boolean | null;
+      status: "active" | "inactive" | "review" | null;
+      vehicle_type: "car" | "moto" | "scooter" | null;
+      vehicle_category: string | null;
+    };
+
+    let vq = supabaseAdmin
+      .from("vehicles")
+      .select("id, brand, model, available, status, vehicle_type, vehicle_category");
+
+    // Par défaut : toute la flotte.
+    // include_inactive=0 => masquer véhicules non exploitables.
+    if (!includeInactive) {
+      vq = vq.eq("available", true).or("status.is.null,status.eq.active");
+    }
+
+    if (vehicleType) {
+      vq = vq.eq("vehicle_type", vehicleType);
+    }
+
+    if (q) {
+      const pattern = `%${q}%`;
+      vq = vq.or(`brand.ilike.${pattern},model.ilike.${pattern}`);
+    }
+
+    const { data: vehicles, error: vehErr } = await vq.order("created_at", { ascending: false });
+    if (vehErr) {
+      console.error("[admin/planning] vehicles", vehErr);
+      return res.status(500).json({ ok: false, error: "VEHICLES_FETCH_FAILED", message: vehErr.message });
+    }
+
+    const vRows = (vehicles ?? []) as PlanningVehicleRow[];
+    const vehicleIds = vRows.map((v) => v.id).filter(Boolean);
+
+    type PlanningBookingRow = {
+      id: string;
+      vehicle_id: string;
+      user_id: string;
+      start_date: string;
+      end_date: string;
+      start_time: string | null;
+      end_time: string | null;
+      status: string | null;
+      pricing_mode: string | null;
+      reference_number: number | null;
+      pickup_location: string | null;
+    };
+
+    const cancelLike = '("cancelled","declined","rejected","terminated")';
+
+    let bq = supabaseAdmin
+      .from("bookings")
+      .select("id, vehicle_id, user_id, start_date, end_date, start_time, end_time, status, pricing_mode, reference_number, pickup_location")
+      .lte("start_date", end)
+      .gte("end_date", start)
+      .not("status", "in", cancelLike);
+
+    if (vehicleIds.length > 0) {
+      bq = bq.in("vehicle_id", vehicleIds);
+    } else {
+      // Aucune ligne véhicules => retourner vide (évite query bookings large).
+      return res.status(200).json({
+        ok: true,
+        range: { start, end },
+        vehicles: [],
+        bookings: [],
+      });
+    }
+
+    const { data: bookings, error: bookErr } = await bq.order("start_date", { ascending: true });
+    if (bookErr) {
+      console.error("[admin/planning] bookings", bookErr);
+      return res.status(500).json({ ok: false, error: "BOOKINGS_FETCH_FAILED", message: bookErr.message });
+    }
+
+    const bRows = (bookings ?? []) as PlanningBookingRow[];
+    const renterIds = Array.from(new Set(bRows.map((b) => b.user_id).filter(Boolean)));
+
+    type RenterRow = {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+      phone: string | null;
+    };
+
+    const renterById = new Map<string, RenterRow>();
+    if (renterIds.length > 0) {
+      const { data: renters, error: renterErr } = await supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name, email, phone")
+        .in("id", renterIds);
+
+      if (renterErr) {
+        // Ne pas faire échouer toute la route : renter peut être null.
+        console.warn("[admin/planning] renters lookup failed (non-bloquant):", renterErr.message);
+      } else {
+        for (const r of (renters ?? []) as RenterRow[]) {
+          if (r?.id) renterById.set(r.id, r);
+        }
+      }
+    }
+
+    const enrichedBookings = bRows.map((b) => ({
+      ...b,
+      renter: renterById.get(b.user_id) ?? null,
+    }));
+
+    return res.status(200).json({
+      ok: true,
+      range: { start, end },
+      vehicles: vRows,
+      bookings: enrichedBookings,
+    });
+  });
+
   // ============================================================================
   // Admin booking drafts (V1)
   // ============================================================================
