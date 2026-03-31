@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,12 @@ import {
   adminUpdateRenterPhone,
   type AdminClientRow,
 } from "@/services/adminApi";
+import {
+  adminDraftConvert,
+  adminDraftCreate,
+  adminDraftGet,
+  adminDraftUpdate,
+} from "@/services/adminDraftsApi";
 import { SupabaseVehiclesService, type Vehicle } from "@/services/supabaseVehiclesService";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
 
@@ -47,6 +53,8 @@ function defaultDateYmd(offsetDays: number): string {
 export default function AdminBookingNew() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftIdFromUrl = searchParams.get("draftId")?.trim() || "";
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleId, setVehicleId] = useState("");
@@ -72,6 +80,9 @@ export default function AdminBookingNew() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [renterPhoneDraft, setRenterPhoneDraft] = useState("");
   const [phoneSaveLoading, setPhoneSaveLoading] = useState(false);
+  const [draftId, setDraftId] = useState<string>("");
+  const [draftSaveLoading, setDraftSaveLoading] = useState(false);
+  const [draftConvertLoading, setDraftConvertLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +94,63 @@ export default function AdminBookingNew() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    setDraftId(draftIdFromUrl);
+  }, [draftIdFromUrl]);
+
+  useEffect(() => {
+    if (!draftIdFromUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await adminDraftGet(draftIdFromUrl);
+        if (cancelled) return;
+
+        setVehicleId(d.vehicle_id ?? "");
+        setStartDate(d.start_date ?? defaultDateYmd(0));
+        setEndDate(d.end_date ?? defaultDateYmd(2));
+        setStartTime(d.start_time ?? "10:00");
+        setEndTime(d.end_time ?? "10:00");
+        setPickupLocation(d.pickup_location ?? "Agence");
+
+        const wRaw = d.walk_in_payload;
+        const w = wRaw && typeof wRaw === "object" ? (wRaw as Record<string, unknown>) : {};
+        const wEmail = typeof w.email === "string" ? w.email : "";
+        const wFirst = typeof w.firstName === "string" ? w.firstName : "";
+        const wLast = typeof w.lastName === "string" ? w.lastName : "";
+        const wPhone = typeof w.phone === "string" ? w.phone : "";
+
+        if (d.renter_user_id) {
+          setSelectedClient({
+            id: d.renter_user_id,
+            email: wEmail || null,
+            first_name: wFirst || null,
+            last_name: wLast || null,
+            phone: wPhone || null,
+            role: "renter",
+          });
+        } else if (wEmail || wFirst || wLast || wPhone) {
+          setWiEmail(wEmail);
+          setWiFirst(wFirst);
+          setWiLast(wLast);
+          setWiPhone(wPhone);
+        }
+
+        toast({ title: "Brouillon chargé", description: `Brouillon ${d.id.slice(0, 8)}…` });
+      } catch (e: unknown) {
+        toast({
+          title: "Chargement du brouillon impossible",
+          description: e instanceof Error ? e.message : "Erreur",
+          variant: "destructive",
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftIdFromUrl]);
 
   useEffect(() => {
     setRenterPhoneDraft(selectedClient?.phone?.trim() ?? "");
@@ -210,6 +278,106 @@ export default function AdminBookingNew() {
       });
     } finally {
       setPhoneSaveLoading(false);
+    }
+  };
+
+  const buildDraftPayload = () => {
+    const clientSnapshot =
+      selectedClient
+        ? {
+            email: selectedClient.email ?? "",
+            firstName: selectedClient.first_name ?? "",
+            lastName: selectedClient.last_name ?? "",
+            phone: renterPhoneDraft.trim() || selectedClient.phone || "",
+          }
+        : {
+            email: wiEmail.trim(),
+            firstName: wiFirst.trim(),
+            lastName: wiLast.trim(),
+            phone: wiPhone.trim(),
+          };
+
+    const pricingSnapshot = pricePreview
+      ? {
+          vehicleId: selectedVehicle?.id ?? null,
+          agencyPpd: pricePreview.agencyPpd,
+          basePrice: pricePreview.basePrice,
+          rentalDays: pricePreview.rentalDays,
+          subtotal: pricePreview.subtotal,
+          total: pricePreview.total,
+        }
+      : null;
+
+    return {
+      status: "draft",
+      progressStep: "booking",
+      renterUserId: selectedClient?.id ?? null,
+      walkInPayload: clientSnapshot,
+      vehicleId: vehicleId || null,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      startTime: startTime || null,
+      endTime: endTime || null,
+      pickupLocation: pickupLocation.trim() || "Agence",
+      notesAdmin: null,
+      pricingSnapshot,
+    };
+  };
+
+  const saveDraftOrThrow = async (): Promise<string> => {
+    const payload = buildDraftPayload();
+    const d = draftId ? await adminDraftUpdate(draftId, payload) : await adminDraftCreate(payload);
+
+    if (!draftId) {
+      setDraftId(d.id);
+      navigate(`/admin/bookings/new?draftId=${encodeURIComponent(d.id)}`, { replace: true });
+    }
+
+    return d.id;
+  };
+
+  const runSaveDraft = async () => {
+    setDraftSaveLoading(true);
+    try {
+      const id = await saveDraftOrThrow();
+      toast({ title: "Brouillon enregistré", description: `Brouillon ${id.slice(0, 8)}…` });
+    } catch (e: unknown) {
+      toast({
+        title: "Enregistrement impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+    } finally {
+      setDraftSaveLoading(false);
+    }
+  };
+
+  const runConvertDraft = async () => {
+    if (!draftId) {
+      toast({ title: "Brouillon requis", description: "Enregistrez d’abord le brouillon.", variant: "destructive" });
+      return;
+    }
+    setDraftConvertLoading(true);
+    try {
+      await saveDraftOrThrow();
+      const out = await adminDraftConvert(draftId);
+      if (out.createdClientPassword) {
+        toast({
+          title: "Client créé à la conversion",
+          description: `Mot de passe généré (à transmettre) : ${out.createdClientPassword}`,
+        });
+      } else {
+        toast({ title: "Conversion OK", description: `Réservation ${out.bookingId.slice(0, 8)}…` });
+      }
+      navigate(`/admin/bookings/${out.bookingId}`);
+    } catch (e: unknown) {
+      toast({
+        title: "Conversion impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+    } finally {
+      setDraftConvertLoading(false);
     }
   };
 
@@ -424,6 +592,18 @@ export default function AdminBookingNew() {
       </Card>
 
       <div className="flex flex-wrap gap-3">
+        <Button type="button" size="lg" variant="secondary" onClick={runSaveDraft} disabled={draftSaveLoading}>
+          {draftSaveLoading ? "Enregistrement…" : "Enregistrer comme brouillon"}
+        </Button>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          onClick={runConvertDraft}
+          disabled={draftConvertLoading || !draftId}
+        >
+          {draftConvertLoading ? "Conversion…" : "Convertir le brouillon"}
+        </Button>
         <Button
           type="button"
           size="lg"

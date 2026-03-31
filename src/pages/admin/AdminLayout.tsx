@@ -17,6 +17,12 @@ export default function AdminLayout() {
             <Link to="/admin/bookings/new" className="hover:text-primary transition-colors">
               Nouvelle réservation
             </Link>
+            <span aria-hidden className="text-border">
+              /
+            </span>
+            <Link to="/admin/drafts" className="hover:text-primary transition-colors">
+              Mes brouillons
+            </Link>
           </nav>
           <Outlet />
         </div>

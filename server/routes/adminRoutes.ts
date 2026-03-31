@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 import { requireAdmin } from "../lib/adminAuth";
 import { getStripe } from "../lib/stripe";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
@@ -52,7 +53,481 @@ function logSupabaseError(ctx: string, err: { message?: string; code?: string; d
   });
 }
 
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function normalizeEmail(email: unknown): string {
+  return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+function generateStrongPassword(): string {
+  // No storage: generated at conversion time only, returned once.
+  // 18 chars base64url => ~24 chars, URL-safe.
+  return crypto.randomBytes(18).toString("base64url");
+}
+
 export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient) {
+  // ============================================================================
+  // Admin booking drafts (V1)
+  // ============================================================================
+  type DraftRow = {
+    id: string;
+    created_by_admin_id: string;
+    status: string;
+    progress_step: string;
+    renter_user_id: string | null;
+    walk_in_payload: unknown | null;
+    vehicle_id: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    pickup_location: string | null;
+    notes_admin: string | null;
+    pricing_snapshot: unknown | null;
+    converted_booking_id: string | null;
+    created_at: string;
+    updated_at: string;
+  };
+
+  function draftSelect() {
+    return [
+      "id",
+      "created_by_admin_id",
+      "status",
+      "progress_step",
+      "renter_user_id",
+      "walk_in_payload",
+      "vehicle_id",
+      "start_date",
+      "end_date",
+      "start_time",
+      "end_time",
+      "pickup_location",
+      "notes_admin",
+      "pricing_snapshot",
+      "converted_booking_id",
+      "created_at",
+      "updated_at",
+    ].join(", ");
+  }
+
+  app.post("/api/admin/drafts", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const adminId = gate.userId;
+
+    const payload = req.body ?? {};
+    const status = typeof payload?.status === "string" && payload.status.trim() ? payload.status.trim() : "draft";
+    const progressStep =
+      typeof payload?.progressStep === "string" && payload.progressStep.trim() ? payload.progressStep.trim() : "client";
+
+    const renterUserId = typeof payload?.renterUserId === "string" ? payload.renterUserId.trim() : "";
+    const walkInPayload = payload?.walkInPayload ?? null;
+
+    const vehicleId = typeof payload?.vehicleId === "string" ? payload.vehicleId.trim() : "";
+    const startDate = typeof payload?.startDate === "string" ? payload.startDate.trim() : "";
+    const endDate = typeof payload?.endDate === "string" ? payload.endDate.trim() : "";
+    const startTime = typeof payload?.startTime === "string" ? payload.startTime.trim() : "";
+    const endTime = typeof payload?.endTime === "string" ? payload.endTime.trim() : "";
+    const pickupLocation = typeof payload?.pickupLocation === "string" ? payload.pickupLocation.trim() : "";
+    const notesAdmin = typeof payload?.notesAdmin === "string" ? payload.notesAdmin.trim() : "";
+    const pricingSnapshot = payload?.pricingSnapshot ?? null;
+
+    const row = {
+      created_by_admin_id: adminId,
+      status,
+      progress_step: progressStep,
+      renter_user_id: renterUserId || null,
+      walk_in_payload: walkInPayload,
+      vehicle_id: vehicleId || null,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      start_time: startTime || null,
+      end_time: endTime || null,
+      pickup_location: pickupLocation || null,
+      notes_admin: notesAdmin || null,
+      pricing_snapshot: pricingSnapshot,
+      updated_at: nowIso(),
+    };
+
+    const { data, error } = await supabaseAdmin.from("admin_booking_drafts").insert(row).select(draftSelect()).single();
+    if (error || !data) {
+      console.error("[admin/drafts] create", error);
+      return res.status(500).json({ ok: false, error: "DRAFT_CREATE_FAILED", message: error?.message ?? "Création impossible" });
+    }
+    return res.status(201).json({ ok: true, draft: data as DraftRow });
+  });
+
+  app.get("/api/admin/drafts", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const adminId = gate.userId;
+
+    const { data, error } = await supabaseAdmin
+      .from("admin_booking_drafts")
+      .select(draftSelect())
+      .eq("created_by_admin_id", adminId)
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      console.error("[admin/drafts] list", error);
+      return res.status(500).json({ ok: false, error: "DRAFT_LIST_FAILED", message: error.message });
+    }
+
+    return res.status(200).json({ ok: true, drafts: (data ?? []) as DraftRow[] });
+  });
+
+  app.get("/api/admin/drafts/:draftId", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const adminId = gate.userId;
+
+    const draftId = typeof req.params?.draftId === "string" ? req.params.draftId.trim() : "";
+    if (!draftId) return res.status(400).json({ ok: false, error: "INVALID_DRAFT_ID", message: "draftId invalide" });
+
+    const { data, error } = await supabaseAdmin
+      .from("admin_booking_drafts")
+      .select(draftSelect())
+      .eq("id", draftId)
+      .eq("created_by_admin_id", adminId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[admin/drafts] get", error);
+      return res.status(500).json({ ok: false, error: "DRAFT_GET_FAILED", message: error.message });
+    }
+    if (!data) return res.status(404).json({ ok: false, error: "DRAFT_NOT_FOUND", message: "Brouillon introuvable" });
+
+    return res.status(200).json({ ok: true, draft: data as DraftRow });
+  });
+
+  app.patch("/api/admin/drafts/:draftId", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const adminId = gate.userId;
+
+    const draftId = typeof req.params?.draftId === "string" ? req.params.draftId.trim() : "";
+    if (!draftId) return res.status(400).json({ ok: false, error: "INVALID_DRAFT_ID", message: "draftId invalide" });
+
+    const payload = req.body ?? {};
+    const patch: Record<string, unknown> = { updated_at: nowIso() };
+
+    if (typeof payload?.status === "string") patch.status = payload.status.trim() || "draft";
+    if (typeof payload?.progressStep === "string") patch.progress_step = payload.progressStep.trim() || "client";
+
+    if (typeof payload?.renterUserId === "string") patch.renter_user_id = payload.renterUserId.trim() || null;
+    if ("walkInPayload" in payload) patch.walk_in_payload = payload.walkInPayload ?? null;
+
+    if (typeof payload?.vehicleId === "string") patch.vehicle_id = payload.vehicleId.trim() || null;
+    if (typeof payload?.startDate === "string") patch.start_date = payload.startDate.trim() || null;
+    if (typeof payload?.endDate === "string") patch.end_date = payload.endDate.trim() || null;
+    if (typeof payload?.startTime === "string") patch.start_time = payload.startTime.trim() || null;
+    if (typeof payload?.endTime === "string") patch.end_time = payload.endTime.trim() || null;
+    if (typeof payload?.pickupLocation === "string") patch.pickup_location = payload.pickupLocation.trim() || null;
+    if (typeof payload?.notesAdmin === "string") patch.notes_admin = payload.notesAdmin.trim() || null;
+    if ("pricingSnapshot" in payload) patch.pricing_snapshot = payload.pricingSnapshot ?? null;
+
+    const { data, error } = await supabaseAdmin
+      .from("admin_booking_drafts")
+      .update(patch)
+      .eq("id", draftId)
+      .eq("created_by_admin_id", adminId)
+      .select(draftSelect())
+      .maybeSingle();
+
+    if (error) {
+      console.error("[admin/drafts] update", error);
+      return res.status(500).json({ ok: false, error: "DRAFT_UPDATE_FAILED", message: error.message });
+    }
+    if (!data) return res.status(404).json({ ok: false, error: "DRAFT_NOT_FOUND", message: "Brouillon introuvable" });
+
+    return res.status(200).json({ ok: true, draft: data as DraftRow });
+  });
+
+  app.delete("/api/admin/drafts/:draftId", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const adminId = gate.userId;
+
+    const draftId = typeof req.params?.draftId === "string" ? req.params.draftId.trim() : "";
+    if (!draftId) return res.status(400).json({ ok: false, error: "INVALID_DRAFT_ID", message: "draftId invalide" });
+
+    const { data, error } = await supabaseAdmin
+      .from("admin_booking_drafts")
+      .delete()
+      .eq("id", draftId)
+      .eq("created_by_admin_id", adminId)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("[admin/drafts] delete", error);
+      return res.status(500).json({ ok: false, error: "DRAFT_DELETE_FAILED", message: error.message });
+    }
+    if (!data) return res.status(404).json({ ok: false, error: "DRAFT_NOT_FOUND", message: "Brouillon introuvable" });
+
+    return res.status(200).json({ ok: true });
+  });
+
+  app.post("/api/admin/drafts/:draftId/convert", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const adminId = gate.userId;
+
+    const draftId = typeof req.params?.draftId === "string" ? req.params.draftId.trim() : "";
+    if (!draftId) return res.status(400).json({ ok: false, error: "INVALID_DRAFT_ID", message: "draftId invalide" });
+
+    const { data: draft, error: dErr } = await supabaseAdmin
+      .from("admin_booking_drafts")
+      .select(draftSelect())
+      .eq("id", draftId)
+      .eq("created_by_admin_id", adminId)
+      .maybeSingle();
+
+    if (dErr) {
+      console.error("[admin/drafts] convert:get", dErr);
+      return res.status(500).json({ ok: false, error: "DRAFT_GET_FAILED", message: dErr.message });
+    }
+    if (!draft) return res.status(404).json({ ok: false, error: "DRAFT_NOT_FOUND", message: "Brouillon introuvable" });
+
+    const existingBookingId = (draft as DraftRow).converted_booking_id;
+    if (existingBookingId) {
+      return res.status(200).json({ ok: true, bookingId: existingBookingId, alreadyConverted: true });
+    }
+
+    const vehicleId = (draft as DraftRow).vehicle_id ?? "";
+    const startDateRaw = (draft as DraftRow).start_date ?? "";
+    const endDateRaw = (draft as DraftRow).end_date ?? "";
+    const startTime = (draft as DraftRow).start_time ?? "10:00";
+    const endTime = (draft as DraftRow).end_time ?? "10:00";
+    const pickupLocation = (draft as DraftRow).pickup_location ?? "Agence";
+
+    if (!vehicleId || !startDateRaw || !endDateRaw) {
+      return res.status(400).json({
+        ok: false,
+        error: "DRAFT_INCOMPLETE",
+        message: "Le brouillon doit contenir vehicleId, startDate et endDate pour être converti",
+      });
+    }
+
+    let renterUserId = (draft as DraftRow).renter_user_id ?? "";
+    let createdClientPassword: string | null = null;
+
+    if (!renterUserId) {
+      const wRaw = (draft as DraftRow).walk_in_payload;
+      const w = wRaw && typeof wRaw === "object" ? (wRaw as Record<string, unknown>) : {};
+      const email = normalizeEmail(w.email);
+      const firstName = typeof w.firstName === "string" ? w.firstName.trim() : "";
+      const lastName = typeof w.lastName === "string" ? w.lastName.trim() : "";
+      const phone = typeof w.phone === "string" ? w.phone.trim() : "";
+
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ ok: false, error: "INVALID_CLIENT", message: "Email client invalide (walk_in_payload)" });
+      }
+      if (!firstName || !lastName) {
+        return res.status(400).json({ ok: false, error: "INVALID_CLIENT", message: "Prénom/nom requis (walk_in_payload)" });
+      }
+      if (!phone) {
+        return res.status(400).json({ ok: false, error: "INVALID_CLIENT", message: "Téléphone requis (walk_in_payload)" });
+      }
+
+      // If profile already exists with this email, reuse it (role renter only)
+      const { data: existing, error: existingErr } = await supabaseAdmin
+        .from("profiles")
+        .select("id, role, phone")
+        .ilike("email", email)
+        .maybeSingle();
+      if (existingErr) {
+        return res.status(500).json({ ok: false, error: "PROFILE_LOOKUP_FAILED", message: existingErr.message });
+      }
+      if (existing?.id) {
+        if (existing.role !== "renter") {
+          return res.status(400).json({ ok: false, error: "INVALID_ROLE", message: "Le compte existant doit être un locataire" });
+        }
+        if (!existing.phone || !String(existing.phone).trim()) {
+          return res.status(400).json({ ok: false, error: "RENTER_PHONE_REQUIRED", message: "Téléphone manquant sur le profil locataire" });
+        }
+        renterUserId = existing.id;
+      } else {
+        createdClientPassword = generateStrongPassword();
+        const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password: createdClientPassword,
+          email_confirm: true,
+          user_metadata: { firstName, lastName },
+        });
+        if (createErr || !created?.user) {
+          logSupabaseError("[admin/drafts] createUser", createErr);
+          return res.status(400).json({ ok: false, error: "AUTH_CREATE_FAILED", message: createErr?.message ?? "Création du compte impossible" });
+        }
+
+        renterUserId = created.user.id;
+
+        const { error: upsertErr } = await supabaseAdmin.from("profiles").upsert(
+          {
+            id: renterUserId,
+            email,
+            first_name: firstName,
+            last_name: lastName,
+            phone,
+            role: "renter",
+            kyc_status: "pending",
+            updated_at: nowIso(),
+          },
+          { onConflict: "id" }
+        );
+        if (upsertErr) {
+          logSupabaseError("[admin/drafts] profile upsert", upsertErr);
+          return res.status(500).json({ ok: false, error: "PROFILE_UPSERT_FAILED", message: upsertErr.message });
+        }
+      }
+    }
+
+    // Reuse the existing admin booking creation logic (same checks, recalculated price).
+    const { data: renter, error: renterErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, phone, role")
+      .eq("id", renterUserId)
+      .maybeSingle();
+    if (renterErr || !renter) return res.status(404).json({ ok: false, error: "RENTER_NOT_FOUND", message: "Locataire introuvable" });
+    if (renter.role !== "renter") return res.status(400).json({ ok: false, error: "INVALID_RENTER_ROLE", message: "Le compte cible doit être un locataire" });
+    if (!renter.phone || !String(renter.phone).trim()) {
+      return res.status(400).json({ ok: false, error: "RENTER_PHONE_REQUIRED", message: "Téléphone manquant sur le profil locataire" });
+    }
+
+    const { data: vehicle, error: vehErr } = await supabaseAdmin
+      .from("vehicles")
+      .select("id, price_per_day, price_per_day_agency, available, brand, model, deposit_amount")
+      .eq("id", vehicleId)
+      .maybeSingle();
+    if (vehErr || !vehicle) return res.status(404).json({ ok: false, error: "VEHICLE_NOT_FOUND", message: "Véhicule introuvable" });
+    if (vehicle.available === false) return res.status(400).json({ ok: false, error: "VEHICLE_UNAVAILABLE", message: "Véhicule indisponible (available=false)" });
+
+    const rawAgency = vehicle.price_per_day_agency;
+    if (rawAgency === null || rawAgency === undefined || rawAgency === "") {
+      return res.status(400).json({
+        ok: false,
+        error: "AGENCY_PRICE_REQUIRED",
+        message: "Tarif journalier agence manquant sur ce véhicule : complétez-le dans Gérer le véhicule (Tarifs & conditions).",
+      });
+    }
+    const agencyPricePerDay = typeof rawAgency === "string" ? parseFloat(rawAgency) : Number(rawAgency);
+    if (!Number.isFinite(agencyPricePerDay) || agencyPricePerDay <= 0) {
+      return res.status(400).json({ ok: false, error: "INVALID_AGENCY_PRICE", message: "Tarif journalier agence invalide (doit être un montant > 0)." });
+    }
+
+    const startDt = combineLocalDateTime(startDateRaw, startTime);
+    const endDt = combineLocalDateTime(endDateRaw, endTime);
+    if (!(startDt instanceof Date) || Number.isNaN(startDt.getTime()) || !(endDt instanceof Date) || Number.isNaN(endDt.getTime())) {
+      return res.status(400).json({ ok: false, error: "INVALID_DATES", message: "Dates ou heures invalides" });
+    }
+    if (endDt.getTime() <= startDt.getTime()) {
+      return res.status(400).json({ ok: false, error: "INVALID_RANGE", message: "La fin doit être après le début" });
+    }
+
+    const startYmd = localYmd(startDt);
+    const endYmd = localYmd(endDt);
+
+    type BookingDateRow = { start_date: string; end_date: string; status: string | null };
+    const { data: existingBookings, error: bookListErr } = await supabaseAdmin
+      .from("bookings")
+      .select("start_date, end_date, status")
+      .eq("vehicle_id", vehicleId);
+    if (bookListErr) {
+      return res.status(500).json({ ok: false, error: "AVAILABILITY_CHECK_FAILED", message: bookListErr.message });
+    }
+    for (const row of (existingBookings ?? []) as BookingDateRow[]) {
+      const st = row.status ?? "";
+      if (CANCEL_LIKE.has(st)) continue;
+      if (datesOverlapYmd(startYmd, endYmd, row.start_date, row.end_date)) {
+        return res.status(409).json({ ok: false, error: "VEHICLE_DATE_CONFLICT", message: "Le véhicule a déjà une réservation sur cette période" });
+      }
+    }
+
+    const { basePrice, rentalDays } = computeBaseRentalPrice(agencyPricePerDay, startDt, endDt);
+    const optionsTotal = 0;
+    const subtotal = basePrice + optionsTotal;
+    const serviceFee = 0;
+    const totalPrice = subtotal;
+
+    const insertPayload = {
+      user_id: renterUserId,
+      vehicle_id: vehicleId,
+      start_date: startYmd,
+      end_date: endYmd,
+      total_price: totalPrice,
+      status: "pending" as const,
+      start_time: startTime.length >= 5 ? startTime : null,
+      end_time: endTime.length >= 5 ? endTime : null,
+      pickup_location: pickupLocation,
+      selected_options: null as null,
+      base_price: basePrice,
+      options_total: optionsTotal,
+      service_fee: serviceFee,
+      subtotal,
+      price_per_day: agencyPricePerDay,
+      rental_days: rentalDays,
+      pricing_mode: "admin" as const,
+      updated_at: nowIso(),
+    };
+
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("bookings")
+      .insert(insertPayload)
+      .select("id")
+      .single();
+    if (insErr || !inserted) {
+      console.error("[admin/drafts] convert: insert booking", insErr);
+      return res.status(500).json({ ok: false, error: "INSERT_FAILED", message: insErr?.message ?? "Insertion impossible" });
+    }
+
+    const depositAmountRaw = (vehicle as { deposit_amount?: number | null })?.deposit_amount;
+    const depositAmountSnapshot = typeof depositAmountRaw === "number" && Number.isFinite(depositAmountRaw) ? depositAmountRaw : 1000;
+    const depositStatus = depositAmountSnapshot > 0 ? "pending" : "not_required";
+
+    const { data: afterTransition, error: transitionErr } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        status: "pending_payment",
+        deposit_amount_snapshot: depositAmountSnapshot,
+        deposit_status: depositStatus,
+        updated_at: nowIso(),
+      })
+      .eq("id", inserted.id)
+      .select("id, status, pricing_mode")
+      .single();
+
+    if (transitionErr || !afterTransition) {
+      return res.status(500).json({ ok: false, error: "AUTO_TRANSITION_FAILED", message: transitionErr?.message ?? "Transition automatique vers pending_payment impossible" });
+    }
+
+    const { error: updDraftErr } = await supabaseAdmin
+      .from("admin_booking_drafts")
+      .update({ status: "converted", converted_booking_id: inserted.id, updated_at: nowIso() })
+      .eq("id", draftId)
+      .eq("created_by_admin_id", adminId);
+
+    if (updDraftErr) {
+      console.error("[admin/drafts] convert: update draft", updDraftErr);
+      // Booking created: fail loudly but keep booking id in response for recovery.
+      return res.status(500).json({
+        ok: false,
+        error: "DRAFT_UPDATE_FAILED_AFTER_CONVERT",
+        message: updDraftErr.message,
+        bookingId: inserted.id,
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      bookingId: inserted.id,
+      renterUserId,
+      createdClientPassword,
+    });
+  });
+
   app.post("/api/admin/clients/search", async (req: Request, res: Response) => {
     const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     try {

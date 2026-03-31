@@ -62,6 +62,10 @@ const AdminDashboard = () => {
             Nouvelle réservation (agence)
           </Link>
           <span className="mx-2 text-border">·</span>
+          <Link to="/admin/drafts" className="text-primary font-medium hover:underline">
+            Mes brouillons
+          </Link>
+          <span className="mx-2 text-border">·</span>
           <span>Flux métier branché au bloc 2</span>
         </p>
       </div>
