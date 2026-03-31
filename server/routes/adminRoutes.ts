@@ -107,19 +107,20 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       brand: string;
       model: string;
       available: boolean | null;
-      status: "active" | "inactive" | "review" | null;
       vehicle_type: "car" | "moto" | "scooter" | null;
       vehicle_category: string | null;
     };
 
     let vq = supabaseAdmin
       .from("vehicles")
-      .select("id, brand, model, available, status, vehicle_type, vehicle_category");
+      .select("id, brand, model, available, vehicle_type, vehicle_category");
 
     // Par défaut : toute la flotte.
     // include_inactive=0 => masquer véhicules non exploitables.
     if (!includeInactive) {
-      vq = vq.eq("available", true).or("status.is.null,status.eq.active");
+      // Compat schéma DB : la colonne vehicles.status n'existe pas (cf. erreur runtime).
+      // Source de vérité hors flotte = vehicles.available (déjà utilisé dans le repo).
+      vq = vq.eq("available", true);
     }
 
     if (vehicleType) {
@@ -137,7 +138,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       return res.status(500).json({ ok: false, error: "VEHICLES_FETCH_FAILED", message: vehErr.message });
     }
 
-    const vRows = (vehicles ?? []) as PlanningVehicleRow[];
+    const vRowsRaw = (vehicles ?? []) as PlanningVehicleRow[];
+    const vRows = vRowsRaw.map((v) => ({ ...v, status: null as null }));
     const vehicleIds = vRows.map((v) => v.id).filter(Boolean);
 
     type PlanningBookingRow = {

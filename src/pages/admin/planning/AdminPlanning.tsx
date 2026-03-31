@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { addDays, differenceInCalendarDays, format, startOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -60,6 +59,21 @@ function renterLabel(b: PlanningBooking): string {
   if (name) return `Client: ${name}`;
   if (r.email) return `Client: ${r.email}`;
   return `Client: ${r.id.slice(0, 8)}…`;
+}
+
+function renterInlineLabel(b: PlanningBooking): string {
+  const r = b.renter;
+  if (!r) return "";
+  const name = `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim();
+  if (name) return name;
+  if (r.email) return r.email;
+  return r.id.slice(0, 8) + "…";
+}
+
+function pricingModeBadge(pm: string | null): { text: string; className: string } | null {
+  if (pm === "admin") return { text: "AG", className: "bg-slate-900/10 text-slate-900 dark:text-slate-100 dark:bg-slate-100/10" };
+  if (pm === "web") return { text: "WEB", className: "bg-slate-900/10 text-slate-900 dark:text-slate-100 dark:bg-slate-100/10" };
+  return null;
 }
 
 function clampToWeekInclusive(booking: PlanningBooking, weekStartYmd: string, weekEndYmd: string) {
@@ -144,13 +158,47 @@ export default function AdminPlanning() {
   const weekStartYmd = useMemo(() => ymdLocal(weekStart), [weekStart]);
   const weekEndYmd = useMemo(() => ymdLocal(addDays(weekStart, 6)), [weekStart]);
 
-  const [includeInactive, setIncludeInactive] = useState(true);
   const [q, setQ] = useState("");
   const [qApplied, setQApplied] = useState("");
+  const [vehicleFilter, setVehicleFilter] = useState<"all" | "active" | "inactive">("all");
 
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [data, setData] = useState<PlanningResponse | null>(null);
+
+  const includeInactive = vehicleFilter !== "active";
+
+  const fetchPlanning = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      let cancelled = false;
+      if (!opts?.silent) setLoading(true);
+      setErrorMsg(null);
+
+      try {
+        const res = await adminGetPlanning({
+          start: weekStartYmd,
+          end: weekEndYmd,
+          q: qApplied.trim() || undefined,
+          include_inactive: includeInactive ? "1" : "0",
+        });
+        if (!cancelled) setData(res);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Erreur réseau ou API.";
+        if (!cancelled) {
+          setErrorMsg(msg);
+          setData(null);
+          toast({ title: "Planning indisponible", description: msg, variant: "destructive" });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+
+      return () => {
+        cancelled = true;
+      };
+    },
+    [includeInactive, qApplied, toast, weekEndYmd, weekStartYmd]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -183,7 +231,7 @@ export default function AdminPlanning() {
     };
   }, [includeInactive, qApplied, toast, weekEndYmd, weekStartYmd]);
 
-  const vehicles = data?.vehicles ?? [];
+  const vehiclesRaw = data?.vehicles ?? [];
   const bookings = data?.bookings ?? [];
 
   const bookingsByVehicle = useMemo(() => {
@@ -213,6 +261,14 @@ export default function AdminPlanning() {
     setQApplied("");
   };
 
+  const vehicles = useMemo(() => {
+    if (vehicleFilter === "all") return vehiclesRaw;
+    if (vehicleFilter === "active") return vehiclesRaw.filter((v) => !isVehicleInactive(v));
+    return vehiclesRaw.filter((v) => isVehicleInactive(v));
+  }, [vehicleFilter, vehiclesRaw]);
+
+  const hasSearch = qApplied.trim().length > 0;
+
   if (loading && !data) return <PageLoader />;
 
   return (
@@ -232,15 +288,15 @@ export default function AdminPlanning() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={runPrev}>
+            <Button type="button" variant="outline" onClick={runPrev} disabled={loading}>
               <ChevronLeft className="h-4 w-4 mr-1" />
               Semaine précédente
             </Button>
-            <Button type="button" variant="outline" onClick={runNext}>
+            <Button type="button" variant="outline" onClick={runNext} disabled={loading}>
               Semaine suivante
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
-            <Button type="button" onClick={runToday}>
+            <Button type="button" onClick={runToday} disabled={loading}>
               <Calendar className="h-4 w-4 mr-2" />
               Cette semaine
             </Button>
@@ -250,7 +306,7 @@ export default function AdminPlanning() {
         <Card>
           <CardHeader className="space-y-2">
             <CardTitle>Outils</CardTitle>
-            <CardDescription>Recherche véhicule et affichage des véhicules hors flotte.</CardDescription>
+            <CardDescription>Recherche, filtres simples, et rafraîchissement.</CardDescription>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
               <div className="flex items-center gap-2 w-full sm:max-w-md">
                 <div className="relative w-full">
@@ -275,15 +331,41 @@ export default function AdminPlanning() {
 
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Switch
-                    id="include-inactive"
-                    checked={includeInactive}
-                    onCheckedChange={(v) => setIncludeInactive(Boolean(v))}
-                    disabled={loading}
-                  />
-                  <Label htmlFor="include-inactive">Afficher véhicules hors flotte</Label>
+                  <Label className="text-sm text-muted-foreground">Véhicules</Label>
+                  <div className="flex rounded-md border border-border overflow-hidden">
+                    <button
+                      type="button"
+                      className={cn("px-3 py-1.5 text-sm", vehicleFilter === "all" && "bg-muted")}
+                      onClick={() => setVehicleFilter("all")}
+                      disabled={loading}
+                    >
+                      Tous
+                    </button>
+                    <button
+                      type="button"
+                      className={cn("px-3 py-1.5 text-sm border-l border-border", vehicleFilter === "active" && "bg-muted")}
+                      onClick={() => setVehicleFilter("active")}
+                      disabled={loading}
+                    >
+                      Actifs
+                    </button>
+                    <button
+                      type="button"
+                      className={cn("px-3 py-1.5 text-sm border-l border-border", vehicleFilter === "inactive" && "bg-muted")}
+                      onClick={() => setVehicleFilter("inactive")}
+                      disabled={loading}
+                    >
+                      Hors flotte
+                    </button>
+                  </div>
                 </div>
-                <Button type="button" variant="outline" onClick={() => window.location.reload()} disabled={loading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void fetchPlanning()}
+                  disabled={loading}
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
                   Actualiser
                 </Button>
               </div>
@@ -297,8 +379,13 @@ export default function AdminPlanning() {
               </div>
             ) : null}
 
-            {!loading && vehicles.length === 0 ? (
+            {!loading && vehiclesRaw.length === 0 ? (
               <div className="text-sm text-muted-foreground">Aucun véhicule à afficher.</div>
+            ) : null}
+            {!loading && vehiclesRaw.length > 0 && vehicles.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                {hasSearch ? "Aucun résultat pour cette recherche/filtre." : "Aucun véhicule ne correspond au filtre sélectionné."}
+              </div>
             ) : null}
           </CardContent>
         </Card>
@@ -388,6 +475,13 @@ export default function AdminPlanning() {
                             const status = b.booking.status ?? "—";
                             const pricing = b.booking.pricing_mode ?? "—";
                             const dates = `${b.booking.start_date} → ${b.booking.end_date}`;
+                            const renterInline = renterInlineLabel(b.booking);
+                            const pmBadge = pricingModeBadge(b.booking.pricing_mode);
+                            const refLabel =
+                              b.booking.reference_number != null
+                                ? `#${b.booking.reference_number}`
+                                : b.booking.id.slice(0, 8) + "…";
+                            const barLabel = [refLabel, renterInline].filter(Boolean).join(" · ");
 
                             return (
                               <Tooltip key={b.booking.id}>
@@ -407,15 +501,21 @@ export default function AdminPlanning() {
                                       height: 22,
                                     }}
                                   >
-                                    <div className="truncate font-medium">
-                                      {b.booking.reference_number != null ? `#${b.booking.reference_number}` : b.booking.id.slice(0, 8) + "…"}{" "}
-                                      <span className="opacity-80">·</span> {st.label}
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      {pmBadge ? (
+                                        <span className={cn("shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold", pmBadge.className)}>
+                                          {pmBadge.text}
+                                        </span>
+                                      ) : null}
+                                      <div className="truncate font-medium">{barLabel || st.label}</div>
+                                      <span className="shrink-0 text-[10px] opacity-80">{st.label}</span>
                                     </div>
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-xs">
                                   <div className="space-y-1 text-sm">
                                     <div className="font-medium">Réservation</div>
+                                    <div className="text-xs text-muted-foreground">Réf: {refLabel}</div>
                                     <div className="text-xs text-muted-foreground">{client}</div>
                                     <div className="text-xs text-muted-foreground">Statut: {status}</div>
                                     <div className="text-xs text-muted-foreground">Dates: {dates}</div>
