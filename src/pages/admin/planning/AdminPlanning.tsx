@@ -488,7 +488,7 @@ export default function AdminPlanning() {
 
                           {/* booking bars */}
                           {blocks.length === 0 ? (
-                            <div className="absolute inset-0 flex items-center px-3 text-xs text-muted-foreground">
+                            <div className="absolute inset-0 flex items-center px-3 text-xs text-muted-foreground pointer-events-none">
                               —
                             </div>
                           ) : null}
