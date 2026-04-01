@@ -147,6 +147,14 @@ function isVehicleInactive(v: PlanningVehicle): boolean {
   return !(available && statusOk);
 }
 
+function dayIsOccupied(bookings: PlanningBooking[], dayYmd: string): boolean {
+  for (const b of bookings) {
+    if (!b.start_date || !b.end_date) continue;
+    if (b.start_date <= dayYmd && b.end_date >= dayYmd) return true; // inclusive
+  }
+  return false;
+}
+
 export default function AdminPlanning() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -451,12 +459,31 @@ export default function AdminPlanning() {
                         <div className="relative col-span-7">
                           {/* grid cells */}
                           <div className="absolute inset-0 grid grid-cols-7">
-                            {days.map((d) => (
-                              <div
-                                key={ymdLocal(d)}
-                                className="border-r last:border-r-0 border-border bg-background"
-                              />
-                            ))}
+                            {days.map((d) => {
+                              const dayYmd = ymdLocal(d);
+                              const rowBookings = bookingsByVehicle.get(v.id) ?? [];
+                              const occupied = dayIsOccupied(rowBookings, dayYmd);
+                              return (
+                                <button
+                                  key={dayYmd}
+                                  type="button"
+                                  disabled={occupied || loading}
+                                  onClick={() => {
+                                    if (occupied) return;
+                                    navigate(
+                                      `/admin/bookings/new?vehicleId=${encodeURIComponent(v.id)}&start=${encodeURIComponent(dayYmd)}&end=${encodeURIComponent(dayYmd)}`
+                                    );
+                                  }}
+                                  className={cn(
+                                    "border-r last:border-r-0 border-border bg-background text-left",
+                                    "hover:bg-muted/40 transition-colors",
+                                    occupied && "cursor-not-allowed hover:bg-background",
+                                    "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-inset"
+                                  )}
+                                  aria-label={`Créer une réservation pour ${v.brand} ${v.model} le ${dayYmd}`}
+                                />
+                              );
+                            })}
                           </div>
 
                           {/* booking bars */}

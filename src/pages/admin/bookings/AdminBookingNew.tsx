@@ -21,6 +21,14 @@ import {
 import { SupabaseVehiclesService, type Vehicle } from "@/services/supabaseVehiclesService";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
 
+function isValidYmd(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [ys, ms, ds] = s.split("-").map((x) => Number(x));
+  if (!ys || !ms || !ds) return false;
+  const dt = new Date(Date.UTC(ys, ms - 1, ds));
+  return dt.getUTCFullYear() === ys && dt.getUTCMonth() === ms - 1 && dt.getUTCDate() === ds;
+}
+
 function agencyPricePerDayFromVehicle(v: Vehicle): number | null {
   const raw = v.price_per_day_agency;
   if (raw === null || raw === undefined) return null;
@@ -55,6 +63,9 @@ export default function AdminBookingNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftIdFromUrl = searchParams.get("draftId")?.trim() || "";
+  const vehicleIdFromUrl = searchParams.get("vehicleId")?.trim() || "";
+  const startFromUrl = searchParams.get("start")?.trim() || "";
+  const endFromUrl = searchParams.get("end")?.trim() || "";
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleId, setVehicleId] = useState("");
@@ -94,6 +105,31 @@ export default function AdminBookingNew() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    // Prefill from planning only when not resuming a draft.
+    if (draftIdFromUrl) return;
+    if (!vehicleIdFromUrl && !startFromUrl && !endFromUrl) return;
+    if (vehicles.length === 0) return;
+
+    if (vehicleIdFromUrl) {
+      const exists = vehicles.some((v) => v.id === vehicleIdFromUrl);
+      if (exists) setVehicleId(vehicleIdFromUrl);
+    }
+
+    const startOk = startFromUrl && isValidYmd(startFromUrl) ? startFromUrl : "";
+    const endOk = endFromUrl && isValidYmd(endFromUrl) ? endFromUrl : "";
+
+    if (startOk) setStartDate(startOk);
+    if (endOk) setEndDate(endOk);
+    if (startOk && !endOk) setEndDate(startOk);
+
+    // If same-day prefill, ensure end time is after start time for V1 validation.
+    if (startOk && (endOk ? endOk : startOk) === startOk && endTime === startTime) {
+      setEndTime("18:00");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftIdFromUrl, vehicleIdFromUrl, startFromUrl, endFromUrl, vehicles.length]);
 
   useEffect(() => {
     setDraftId(draftIdFromUrl);
