@@ -183,3 +183,18 @@ export async function adminGetBooking(bookingId: string): Promise<{
   }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}`);
   return { booking: data.booking, vehicle: data.vehicle, renter: data.renter };
 }
+
+/** Annulation logique V1 agence : `status` → `cancelled` (pas de DELETE). */
+export async function adminCancelBooking(bookingId: string): Promise<{
+  id: string;
+  status: string | null;
+  updatedAt: string | null;
+}> {
+  const data = await adminFetch<{
+    ok: boolean;
+    booking: { id: string; status: string | null; updatedAt: string | null };
+  }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/cancel`, {
+    method: "POST",
+  });
+  return data.booking;
+}

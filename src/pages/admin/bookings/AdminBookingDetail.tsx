@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { adminGetBooking } from "@/services/adminApi";
+import { adminCancelBooking, adminGetBooking } from "@/services/adminApi";
 import { PageLoader } from "@/components/ui/page-loader";
 import { payerLocation } from "@/lib/payerLocation";
 import { DepositFlowModal } from "@/components/DepositFlowModal";
@@ -13,6 +13,7 @@ export default function AdminBookingDetail() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const { toast } = useToast();
   const [payLoading, setPayLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [payload, setPayload] = useState<{
@@ -64,6 +65,8 @@ export default function AdminBookingDetail() {
         : "—";
 
   const canPayNow = status === "pending_payment";
+  const canCancelBooking =
+    status === "pending" || status === "pending_payment" || status === "confirmed";
   const pricingMode = typeof (b as any).pricing_mode === "string" ? String((b as any).pricing_mode) : null;
   const isAdminPricing = pricingMode === "admin";
   const depositStatus = typeof (b as any).deposit_status === "string" ? String((b as any).deposit_status) : null;
@@ -110,6 +113,30 @@ export default function AdminBookingDetail() {
       extras: [],
     };
   }, [bookingId, b, v]);
+
+  const runCancelBooking = async () => {
+    if (!bookingId || !canCancelBooking) return;
+    const ok = window.confirm(
+      "Confirmer l’annulation de cette réservation ? Elle passera au statut « annulée » et ne sera plus affichée dans le planning."
+    );
+    if (!ok) return;
+
+    setCancelLoading(true);
+    try {
+      await adminCancelBooking(bookingId);
+      const data = await adminGetBooking(bookingId);
+      setPayload(data);
+      toast({ title: "Réservation annulée", description: "Le statut est maintenant « cancelled »." });
+    } catch (e: unknown) {
+      toast({
+        title: "Annulation impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   const runPayNow = async () => {
     if (!reservationForPayment) return;
@@ -322,6 +349,19 @@ export default function AdminBookingDetail() {
               <Link to={`/checkin-return/${bookingId}`}>État des lieux retour</Link>
             </Button>
           </div>
+
+          {canCancelBooking ? (
+            <div className="border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => void runCancelBooking()}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? "Annulation…" : "Annuler la réservation"}
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

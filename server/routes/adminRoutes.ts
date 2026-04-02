@@ -1224,6 +1224,64 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     });
   });
 
+  /** Annulation logique V1 (agence) : status → cancelled, pas de DELETE. */
+  const ADMIN_BOOKING_CANCELABLE_V1 = new Set(["pending", "pending_payment", "confirmed"]);
+
+  app.post("/api/admin/bookings/:bookingId/cancel", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.params.bookingId === "string" ? req.params.bookingId.trim() : "";
+    if (!bookingId) {
+      return res.status(400).json({ ok: false, error: "MISSING_ID", message: "bookingId requis" });
+    }
+
+    const { data: row, error: fetchErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, status")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (fetchErr) {
+      console.error("[admin/bookings/cancel] fetch", fetchErr);
+      return res.status(500).json({ ok: false, error: "FETCH_FAILED", message: fetchErr.message });
+    }
+    if (!row) {
+      return res.status(404).json({ ok: false, error: "NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    const st = typeof row.status === "string" ? row.status.trim() : "";
+    if (!ADMIN_BOOKING_CANCELABLE_V1.has(st)) {
+      return res.status(409).json({
+        ok: false,
+        error: "NOT_CANCELLABLE",
+        message: `Annulation impossible pour le statut « ${st || "—"} ». Seuls pending, pending_payment et confirmed sont annulables (V1).`,
+      });
+    }
+
+    const nowIsoCancel = new Date().toISOString();
+    const { data: updated, error: updErr } = await supabaseAdmin
+      .from("bookings")
+      .update({ status: "cancelled", updated_at: nowIsoCancel })
+      .eq("id", bookingId)
+      .select("id, status, updated_at")
+      .maybeSingle();
+
+    if (updErr || !updated) {
+      console.error("[admin/bookings/cancel] update", updErr);
+      return res.status(500).json({
+        ok: false,
+        error: "UPDATE_FAILED",
+        message: updErr?.message ?? "Mise à jour impossible",
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      booking: { id: updated.id, status: updated.status, updatedAt: updated.updated_at },
+    });
+  });
+
   // ============================================================================
   // Admin-only deposit actions (agence) — opérées par un admin pour le locataire
   // ============================================================================
