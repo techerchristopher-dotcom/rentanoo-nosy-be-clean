@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Car, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Car, User, LogOut, LayoutDashboard, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { setCurrentLang } from "@/i18n/language";
 import type { LangCode } from "@/types/dictionary";
@@ -17,7 +17,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ProfileService } from "@/services/supabase/profile";
-import { User as UserType } from "@/types";
+import { User as UserType, UserRoleUtils } from "@/types";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { WhatsAppHeader } from "@/components/layout/WhatsAppHeader";
 
@@ -126,6 +126,15 @@ export function Navbar() {
           </DropdownMenuItem>
         </>
       )}
+
+      {!loadingProfile &&
+        userProfile &&
+        UserRoleUtils.isAdmin(userProfile) && (
+          <DropdownMenuItem onClick={() => navigate("/admin")}>
+            <Shield className="mr-2 h-4 w-4" />
+            {t("common.admin", "Admin")}
+          </DropdownMenuItem>
+        )}
     </>
   );
 
