@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { addDays, differenceInCalendarDays, format, startOfWeek } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  differenceInCalendarDays,
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 import { fr } from "date-fns/locale";
 import { Calendar, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,60 +85,60 @@ function pricingModeBadge(pm: string | null): { text: string; className: string 
   return null;
 }
 
-function clampToWeekInclusive(booking: PlanningBooking, weekStartYmd: string, weekEndYmd: string) {
+function clampToRangeInclusive(booking: PlanningBooking, rangeStartYmd: string, rangeEndYmd: string) {
   const start = booking.start_date;
   const end = booking.end_date;
-  const clampedStart = start < weekStartYmd ? weekStartYmd : start;
-  const clampedEnd = end > weekEndYmd ? weekEndYmd : end;
+  const clampedStart = start < rangeStartYmd ? rangeStartYmd : start;
+  const clampedEnd = end > rangeEndYmd ? rangeEndYmd : end;
   if (clampedEnd < clampedStart) return null;
   return { clampedStart, clampedEnd };
 }
 
-function dayIndexFromWeekStart(ymd: string, weekStart: Date): number {
+function dayIndexFromPeriodStart(ymd: string, periodStart: Date): number {
   // Use "calendar day" difference to avoid DST / timezone ms drift.
-  // Construct both dates at local noon to be extra safe around DST transitions.
   const [ys, ms, ds] = ymd.split("-").map((x) => Number(x));
   const target = new Date(ys, ms - 1, ds, 12, 0, 0, 0);
-  const base = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 12, 0, 0, 0);
+  const base = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate(), 12, 0, 0, 0);
   return differenceInCalendarDays(target, base);
 }
 
 type PositionedBlock = {
   booking: PlanningBooking;
-  startIndex: number; // 0..6
-  spanDays: number; // 1..7
-  lane: number; // vertical stacking inside vehicle row
+  startIndex: number;
+  spanDays: number;
+  lane: number;
 };
 
 function layoutBlocksForVehicle(args: {
   bookings: PlanningBooking[];
-  weekStart: Date;
-  weekStartYmd: string;
-  weekEndYmd: string;
+  periodStart: Date;
+  periodStartYmd: string;
+  periodEndYmd: string;
+  dayCount: number;
 }): PositionedBlock[] {
-  const { bookings, weekStart, weekStartYmd, weekEndYmd } = args;
+  const { bookings, periodStart, periodStartYmd, periodEndYmd, dayCount } = args;
+  const maxIdx = dayCount - 1;
 
   const clamped = bookings
     .map((b) => {
-      const c = clampToWeekInclusive(b, weekStartYmd, weekEndYmd);
+      const c = clampToRangeInclusive(b, periodStartYmd, periodEndYmd);
       if (!c) return null;
-      const startIndex = Math.max(0, Math.min(6, dayIndexFromWeekStart(c.clampedStart, weekStart)));
-      const endIndex = Math.max(0, Math.min(6, dayIndexFromWeekStart(c.clampedEnd, weekStart)));
+      const startIndex = Math.max(0, Math.min(maxIdx, dayIndexFromPeriodStart(c.clampedStart, periodStart)));
+      const endIndex = Math.max(0, Math.min(maxIdx, dayIndexFromPeriodStart(c.clampedEnd, periodStart)));
       const spanDays = Math.max(1, endIndex - startIndex + 1);
       return { booking: b, startIndex, endIndex, spanDays };
     })
     .filter(Boolean) as Array<{ booking: PlanningBooking; startIndex: number; endIndex: number; spanDays: number }>;
 
-  // Sort by start then longer first (stable layout).
-  clamped.sort((a, b) => (a.startIndex - b.startIndex) || (b.endIndex - b.startIndex) - (a.endIndex - a.startIndex));
+  clamped.sort((a, b) => a.startIndex - b.startIndex || b.endIndex - b.startIndex - (a.endIndex - a.startIndex));
 
-  const laneEnd: number[] = []; // last endIndex per lane
+  const laneEnd: number[] = [];
   const out: PositionedBlock[] = [];
 
   for (const b of clamped) {
     let lane = 0;
     while (lane < laneEnd.length) {
-      if (b.startIndex > laneEnd[lane]) break; // no overlap (inclusive)
+      if (b.startIndex > laneEnd[lane]) break;
       lane++;
     }
     if (lane === laneEnd.length) laneEnd.push(b.endIndex);
@@ -142,7 +151,7 @@ function layoutBlocksForVehicle(args: {
 }
 
 function isVehicleInactive(v: PlanningVehicle): boolean {
-  const available = v.available !== false; // null treated as not explicitly unavailable
+  const available = v.available !== false;
   const statusOk = v.status == null || v.status === "active";
   return !(available && statusOk);
 }
@@ -150,7 +159,7 @@ function isVehicleInactive(v: PlanningVehicle): boolean {
 function dayIsOccupied(bookings: PlanningBooking[], dayYmd: string): boolean {
   for (const b of bookings) {
     if (!b.start_date || !b.end_date) continue;
-    if (b.start_date <= dayYmd && b.end_date >= dayYmd) return true; // inclusive
+    if (b.start_date <= dayYmd && b.end_date >= dayYmd) return true;
   }
   return false;
 }
@@ -159,12 +168,33 @@ export default function AdminPlanning() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const [viewMode, setViewMode] = useState<"week" | "month">("week");
   const [anchor, setAnchor] = useState<Date>(() => new Date());
-  const weekStart = useMemo(() => startOfAgencyWeek(anchor), [anchor]);
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  const weekStartYmd = useMemo(() => ymdLocal(weekStart), [weekStart]);
-  const weekEndYmd = useMemo(() => ymdLocal(addDays(weekStart, 6)), [weekStart]);
+  const { periodStart, days, dayCount, periodStartYmd, periodEndYmd } = useMemo(() => {
+    if (viewMode === "week") {
+      const ps = startOfAgencyWeek(anchor);
+      const dayArr = Array.from({ length: 7 }, (_, i) => addDays(ps, i));
+      const pe = addDays(ps, 6);
+      return {
+        periodStart: ps,
+        days: dayArr,
+        dayCount: 7,
+        periodStartYmd: ymdLocal(ps),
+        periodEndYmd: ymdLocal(pe),
+      };
+    }
+    const ps = startOfMonth(anchor);
+    const pe = endOfMonth(anchor);
+    const dayArr = eachDayOfInterval({ start: ps, end: pe });
+    return {
+      periodStart: ps,
+      days: dayArr,
+      dayCount: dayArr.length,
+      periodStartYmd: ymdLocal(ps),
+      periodEndYmd: ymdLocal(pe),
+    };
+  }, [viewMode, anchor]);
 
   const [q, setQ] = useState("");
   const [qApplied, setQApplied] = useState("");
@@ -176,68 +206,40 @@ export default function AdminPlanning() {
 
   const includeInactive = vehicleFilter !== "active";
 
-  const fetchPlanning = useCallback(
-    async (opts?: { silent?: boolean }) => {
-      let cancelled = false;
-      if (!opts?.silent) setLoading(true);
+  const loadPlanning = useCallback(
+    async (opts?: { silent?: boolean; signal?: AbortSignal }) => {
+      const silent = opts?.silent === true;
+      const signal = opts?.signal;
+      if (!silent) setLoading(true);
       setErrorMsg(null);
-
       try {
         const res = await adminGetPlanning({
-          start: weekStartYmd,
-          end: weekEndYmd,
+          start: periodStartYmd,
+          end: periodEndYmd,
           q: qApplied.trim() || undefined,
           include_inactive: includeInactive ? "1" : "0",
         });
-        if (!cancelled) setData(res);
+        if (signal?.aborted) return;
+        setData(res);
       } catch (e: unknown) {
+        if (signal?.aborted) return;
         const msg = e instanceof Error ? e.message : "Erreur réseau ou API.";
-        if (!cancelled) {
-          setErrorMsg(msg);
-          setData(null);
-          toast({ title: "Planning indisponible", description: msg, variant: "destructive" });
-        }
+        setErrorMsg(msg);
+        setData(null);
+        toast({ title: "Planning indisponible", description: msg, variant: "destructive" });
       } finally {
-        if (!cancelled) setLoading(false);
+        if (signal?.aborted) return;
+        if (!silent) setLoading(false);
       }
-
-      return () => {
-        cancelled = true;
-      };
     },
-    [includeInactive, qApplied, toast, weekEndYmd, weekStartYmd]
+    [includeInactive, periodEndYmd, periodStartYmd, qApplied, toast]
   );
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setErrorMsg(null);
-
-    (async () => {
-      try {
-        const res = await adminGetPlanning({
-          start: weekStartYmd,
-          end: weekEndYmd,
-          q: qApplied.trim() || undefined,
-          include_inactive: includeInactive ? "1" : "0",
-        });
-        if (!cancelled) setData(res);
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Erreur réseau ou API.";
-        if (!cancelled) {
-          setErrorMsg(msg);
-          setData(null);
-          toast({ title: "Planning indisponible", description: msg, variant: "destructive" });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [includeInactive, qApplied, toast, weekEndYmd, weekStartYmd]);
+    const ac = new AbortController();
+    void loadPlanning({ signal: ac.signal });
+    return () => ac.abort();
+  }, [loadPlanning]);
 
   const vehiclesRaw = data?.vehicles ?? [];
   const bookings = data?.bookings ?? [];
@@ -253,15 +255,22 @@ export default function AdminPlanning() {
     return m;
   }, [bookings]);
 
-  const weekLabel = useMemo(() => {
-    const a = format(weekStart, "d MMM", { locale: fr });
-    const b = format(addDays(weekStart, 6), "d MMM yyyy", { locale: fr });
-    return `${a} → ${b}`;
-  }, [weekStart]);
+  const todayYmd = ymdLocal(new Date());
+
+  const periodLabel = useMemo(() => {
+    if (viewMode === "week") {
+      const a = format(periodStart, "d MMM", { locale: fr });
+      const b = format(addDays(periodStart, 6), "d MMM yyyy", { locale: fr });
+      return `${a} → ${b}`;
+    }
+    return format(anchor, "MMMM yyyy", { locale: fr });
+  }, [anchor, periodStart, viewMode]);
 
   const runToday = () => setAnchor(new Date());
-  const runPrev = () => setAnchor((d) => addDays(d, -7));
-  const runNext = () => setAnchor((d) => addDays(d, 7));
+  const runPrev = () =>
+    setAnchor((d) => (viewMode === "week" ? addDays(d, -7) : addMonths(d, -1)));
+  const runNext = () =>
+    setAnchor((d) => (viewMode === "week" ? addDays(d, 7) : addMonths(d, 1)));
 
   const applySearch = () => setQApplied(q.trim());
   const clearSearch = () => {
@@ -277,6 +286,13 @@ export default function AdminPlanning() {
 
   const hasSearch = qApplied.trim().length > 0;
 
+  const gridColsStyle = useMemo(
+    () => ({ gridTemplateColumns: `280px repeat(${dayCount}, minmax(32px, 1fr))` } as const),
+    [dayCount]
+  );
+
+  const gridMinWidth = Math.max(1100, 280 + dayCount * 36);
+
   if (loading && !data) return <PageLoader />;
 
   return (
@@ -286,7 +302,8 @@ export default function AdminPlanning() {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Planning agence</h1>
             <p className="text-muted-foreground text-sm">
-              Vue semaine — <span className="font-medium text-foreground">{weekLabel}</span>
+              {viewMode === "week" ? "Vue semaine" : "Vue mois"} —{" "}
+              <span className="font-medium text-foreground">{periodLabel}</span>
             </p>
             <p className="mt-2 text-sm">
               <Link to="/admin" className="text-primary font-medium hover:underline">
@@ -295,19 +312,39 @@ export default function AdminPlanning() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={runPrev} disabled={loading}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Semaine précédente
-            </Button>
-            <Button type="button" variant="outline" onClick={runNext} disabled={loading}>
-              Semaine suivante
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-            <Button type="button" onClick={runToday} disabled={loading}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Cette semaine
-            </Button>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="flex rounded-md border border-border overflow-hidden self-start sm:self-end">
+              <button
+                type="button"
+                className={cn("px-3 py-1.5 text-sm", viewMode === "week" && "bg-muted")}
+                onClick={() => setViewMode("week")}
+                disabled={loading}
+              >
+                Semaine
+              </button>
+              <button
+                type="button"
+                className={cn("px-3 py-1.5 text-sm border-l border-border", viewMode === "month" && "bg-muted")}
+                onClick={() => setViewMode("month")}
+                disabled={loading}
+              >
+                Mois
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" onClick={runPrev} disabled={loading}>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
+              </Button>
+              <Button type="button" variant="outline" onClick={runNext} disabled={loading}>
+                {viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+              <Button type="button" onClick={runToday} disabled={loading}>
+                <Calendar className="h-4 w-4 mr-2" />
+                {viewMode === "week" ? "Cette semaine" : "Ce mois"}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -367,12 +404,7 @@ export default function AdminPlanning() {
                     </button>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void fetchPlanning()}
-                  disabled={loading}
-                >
+                <Button type="button" variant="outline" onClick={() => void loadPlanning()} disabled={loading}>
                   <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
                   Actualiser
                 </Button>
@@ -400,37 +432,49 @@ export default function AdminPlanning() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Vue semaine</CardTitle>
+            <CardTitle>{viewMode === "week" ? "Vue semaine" : "Vue mois"}</CardTitle>
             <CardDescription>
               {loading ? "Chargement…" : `${vehicles.length} véhicule(s) · ${bookings.length} réservation(s) dans la fenêtre`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-auto border border-border rounded-lg">
-              <div className="min-w-[1100px]">
-                {/* Header sticky */}
-                <div className="sticky top-0 z-20 grid grid-cols-[280px_repeat(7,1fr)] bg-background/95 backdrop-blur border-b border-border">
+              <div style={{ minWidth: gridMinWidth }}>
+                <div
+                  className="sticky top-0 z-20 grid bg-background/95 backdrop-blur border-b border-border"
+                  style={gridColsStyle}
+                >
                   <div className="sticky left-0 z-30 bg-background/95 backdrop-blur border-r border-border px-3 py-2 text-sm font-medium">
                     Véhicules
                   </div>
-                  {days.map((d) => (
-                    <div key={ymdLocal(d)} className="px-3 py-2 text-sm font-medium text-center border-r last:border-r-0 border-border">
-                      <div className="text-foreground">{format(d, "EEE", { locale: fr })}</div>
-                      <div className="text-xs text-muted-foreground">{format(d, "d MMM", { locale: fr })}</div>
-                    </div>
-                  ))}
+                  {days.map((d) => {
+                    const ymd = ymdLocal(d);
+                    const isToday = ymd === todayYmd;
+                    return (
+                      <div
+                        key={ymd}
+                        className={cn(
+                          "px-2 py-2 text-sm font-medium text-center border-r last:border-r-0 border-border",
+                          isToday && "bg-primary/15"
+                        )}
+                      >
+                        <div className="text-foreground">{format(d, "EEE", { locale: fr })}</div>
+                        <div className="text-xs text-muted-foreground">{format(d, "d MMM", { locale: fr })}</div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Body */}
                 <div>
                   {vehicles.map((v) => {
                     const inactive = isVehicleInactive(v);
                     const rowBookings = bookingsByVehicle.get(v.id) ?? [];
                     const blocks = layoutBlocksForVehicle({
                       bookings: rowBookings,
-                      weekStart,
-                      weekStartYmd,
-                      weekEndYmd,
+                      periodStart,
+                      periodStartYmd,
+                      periodEndYmd,
+                      dayCount,
                     });
                     const lanes = blocks.reduce((max, b) => Math.max(max, b.lane + 1), 1);
                     const rowHeight = Math.max(52, 12 + lanes * 26);
@@ -438,8 +482,8 @@ export default function AdminPlanning() {
                     return (
                       <div
                         key={v.id}
-                        className="grid grid-cols-[280px_repeat(7,1fr)] border-b border-border last:border-b-0"
-                        style={{ height: rowHeight }}
+                        className="grid border-b border-border last:border-b-0"
+                        style={{ ...gridColsStyle, height: rowHeight }}
                       >
                         <div
                           className={cn(
@@ -456,20 +500,19 @@ export default function AdminPlanning() {
                           </div>
                         </div>
 
-                        <div className="relative col-span-7">
-                          {/* grid cells */}
-                          <div className="absolute inset-0 grid grid-cols-7">
+                        <div className="relative" style={{ gridColumn: `2 / span ${dayCount}` }}>
+                          <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))` }}>
                             {days.map((d) => {
                               const dayYmd = ymdLocal(d);
-                              const rowBookings = bookingsByVehicle.get(v.id) ?? [];
-                              const occupied = dayIsOccupied(rowBookings, dayYmd);
+                              const occ = dayIsOccupied(rowBookings, dayYmd);
+                              const isToday = dayYmd === todayYmd;
                               return (
                                 <button
                                   key={dayYmd}
                                   type="button"
-                                  disabled={occupied || loading}
+                                  disabled={occ || loading}
                                   onClick={() => {
-                                    if (occupied) return;
+                                    if (occ) return;
                                     navigate(
                                       `/admin/bookings/new?vehicleId=${encodeURIComponent(v.id)}&start=${encodeURIComponent(dayYmd)}&end=${encodeURIComponent(dayYmd)}`
                                     );
@@ -477,8 +520,9 @@ export default function AdminPlanning() {
                                   className={cn(
                                     "border-r last:border-r-0 border-border bg-background text-left",
                                     "hover:bg-muted/40 transition-colors",
-                                    occupied && "cursor-not-allowed hover:bg-background",
-                                    "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-inset"
+                                    occ && "cursor-not-allowed hover:bg-background",
+                                    "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-inset",
+                                    isToday && "bg-primary/5"
                                   )}
                                   aria-label={`Créer une réservation pour ${v.brand} ${v.model} le ${dayYmd}`}
                                 />
@@ -486,7 +530,6 @@ export default function AdminPlanning() {
                             })}
                           </div>
 
-                          {/* booking bars */}
                           {blocks.length === 0 ? (
                             <div className="absolute inset-0 flex items-center px-3 text-xs text-muted-foreground pointer-events-none">
                               —
@@ -494,8 +537,8 @@ export default function AdminPlanning() {
                           ) : null}
 
                           {blocks.map((b) => {
-                            const leftPct = (b.startIndex / 7) * 100;
-                            const widthPct = (b.spanDays / 7) * 100;
+                            const leftPct = (b.startIndex / dayCount) * 100;
+                            const widthPct = (b.spanDays / dayCount) * 100;
                             const top = 12 + b.lane * 26;
                             const st = bookingStyle(b.booking.status);
                             const client = renterLabel(b.booking);
@@ -566,7 +609,11 @@ export default function AdminPlanning() {
             </div>
 
             {!loading && vehicles.length > 0 && bookings.length === 0 ? (
-              <div className="mt-4 text-sm text-muted-foreground">Aucune réservation sur cette semaine.</div>
+              <div className="mt-4 text-sm text-muted-foreground">
+                {viewMode === "week"
+                  ? "Aucune réservation sur cette semaine."
+                  : "Aucune réservation sur ce mois."}
+              </div>
             ) : null}
           </CardContent>
         </Card>
@@ -574,4 +621,3 @@ export default function AdminPlanning() {
     </TooltipProvider>
   );
 }
-
