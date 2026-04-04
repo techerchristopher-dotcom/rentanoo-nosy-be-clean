@@ -16,6 +16,38 @@ interface BookingMoreActionsMenuProps {
   className?: string;
 }
 
+function countOpenStatesInRadixPortal(): number {
+  const root = document.getElementById("radix-portal-root");
+  if (!root) return -1;
+  return root.querySelectorAll('[data-state="open"]').length;
+}
+
+/** Laisse le DropdownMenu Radix terminer fermeture / DismissableLayer avant l’action (évite conflit avec un Dialog dans le même portail). */
+function runAfterDropdownCloses(action: () => void, label: string) {
+  const log =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("debugDialogs") === "1";
+  if (log) {
+    // eslint-disable-next-line no-console
+    console.info("[BookingMoreActionsMenu:debug]", "defer start", label, {
+      openStateNodes: countOpenStatesInRadixPortal(),
+    });
+  }
+  queueMicrotask(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (log) {
+          // eslint-disable-next-line no-console
+          console.info("[BookingMoreActionsMenu:debug]", "defer run", label, {
+            openStateNodes: countOpenStatesInRadixPortal(),
+          });
+        }
+        action();
+      });
+    });
+  });
+}
+
 /**
  * Menu d'actions additionnelles pour une réservation.
  * Affiche le téléchargement du PDF d'état des lieux seulement si
@@ -72,13 +104,21 @@ export function BookingMoreActionsMenu({ checkinDepart, checkinReturn, onViewDet
           </DropdownMenuItem>
         )}
         {onViewDetails && (
-          <DropdownMenuItem onClick={onViewDetails}>
+          <DropdownMenuItem
+            onSelect={() => {
+              runAfterDropdownCloses(onViewDetails, "onViewDetails");
+            }}
+          >
             <FileText className="h-4 w-4 mr-2" />
             Voir les détails
           </DropdownMenuItem>
         )}
         {onViewVehicle && (
-          <DropdownMenuItem onClick={onViewVehicle}>
+          <DropdownMenuItem
+            onSelect={() => {
+              runAfterDropdownCloses(onViewVehicle, "onViewVehicle");
+            }}
+          >
             <FileText className="h-4 w-4 mr-2" />
             Voir le véhicule
           </DropdownMenuItem>
