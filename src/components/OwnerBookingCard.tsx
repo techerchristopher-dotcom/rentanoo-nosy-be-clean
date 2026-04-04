@@ -62,6 +62,25 @@ import { calcServiceFeeOwner, calcServiceFeeRenter, calcOwnerPayout, calcRenterT
 import { useTranslation } from 'react-i18next'
 import { forceDepositForOwner } from '@/lib/depositCaution'
 
+/** Libellé locataire pour header, tooltips, alt (pas d’email ici). */
+function formatRenterDisplayName(user: User | null | undefined): string {
+  const first = user?.firstName?.trim() ?? ''
+  const last = user?.lastName?.trim() ?? ''
+  if (first && last) return `${first} ${last}`
+  if (first) return first
+  if (last) return last
+  return 'Locataire'
+}
+
+function renterAvatarInitials(user: User | null | undefined): string {
+  const first = user?.firstName?.trim()
+  const last = user?.lastName?.trim()
+  if (first?.charAt(0) && last?.charAt(0)) return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
+  if (first?.charAt(0)) return first.charAt(0).toUpperCase()
+  if (last?.charAt(0)) return last.charAt(0).toUpperCase()
+  return 'L'
+}
+
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
   primaryPhoto?: Photo
@@ -103,7 +122,8 @@ export default function OwnerBookingCard({
   const navigate = useNavigate()
   const { toast } = useToast()
   const { t } = useTranslation("common")
-  const [renter, setRenter] = useState<User | null>(null)
+  /** Profil chargé uniquement si le parent n’a pas fourni `booking.renter`. */
+  const [renterFromFetch, setRenterFromFetch] = useState<User | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
@@ -172,25 +192,34 @@ export default function OwnerBookingCard({
     }
   };
 
-  // Charger les données du locataire
+  // Locataire : priorité au parent ; fetch seulement si absent (évite N+1 et flicker).
   useEffect(() => {
-    const loadRenter = async () => {
-      if (booking.renterId) {
-        try {
-          const result = await ProfileService.getUserProfile(booking.renterId)
-          if (result.data) {
-            setRenter(result.data)
-          }
-        } catch (error) {
-          console.error('Erreur lors du chargement du locataire:', error)
-        }
-      } else if (booking.renter) {
-        setRenter(booking.renter)
-      }
+    if (booking.renter) {
+      setRenterFromFetch(null)
+      return
     }
-    
-    loadRenter()
-  }, [booking.renterId, booking.renter])
+    if (!booking.renterId) {
+      setRenterFromFetch(null)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const result = await ProfileService.getUserProfile(booking.renterId)
+        if (!cancelled && result.data) setRenterFromFetch(result.data)
+        else if (!cancelled) setRenterFromFetch(null)
+      } catch (error) {
+        console.error('Erreur lors du chargement du locataire:', error)
+        if (!cancelled) setRenterFromFetch(null)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [booking.renter, booking.renterId])
+
+  const renter = booking.renter ?? renterFromFetch
+  const renterDisplayName = formatRenterDisplayName(renter)
 
   // Charger les données de l'utilisateur actuel (propriétaire)
   useEffect(() => {
@@ -310,7 +339,6 @@ export default function OwnerBookingCard({
             };
             
             // Construire les variables nécessaires
-            const renterFirstName = renter?.firstName || 'Locataire'
             const vehicleTitle = `${booking.vehicle.brand} ${booking.vehicle.model}`
             const startTime = (booking as any).startTime || '08:00'
             const endTime = (booking as any).endTime || '10:00'
@@ -362,7 +390,7 @@ export default function OwnerBookingCard({
             
             // Construire le message selon le format exact demandé
             let messageText = `✅ Réservation confirmée !\n` +
-              `Bonjour ${renterFirstName}, Votre demande de réservation pour le ${vehicleTitle} a été acceptée.\n` +
+              `Bonjour ${renterDisplayName}, Votre demande de réservation pour le ${vehicleTitle} a été acceptée.\n` +
               `📅 Dates: ${formattedStartDate} → ${formattedEndDate}\n` +
               `⏰ Début: ${startTime} ⏰ Fin: ${endTime}\n`
             
@@ -757,16 +785,6 @@ export default function OwnerBookingCard({
     }
   }
 
-  // DEBUG Phase 3.2.3 — Owner caution UI
-  console.log("BOOKING OWNER CARD 👉", {
-    id: booking.id,
-    status: booking.status,
-    depositStatus: (booking as any).depositStatus,
-    depositAmountSnapshot: (booking as any).depositAmountSnapshot,
-    stripePaymentMethodId: (booking as any).stripePaymentMethodId,
-    rawBookingKeys: Object.keys(booking || {}),
-  });
-
   return (
     <>
     <Collapsible
@@ -812,13 +830,16 @@ export default function OwnerBookingCard({
 
                   {/* Détails principaux */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="mb-1 space-y-0.5 min-w-0">
                       <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">
                         {booking.vehicle
                           ? `${booking.vehicle.brand} ${booking.vehicle.model}`
                           : 'Véhicule supprimé'}
                       </h3>
-                  </div>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate block min-w-0">
+                        {renterDisplayName}
+                      </p>
+                    </div>
 
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                     <div className="flex items-center">
@@ -925,12 +946,12 @@ export default function OwnerBookingCard({
                                   {renter?.avatarUrl ? (
                                     <img
                                       src={renter.avatarUrl}
-                                      alt={renter.firstName || 'Locataire'}
+                                      alt={renterDisplayName}
                                       className="w-full h-full object-cover object-center"
                                     />
                                   ) : (
-                                    <div className="w-full h-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-xs sm:text-sm">
-                                      {renter?.firstName?.charAt(0) || renter?.lastName?.charAt(0) || 'L'}
+                                    <div className="w-full h-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-[10px] sm:text-xs">
+                                      {renterAvatarInitials(renter)}
                                     </div>
                                   )}
                                 </div>
@@ -957,7 +978,8 @@ export default function OwnerBookingCard({
                             sideOffset={8}
                           >
                             <p className="text-sm font-medium">
-                              Cliquez pour discuter avec {renter?.firstName || 'le locataire'}
+                              Cliquez pour discuter avec{' '}
+                              {renterDisplayName === 'Locataire' ? 'le locataire' : renterDisplayName}
                             </p>
                           </TooltipContent>
                         </Tooltip>
