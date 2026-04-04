@@ -10,6 +10,7 @@ import { sendPageView } from "@/lib/gtag";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navbar } from "@/components/layout/navbar";
+import { ClientProfileCompletionGuard } from "@/components/ClientProfileCompletionGuard";
 
 // Home : import direct pour premier paint rapide
 import Index from "./pages/Index";
@@ -97,6 +98,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <RouteChangeTracker />
+            <ClientProfileCompletionGuard />
             {/* Wrapper to allow a fixed dev language switcher on all pages */}
             <div className="relative">
               {/* Dev-only floating language switcher, visible on all pages */}

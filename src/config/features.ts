@@ -5,12 +5,6 @@
 
 export const FEATURE_FLAGS = {
   /**
-   * Enable Google Profile synchronization
-   * When true, user profiles will be synced with Google account data
-   */
-  SYNC_GOOGLE_PROFILE: true,
-
-  /**
    * MVP: pickup location disabled until hotel partnerships
    * Controls the display and behavior of the "Lieu de prise en charge" search block
    */

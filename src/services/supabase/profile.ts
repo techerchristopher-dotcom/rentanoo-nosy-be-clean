@@ -1,7 +1,9 @@
 // Service Supabase pour la gestion des profils utilisateur
+import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Role, User } from '@/types';
 import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
+import { extractProfileFieldsFromAuthUser } from '@/utils/authProfileMetadata';
 
 type SupabaseProfile = Tables<'profiles'>;
 type SupabaseProfileUpdate = TablesUpdate<'profiles'>;
@@ -19,6 +21,40 @@ function rolesFromProfile(profile: SupabaseProfile): Role[] {
     set.add("admin");
   }
   return Array.from(set);
+}
+
+/**
+ * Complète uniquement les champs vides du profil à partir des métadonnées auth (Google OIDC, email, etc.).
+ * Ne remplace jamais une valeur déjà renseignée côté `profiles`.
+ */
+async function applyAuthMetadataBackfillIfNeeded(
+  authUser: SupabaseAuthUser,
+  profile: SupabaseProfile
+): Promise<SupabaseProfile | null> {
+  const extracted = extractProfileFieldsFromAuthUser(authUser);
+  const patch: SupabaseProfileUpdate = {};
+  if (!(profile.first_name || "").trim() && extracted.firstName) {
+    patch.first_name = extracted.firstName;
+  }
+  if (!(profile.last_name || "").trim() && extracted.lastName) {
+    patch.last_name = extracted.lastName;
+  }
+  if (!(profile.phone || "").trim() && extracted.phone) {
+    patch.phone = extracted.phone;
+  }
+  if (Object.keys(patch).length === 0) {
+    return null;
+  }
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(patch)
+    .eq("id", profile.id)
+    .select()
+    .single();
+  if (error || !data) {
+    return null;
+  }
+  return data;
 }
 
 export interface ProfileUpdateData {
@@ -61,11 +97,12 @@ export class ProfileService {
       if (error) {
         // Si le profil n'existe pas, essayer de le créer
         if (error.code === 'PGRST116') {
+          const extracted = extractProfileFieldsFromAuthUser(authUser);
           const createResult = await this.createUserProfile(authUser.id, {
             email: authUser.email || '',
-            firstName: authUser.user_metadata?.firstName || '',
-            lastName: authUser.user_metadata?.lastName || '',
-            phone: authUser.user_metadata?.phone
+            firstName: extracted.firstName,
+            lastName: extracted.lastName,
+            phone: extracted.phone,
           });
           
           if (createResult.error) {
@@ -81,33 +118,35 @@ export class ProfileService {
       if (!profile) {
         return { data: null, error: 'Profil non trouvé' };
       }
-      
+
+      const row = (await applyAuthMetadataBackfillIfNeeded(authUser, profile)) ?? profile;
+
       const user: User = {
-        id: profile.id,
-        email: profile.email || '',
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-        phone: profile.phone || undefined,
-        bio: profile.bio || undefined,
-        roles: rolesFromProfile(profile),
-        isAdmin: profile.is_admin === true,
-        adminRole: profile.admin_role ?? null,
-        kycStatus: profile.kyc_status || 'pending',
-        avatarUrl: profile.avatar_url || undefined,
-        birthDate: profile.birthdate || undefined,
-        placeOfBirth: profile.place_of_birth || undefined,
-        driverLicenseNumber: profile.driver_license_number || undefined,
-        driverLicenseIssueDate: profile.driver_license_issue_date || undefined,
-        driverLicenseExpirationDate: profile.driver_license_expiration_date || undefined,
-        driverLicenseCategory: profile.driver_license_category || undefined,
-        driverLicenseCountry: profile.driver_license_country || undefined,
-        driverLicenseFilePath: profile.driver_license_file_path || undefined,
-        addressLine1: profile.address_line1 || undefined,
-        postalCode: profile.postal_code || undefined,
-        city: profile.city || undefined,
-        country: profile.country || undefined,
-        createdAt: profile.created_at,
-        updatedAt: profile.updated_at || profile.created_at
+        id: row.id,
+        email: row.email || '',
+        firstName: row.first_name || '',
+        lastName: row.last_name || '',
+        phone: row.phone || undefined,
+        bio: row.bio || undefined,
+        roles: rolesFromProfile(row),
+        isAdmin: row.is_admin === true,
+        adminRole: row.admin_role ?? null,
+        kycStatus: row.kyc_status || 'pending',
+        avatarUrl: row.avatar_url || undefined,
+        birthDate: row.birthdate || undefined,
+        placeOfBirth: row.place_of_birth || undefined,
+        driverLicenseNumber: row.driver_license_number || undefined,
+        driverLicenseIssueDate: row.driver_license_issue_date || undefined,
+        driverLicenseExpirationDate: row.driver_license_expiration_date || undefined,
+        driverLicenseCategory: row.driver_license_category || undefined,
+        driverLicenseCountry: row.driver_license_country || undefined,
+        driverLicenseFilePath: row.driver_license_file_path || undefined,
+        addressLine1: row.address_line1 || undefined,
+        postalCode: row.postal_code || undefined,
+        city: row.city || undefined,
+        country: row.country || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at || row.created_at
       };
 
       const result = {

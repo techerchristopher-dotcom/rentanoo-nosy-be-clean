@@ -5,6 +5,8 @@ import { ProfileService } from "@/services/supabase/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, Clock, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,6 +36,11 @@ export default function ClientOnboarding() {
   const [showResend, setShowResend] = useState(false);
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
+  const [completionFirst, setCompletionFirst] = useState("");
+  const [completionLast, setCompletionLast] = useState("");
+  const [completionPhone, setCompletionPhone] = useState("");
+  const [completionError, setCompletionError] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const hasSession = Boolean(session?.user);
   const isKycVerified = profile?.kycStatus === "verified";
@@ -82,6 +89,14 @@ export default function ClientOnboarding() {
       });
     return () => { cancelled = true; };
   }, [hasSession]);
+
+  // Préremplir le formulaire de complétion (ex. noms issus de Google après backfill)
+  useEffect(() => {
+    if (!profile) return;
+    setCompletionFirst((prev) => (prev === "" ? profile.firstName || "" : prev));
+    setCompletionLast((prev) => (prev === "" ? profile.lastName || "" : prev));
+    setCompletionPhone((prev) => (prev === "" ? profile.phone || "" : prev));
+  }, [profile?.id, profile?.firstName, profile?.lastName, profile?.phone]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -136,6 +151,49 @@ export default function ClientOnboarding() {
     }
 
     setChecking(false);
+  };
+
+  const handleCompleteProfile = async () => {
+    setCompletionError(null);
+    const first = completionFirst.trim();
+    const last = completionLast.trim();
+    const phone = completionPhone.trim();
+    if (!first || !last || !phone) {
+      setCompletionError("Le prénom, le nom et le numéro de téléphone sont obligatoires pour continuer.");
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const { data, error } = await ProfileService.updateProfile({
+        firstName: first,
+        lastName: last,
+        phone,
+      });
+      if (error || !data) {
+        setCompletionError(error || "Enregistrement impossible. Réessayez.");
+        return;
+      }
+      await refreshUser();
+      const { data: fresh, error: freshErr } = await ProfileService.getCurrentUserProfile();
+      if (freshErr || !fresh) {
+        setProfileError(freshErr ?? "Profil introuvable après enregistrement.");
+        return;
+      }
+      setProfile({
+        id: fresh.id,
+        email: fresh.email ?? "",
+        firstName: fresh.firstName ?? "",
+        lastName: fresh.lastName ?? "",
+        phone: fresh.phone ?? "",
+        kycStatus: fresh.kycStatus ?? "pending",
+      });
+      toast({
+        title: "Profil enregistré",
+        description: "Vous pouvez poursuivre votre inscription.",
+      });
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleResendEmail = async () => {
@@ -329,21 +387,82 @@ export default function ClientOnboarding() {
               </Button>
             </div>
           ) : currentStep === 3 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Pour utiliser la plateforme, nous avons besoin de votre prénom, nom et téléphone. La connexion Google ne
+                fournit pas toujours ces informations : complétez-les ci-dessous.
+              </p>
               {profileError && (
-                <p className="text-sm text-destructive">Impossible de charger le profil</p>
+                <p className="text-sm text-destructive">Impossible de charger le profil.</p>
               )}
+              {completionError && (
+                <p className="text-sm text-destructive">{completionError}</p>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="onboarding-first">Prénom</Label>
+                <Input
+                  id="onboarding-first"
+                  autoComplete="given-name"
+                  value={completionFirst}
+                  onChange={(e) => setCompletionFirst(e.target.value)}
+                  disabled={savingProfile || profileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="onboarding-last">Nom</Label>
+                <Input
+                  id="onboarding-last"
+                  autoComplete="family-name"
+                  value={completionLast}
+                  onChange={(e) => setCompletionLast(e.target.value)}
+                  disabled={savingProfile || profileLoading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="onboarding-phone">Téléphone</Label>
+                <Input
+                  id="onboarding-phone"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  placeholder="Ex. +261 32 …"
+                  value={completionPhone}
+                  onChange={(e) => setCompletionPhone(e.target.value)}
+                  disabled={savingProfile || profileLoading}
+                />
+              </div>
               <Button
-                onClick={() => navigate("/profile")}
+                onClick={handleCompleteProfile}
+                disabled={savingProfile || profileLoading}
                 className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
               >
-                Compléter mon profil
+                {savingProfile ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  "Enregistrer et continuer"
+                )}
               </Button>
-              {profileError && (
-                <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
-                  {refreshing ? "Rafraîchissement..." : "Rafraîchir"}
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate("/profile")}
+                disabled={savingProfile}
+              >
+                Plus de détails sur ma page profil
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                onClick={handleRefresh}
+                disabled={refreshing || savingProfile}
+              >
+                {refreshing ? "Rafraîchissement..." : "Rafraîchir les données"}
+              </Button>
             </div>
           ) : (
             <div className="space-y-3">
