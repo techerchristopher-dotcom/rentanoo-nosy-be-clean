@@ -1457,6 +1457,12 @@ export default function RenterBookingCard({
             <DialogTitle className="text-3xl font-bold text-center text-primary">
               {t('bookings.details.title')}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t(
+                'bookings.details.a11yDescription',
+                'Détails de la réservation : véhicule, dates, montant et options.'
+              )}
+            </DialogDescription>
             <div className="flex items-center justify-center gap-2 mt-2">
               <p className="text-sm text-muted-foreground">
                 {t('bookings.details.referenceNumber', { referenceNumber: (booking as any).referenceNumber || booking.id.substring(0, 8) })}

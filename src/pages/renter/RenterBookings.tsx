@@ -22,6 +22,7 @@ import { DepositFlowModal } from "@/components/DepositFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
 import { useTranslation } from "react-i18next";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
+import { logRadixPortalDebug, subscribeRadixPortalDebug } from "@/lib/debugRadixPortal";
 
 interface BookingWithDetails extends Booking {
   vehicle?: Vehicle;
@@ -88,6 +89,7 @@ export default function RenterBookings() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const comingFromStripeSuccess = searchParams.get("afterPayment") === "1";
+  const debugRadixDialogs = searchParams.get("debugDialogs") === "1";
   const [isModalOpen, setIsModalOpen] = useState(comingFromStripeSuccess);
   const [modalMode, setModalMode] = useState<"avantPaiement"|"apresPaiement">("avantPaiement");
   const [step1Complete, setStep1Complete] = useState(comingFromStripeSuccess);
@@ -98,6 +100,31 @@ export default function RenterBookings() {
   useEffect(() => {
     loadCurrentUser();
   }, []);
+
+  /**
+   * Opt-in: /me/renter/bookings?debugDialogs=1
+   * Preuve runtime : nœuds [data-state=open], détail portail, body/html styles,
+   * calques fixed plein écran (overlay orphelin), heuristique modale (voir src/lib/debugRadixPortal.ts).
+   */
+  useEffect(() => {
+    if (!debugRadixDialogs) return;
+
+    let raf = 0;
+    const scheduleLog = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        logRadixPortalDebug();
+      });
+    };
+
+    scheduleLog();
+    const unsubscribe = subscribeRadixPortalDebug(scheduleLog);
+    return () => {
+      unsubscribe();
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [debugRadixDialogs]);
 
   useEffect(() => {
     if (currentUser) {

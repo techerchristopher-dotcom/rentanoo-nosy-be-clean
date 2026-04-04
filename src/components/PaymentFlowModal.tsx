@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Euro, Calendar, ShieldCheck, Hourglass } from "lucide-react";
@@ -62,6 +62,9 @@ export function PaymentFlowModal({
         <div className="space-y-6 overflow-y-auto flex-1 min-h-0">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Confirmer et payer</DialogTitle>
+            <DialogDescription>
+              Étapes de confirmation et paiement sécurisé de votre location.
+            </DialogDescription>
           </DialogHeader>
           {/* Étape 1 — Payer ma location */}
           <Collapsible defaultOpen={!shouldHighlightStep2}>

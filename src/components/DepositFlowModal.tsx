@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { STRIPE_PUBLISHABLE_KEY } from "@/lib/stripePublicKey";
 import { createSetupIntentClientSecret, attachPaymentMethod } from "@/lib/depositCaution";
@@ -224,6 +224,12 @@ export function DepositFlowModal({
           <DialogTitle id="deposit-modal-title" className="text-xl font-bold">
             {t("depositModal.title", "Activer la caution")}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t(
+              "depositModal.a11ySummary",
+              "Enregistrement de carte pour la caution, sans débit immédiat."
+            )}
+          </DialogDescription>
         </DialogHeader>
 
         {/* BODY + FOOTER — flex container : body scrollable + footer sticky */}
