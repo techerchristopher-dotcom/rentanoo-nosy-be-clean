@@ -248,3 +248,15 @@ All colors MUST be HSL.
 .glow-effect {
   animation: glow 2s infinite;
 }
+
+/*
+ * Radix Dialog / AlertDialog : overlay parfois laissé monté avec data-state="closed"
+ * mais encore interactif (prod — modale détails locataire). Neutralisation explicite,
+ * indépendante des utilitaires Tailwind (voir src/components/ui/dialog.tsx).
+ */
+[data-dialog-overlay="true"][data-state="closed"],
+[data-alert-dialog-overlay="true"][data-state="closed"] {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  display: none !important;
+}
