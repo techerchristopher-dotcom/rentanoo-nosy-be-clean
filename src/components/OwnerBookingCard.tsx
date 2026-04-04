@@ -615,7 +615,7 @@ export default function OwnerBookingCard({
 
       const data = await res.json()
       // Utiliser le redirectUrl de la réponse ou construire l'URL avec checkin_id
-      const redirectUrl = data.redirectUrl || `/etat-des-lieux/depart/${data.checkin_id || bookingId}`
+      const redirectUrl = data.redirectUrl || `/checking/${bookingId}`
       navigate(redirectUrl)
     } catch (error) {
       console.error('[handleStartCheckin] Erreur:', error)
@@ -1281,10 +1281,11 @@ export default function OwnerBookingCard({
                   {booking.status === 'confirmed' &&
                     booking.checkinDepart?.status !== 'completed' &&
                     !(booking as any).hasCheckin && (
+                    <div className="flex flex-col gap-1 flex-1 sm:flex-none w-full sm:w-auto">
                     <Link
                       to={`/checking/${booking.id}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-1 sm:flex-none"
+                      className="w-full"
                     >
                       <Button
                         variant="default"
@@ -1293,9 +1294,13 @@ export default function OwnerBookingCard({
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition shadow-sm w-full"
                       >
                         <Car className="h-4 w-4" />
-                        État des lieux de départ
+                        Départ : contrat & état des lieux
                       </Button>
                     </Link>
+                      <p className="text-[11px] text-muted-foreground px-0.5">
+                        Contrat de location signé sur tablette, puis formulaire d&apos;état des lieux.
+                      </p>
+                    </div>
                   )}
                   {/* Badges et boutons pour les états des lieux : départ et retour */}
                   {booking.checkinDepart?.status === 'completed' && (

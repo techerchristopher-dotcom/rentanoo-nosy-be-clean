@@ -914,11 +914,11 @@ app.post("/api/checkin/start", async (req, res) => {
       renter_id: renterId,
     });
 
-    // Retourner la réponse avec succès
+    // Retourner la réponse avec succès (route SPA : /checking/:bookingId — cf. App.tsx)
     return res.status(200).json({
       success: true,
       checkin_id: newCheckin.id,
-      redirectUrl: `/etat-des-lieux/depart/${newCheckin.id}`,
+      redirectUrl: `/checking/${bookingId}`,
     });
   } catch (error: any) {
     console.error("❌ [checkin/start] Erreur inattendue:", error);

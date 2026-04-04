@@ -38,6 +38,9 @@ export type Database = {
           reference_number: number | null
           /** Mode de pricing: web (internet + frais locataire) ou admin/agence (sans frais plateforme côté modèle validé) */
           pricing_mode: "web" | "admin" | null
+          rental_contract_pdf_url: string | null
+          rental_contract_signed_at: string | null
+          rental_contract_template_version: string | null
         }
         Insert: {
           id?: string
@@ -61,6 +64,9 @@ export type Database = {
           rental_days?: number | null
           reference_number?: number | null
           pricing_mode?: "web" | "admin" | null
+          rental_contract_pdf_url?: string | null
+          rental_contract_signed_at?: string | null
+          rental_contract_template_version?: string | null
         }
         Update: {
           id?: string
@@ -84,6 +90,9 @@ export type Database = {
           rental_days?: number | null
           reference_number?: number | null
           pricing_mode?: "web" | "admin" | null
+          rental_contract_pdf_url?: string | null
+          rental_contract_signed_at?: string | null
+          rental_contract_template_version?: string | null
         }
         Relationships: []
       }

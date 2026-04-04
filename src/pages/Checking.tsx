@@ -8,17 +8,19 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { getVehicleTypeForChecking } from "@/utils/vehicleType";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RentalContractPanel } from "@/modules/rentalContract/RentalContractPanel";
 
 export default function Checking() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const [referenceNumber, setReferenceNumber] = useState<number | null>(null);
-  
+  const [rentalContractSignedAt, setRentalContractSignedAt] = useState<string | null>(null);
+
   // Phase 1 states
   const [vehicleType, setVehicleType] = useState<'car' | 'moto' | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
   const [bookingNotFound, setBookingNotFound] = useState(false);
 
-  // Charger le reference_number et vehicle_id depuis Supabase
+  // Charger le reference_number, vehicle_id et statut contrat depuis Supabase
   useEffect(() => {
     async function loadBookingReference() {
       if (!bookingId) {
@@ -31,7 +33,7 @@ export default function Checking() {
       try {
         const { data, error } = await supabase
           .from("bookings")
-          .select("reference_number, vehicle_id")
+          .select("reference_number, vehicle_id, rental_contract_signed_at")
           .eq("id", bookingId)
           .single();
 
@@ -50,7 +52,8 @@ export default function Checking() {
 
         if (data) {
           setReferenceNumber(data.reference_number || null);
-          
+          setRentalContractSignedAt(data.rental_contract_signed_at ?? null);
+
           const rawVehicleId = data.vehicle_id;
           
           if (!rawVehicleId) {
@@ -126,6 +129,19 @@ export default function Checking() {
   }
 
 
+  const contractPending =
+    !bookingNotFound && !loadingPage && !rentalContractSignedAt;
+
+  const handleRentalContractComplete = async () => {
+    if (!bookingId) return;
+    const { data } = await supabase
+      .from("bookings")
+      .select("rental_contract_signed_at")
+      .eq("id", bookingId)
+      .single();
+    setRentalContractSignedAt(data?.rental_contract_signed_at ?? null);
+  };
+
   function BookingNotFoundUI() {
     const navigate = useNavigate();
 
@@ -157,7 +173,7 @@ export default function Checking() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-6">
           <h1 className="text-3xl font-semibold text-foreground">
-            État des lieux de départ – Réservation{" "}
+            {contractPending ? "Contrat de location – Réservation " : "État des lieux de départ – Réservation "}
             {loadingPage ? (
               <span className="text-muted-foreground">...</span>
             ) : referenceNumber !== null ? (
@@ -167,7 +183,9 @@ export default function Checking() {
             )}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Veuillez remplir le formulaire ci-dessous pour effectuer l'état des lieux de départ.
+            {contractPending
+              ? "Signez le contrat (locataire et propriétaire du véhicule), puis le formulaire d'état des lieux de départ s'affichera."
+              : "Veuillez remplir le formulaire ci-dessous pour effectuer l'état des lieux de départ."}
           </p>
         </div>
         <ErrorBoundary>
@@ -175,6 +193,12 @@ export default function Checking() {
             <BookingNotFoundUI />
           ) : loadingPage ? (
             <CheckingVehicleTypeLoader />
+          ) : contractPending ? (
+            <RentalContractPanel
+              bookingId={bookingId}
+              referenceNumber={referenceNumber}
+              onContractComplete={handleRentalContractComplete}
+            />
           ) : vehicleType === "moto" ? (
             <EtatDesLieuxDepartFormMoto
               bookingId={bookingId}
