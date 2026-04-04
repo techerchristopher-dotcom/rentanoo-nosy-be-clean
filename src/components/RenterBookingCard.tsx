@@ -158,6 +158,14 @@ export default function RenterBookingCard({
   const [cancelReason, setCancelReason] = useState<string>('')
   const [customCancelReason, setCustomCancelReason] = useState<string>('')
   const [unreadCount, setUnreadCount] = useState(0)
+
+  // Évite de démonter un Dialog Radix encore "ouvert" quand le Collapsible se referme
+  // (overlay portal pouvant rester et bloquer les clics).
+  useEffect(() => {
+    if (!isExpanded) {
+      setShowCancelModal(false)
+    }
+  }, [isExpanded])
   
   // DEV-only: Debug i18n pour diagnostiquer les textes FR résiduels
   useEffect(() => {
@@ -1344,52 +1352,6 @@ export default function RenterBookingCard({
                       <XCircle className="h-4 w-4 mr-2" />
                       {t('annuler')}
                     </Button>
-                    <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle className="text-xl font-bold text-destructive">{t('bookings.cancel.title')}</DialogTitle>
-                          <DialogDescription>{t('bookings.cancel.description')}</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-2">
-                          <RadioGroup value={cancelReason} onValueChange={setCancelReason}>
-                            <div className="space-y-3">
-                              <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value={t('bookings.cancel.reason.dateChange')} id="cancel1" />
-                                <Label htmlFor="cancel1" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.dateChange')}</Label>
-                              </div>
-                              <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value={t('bookings.cancel.reason.otherOption')} id="cancel2" />
-                                <Label htmlFor="cancel2" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.otherOption')}</Label>
-                              </div>
-                              <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value={t('bookings.cancel.reason.personalIssue')} id="cancel3" />
-                                <Label htmlFor="cancel3" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.personalIssue')}</Label>
-                              </div>
-                              <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value={t('bookings.cancel.reason.bookingError')} id="cancel4" />
-                                <Label htmlFor="cancel4" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.bookingError')}</Label>
-                              </div>
-                              <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                                <RadioGroupItem value={t('bookings.cancel.reason.custom')} id="cancel5" />
-                                <Label htmlFor="cancel5" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.custom')}</Label>
-                              </div>
-                            </div>
-                          </RadioGroup>
-                          {cancelReason === t('bookings.cancel.reason.custom') && (
-                            <div className="space-y-2">
-                              <Label htmlFor="customCancelReason">{t('bookings.cancel.reasonLabel')}</Label>
-                              <Textarea id="customCancelReason" value={customCancelReason} onChange={(e) => setCustomCancelReason(e.target.value)} placeholder={t('bookings.cancel.reasonPlaceholder')} />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-3 pt-2">
-                          <Button variant="outline" className="flex-1" onClick={() => setShowCancelModal(false)} disabled={isDeleting}>{t('bookings.cancel.back')}</Button>
-                          <Button variant="destructive" className="flex-1" onClick={handleConfirmCancel} disabled={isDeleting || (!cancelReason && !customCancelReason)}>
-                            {isDeleting ? t('bookings.cancel.processing') : t('bookings.cancel.confirm')}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
                   </>
                 )}
 
@@ -1418,6 +1380,55 @@ export default function RenterBookingCard({
         </CollapsibleContent>
       </Card>
     </Collapsible>
+
+    {booking.status === 'pending' && (
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-destructive">{t('bookings.cancel.title')}</DialogTitle>
+            <DialogDescription>{t('bookings.cancel.description')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <RadioGroup value={cancelReason} onValueChange={setCancelReason}>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value={t('bookings.cancel.reason.dateChange')} id="cancel1" />
+                  <Label htmlFor="cancel1" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.dateChange')}</Label>
+                </div>
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value={t('bookings.cancel.reason.otherOption')} id="cancel2" />
+                  <Label htmlFor="cancel2" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.otherOption')}</Label>
+                </div>
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value={t('bookings.cancel.reason.personalIssue')} id="cancel3" />
+                  <Label htmlFor="cancel3" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.personalIssue')}</Label>
+                </div>
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value={t('bookings.cancel.reason.bookingError')} id="cancel4" />
+                  <Label htmlFor="cancel4" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.bookingError')}</Label>
+                </div>
+                <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value={t('bookings.cancel.reason.custom')} id="cancel5" />
+                  <Label htmlFor="cancel5" className="flex-1 cursor-pointer">{t('bookings.cancel.reason.custom')}</Label>
+                </div>
+              </div>
+            </RadioGroup>
+            {cancelReason === t('bookings.cancel.reason.custom') && (
+              <div className="space-y-2">
+                <Label htmlFor="customCancelReason">{t('bookings.cancel.reasonLabel')}</Label>
+                <Textarea id="customCancelReason" value={customCancelReason} onChange={(e) => setCustomCancelReason(e.target.value)} placeholder={t('bookings.cancel.reasonPlaceholder')} />
+              </div>
+            )}
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setShowCancelModal(false)} disabled={isDeleting}>{t('bookings.cancel.back')}</Button>
+            <Button variant="destructive" className="flex-1" onClick={handleConfirmCancel} disabled={isDeleting || (!cancelReason && !customCancelReason)}>
+              {isDeleting ? t('bookings.cancel.processing') : t('bookings.cancel.confirm')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )}
 
     {/* Modal détails réservation */}
     <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
