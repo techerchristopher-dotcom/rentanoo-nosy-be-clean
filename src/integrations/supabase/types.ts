@@ -95,7 +95,76 @@ export type Database = {
           rental_contract_template_version?: string | null
         }
         Relationships: []
-      }
+      },
+      booking_claim_charges: {
+        Row: {
+          id: string
+          booking_id: string
+          amount_cents: number
+          currency: string
+          reason: string
+          status: "pending" | "succeeded" | "failed" | "canceled"
+          stripe_payment_intent_id: string | null
+          stripe_charge_id: string | null
+          failure_code: string | null
+          failure_message: string | null
+          created_by_profile_id: string
+          created_at: string
+          updated_at: string
+          receipt_url: string | null
+          metadata: Json
+        }
+        Insert: {
+          id?: string
+          booking_id: string
+          amount_cents: number
+          currency?: string
+          reason: string
+          status: "pending" | "succeeded" | "failed" | "canceled"
+          stripe_payment_intent_id?: string | null
+          stripe_charge_id?: string | null
+          failure_code?: string | null
+          failure_message?: string | null
+          created_by_profile_id: string
+          created_at?: string
+          updated_at?: string
+          receipt_url?: string | null
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          booking_id?: string
+          amount_cents?: number
+          currency?: string
+          reason?: string
+          status?: "pending" | "succeeded" | "failed" | "canceled"
+          stripe_payment_intent_id?: string | null
+          stripe_charge_id?: string | null
+          failure_code?: string | null
+          failure_message?: string | null
+          created_by_profile_id?: string
+          created_at?: string
+          updated_at?: string
+          receipt_url?: string | null
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_claim_charges_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_claim_charges_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
       conversations: {
         Row: {
           id: string

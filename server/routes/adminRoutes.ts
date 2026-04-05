@@ -1,8 +1,10 @@
 import type { Express, Request, Response } from "express";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import Stripe from "stripe";
 import { requireAdmin } from "../lib/adminAuth";
 import { getStripe } from "../lib/stripe";
+import { updateClaimChargeRowFromPaymentIntent } from "../lib/bookingClaimChargesSync";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
 
 /** Build id — doit correspondre aux en-têtes HTTP et au champ debug de la réponse 201. */
@@ -78,6 +80,55 @@ function isValidYmd(s: string): boolean {
   if (d < 1 || d > 31) return false;
   const dt = new Date(Date.UTC(y, m - 1, d));
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
+function parseAmountEuros(raw: unknown): { ok: true; euros: number } | { ok: false; message: string } {
+  if (raw === null || raw === undefined) {
+    return { ok: false, message: "Montant requis." };
+  }
+  if (typeof raw === "number") {
+    if (!Number.isFinite(raw) || raw <= 0) {
+      return { ok: false, message: "Montant invalide (doit être un nombre strictement positif)." };
+    }
+    return { ok: true, euros: raw };
+  }
+  if (typeof raw === "string") {
+    const s = raw.trim().replace(",", ".");
+    const n = parseFloat(s);
+    if (!Number.isFinite(n) || n <= 0) {
+      return { ok: false, message: "Montant invalide (doit être un nombre strictement positif)." };
+    }
+    return { ok: true, euros: n };
+  }
+  return { ok: false, message: "Montant invalide." };
+}
+
+function depositCapFromSnapshot(snapshot: unknown): { ok: true; capCents: number } | { ok: false; message: string } {
+  const n = Number(snapshot ?? 0);
+  if (!Number.isFinite(n) || n <= 0) {
+    return {
+      ok: false,
+      message: "Caution contractuelle absente ou nulle (deposit_amount_snapshot) : prélèvement impossible.",
+    };
+  }
+  return { ok: true, capCents: Math.round(n * 100) };
+}
+
+function formatStripeErrorForAdmin(code: string | undefined, message: string): string {
+  const c = code ?? "";
+  if (c === "authentication_required" || c === "requires_action") {
+    return "Authentification bancaire requise : ce prélèvement hors session est refusé. Le locataire doit valider le paiement avec sa banque ou enregistrer une autre carte.";
+  }
+  if (c === "card_declined") {
+    return "Carte refusée par la banque. Vérifiez le moyen de paiement enregistré ou demandez au locataire d’en ajouter un autre.";
+  }
+  if (c === "expired_card") {
+    return "Carte expirée. Le locataire doit enregistrer un nouveau moyen de paiement.";
+  }
+  if (c === "insufficient_funds") {
+    return "Fonds insuffisants sur la carte.";
+  }
+  return message || "Le prélèvement a échoué (Stripe).";
 }
 
 export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient) {
@@ -1411,6 +1462,283 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       vehicle: vehicle ?? null,
       renter: renter ?? null,
     });
+  });
+
+  // ============================================================================
+  // Prélèvements admin sur la caution (Stripe off_session + traçabilité)
+  // ============================================================================
+  app.get("/api/admin/bookings/:bookingId/claim-charges", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.params.bookingId === "string" ? req.params.bookingId.trim() : "";
+    if (!bookingId) {
+      return res.status(400).json({ ok: false, error: "MISSING_ID", message: "bookingId requis" });
+    }
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("booking_claim_charges")
+      .select("*")
+      .eq("booking_id", bookingId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("[admin/bookings/claim-charges] list", error);
+      return res.status(500).json({ ok: false, error: "LIST_FAILED", message: error.message });
+    }
+
+    const succeededCents = (rows ?? []).filter((r) => r.status === "succeeded").reduce((acc, r) => acc + Number(r.amount_cents ?? 0), 0);
+
+    return res.status(200).json({
+      ok: true,
+      charges: rows ?? [],
+      summary: { totalSucceededCents: succeededCents },
+    });
+  });
+
+  app.post("/api/admin/bookings/:bookingId/claim-charge", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const adminId = gate.userId;
+
+    const bookingId = typeof req.params.bookingId === "string" ? req.params.bookingId.trim() : "";
+    if (!bookingId) {
+      return res.status(400).json({ ok: false, error: "MISSING_ID", message: "bookingId requis" });
+    }
+
+    const reasonRaw = typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+    if (!reasonRaw) {
+      return res.status(400).json({ ok: false, error: "MISSING_REASON", message: "Le motif du prélèvement est obligatoire." });
+    }
+    if (reasonRaw.length > 4000) {
+      return res.status(400).json({ ok: false, error: "REASON_TOO_LONG", message: "Motif trop long (max 4000 caractères)." });
+    }
+
+    const amountParsed = parseAmountEuros(req.body?.amountEuros ?? req.body?.amount);
+    if (amountParsed.ok === false) {
+      return res.status(400).json({ ok: false, error: "INVALID_AMOUNT", message: amountParsed.message });
+    }
+
+    const { data: booking, error: bookingErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, user_id, deposit_amount_snapshot, deposit_status, stripe_payment_method_id")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (bookingErr || !booking) {
+      return res.status(404).json({ ok: false, error: "NOT_FOUND", message: "Réservation introuvable." });
+    }
+
+    const cap = depositCapFromSnapshot(booking.deposit_amount_snapshot);
+    if (cap.ok === false) {
+      return res.status(400).json({ ok: false, error: "DEPOSIT_CAP_ZERO", message: cap.message });
+    }
+
+    const pmId = typeof booking.stripe_payment_method_id === "string" ? booking.stripe_payment_method_id.trim() : "";
+    if (!pmId) {
+      const st = typeof booking.deposit_status === "string" ? booking.deposit_status : "";
+      if (st === "card_registered") {
+        return res.status(409).json({
+          ok: false,
+          error: "MISSING_PAYMENT_METHOD",
+          message:
+            "Statut « carte enregistrée » sans moyen de paiement Stripe sur la réservation (ex. caution forcée sans carte). Prélèvement impossible : faites enregistrer une carte via le flux caution.",
+        });
+      }
+      return res.status(409).json({
+        ok: false,
+        error: "MISSING_PAYMENT_METHOD",
+        message: "Aucun moyen de paiement enregistré sur cette réservation. Le locataire doit d’abord enregistrer sa carte (SetupIntent / caution).",
+      });
+    }
+
+    const renterId = typeof booking.user_id === "string" ? booking.user_id : "";
+    if (!renterId) {
+      return res.status(400).json({ ok: false, error: "MISSING_RENTER", message: "Locataire manquant sur la réservation." });
+    }
+
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, stripe_customer_id")
+      .eq("id", renterId)
+      .maybeSingle();
+
+    if (profileErr || !profile) {
+      return res.status(500).json({ ok: false, error: "PROFILE_NOT_FOUND", message: "Profil locataire introuvable." });
+    }
+
+    const customerId = typeof profile.stripe_customer_id === "string" ? profile.stripe_customer_id.trim() : "";
+    if (!customerId) {
+      return res.status(409).json({
+        ok: false,
+        error: "STRIPE_CUSTOMER_MISSING",
+        message: "Client Stripe absent pour ce locataire. Impossible de prélever tant que le profil n’a pas de stripe_customer_id.",
+      });
+    }
+
+    const amountCents = Math.round(amountParsed.euros * 100);
+    if (amountCents <= 0) {
+      return res.status(400).json({ ok: false, error: "INVALID_AMOUNT", message: "Montant trop faible après conversion en centimes." });
+    }
+
+    const { data: priorRows, error: priorErr } = await supabaseAdmin
+      .from("booking_claim_charges")
+      .select("amount_cents, status")
+      .eq("booking_id", bookingId);
+
+    if (priorErr) {
+      console.error("[admin/bookings/claim-charge] sum prior", priorErr);
+      return res.status(500).json({ ok: false, error: "SUM_FAILED", message: priorErr.message });
+    }
+
+    const totalSucceededCents = (priorRows ?? [])
+      .filter((r) => r.status === "succeeded")
+      .reduce((acc, r) => acc + Number(r.amount_cents ?? 0), 0);
+
+    const remainingCents = cap.capCents - totalSucceededCents;
+    if (remainingCents <= 0) {
+      return res.status(409).json({
+        ok: false,
+        error: "CAP_REACHED",
+        message: "Le plafond de caution contractuelle est déjà entièrement utilisé par des prélèvements réussis.",
+      });
+    }
+    if (amountCents > remainingCents) {
+      return res.status(409).json({
+        ok: false,
+        error: "EXCEEDS_REMAINING",
+        message: `Montant supérieur au reste disponible sous plafond (${(remainingCents / 100).toFixed(2)} €).`,
+      });
+    }
+
+    const ts = nowIso();
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("booking_claim_charges")
+      .insert({
+        booking_id: bookingId,
+        amount_cents: amountCents,
+        currency: "eur",
+        reason: reasonRaw,
+        status: "pending",
+        created_by_profile_id: adminId,
+        created_at: ts,
+        updated_at: ts,
+        metadata: { source: "admin_api" },
+      })
+      .select("id")
+      .single();
+
+    if (insErr || !inserted?.id) {
+      console.error("[admin/bookings/claim-charge] insert", insErr);
+      return res.status(500).json({ ok: false, error: "INSERT_FAILED", message: insErr?.message ?? "Insertion impossible." });
+    }
+
+    const claimRowId = inserted.id as string;
+    const idempotencyKey = `booking_claim_${claimRowId}`;
+
+    const reasonMeta = reasonRaw.length > 450 ? `${reasonRaw.slice(0, 447)}...` : reasonRaw;
+
+    let stripe: Stripe;
+    try {
+      stripe = getStripe();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Stripe non configuré.";
+      await supabaseAdmin
+        .from("booking_claim_charges")
+        .update({
+          status: "failed",
+          failure_code: "stripe_not_configured",
+          failure_message: msg,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", claimRowId);
+      return res.status(503).json({ ok: false, error: "STRIPE_NOT_CONFIGURED", message: msg });
+    }
+
+    try {
+      const pi = await stripe.paymentIntents.create(
+        {
+          amount: amountCents,
+          currency: "eur",
+          customer: customerId,
+          payment_method: pmId,
+          off_session: true,
+          confirm: true,
+          description: `Prélèvement caution réservation ${bookingId}`,
+          metadata: {
+            rentanoo_charge_type: "booking_claim",
+            booking_id: bookingId,
+            claim_charge_id: claimRowId,
+            created_by_admin_id: adminId,
+            reason: reasonMeta,
+          },
+        },
+        { idempotencyKey }
+      );
+
+      if (pi.status === "succeeded") {
+        await updateClaimChargeRowFromPaymentIntent(supabaseAdmin, stripe, claimRowId, pi);
+        const { data: row } = await supabaseAdmin.from("booking_claim_charges").select("*").eq("id", claimRowId).single();
+        return res.status(200).json({
+          ok: true,
+          charge: row,
+          stripeStatus: pi.status,
+        });
+      }
+
+      if (pi.status === "processing") {
+        await supabaseAdmin
+          .from("booking_claim_charges")
+          .update({
+            stripe_payment_intent_id: pi.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", claimRowId);
+        return res.status(200).json({
+          ok: true,
+          pending: true,
+          message: "Paiement en cours de traitement. L’état sera mis à jour via Stripe (webhook).",
+          stripePaymentIntentId: pi.id,
+          chargeId: claimRowId,
+        });
+      }
+
+      await updateClaimChargeRowFromPaymentIntent(supabaseAdmin, stripe, claimRowId, pi);
+      const { data: failedRow } = await supabaseAdmin.from("booking_claim_charges").select("*").eq("id", claimRowId).single();
+      const lp = pi.last_payment_error;
+      const code = pi.status === "requires_action" ? "authentication_required" : (lp?.code ?? "payment_failed");
+      const friendly = formatStripeErrorForAdmin(code, failedRow?.failure_message ?? lp?.message ?? "Échec du prélèvement.");
+      return res.status(402).json({
+        ok: false,
+        error: code,
+        message: friendly,
+        charge: failedRow,
+        stripeStatus: pi.status,
+      });
+    } catch (err: unknown) {
+      let code = "stripe_error";
+      let msg = "Erreur Stripe inattendue.";
+      if (err instanceof Stripe.errors.StripeError) {
+        code = err.code ?? err.type ?? code;
+        msg = err.message ?? msg;
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      await supabaseAdmin
+        .from("booking_claim_charges")
+        .update({
+          status: "failed",
+          failure_code: code,
+          failure_message: msg,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", claimRowId);
+      return res.status(402).json({
+        ok: false,
+        error: code,
+        message: formatStripeErrorForAdmin(code, msg),
+      });
+    }
   });
 
   /** Annulation logique V1 (agence) : status → cancelled, pas de DELETE. */

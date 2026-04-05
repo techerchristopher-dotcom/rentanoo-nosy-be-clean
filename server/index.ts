@@ -7,6 +7,7 @@ import multer from "multer";
 import { createClient } from "@supabase/supabase-js";
 import { getStripe, isStripeConfigured, getStripeKeyType } from "./lib/stripe";
 import { getAuthUserFromRequest } from "./lib/depositAuth";
+import { reconcileClaimChargeFromWebhookPaymentIntent } from "./lib/bookingClaimChargesSync";
 import { registerAdminRoutes } from "./routes/adminRoutes";
 
 // Charger .env.local en développement uniquement (si fichier existe)
@@ -227,6 +228,24 @@ app.post(
         });
         
         console.log(`✅ [webhook] bookingId=${bookingId}, payment confirmed -> statutReservation=accepted, statutPaiement=paid`);
+      } else if (event.type === "payment_intent.succeeded") {
+        const pi = event.data.object as Parameters<typeof reconcileClaimChargeFromWebhookPaymentIntent>[2];
+        try {
+          const stripe = getStripe();
+          await reconcileClaimChargeFromWebhookPaymentIntent(supabaseAdmin, stripe, pi);
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error("[webhook] booking_claim payment_intent.succeeded:", msg);
+        }
+      } else if (event.type === "payment_intent.payment_failed") {
+        const pi = event.data.object as Parameters<typeof reconcileClaimChargeFromWebhookPaymentIntent>[2];
+        try {
+          const stripe = getStripe();
+          await reconcileClaimChargeFromWebhookPaymentIntent(supabaseAdmin, stripe, pi);
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error("[webhook] booking_claim payment_intent.payment_failed:", msg);
+        }
       }
 
       return res.status(200).json({ received: true });

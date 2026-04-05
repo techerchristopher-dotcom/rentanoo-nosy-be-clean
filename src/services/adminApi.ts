@@ -280,3 +280,72 @@ export async function adminListBookings(params: {
     offset: typeof data.offset === "number" ? data.offset : params.offset ?? 0,
   };
 }
+
+export type AdminBookingClaimChargeStatus = "pending" | "succeeded" | "failed" | "canceled";
+
+export type AdminBookingClaimCharge = {
+  id: string;
+  booking_id: string;
+  amount_cents: number;
+  currency: string;
+  reason: string;
+  status: AdminBookingClaimChargeStatus;
+  stripe_payment_intent_id: string | null;
+  stripe_charge_id: string | null;
+  failure_code: string | null;
+  failure_message: string | null;
+  created_by_profile_id: string;
+  created_at: string;
+  updated_at: string;
+  receipt_url: string | null;
+  metadata: Record<string, unknown> | null;
+};
+
+export type AdminBookingClaimChargesSummary = {
+  totalSucceededCents: number;
+};
+
+export async function adminListBookingClaimCharges(bookingId: string): Promise<{
+  charges: AdminBookingClaimCharge[];
+  summary: AdminBookingClaimChargesSummary;
+}> {
+  const data = await adminFetch<{
+    ok: boolean;
+    charges: AdminBookingClaimCharge[];
+    summary: { totalSucceededCents: number };
+  }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/claim-charges`);
+  return {
+    charges: data.charges ?? [],
+    summary: { totalSucceededCents: typeof data.summary?.totalSucceededCents === "number" ? data.summary.totalSucceededCents : 0 },
+  };
+}
+
+export async function adminCreateClaimCharge(
+  bookingId: string,
+  payload: { amountEuros: number; reason: string }
+): Promise<{
+  charge?: AdminBookingClaimCharge;
+  pending?: boolean;
+  stripePaymentIntentId?: string;
+  chargeId?: string;
+  message?: string;
+}> {
+  const data = await adminFetch<{
+    ok: boolean;
+    charge?: AdminBookingClaimCharge;
+    pending?: boolean;
+    stripePaymentIntentId?: string;
+    chargeId?: string;
+    message?: string;
+  }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/claim-charge`, {
+    method: "POST",
+    body: JSON.stringify({ amountEuros: payload.amountEuros, reason: payload.reason }),
+  });
+  return {
+    charge: data.charge,
+    pending: data.pending === true,
+    stripePaymentIntentId: data.stripePaymentIntentId,
+    chargeId: data.chargeId,
+    message: data.message,
+  };
+}
