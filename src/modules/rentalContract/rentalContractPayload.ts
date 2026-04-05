@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { RENTAL_CONTRACT_SINISTER_DECLARATION_HOURS } from "./constants";
 
 export interface RentalContractPayload {
   bookingId: string;
@@ -15,6 +16,10 @@ export interface RentalContractPayload {
   subtotal: number;
   pricePerDay: number;
   rentalDays: number | null;
+  /** Montant caution figé sur la réservation (snapshot), si présent */
+  depositAmountSnapshot: number | null;
+  currencyCode: string;
+  sinisterDeclarationHours: number;
   vehicle: {
     brand: string;
     model: string;
@@ -22,6 +27,12 @@ export interface RentalContractPayload {
     licensePlate: string | null;
     color: string | null;
     fuelType: string | null;
+    /** N° cadre si renseigné en base ; sinon null → affichage « Non renseigné » dans le PDF V7 */
+    vin: string | null;
+    /** Kilométrage véhicule en base (approximation « au départ » avant EDL détaillé) */
+    mileage: number | null;
+    /** Caution plafond véhicule (€) */
+    depositAmount: number | null;
   };
   renter: {
     id: string;
@@ -29,6 +40,13 @@ export interface RentalContractPayload {
     lastName: string;
     email: string;
     phone: string;
+    birthdate: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+    country: string | null;
+    driverLicenseNumber: string | null;
+    driverLicenseIssueDate: string | null;
   };
   owner: {
     id: string;
@@ -42,7 +60,7 @@ export interface RentalContractPayload {
 /**
  * Assemble les données nécessaires au contrat de location (jointure booking → véhicule → profils).
  * - `renter` = réservation (`bookings.user_id`) — locataire.
- * - `owner` = `vehicles.owner_id` — propriétaire du véhicule en location P2P (pas la plateforme).
+ * - `owner` = `vehicles.owner_id` — propriétaire du véhicule en location P2P (signataire côté plateforme).
  * Accès : uniquement si l’utilisateur connecté est l’un ou l’autre.
  */
 export async function getRentalContractPayload(
@@ -60,7 +78,7 @@ export async function getRentalContractPayload(
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .select(
-        "id, user_id, vehicle_id, reference_number, start_date, end_date, start_time, end_time, pickup_location, total_price, base_price, options_total, service_fee, subtotal, price_per_day, rental_days"
+        "id, user_id, vehicle_id, reference_number, start_date, end_date, start_time, end_time, pickup_location, total_price, base_price, options_total, service_fee, subtotal, price_per_day, rental_days, deposit_amount_snapshot"
       )
       .eq("id", bookingId)
       .single();
@@ -71,7 +89,7 @@ export async function getRentalContractPayload(
 
     const { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
-      .select("owner_id, brand, model, year, license_plate, color, fuel_type")
+      .select("owner_id, brand, model, year, license_plate, color, fuel_type, mileage, deposit_amount")
       .eq("id", booking.vehicle_id)
       .single();
 
@@ -88,7 +106,9 @@ export async function getRentalContractPayload(
 
     const { data: renterProfile, error: renterErr } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, email, phone")
+      .select(
+        "id, first_name, last_name, email, phone, birthdate, address_line1, postal_code, city, country, driver_license_number, driver_license_issue_date"
+      )
       .eq("id", renterId)
       .single();
 
@@ -105,6 +125,11 @@ export async function getRentalContractPayload(
       return { data: null, error: ownerErr?.message || "Profil propriétaire introuvable." };
     }
 
+    const depositSnap =
+      booking.deposit_amount_snapshot != null ? Number(booking.deposit_amount_snapshot) : null;
+    const vehicleDeposit =
+      vehicle.deposit_amount != null ? Number(vehicle.deposit_amount) : null;
+
     const payload: RentalContractPayload = {
       bookingId: booking.id,
       referenceNumber: booking.reference_number,
@@ -120,6 +145,9 @@ export async function getRentalContractPayload(
       subtotal: Number(booking.subtotal),
       pricePerDay: Number(booking.price_per_day),
       rentalDays: booking.rental_days,
+      depositAmountSnapshot: Number.isFinite(depositSnap as number) ? depositSnap : null,
+      currencyCode: "EUR",
+      sinisterDeclarationHours: RENTAL_CONTRACT_SINISTER_DECLARATION_HOURS,
       vehicle: {
         brand: vehicle.brand,
         model: vehicle.model,
@@ -127,6 +155,10 @@ export async function getRentalContractPayload(
         licensePlate: vehicle.license_plate,
         color: vehicle.color,
         fuelType: vehicle.fuel_type,
+        /** Colonne `vehicles.vin` absente du schéma actuel — à brancher quand ajoutée en DB */
+        vin: null,
+        mileage: vehicle.mileage != null ? Number(vehicle.mileage) : null,
+        depositAmount: Number.isFinite(vehicleDeposit as number) ? vehicleDeposit : null,
       },
       renter: {
         id: renterProfile.id,
@@ -134,6 +166,13 @@ export async function getRentalContractPayload(
         lastName: renterProfile.last_name || "",
         email: renterProfile.email || "",
         phone: renterProfile.phone || "",
+        birthdate: renterProfile.birthdate ?? null,
+        addressLine1: renterProfile.address_line1 ?? null,
+        postalCode: renterProfile.postal_code ?? null,
+        city: renterProfile.city ?? null,
+        country: renterProfile.country ?? null,
+        driverLicenseNumber: renterProfile.driver_license_number ?? null,
+        driverLicenseIssueDate: renterProfile.driver_license_issue_date ?? null,
       },
       owner: {
         id: ownerProfile.id,

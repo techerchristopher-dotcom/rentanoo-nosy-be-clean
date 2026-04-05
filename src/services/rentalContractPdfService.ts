@@ -1,9 +1,8 @@
 /**
- * Génération PDF contrat de location + upload Storage (bucket checkin-photos, même convention que l’EDL).
+ * Génération PDF contrat de location + upload Storage (bucket checkin-photos).
  *
- * Rendu : une seule page PDF — le bloc `.page` entier est capturé puis mis à l’échelle sur l’A4 (pas de
- * rognage). Un texte juridique très long peut devenir illisible ; dans ce cas, reprendre le découpage
- * multi-pages comme `checkinDepartPdfService`.
+ * Rendu : une page PDF par élément `.page` du HTML (modèle V7 multi-pages), même logique
+ * que `checkinDepartPdfService` (html2canvas par page + jsPDF addPage).
  */
 import { supabase } from "@/integrations/supabase/client";
 import { buildRentalContractDocumentHtml } from "@/modules/rentalContract/contractTemplateHtml";
@@ -28,8 +27,8 @@ function buildContractPdfStoragePath(bookingId: string, referenceNumber: number 
   return `resa_${ref}/documents/contrat_location_${bookingId}.pdf`;
 }
 
-function waitForImages(element: HTMLElement): Promise<void> {
-  const images = element.querySelectorAll("img");
+function waitForImages(root: HTMLElement): Promise<void> {
+  const images = root.querySelectorAll("img");
   const promises = Array.from(images).map((img) => {
     if (img.complete) return Promise.resolve();
     return new Promise<void>((resolve) => {
@@ -61,39 +60,53 @@ async function generatePdfBlobFromHtml(fullHtml: string): Promise<{ blob: Blob |
 
     await waitForImages(tempDiv);
 
-    const pageEl = tempDiv.querySelector(".page") as HTMLElement | null;
-    if (!pageEl) {
+    const pageElements = tempDiv.querySelectorAll(".page");
+    if (!pageElements.length) {
       return { blob: null, error: "Template PDF sans .page" };
     }
 
-    const canvas = await html2canvas(pageEl, {
-      scale: PDF_HTML2CANVAS_SCALE,
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      width: pageEl.scrollWidth,
-      height: pageEl.scrollHeight,
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", PDF_JPEG_QUALITY);
     const pdf = new jsPDF("p", "mm", "a4");
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const availableWidth = pdfWidth - PDF_MARGIN * 2;
     const availableHeight = pdfHeight - PDF_MARGIN * 2;
 
-    const imgWidthMM = (canvas.width * 25.4) / 96;
-    const imgHeightMM = (canvas.height * 25.4) / 96;
-    const ratio = imgHeightMM / imgWidthMM;
-    let renderWidth = availableWidth;
-    let renderHeight = renderWidth * ratio;
-    if (renderHeight > availableHeight) {
-      renderHeight = availableHeight;
-      renderWidth = renderHeight / ratio;
+    for (let index = 0; index < pageElements.length; index++) {
+      const pageEl = pageElements[index] as HTMLElement;
+
+      const canvas = await html2canvas(pageEl, {
+        scale: PDF_HTML2CANVAS_SCALE,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        width: pageEl.scrollWidth,
+        height: pageEl.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", PDF_JPEG_QUALITY);
+      const imgWidthMM = (canvas.width * 25.4) / 96;
+      const imgHeightMM = (canvas.height * 25.4) / 96;
+      const ratio = imgHeightMM / imgWidthMM;
+      let renderWidth = availableWidth;
+      let renderHeight = renderWidth * ratio;
+      if (renderHeight > availableHeight) {
+        renderHeight = availableHeight;
+        renderWidth = renderHeight / ratio;
+      }
+      const offsetX = PDF_MARGIN + (availableWidth - renderWidth) / 2;
+      const offsetY = PDF_MARGIN + (availableHeight - renderHeight) / 2;
+
+      if (index > 0) {
+        pdf.addPage();
+      }
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
+
+      const pageNum = index + 1;
+      const totalPages = pageElements.length;
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Page ${pageNum} / ${totalPages}`, pdfWidth / 2, pdfHeight - 8, { align: "center" });
     }
-    const offsetX = PDF_MARGIN + (availableWidth - renderWidth) / 2;
-    const offsetY = PDF_MARGIN + (availableHeight - renderHeight) / 2;
-    pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
 
     return { blob: pdf.output("blob"), error: null };
   } catch (e: unknown) {
