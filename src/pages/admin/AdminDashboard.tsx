@@ -70,6 +70,10 @@ const AdminDashboard = () => {
             Planning
           </Link>
           <span className="mx-2 text-border">·</span>
+          <Link to="/admin/bookings" className="text-primary font-medium hover:underline">
+            Toutes les réservations
+          </Link>
+          <span className="mx-2 text-border">·</span>
           <span>Flux métier branché au bloc 2</span>
         </p>
       </div>

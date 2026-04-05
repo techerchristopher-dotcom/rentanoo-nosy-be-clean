@@ -198,3 +198,85 @@ export async function adminCancelBooking(bookingId: string): Promise<{
   });
   return data.booking;
 }
+
+export type AdminBookingListRenter = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+export type AdminBookingListVehicle = {
+  id: string;
+  brand: string;
+  model: string;
+};
+
+export type AdminBookingListRow = {
+  id: string;
+  reference_number: number | null;
+  status: string | null;
+  pricing_mode: string | null;
+  start_date: string;
+  end_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  deposit_status: string | null;
+  deposit_amount_snapshot: number | null;
+  rental_contract_signed_at: string | null;
+  rental_contract_pdf_url: string | null;
+  user_id: string;
+  vehicle_id: string;
+  paid_at: string | null;
+  stripe_payment_intent_id: string | null;
+  stripe_checkout_session_id: string | null;
+  created_at: string | null;
+  renter: AdminBookingListRenter | null;
+  vehicle: AdminBookingListVehicle | null;
+  edl_depart_done: boolean;
+  edl_return_done: boolean;
+};
+
+export type AdminBookingListResult = {
+  bookings: AdminBookingListRow[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export async function adminListBookings(params: {
+  limit?: number;
+  offset?: number;
+  status?: string;
+  pricing_mode?: "web" | "admin" | "";
+  include_cancelled?: boolean;
+  search?: string;
+  date_from?: string;
+  date_to?: string;
+}): Promise<AdminBookingListResult> {
+  const sp = new URLSearchParams();
+  if (params.limit != null) sp.set("limit", String(params.limit));
+  if (params.offset != null) sp.set("offset", String(params.offset));
+  if (params.status?.trim()) sp.set("status", params.status.trim());
+  if (params.pricing_mode === "web" || params.pricing_mode === "admin") sp.set("pricing_mode", params.pricing_mode);
+  if (params.include_cancelled) sp.set("include_cancelled", "1");
+  if (params.search?.trim()) sp.set("search", params.search.trim());
+  if (params.date_from?.trim()) sp.set("date_from", params.date_from.trim());
+  if (params.date_to?.trim()) sp.set("date_to", params.date_to.trim());
+
+  const data = await adminFetch<{
+    ok?: boolean;
+    bookings: AdminBookingListRow[];
+    total: number;
+    limit: number;
+    offset: number;
+  }>(`/api/admin/bookings?${sp.toString()}`);
+
+  return {
+    bookings: data.bookings ?? [],
+    total: typeof data.total === "number" ? data.total : 0,
+    limit: typeof data.limit === "number" ? data.limit : params.limit ?? 50,
+    offset: typeof data.offset === "number" ? data.offset : params.offset ?? 0,
+  };
+}

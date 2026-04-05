@@ -225,6 +225,195 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
   });
 
   // ============================================================================
+  // Admin — liste réservations (hub opérationnel)
+  // ============================================================================
+  app.get("/api/admin/bookings", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const limitRaw = Number(typeof req.query?.limit === "string" ? req.query.limit : "");
+    const offsetRaw = Number(typeof req.query?.offset === "string" ? req.query.offset : "");
+    const limit = Math.min(Math.max(Number.isFinite(limitRaw) && limitRaw > 0 ? Math.floor(limitRaw) : 50, 1), 200);
+    const offset = Math.max(Number.isFinite(offsetRaw) && offsetRaw >= 0 ? Math.floor(offsetRaw) : 0, 0);
+
+    const statusParam = typeof req.query?.status === "string" ? req.query.status.trim() : "";
+    const pricingParam = typeof req.query?.pricing_mode === "string" ? req.query.pricing_mode.trim() : "";
+    const includeCancelled =
+      req.query?.include_cancelled === "1" || String(req.query?.include_cancelled ?? "").toLowerCase() === "true";
+    const searchRaw = typeof req.query?.search === "string" ? sanitizeIlikePattern(req.query.search) : "";
+    const dateFrom = typeof req.query?.date_from === "string" ? req.query.date_from.trim() : "";
+    const dateTo = typeof req.query?.date_to === "string" ? req.query.date_to.trim() : "";
+
+    const selectCols =
+      "id, reference_number, status, pricing_mode, start_date, end_date, start_time, end_time, deposit_status, deposit_amount_snapshot, rental_contract_signed_at, rental_contract_pdf_url, user_id, vehicle_id, paid_at, stripe_payment_intent_id, stripe_checkout_session_id, created_at";
+
+    type BookingListRow = {
+      id: string;
+      reference_number: number | null;
+      status: string | null;
+      pricing_mode: string | null;
+      start_date: string;
+      end_date: string;
+      start_time: string | null;
+      end_time: string | null;
+      deposit_status: string | null;
+      deposit_amount_snapshot: number | string | null;
+      rental_contract_signed_at: string | null;
+      rental_contract_pdf_url: string | null;
+      user_id: string;
+      vehicle_id: string;
+      paid_at: string | null;
+      stripe_payment_intent_id: string | null;
+      stripe_checkout_session_id: string | null;
+      created_at: string | null;
+    };
+
+    const applyFilters = (q: ReturnType<SupabaseClient["from"]>) => {
+      let query = q;
+      if (!includeCancelled) {
+        query = query.not("status", "in", '("cancelled","declined","rejected","terminated")');
+      }
+      if (statusParam) {
+        query = query.eq("status", statusParam);
+      }
+      if (pricingParam === "web" || pricingParam === "admin") {
+        query = query.eq("pricing_mode", pricingParam);
+      }
+      if (dateFrom && isValidYmd(dateFrom) && dateTo && isValidYmd(dateTo)) {
+        query = query.lte("start_date", dateTo).gte("end_date", dateFrom);
+      } else if (dateFrom && isValidYmd(dateFrom)) {
+        query = query.gte("end_date", dateFrom);
+      } else if (dateTo && isValidYmd(dateTo)) {
+        query = query.lte("start_date", dateTo);
+      }
+      return query;
+    };
+
+    let bookingQuery = supabaseAdmin.from("bookings").select(selectCols, { count: "exact" });
+    bookingQuery = applyFilters(bookingQuery) as typeof bookingQuery;
+
+    if (searchRaw) {
+      const refNum = /^\d{1,12}$/.test(searchRaw) ? parseInt(searchRaw, 10) : NaN;
+      if (Number.isFinite(refNum)) {
+        bookingQuery = bookingQuery.eq("reference_number", refNum) as typeof bookingQuery;
+      } else {
+        const pattern = `%${searchRaw}%`;
+        const [{ data: profs }, { data: vehs }] = await Promise.all([
+          supabaseAdmin
+            .from("profiles")
+            .select("id")
+            .or(`email.ilike.${pattern},first_name.ilike.${pattern},last_name.ilike.${pattern}`)
+            .limit(300),
+          supabaseAdmin.from("vehicles").select("id").or(`brand.ilike.${pattern},model.ilike.${pattern}`).limit(300),
+        ]);
+        const pids = (profs ?? []).map((p: { id: string }) => p.id).filter(Boolean);
+        const vids = (vehs ?? []).map((v: { id: string }) => v.id).filter(Boolean);
+        if (pids.length === 0 && vids.length === 0) {
+          return res.status(200).json({ ok: true, bookings: [], total: 0, limit, offset });
+        }
+        const orParts: string[] = [];
+        if (pids.length) orParts.push(`user_id.in.(${pids.join(",")})`);
+        if (vids.length) orParts.push(`vehicle_id.in.(${vids.join(",")})`);
+        bookingQuery = bookingQuery.or(orParts.join(",")) as typeof bookingQuery;
+      }
+    }
+
+    bookingQuery = bookingQuery.order("start_date", { ascending: false }).range(offset, offset + limit - 1) as typeof bookingQuery;
+
+    const { data: bookingRows, error: bErr, count } = await bookingQuery;
+
+    if (bErr) {
+      console.error("[admin/bookings/list]", bErr);
+      return res.status(500).json({ ok: false, error: "BOOKINGS_FETCH_FAILED", message: bErr.message });
+    }
+
+    const rows = (bookingRows ?? []) as BookingListRow[];
+    const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)));
+    const vehicleIds = Array.from(new Set(rows.map((r) => r.vehicle_id).filter(Boolean)));
+    const bookingIds = rows.map((r) => r.id);
+
+    type RenterSnippet = {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+      phone: string | null;
+    };
+    type VehicleSnippet = { id: string; brand: string; model: string };
+
+    const renterById = new Map<string, RenterSnippet>();
+    const vehicleById = new Map<string, VehicleSnippet>();
+
+    if (userIds.length > 0) {
+      const { data: renters, error: renterErr } = await supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name, email, phone")
+        .in("id", userIds);
+      if (renterErr) {
+        console.warn("[admin/bookings/list] renters:", renterErr.message);
+      } else {
+        for (const r of (renters ?? []) as RenterSnippet[]) {
+          if (r?.id) renterById.set(r.id, r);
+        }
+      }
+    }
+
+    if (vehicleIds.length > 0) {
+      const { data: vehRows, error: vehErr } = await supabaseAdmin
+        .from("vehicles")
+        .select("id, brand, model")
+        .in("id", vehicleIds);
+      if (vehErr) {
+        console.warn("[admin/bookings/list] vehicles:", vehErr.message);
+      } else {
+        for (const v of (vehRows ?? []) as VehicleSnippet[]) {
+          if (v?.id) vehicleById.set(v.id, v);
+        }
+      }
+    }
+
+    const edlDepartDone = new Map<string, boolean>();
+    const edlReturnDone = new Map<string, boolean>();
+
+    if (bookingIds.length > 0) {
+      const [{ data: depRows }, { data: retRows }] = await Promise.all([
+        supabaseAdmin.from("checkin_depart").select("booking_id, status, validated_at").in("booking_id", bookingIds),
+        supabaseAdmin.from("checkin_return").select("booking_id, status").in("booking_id", bookingIds),
+      ]);
+      for (const d of depRows ?? []) {
+        const bid = (d as { booking_id?: string | null }).booking_id;
+        if (!bid) continue;
+        const st = (d as { status?: string | null }).status;
+        const va = (d as { validated_at?: string | null }).validated_at;
+        if (st === "completed" || va) edlDepartDone.set(bid, true);
+      }
+      for (const r of retRows ?? []) {
+        const bid = (r as { booking_id?: string }).booking_id;
+        if (!bid) continue;
+        if ((r as { status?: string | null }).status === "completed") edlReturnDone.set(bid, true);
+      }
+    }
+
+    const bookings = rows.map((b) => ({
+      ...b,
+      deposit_amount_snapshot:
+        b.deposit_amount_snapshot != null ? Number(b.deposit_amount_snapshot) : null,
+      renter: renterById.get(b.user_id) ?? null,
+      vehicle: vehicleById.get(b.vehicle_id) ?? null,
+      edl_depart_done: edlDepartDone.get(b.id) === true,
+      edl_return_done: edlReturnDone.get(b.id) === true,
+    }));
+
+    return res.status(200).json({
+      ok: true,
+      bookings,
+      total: count ?? rows.length,
+      limit,
+      offset,
+    });
+  });
+
+  // ============================================================================
   // Admin booking drafts (V1)
   // ============================================================================
   type DraftRow = {

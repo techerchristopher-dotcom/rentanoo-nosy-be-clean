@@ -49,6 +49,7 @@ const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminBookingNew = lazy(() => import("./pages/admin/bookings/AdminBookingNew"));
 const AdminBookingDetail = lazy(() => import("./pages/admin/bookings/AdminBookingDetail"));
+const AdminBookingsList = lazy(() => import("./pages/admin/bookings/AdminBookingsList"));
 const AdminDrafts = lazy(() => import("./pages/admin/drafts/AdminDrafts"));
 const AdminPlanning = lazy(() => import("./pages/admin/planning/AdminPlanning"));
 const AdminPlaceholderUsers = lazy(() =>
@@ -56,9 +57,6 @@ const AdminPlaceholderUsers = lazy(() =>
 );
 const AdminPlaceholderVehicles = lazy(() =>
   import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderVehicles }))
-);
-const AdminPlaceholderBookings = lazy(() =>
-  import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderBookings }))
 );
 const AdminPlaceholderPayments = lazy(() =>
   import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderPayments }))
@@ -242,7 +240,7 @@ const App = () => (
                 path="bookings"
                 element={
                   <Suspense fallback={<PageLoader />}>
-                    <AdminPlaceholderBookings />
+                    <AdminBookingsList />
                   </Suspense>
                 }
               />
