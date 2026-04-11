@@ -29,16 +29,6 @@ function isValidYmd(s: string): boolean {
   return dt.getUTCFullYear() === ys && dt.getUTCMonth() === ms - 1 && dt.getUTCDate() === ds;
 }
 
-function addDaysYmd(ymd: string, days: number): string {
-  const [ys, ms, ds] = ymd.split("-").map((x) => Number(x));
-  const dt = new Date(Date.UTC(ys, ms - 1, ds));
-  dt.setUTCDate(dt.getUTCDate() + days);
-  const y = dt.getUTCFullYear();
-  const m = String(dt.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(dt.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
 function agencyPricePerDayFromVehicle(v: Vehicle): number | null {
   const raw = v.price_per_day_agency;
   if (raw === null || raw === undefined) return null;
@@ -134,11 +124,7 @@ export default function AdminBookingNew() {
     if (endOk) setEndDate(endOk);
     if (startOk && !endOk) setEndDate(startOk);
 
-    // DB constraint: bookings.end_date must be strictly > start_date
-    // If planning prefill uses same-day start/end, bump end_date by 1 day.
-    if (startOk && (endOk ? endOk : startOk) === startOk) {
-      setEndDate(addDaysYmd(startOk, 1));
-    }
+    // Same calendar day is valid (bookings_check: end_date >= start_date); intraday range uses start_time/end_time.
 
     // If same-day prefill, ensure end time is after start time for V1 validation.
     if (startOk && endTime === startTime) {

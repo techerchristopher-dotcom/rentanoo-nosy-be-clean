@@ -533,6 +533,18 @@ export default function MotoVehicleDetails() {
     const rentalHours =
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
 
+    if (rentalHours <= 0) {
+      toast({
+        title: t("motoDetails.errors.invalidDates.title", "Dates invalides"),
+        description: t(
+          "motoDetails.errors.invalidDates.description",
+          "L’heure de fin doit être après l’heure de départ."
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
     const completeDays = Math.floor(rentalHours / 24);
     const extraHours = rentalHours % 24;
 
@@ -616,6 +628,18 @@ export default function MotoVehicleDetails() {
         pricePerDay: vehicle.dailyPrice,
         rentalDays: bookingData.rentalInfo.rentalDays,
       });
+
+      if (bookingResult.error === "INVALID_DATETIME_RANGE") {
+        toast({
+          title: t("motoDetails.errors.invalidDates.title", "Dates invalides"),
+          description: t(
+            "motoDetails.errors.invalidDates.description",
+            "L’heure de fin doit être après l’heure de départ."
+          ),
+          variant: "destructive",
+        });
+        return;
+      }
 
       // 🔒 Guard : Gérer l'erreur PHONE_REQUIRED
       if (bookingResult.error === 'PHONE_REQUIRED') {

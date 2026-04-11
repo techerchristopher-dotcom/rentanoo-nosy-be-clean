@@ -537,7 +537,16 @@ export default function VehicleDetails() {
     // Calculer les informations de réservation pour la modal
     // Calcul précis en heures (durée réelle)
     const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-    
+
+    if (rentalHours <= 0) {
+      toast({
+        title: "Dates invalides",
+        description: "L’heure de fin doit être après l’heure de départ.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Calcul par blocs de 24h + heures supplémentaires
     const completeDays = Math.floor(rentalHours / 24);
     const extraHours = rentalHours % 24;
@@ -634,6 +643,15 @@ export default function VehicleDetails() {
         rentalDays: bookingData.rentalInfo.rentalDays,
       });
       
+      if (bookingResult.error === "INVALID_DATETIME_RANGE") {
+        toast({
+          title: "Dates invalides",
+          description: "L’heure de fin doit être après l’heure de départ.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // 🔒 Guard : Gérer l'erreur PHONE_REQUIRED
       if (bookingResult.error === 'PHONE_REQUIRED') {
         // Sauvegarder le contexte de réservation pour reprise après ajout téléphone

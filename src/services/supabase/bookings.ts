@@ -71,6 +71,12 @@ export class SupabaseBookingsService {
         return { data: null, error: 'PHONE_REQUIRED' };
       }
 
+      const startMs = new Date(bookingData.startDate).getTime();
+      const endMs = new Date(bookingData.endDate).getTime();
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+        return { data: null, error: 'INVALID_DATETIME_RANGE' };
+      }
+
       // Préparer les données pour l'insertion
       const insertData: SupabaseBookingInsert = {
         user_id: bookingData.renterId,
