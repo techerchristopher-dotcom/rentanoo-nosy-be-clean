@@ -29,4 +29,16 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Fusionne automatiquement les chunks < 20 KB (currency.ts, icônes lucide
+        // isolées comme arrow-right, badge, chevron-*, etc.) dans leurs parents.
+        // Évite la prolifération de tout petits chunks volatiles qui produisent des
+        // 404 quand Safari mobile garde un index.html en cache après redéploiement.
+        // Cf. 404 sur /assets/currency-*.js.
+        experimentalMinChunkSize: 20_000,
+      },
+    },
+  },
 }));
