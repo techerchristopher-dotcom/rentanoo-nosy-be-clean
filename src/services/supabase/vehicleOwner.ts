@@ -138,14 +138,23 @@ export class VehicleOwnerService {
   }
 
   /**
-   * Récupère les statistiques globales d'un propriétaire
+   * Récupère les statistiques globales d'un propriétaire.
+   * Si `options.isAdmin === true`, agrège sur tous les véhicules de la plateforme.
    */
-  static async getOwnerStats(ownerId: string): Promise<{ data: { totalVehicles: number; totalRentals: number; averageRating?: number } | null; error: string | null }> {
+  static async getOwnerStats(
+    ownerId: string,
+    options?: { isAdmin?: boolean }
+  ): Promise<{ data: { totalVehicles: number; totalRentals: number; averageRating?: number } | null; error: string | null }> {
     try {
-      const { data: vehicles, error } = await supabase
+      let query = supabase
         .from('vehicles')
-        .select('rental_count')
-        .eq('owner_id', ownerId);
+        .select('rental_count');
+
+      if (!options?.isAdmin) {
+        query = query.eq('owner_id', ownerId);
+      }
+
+      const { data: vehicles, error } = await query;
 
       if (error) {
         console.error('Erreur lors de la récupération des statistiques:', error);

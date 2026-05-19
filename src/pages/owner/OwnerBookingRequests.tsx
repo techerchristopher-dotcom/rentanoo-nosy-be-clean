@@ -60,9 +60,13 @@ const OwnerBookingRequests = () => {
         return;
       }
       setCurrentUser(profileResult.data);
+      const isAdmin = profileResult.data.isAdmin === true;
 
-      // Récupérer les conversations du propriétaire
-      const conversationsResult = await ConversationsService.getOwnerConversations(profileResult.data.id);
+      // Récupérer les conversations du propriétaire (admin → toutes les conversations)
+      const conversationsResult = await ConversationsService.getOwnerConversations(
+        profileResult.data.id,
+        { isAdmin }
+      );
       if (conversationsResult.error) {
         console.error('Erreur lors du chargement des conversations:', conversationsResult.error);
         toast({

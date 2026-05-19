@@ -320,13 +320,22 @@ export const SupabaseVehiclesService = {
     }
   },
 
-  async getOwnerVehicles(ownerId: string): Promise<{ data: Vehicle[]; error: string | null }> {
+  async getOwnerVehicles(
+    ownerId: string,
+    options?: { isAdmin?: boolean }
+  ): Promise<{ data: Vehicle[]; error: string | null }> {
     try {
-      const { data, error } = await supabase
+      // Admin : bypass du filtre owner_id pour voir tous les véhicules de la plateforme.
+      // Les RLS Supabase autorisent déjà l'accès complet aux profils `is_admin = true`.
+      let query = supabase
         .from('vehicles')
-        .select('*')
-        .eq('owner_id', ownerId)
-        .order('created_at', { ascending: false });
+        .select('*');
+
+      if (!options?.isAdmin) {
+        query = query.eq('owner_id', ownerId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Erreur Supabase lors de la récupération des véhicules du propriétaire:', error);

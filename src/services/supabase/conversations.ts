@@ -263,18 +263,26 @@ export class ConversationsService {
   }
 
   /**
-   * Récupère toutes les conversations d'un utilisateur
+   * Récupère toutes les conversations d'un utilisateur.
+   * Si `options.isAdmin === true`, retourne TOUTES les conversations de la plateforme.
    */
-  static async getUserConversations(userId: string): Promise<{ 
-    data: Conversation[]; 
-    error: string | null 
+  static async getUserConversations(
+    userId: string,
+    options?: { isAdmin?: boolean }
+  ): Promise<{
+    data: Conversation[];
+    error: string | null
   }> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('conversations')
-        .select('*')
-        .or(`renter_id.eq.${userId},owner_id.eq.${userId}`)
-        .order('updated_at', { ascending: false });
+        .select('*');
+
+      if (!options?.isAdmin) {
+        query = query.or(`renter_id.eq.${userId},owner_id.eq.${userId}`);
+      }
+
+      const { data, error } = await query.order('updated_at', { ascending: false });
 
       if (error) {
         console.error('Erreur récupération conversations utilisateur:', error);
@@ -287,6 +295,43 @@ export class ConversationsService {
       return { 
         data: [], 
         error: error instanceof Error ? error.message : 'Erreur inconnue' 
+      };
+    }
+  }
+
+  /**
+   * Récupère les conversations où l'utilisateur est propriétaire du véhicule.
+   * Si `options.isAdmin === true`, retourne TOUTES les conversations.
+   */
+  static async getOwnerConversations(
+    ownerId: string,
+    options?: { isAdmin?: boolean }
+  ): Promise<{
+    data: Conversation[];
+    error: string | null
+  }> {
+    try {
+      let query = supabase
+        .from('conversations')
+        .select('*');
+
+      if (!options?.isAdmin) {
+        query = query.eq('owner_id', ownerId);
+      }
+
+      const { data, error } = await query.order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('Erreur récupération conversations propriétaire:', error);
+        return { data: [], error: error.message };
+      }
+
+      return { data: (data || []).map(this.fromSupabase), error: null };
+    } catch (error) {
+      console.error('Erreur getOwnerConversations:', error);
+      return {
+        data: [],
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
       };
     }
   }

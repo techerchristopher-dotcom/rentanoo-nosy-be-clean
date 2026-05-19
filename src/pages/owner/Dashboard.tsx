@@ -58,7 +58,7 @@ export default function Dashboard() {
         return;
       }
       setCurrentUser(result.data);
-      await loadDashboardStats(result.data.id);
+      await loadDashboardStats(result.data.id, result.data.isAdmin === true);
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
       toast({
@@ -71,27 +71,34 @@ export default function Dashboard() {
     }
   };
 
-  const loadDashboardStats = async (ownerId: string) => {
+  const loadDashboardStats = async (ownerId: string, isAdmin: boolean) => {
     try {
-      // 1. Compter les véhicules du propriétaire
+      // 1. Compter les véhicules (admin → tous les véhicules de la plateforme)
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) return;
 
-      const { data: vehicles, error: vehiclesError } = await supabase
-        .from('vehicles')
-        .select('id')
-        .eq('owner_id', ownerId);
+      let vehiclesQuery = supabase.from('vehicles').select('id');
+      if (!isAdmin) {
+        vehiclesQuery = vehiclesQuery.eq('owner_id', ownerId);
+      }
+      const { data: vehicles, error: vehiclesError } = await vehiclesQuery;
 
       if (vehiclesError) {
         console.error('Erreur récupération véhicules:', vehiclesError);
       }
 
+      const vehicleIdList = vehicles?.map(v => v.id) || [];
+
       // 2. Compter les réservations actives (confirmed, active)
-      const { data: activeBookings, error: bookingsError } = await supabase
+      // Admin : pas de filtre sur vehicle_id ; sinon : seulement sur les véhicules du propriétaire
+      let activeBookingsQuery = supabase
         .from('bookings')
         .select('id, total_price, created_at')
-        .in('status', ['confirmed', 'active'])
-        .in('vehicle_id', vehicles?.map(v => v.id) || []);
+        .in('status', ['confirmed', 'active']);
+      if (!isAdmin) {
+        activeBookingsQuery = activeBookingsQuery.in('vehicle_id', vehicleIdList);
+      }
+      const { data: activeBookings, error: bookingsError } = await activeBookingsQuery;
 
       if (bookingsError) {
         console.error('Erreur récupération réservations:', bookingsError);
@@ -100,24 +107,30 @@ export default function Dashboard() {
       // 3. Calculer le CA du mois en cours
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
-      const { data: monthlyBookings, error: monthlyError } = await supabase
+
+      let monthlyQuery = supabase
         .from('bookings')
         .select('total_price')
         .eq('status', 'confirmed')
-        .in('vehicle_id', vehicles?.map(v => v.id) || [])
         .gte('created_at', startOfMonth.toISOString());
+      if (!isAdmin) {
+        monthlyQuery = monthlyQuery.in('vehicle_id', vehicleIdList);
+      }
+      const { data: monthlyBookings, error: monthlyError } = await monthlyQuery;
 
       if (monthlyError) {
         console.error('Erreur récupération CA mensuel:', monthlyError);
       }
 
       // 4. Compter les demandes en attente
-      const { data: pendingBookings, error: pendingError } = await supabase
+      let pendingQuery = supabase
         .from('bookings')
         .select('id')
-        .eq('status', 'pending')
-        .in('vehicle_id', vehicles?.map(v => v.id) || []);
+        .eq('status', 'pending');
+      if (!isAdmin) {
+        pendingQuery = pendingQuery.in('vehicle_id', vehicleIdList);
+      }
+      const { data: pendingBookings, error: pendingError } = await pendingQuery;
 
       if (pendingError) {
         console.error('Erreur récupération demandes en attente:', pendingError);

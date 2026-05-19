@@ -127,23 +127,32 @@ export class SupabaseBookingsService {
   }
 
   /**
-   * Récupérer toutes les réservations d'un utilisateur
+   * Récupérer toutes les réservations d'un utilisateur.
+   * Si `options.isAdmin === true`, retourne TOUTES les réservations de la plateforme
+   * (les RLS Supabase autorisent déjà l'accès complet pour les admins).
    */
-  static async getRenterBookings(renterId: string): Promise<{
+  static async getRenterBookings(
+    renterId: string,
+    options?: { isAdmin?: boolean }
+  ): Promise<{
     data: SupabaseBooking[] | null;
     error: string | null;
   }> {
     try {
-      console.log('🔍 [BookingsService] Récupération des réservations pour:', renterId);
+      console.log('🔍 [BookingsService] Récupération des réservations pour:', renterId, options?.isAdmin ? '(admin: toutes)' : '');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select(`
           *,
           checkin_depart:checkin_depart(id, status, legal_pdf_url, booking_id)
-        `)
-        .eq('user_id', renterId)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (!options?.isAdmin) {
+        query = query.eq('user_id', renterId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('❌ [BookingsService] Erreur lors de la récupération:', error);
@@ -460,14 +469,39 @@ export class SupabaseBookingsService {
   }
 
   /**
-   * Récupérer toutes les réservations des véhicules d'un propriétaire
+   * Récupérer toutes les réservations des véhicules d'un propriétaire.
+   * Si `options.isAdmin === true`, retourne TOUTES les réservations de la plateforme
+   * (les RLS Supabase autorisent déjà l'accès complet pour les admins).
    */
-  static async getOwnerBookings(ownerId: string): Promise<{
+  static async getOwnerBookings(
+    ownerId: string,
+    options?: { isAdmin?: boolean }
+  ): Promise<{
     data: SupabaseBooking[] | null;
     error: string | null;
   }> {
     try {
-      console.log('🔍 [BookingsService] Récupération réservations pour le propriétaire:', ownerId);
+      console.log('🔍 [BookingsService] Récupération réservations pour le propriétaire:', ownerId, options?.isAdmin ? '(admin: toutes)' : '');
+
+      // Cas admin : on saute l'étape véhicules et on récupère tout.
+      if (options?.isAdmin) {
+        const { data: bookings, error: bookingsError } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            checkin_depart:checkin_depart(id, status, legal_pdf_url, booking_id),
+            checkin_return:checkin_return(id, status, legal_pdf_url, booking_id, checkin_depart_id, updated_at, has_new_damage, new_damage_count)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (bookingsError) {
+          console.error('❌ [BookingsService] (admin) Erreur récupération réservations:', bookingsError);
+          return { data: null, error: bookingsError.message };
+        }
+
+        console.log('✅ [BookingsService] (admin) Réservations récupérées:', bookings?.length || 0);
+        return { data: bookings, error: null };
+      }
 
       // 1. Récupérer les véhicules du propriétaire
       const { data: vehicles, error: vehiclesError } = await supabase

@@ -112,9 +112,10 @@ const OwnerBookings = () => {
 
       const user = profileResult.data;
       setCurrentUser(user);
+      const isAdmin = user.isAdmin === true;
 
-      // Vérifier que l'utilisateur est propriétaire
-      if (!user.roles.includes('owner')) {
+      // Vérifier que l'utilisateur est propriétaire (les admins bypassent la restriction)
+      if (!isAdmin && !user.roles.includes('owner')) {
         toast({
           title: "Accès refusé",
           description: "Cette page est réservée aux propriétaires",
@@ -124,8 +125,8 @@ const OwnerBookings = () => {
         return;
       }
 
-      // 2. Récupérer les véhicules du propriétaire
-      const vehiclesResult = await SupabaseVehiclesService.getOwnerVehicles(user.id);
+      // 2. Récupérer les véhicules (admin → tous, sinon ceux du propriétaire)
+      const vehiclesResult = await SupabaseVehiclesService.getOwnerVehicles(user.id, { isAdmin });
       if (vehiclesResult.error || !vehiclesResult.data) {
         console.error('Erreur récupération véhicules:', vehiclesResult.error);
         setLoading(false);
@@ -136,10 +137,10 @@ const OwnerBookings = () => {
       const vehicleIds = ownerVehicles.map(v => v.id);
       setOwnerVehicleIds(vehicleIds);
 
-      console.log('🚗 Véhicules du propriétaire:', vehicleIds);
+      console.log('🚗 Véhicules visibles:', vehicleIds, isAdmin ? '(admin)' : '');
 
-      // 3. Récupérer toutes les réservations pour ces véhicules depuis Supabase
-      const bookingsResult = await SupabaseBookingsService.getOwnerBookings(user.id);
+      // 3. Récupérer toutes les réservations (admin → toutes, sinon celles des véhicules du propriétaire)
+      const bookingsResult = await SupabaseBookingsService.getOwnerBookings(user.id, { isAdmin });
       if (bookingsResult.error || !bookingsResult.data) {
         console.error('Erreur récupération réservations:', bookingsResult.error);
         setLoading(false);
@@ -279,8 +280,8 @@ const OwnerBookings = () => {
             updatedAt: vehicle.updated_at || new Date().toISOString(),
           } : undefined;
 
-          // Récupérer la conversation
-          const conversationsResult = await ConversationsService.getUserConversations(user.id);
+          // Récupérer la conversation (admin → toutes pour pouvoir matcher n'importe quelle réservation)
+          const conversationsResult = await ConversationsService.getUserConversations(user.id, { isAdmin });
           const conversation = !conversationsResult.error && conversationsResult.data
             ? conversationsResult.data.find(c => 
                 c.vehicleId === booking.vehicleId && 

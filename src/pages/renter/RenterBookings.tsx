@@ -376,7 +376,8 @@ export default function RenterBookings() {
       // Annuler automatiquement les réservations expirées
       await SupabaseBookingsService.cancelExpiredPayments();
       
-      const result = await SupabaseBookingsService.getRenterBookings(currentUser.id);
+      const isAdmin = currentUser.isAdmin === true;
+      const result = await SupabaseBookingsService.getRenterBookings(currentUser.id, { isAdmin });
       
       console.log('🔍 [RenterBookings] Résultat Supabase:', result);
       

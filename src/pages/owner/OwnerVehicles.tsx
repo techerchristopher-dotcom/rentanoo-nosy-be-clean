@@ -195,8 +195,12 @@ const OwnerVehicles = () => {
       }
 
       setCurrentUser(userResult.data);
-      
-      const vehiclesResult = await SupabaseVehiclesService.getOwnerVehicles(userResult.data.id);
+
+      const isAdmin = userResult.data.isAdmin === true;
+      const vehiclesResult = await SupabaseVehiclesService.getOwnerVehicles(
+        userResult.data.id,
+        { isAdmin }
+      );
       if (vehiclesResult.error) {
         toast({
           title: t("ownerVehicles.toasts.loadVehiclesError.title", "Erreur"),

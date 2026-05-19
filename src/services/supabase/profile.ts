@@ -158,6 +158,8 @@ export class ProfileService {
           phone: user.phone,
           bio: user.bio,
           roles: user.roles,
+          isAdmin: user.isAdmin,
+          adminRole: user.adminRole,
           kycStatus: user.kycStatus,
           avatarUrl: user.avatarUrl,
           birthDate: user.birthDate,
