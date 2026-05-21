@@ -201,11 +201,11 @@ export default function AdminPlanning() {
   const [qApplied, setQApplied] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | "active" | "inactive">("all");
 
-  // Drag & drop state
-  // useRef en plus du useState : les handlers drag/drop lisent le ref (jamais stale)
-  // Le state sert uniquement au rendu visuel
+  // Drag & drop state — Pointer Events API (HTML5 drag unreliable on buttons/Safari)
   const [dragging, setDragging] = useState<{ bookingId: string; durationDays: number } | null>(null);
   const draggingRef = useRef<{ bookingId: string; durationDays: number } | null>(null);
+  const pointerDownRef = useRef<{ x: number; y: number; booking: PlanningBooking; pointerId: number } | null>(null);
+  const didDragRef = useRef(false);
   const [dropTarget, setDropTarget] = useState<{ vehicleId: string; dayYmd: string } | null>(null);
   const [moveLoading, setMoveLoading] = useState(false);
 
@@ -304,24 +304,75 @@ export default function AdminPlanning() {
 
   const DRAGGABLE_STATUSES = new Set(["pending", "pending_payment"]);
 
-  const handleDragStart = (e: React.DragEvent, booking: PlanningBooking) => {
-    if (!DRAGGABLE_STATUSES.has(booking.status ?? "")) return;
-    const [ys, ms, ds] = booking.start_date.split("-").map(Number);
-    const [ye, me, de] = booking.end_date.split("-").map(Number);
-    const start = new Date(ys, ms - 1, ds);
-    const end = new Date(ye, me - 1, de);
-    const durationDays = differenceInCalendarDays(end, start) + 1;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", booking.id);
-    const val = { bookingId: booking.id, durationDays };
-    draggingRef.current = val;
-    setDragging(val);
-  };
-
-  const handleDragEnd = () => {
+  const cancelDrag = () => {
     draggingRef.current = null;
+    pointerDownRef.current = null;
+    didDragRef.current = false;
     setDragging(null);
     setDropTarget(null);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent, booking: PlanningBooking) => {
+    if (e.button !== 0) return;
+    if (!DRAGGABLE_STATUSES.has(booking.status ?? "")) return;
+    pointerDownRef.current = { x: e.clientX, y: e.clientY, booking, pointerId: e.pointerId };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const findCellAt = (el: HTMLElement, clientX: number, clientY: number): { vehicleId: string; dayYmd: string } | null => {
+    el.style.pointerEvents = "none";
+    const target = document.elementFromPoint(clientX, clientY);
+    el.style.pointerEvents = "";
+    if (!target) return null;
+    let node: Element | null = target;
+    while (node) {
+      const vid = node.getAttribute("data-vehicle-id");
+      const day = node.getAttribute("data-day-ymd");
+      if (vid && day) return { vehicleId: vid, dayYmd: day };
+      node = node.parentElement;
+    }
+    return null;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!pointerDownRef.current) return;
+    const { x, y, booking } = pointerDownRef.current;
+    const dx = e.clientX - x;
+    const dy = e.clientY - y;
+
+    if (!draggingRef.current) {
+      if (Math.sqrt(dx * dx + dy * dy) < 5) return;
+      const [ys, ms, ds] = booking.start_date.split("-").map(Number);
+      const [ye, me, de] = booking.end_date.split("-").map(Number);
+      const durationDays = differenceInCalendarDays(new Date(ye, me - 1, de), new Date(ys, ms - 1, ds)) + 1;
+      const val = { bookingId: booking.id, durationDays };
+      draggingRef.current = val;
+      didDragRef.current = true;
+      setDragging(val);
+    }
+
+    const cell = findCellAt(e.currentTarget as HTMLElement, e.clientX, e.clientY);
+    setDropTarget(cell);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerDownRef.current) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+
+    if (!draggingRef.current) {
+      pointerDownRef.current = null;
+      return;
+    }
+
+    const cell = findCellAt(e.currentTarget as HTMLElement, e.clientX, e.clientY);
+    pointerDownRef.current = null;
+
+    if (cell) {
+      void handleDrop(cell.vehicleId, cell.dayYmd);
+    } else {
+      cancelDrag();
+    }
   };
 
   const handleDrop = async (vehicleId: string, dayYmd: string) => {
@@ -502,7 +553,7 @@ export default function AdminPlanning() {
             {dragging && (
               <div className="mb-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
                 <span>Glissez vers un jour libre pour déplacer la réservation.</span>
-                <button type="button" className="ml-auto text-xs underline opacity-70 hover:opacity-100" onClick={handleDragEnd}>
+                <button type="button" className="ml-auto text-xs underline opacity-70 hover:opacity-100" onClick={cancelDrag}>
                   Annuler
                 </button>
               </div>
@@ -580,6 +631,8 @@ export default function AdminPlanning() {
                                 <button
                                   key={dayYmd}
                                   type="button"
+                                  data-vehicle-id={v.id}
+                                  data-day-ymd={dayYmd}
                                   disabled={(loading || moveLoading) && !draggingRef.current}
                                   onClick={() => {
                                     if (occ || dragging) return;
@@ -587,26 +640,11 @@ export default function AdminPlanning() {
                                       `/admin/bookings/new?vehicleId=${encodeURIComponent(v.id)}&start=${encodeURIComponent(dayYmd)}&end=${encodeURIComponent(dayYmd)}`
                                     );
                                   }}
-                                  onDragOver={(e) => {
-                                    if (!draggingRef.current) return;
-                                    e.preventDefault();
-                                    e.dataTransfer.dropEffect = "move";
-                                    setDropTarget({ vehicleId: v.id, dayYmd });
-                                  }}
-                                  onDragLeave={() => {
-                                    setDropTarget((prev) =>
-                                      prev?.vehicleId === v.id && prev?.dayYmd === dayYmd ? null : prev
-                                    );
-                                  }}
-                                  onDrop={(e) => {
-                                    e.preventDefault();
-                                    void handleDrop(v.id, dayYmd);
-                                  }}
                                   className={cn(
                                     "border-r last:border-r-0 border-border bg-background text-left transition-colors",
                                     !dragging && !occ && "hover:bg-muted/40",
                                     occ && !dragging && "cursor-not-allowed",
-                                    dragging && "cursor-copy",
+                                    dragging && "cursor-crosshair",
                                     isDropTarget && "bg-primary/20 ring-2 ring-inset ring-primary/50",
                                     "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-inset",
                                     isToday && !isDropTarget && "bg-primary/5"
@@ -654,20 +692,20 @@ export default function AdminPlanning() {
                               >
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    {/* draggable sur le button lui-même : c'est l'élément que l'utilisateur touche */}
                                     <button
                                       type="button"
-                                      draggable={isDraggable}
-                                      onDragStart={(e) => handleDragStart(e, b.booking)}
-                                      onDragEnd={handleDragEnd}
+                                      onPointerDown={isDraggable ? (e) => handlePointerDown(e, b.booking) : undefined}
+                                      onPointerMove={isDraggable ? handlePointerMove : undefined}
+                                      onPointerUp={isDraggable ? handlePointerUp : undefined}
+                                      onPointerCancel={isDraggable ? cancelDrag : undefined}
                                       onClick={() => {
-                                        if (draggingRef.current) return;
+                                        if (didDragRef.current) { didDragRef.current = false; return; }
                                         navigate(`/admin/bookings/${b.booking.id}`);
                                       }}
                                       className={cn(
                                         "w-full h-full rounded-md border px-2 py-1 text-xs text-left shadow-sm hover:shadow transition-shadow",
                                         "focus:outline-none focus:ring-2 focus:ring-primary/40",
-                                        isDraggable && "cursor-grab active:cursor-grabbing",
+                                        isDraggable && "cursor-grab active:cursor-grabbing touch-none",
                                         st.className
                                       )}
                                     >
