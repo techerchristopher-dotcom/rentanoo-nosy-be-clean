@@ -636,61 +636,64 @@ export default function AdminPlanning() {
                             const isBeingDragged = dragging?.bookingId === b.booking.id;
 
                             return (
-                              <Tooltip key={b.booking.id}>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    draggable={isDraggable}
-                                    onDragStart={(e) => handleDragStart(e, b.booking)}
-                                    onDragEnd={handleDragEnd}
-                                    onClick={() => {
-                                      if (dragging) return;
-                                      navigate(`/admin/bookings/${b.booking.id}`);
-                                    }}
-                                    className={cn(
-                                      "absolute rounded-md border px-2 py-1 text-xs text-left shadow-sm hover:shadow transition-all",
-                                      "focus:outline-none focus:ring-2 focus:ring-primary/40",
-                                      isDraggable && "cursor-grab active:cursor-grabbing",
-                                      isBeingDragged && "opacity-40 scale-95",
-                                      st.className
-                                    )}
-                                    style={{
-                                      left: `${leftPct}%`,
-                                      width: `${widthPct}%`,
-                                      top,
-                                      height: 22,
-                                    }}
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      {pmBadge ? (
-                                        <span className={cn("shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold", pmBadge.className)}>
-                                          {pmBadge.text}
-                                        </span>
-                                      ) : null}
-                                      <div className="truncate font-medium">{barLabel || st.label}</div>
-                                      <span className="shrink-0 text-[10px] opacity-80">{st.label}</span>
+                              // Wrapper div porte le drag — TooltipTrigger intercepterait sinon le dragstart
+                              <div
+                                key={b.booking.id}
+                                draggable={isDraggable}
+                                onDragStart={(e) => handleDragStart(e, b.booking)}
+                                onDragEnd={handleDragEnd}
+                                className={cn(
+                                  "absolute",
+                                  isDraggable && "cursor-grab active:cursor-grabbing",
+                                  isBeingDragged && "opacity-40 scale-95"
+                                )}
+                                style={{ left: `${leftPct}%`, width: `${widthPct}%`, top, height: 22 }}
+                              >
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (dragging) return;
+                                        navigate(`/admin/bookings/${b.booking.id}`);
+                                      }}
+                                      className={cn(
+                                        "w-full h-full rounded-md border px-2 py-1 text-xs text-left shadow-sm hover:shadow transition-shadow",
+                                        "focus:outline-none focus:ring-2 focus:ring-primary/40",
+                                        st.className
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        {pmBadge ? (
+                                          <span className={cn("shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold", pmBadge.className)}>
+                                            {pmBadge.text}
+                                          </span>
+                                        ) : null}
+                                        <div className="truncate font-medium">{barLabel || st.label}</div>
+                                        <span className="shrink-0 text-[10px] opacity-80">{st.label}</span>
+                                      </div>
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <div className="space-y-1 text-sm">
+                                      <div className="font-medium">Réservation</div>
+                                      <div className="text-xs text-muted-foreground">Réf: {refLabel}</div>
+                                      <div className="text-xs text-muted-foreground">{client}</div>
+                                      <div className="text-xs text-muted-foreground">Statut: {status}</div>
+                                      <div className="text-xs text-muted-foreground">Dates: {dates}</div>
+                                      <div className="text-xs text-muted-foreground">Pricing: {pricing}</div>
+                                      {isDraggable && (
+                                        <div className="text-xs text-muted-foreground italic">Glisser pour changer de véhicule</div>
+                                      )}
+                                      <div className="pt-1 text-xs">
+                                        <Link to={`/admin/bookings/${b.booking.id}`} className="text-primary hover:underline">
+                                          Ouvrir la fiche →
+                                        </Link>
+                                      </div>
                                     </div>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                  <div className="space-y-1 text-sm">
-                                    <div className="font-medium">Réservation</div>
-                                    <div className="text-xs text-muted-foreground">Réf: {refLabel}</div>
-                                    <div className="text-xs text-muted-foreground">{client}</div>
-                                    <div className="text-xs text-muted-foreground">Statut: {status}</div>
-                                    <div className="text-xs text-muted-foreground">Dates: {dates}</div>
-                                    <div className="text-xs text-muted-foreground">Pricing: {pricing}</div>
-                                    {isDraggable && (
-                                      <div className="text-xs text-muted-foreground italic">Glisser pour changer de véhicule</div>
-                                    )}
-                                    <div className="pt-1 text-xs">
-                                      <Link to={`/admin/bookings/${b.booking.id}`} className="text-primary hover:underline">
-                                        Ouvrir la fiche →
-                                      </Link>
-                                    </div>
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
                             );
                           })}
                         </div>
