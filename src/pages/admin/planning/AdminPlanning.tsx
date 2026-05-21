@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   addDays,
@@ -202,7 +202,10 @@ export default function AdminPlanning() {
   const [vehicleFilter, setVehicleFilter] = useState<"all" | "active" | "inactive">("all");
 
   // Drag & drop state
+  // useRef en plus du useState : les handlers drag/drop lisent le ref (jamais stale)
+  // Le state sert uniquement au rendu visuel
   const [dragging, setDragging] = useState<{ bookingId: string; durationDays: number } | null>(null);
+  const draggingRef = useRef<{ bookingId: string; durationDays: number } | null>(null);
   const [dropTarget, setDropTarget] = useState<{ vehicleId: string; dayYmd: string } | null>(null);
   const [moveLoading, setMoveLoading] = useState(false);
 
@@ -310,17 +313,22 @@ export default function AdminPlanning() {
     const durationDays = differenceInCalendarDays(end, start) + 1;
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", booking.id);
-    setDragging({ bookingId: booking.id, durationDays });
+    const val = { bookingId: booking.id, durationDays };
+    draggingRef.current = val;
+    setDragging(val);
   };
 
   const handleDragEnd = () => {
+    draggingRef.current = null;
     setDragging(null);
     setDropTarget(null);
   };
 
   const handleDrop = async (vehicleId: string, dayYmd: string) => {
-    if (!dragging || moveLoading) return;
-    const { bookingId, durationDays } = dragging;
+    const cur = draggingRef.current;
+    if (!cur || moveLoading) return;
+    const { bookingId, durationDays } = cur;
+    draggingRef.current = null;
     setDragging(null);
     setDropTarget(null);
 
@@ -572,7 +580,7 @@ export default function AdminPlanning() {
                                 <button
                                   key={dayYmd}
                                   type="button"
-                                  disabled={loading || moveLoading}
+                                  disabled={(loading || moveLoading) && !draggingRef.current}
                                   onClick={() => {
                                     if (occ || dragging) return;
                                     navigate(
@@ -580,7 +588,7 @@ export default function AdminPlanning() {
                                     );
                                   }}
                                   onDragOver={(e) => {
-                                    if (!dragging) return;
+                                    if (!draggingRef.current) return;
                                     e.preventDefault();
                                     e.dataTransfer.dropEffect = "move";
                                     setDropTarget({ vehicleId: v.id, dayYmd });
