@@ -319,7 +319,7 @@ export async function generateCheckinReturnPdf(
  */
 function buildStoragePath(checkinReturnId: string, bookingReferenceNumber: number | null | undefined): string {
   const bookingRef = bookingReferenceNumber ?? 'unknown';
-  return `resa_${bookingRef}/retour/documents/etat_des_lieux_retour_${checkinReturnId}.pdf`;
+  return `resa_${bookingRef}/documents/etat_des_lieux_retour_${checkinReturnId}.pdf`;
 }
 
 /**
