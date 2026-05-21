@@ -160,6 +160,7 @@ export async function adminCreateBooking(payload: {
   startTime?: string;
   endTime?: string;
   pickupLocation?: string;
+  adminNotes?: string;
 }): Promise<{ id: string; status: string | null; createdAt: string | null }> {
   const data = await adminFetch<{
     ok: boolean;

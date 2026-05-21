@@ -433,6 +433,21 @@ export default function AdminBookingDetail() {
             </div>
           ) : null}
 
+          {(b as any).created_by_admin_id ? (
+            <div className="border-t border-border pt-4">
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                Créée par l'admin
+              </span>
+            </div>
+          ) : null}
+
+          {(b as any).admin_notes ? (
+            <div className="border-t border-border pt-4">
+              <div className="text-muted-foreground mb-1">Remarque admin</div>
+              <div className="whitespace-pre-wrap text-sm">{String((b as any).admin_notes)}</div>
+            </div>
+          ) : null}
+
           <div className="border-t border-border pt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground">
               {canPayNow

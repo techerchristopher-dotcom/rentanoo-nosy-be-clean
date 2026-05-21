@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   adminCreateBooking,
@@ -87,6 +88,7 @@ export default function AdminBookingNew() {
   const [startTime, setStartTime] = useState("10:00");
   const [endTime, setEndTime] = useState("10:00");
   const [pickupLocation, setPickupLocation] = useState("Agence");
+  const [adminNotes, setAdminNotes] = useState("");
 
   const [submitLoading, setSubmitLoading] = useState(false);
   const [renterPhoneDraft, setRenterPhoneDraft] = useState("");
@@ -282,6 +284,7 @@ export default function AdminBookingNew() {
         startTime,
         endTime,
         pickupLocation: pickupLocation.trim() || "Agence",
+        adminNotes: adminNotes.trim() || undefined,
       });
       toast({ title: "Réservation créée", description: `Réf. ${booking.id.slice(0, 8)}…` });
       navigate(`/admin/bookings/${booking.id}`);
@@ -601,6 +604,16 @@ export default function AdminBookingNew() {
           <div className="space-y-1">
             <Label htmlFor="pickup">Prise en charge</Label>
             <Input id="pickup" value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="admin-notes">Remarque (admin)</Label>
+            <Textarea
+              id="admin-notes"
+              placeholder="Note interne visible uniquement par l'admin…"
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              rows={3}
+            />
           </div>
           {pricePreview ? (
             <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">

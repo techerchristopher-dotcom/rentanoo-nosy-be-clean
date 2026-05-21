@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Footer } from "@/components/layout/footer";
 import { ProfileService } from "@/services/supabase/profile";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
+import { PhotoService } from "@/services/supabase/photos";
 import { Vehicle, User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -238,7 +239,16 @@ const OwnerVehicles = () => {
           createdAt: supabaseVehicle.created_at || new Date().toISOString(),
           updatedAt: supabaseVehicle.updated_at || new Date().toISOString(),
         }));
-        setVehicles(mappedVehicles);
+
+        // Enrichir avec les photos uploadées (vehicle_photos table)
+        const vehicleIds = mappedVehicles.map(v => v.id);
+        const { data: primaryPhotos } = await PhotoService.getPrimaryPhotosForVehicles(vehicleIds);
+        const enriched = mappedVehicles.map(v => ({
+          ...v,
+          imageUrl: primaryPhotos[v.id]?.url || v.imageUrl,
+        }));
+
+        setVehicles(enriched);
       }
     } catch (error) {
       toast({

@@ -1205,6 +1205,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       typeof req.body?.pickupLocation === "string" && req.body.pickupLocation.trim()
         ? req.body.pickupLocation.trim()
         : "Agence";
+    const adminNotes = typeof req.body?.adminNotes === "string" ? req.body.adminNotes.trim() : null;
+    const adminId = gate.userId;
 
     if (!renterUserId || !vehicleId || !startDateRaw || !endDateRaw) {
       return res.status(400).json({
@@ -1335,6 +1337,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       rental_days: rentalDays,
       pricing_mode: "admin" as const,
       updated_at: new Date().toISOString(),
+      admin_notes: adminNotes || null,
+      created_by_admin_id: adminId,
     };
 
     console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] pricing_mode avant insert =`, insertPayload.pricing_mode);
