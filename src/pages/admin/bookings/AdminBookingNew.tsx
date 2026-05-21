@@ -89,6 +89,7 @@ export default function AdminBookingNew() {
   const [endTime, setEndTime] = useState("10:00");
   const [pickupLocation, setPickupLocation] = useState("Agence");
   const [adminNotes, setAdminNotes] = useState("");
+  const [offlinePaymentMethod, setOfflinePaymentMethod] = useState<"cash" | "card_terminal" | "">("");
 
   const [submitLoading, setSubmitLoading] = useState(false);
   const [renterPhoneDraft, setRenterPhoneDraft] = useState("");
@@ -285,6 +286,7 @@ export default function AdminBookingNew() {
         endTime,
         pickupLocation: pickupLocation.trim() || "Agence",
         adminNotes: adminNotes.trim() || undefined,
+        offlinePaymentMethod: offlinePaymentMethod || null,
       });
       toast({ title: "Réservation créée", description: `Réf. ${booking.id.slice(0, 8)}…` });
       navigate(`/admin/bookings/${booking.id}`);
@@ -614,6 +616,19 @@ export default function AdminBookingNew() {
               onChange={(e) => setAdminNotes(e.target.value)}
               rows={3}
             />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="offline-payment">Mode de paiement (hors Stripe)</Label>
+            <select
+              id="offline-payment"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={offlinePaymentMethod}
+              onChange={(e) => setOfflinePaymentMethod(e.target.value as "cash" | "card_terminal" | "")}
+            >
+              <option value="">— Non précisé —</option>
+              <option value="cash">Espèces</option>
+              <option value="card_terminal">CB (terminal)</option>
+            </select>
           </div>
           {pricePreview ? (
             <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">

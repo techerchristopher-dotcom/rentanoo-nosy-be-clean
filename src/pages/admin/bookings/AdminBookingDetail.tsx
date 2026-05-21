@@ -441,6 +441,19 @@ export default function AdminBookingDetail() {
             </div>
           ) : null}
 
+          {(b as any).offline_payment_method ? (
+            <div className="border-t border-border pt-4">
+              <div className="text-muted-foreground mb-1">Mode de paiement</div>
+              <div className="font-medium">
+                {(b as any).offline_payment_method === "cash"
+                  ? "Espèces"
+                  : (b as any).offline_payment_method === "card_terminal"
+                    ? "CB (terminal)"
+                    : String((b as any).offline_payment_method)}
+              </div>
+            </div>
+          ) : null}
+
           {(b as any).admin_notes ? (
             <div className="border-t border-border pt-4">
               <div className="text-muted-foreground mb-1">Remarque admin</div>

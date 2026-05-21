@@ -41,6 +41,7 @@ export type Database = {
           rental_contract_pdf_url: string | null
           rental_contract_signed_at: string | null
           rental_contract_template_version: string | null
+          offline_payment_method: "cash" | "card_terminal" | null
         }
         Insert: {
           id?: string
@@ -67,6 +68,7 @@ export type Database = {
           rental_contract_pdf_url?: string | null
           rental_contract_signed_at?: string | null
           rental_contract_template_version?: string | null
+          offline_payment_method?: "cash" | "card_terminal" | null
         }
         Update: {
           id?: string
@@ -93,6 +95,7 @@ export type Database = {
           rental_contract_pdf_url?: string | null
           rental_contract_signed_at?: string | null
           rental_contract_template_version?: string | null
+          offline_payment_method?: "cash" | "card_terminal" | null
         }
         Relationships: []
       },

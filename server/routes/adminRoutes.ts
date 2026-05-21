@@ -1206,6 +1206,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
         ? req.body.pickupLocation.trim()
         : "Agence";
     const adminNotes = typeof req.body?.adminNotes === "string" ? req.body.adminNotes.trim() : null;
+    const rawOpm = req.body?.offlinePaymentMethod;
+    const offlinePaymentMethod = rawOpm === "cash" || rawOpm === "card_terminal" ? rawOpm : null;
     const adminId = gate.userId;
 
     if (!renterUserId || !vehicleId || !startDateRaw || !endDateRaw) {
@@ -1339,6 +1341,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       updated_at: new Date().toISOString(),
       admin_notes: adminNotes || null,
       created_by_admin_id: adminId,
+      offline_payment_method: offlinePaymentMethod,
     };
 
     console.log(`[ADMIN_BOOKINGS][INSERT_DIAG] pricing_mode avant insert =`, insertPayload.pricing_mode);

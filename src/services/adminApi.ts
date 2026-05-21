@@ -161,6 +161,7 @@ export async function adminCreateBooking(payload: {
   endTime?: string;
   pickupLocation?: string;
   adminNotes?: string;
+  offlinePaymentMethod?: "cash" | "card_terminal" | null;
 }): Promise<{ id: string; status: string | null; createdAt: string | null }> {
   const data = await adminFetch<{
     ok: boolean;
