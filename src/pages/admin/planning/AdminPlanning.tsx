@@ -644,30 +644,30 @@ export default function AdminPlanning() {
                             const isBeingDragged = dragging?.bookingId === b.booking.id;
 
                             return (
-                              // Wrapper div porte le drag — TooltipTrigger intercepterait sinon le dragstart
                               <div
                                 key={b.booking.id}
-                                draggable={isDraggable}
-                                onDragStart={(e) => handleDragStart(e, b.booking)}
-                                onDragEnd={handleDragEnd}
                                 className={cn(
                                   "absolute",
-                                  isDraggable && "cursor-grab active:cursor-grabbing",
                                   isBeingDragged && "opacity-40 scale-95"
                                 )}
                                 style={{ left: `${leftPct}%`, width: `${widthPct}%`, top, height: 22 }}
                               >
                                 <Tooltip>
                                   <TooltipTrigger asChild>
+                                    {/* draggable sur le button lui-même : c'est l'élément que l'utilisateur touche */}
                                     <button
                                       type="button"
+                                      draggable={isDraggable}
+                                      onDragStart={(e) => handleDragStart(e, b.booking)}
+                                      onDragEnd={handleDragEnd}
                                       onClick={() => {
-                                        if (dragging) return;
+                                        if (draggingRef.current) return;
                                         navigate(`/admin/bookings/${b.booking.id}`);
                                       }}
                                       className={cn(
                                         "w-full h-full rounded-md border px-2 py-1 text-xs text-left shadow-sm hover:shadow transition-shadow",
                                         "focus:outline-none focus:ring-2 focus:ring-primary/40",
+                                        isDraggable && "cursor-grab active:cursor-grabbing",
                                         st.className
                                       )}
                                     >
