@@ -1965,4 +1965,74 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
     return res.status(200).json({ ok: true });
   });
+
+  // ============================================================================
+  // MOVE BOOKING — changer véhicule et/ou dates depuis le planning (drag & drop)
+  // ============================================================================
+  const DRAGGABLE_STATUSES = new Set(["pending", "pending_payment"]);
+
+  app.patch("/api/admin/bookings/:bookingId/move", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.params.bookingId === "string" ? req.params.bookingId.trim() : "";
+    const newVehicleId = typeof req.body?.vehicleId === "string" ? req.body.vehicleId.trim() : "";
+    const newStartDate = typeof req.body?.startDate === "string" ? req.body.startDate.trim() : "";
+    const newEndDate = typeof req.body?.endDate === "string" ? req.body.endDate.trim() : "";
+
+    if (!bookingId || !newVehicleId || !newStartDate || !newEndDate) {
+      return res.status(400).json({ ok: false, error: "MISSING_FIELDS", message: "bookingId, vehicleId, startDate, endDate requis" });
+    }
+    if (newEndDate < newStartDate) {
+      return res.status(400).json({ ok: false, error: "INVALID_RANGE", message: "endDate doit être >= startDate" });
+    }
+
+    const { data: booking, error: bErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, status, vehicle_id, start_date, end_date")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (bErr || !booking) {
+      return res.status(404).json({ ok: false, error: "NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    if (!DRAGGABLE_STATUSES.has(booking.status ?? "")) {
+      return res.status(400).json({
+        ok: false,
+        error: "NOT_MOVABLE",
+        message: `Impossible de déplacer une réservation au statut « ${booking.status} »`,
+      });
+    }
+
+    // Vérifier conflits sur le véhicule cible (en excluant cette réservation)
+    const { data: conflicts } = await supabaseAdmin
+      .from("bookings")
+      .select("id")
+      .eq("vehicle_id", newVehicleId)
+      .not("id", "eq", bookingId)
+      .not("status", "in", `(cancelled,rejected,expired,completed,closed)`)
+      .lte("start_date", newEndDate)
+      .gte("end_date", newStartDate);
+
+    if (conflicts && conflicts.length > 0) {
+      return res.status(409).json({ ok: false, error: "VEHICLE_DATE_CONFLICT", message: "Le véhicule cible est déjà réservé sur cette période" });
+    }
+
+    const { error: updateErr } = await supabaseAdmin
+      .from("bookings")
+      .update({
+        vehicle_id: newVehicleId,
+        start_date: newStartDate,
+        end_date: newEndDate,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", bookingId);
+
+    if (updateErr) {
+      return res.status(500).json({ ok: false, error: "UPDATE_FAILED", message: updateErr.message });
+    }
+
+    return res.status(200).json({ ok: true, bookingId, vehicleId: newVehicleId, startDate: newStartDate, endDate: newEndDate });
+  });
 }

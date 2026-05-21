@@ -26,6 +26,7 @@ import {
   type PlanningResponse,
   type PlanningVehicle,
 } from "@/services/adminPlanningApi";
+import { adminMoveBooking } from "@/services/adminApi";
 
 function ymdLocal(d: Date): string {
   return format(d, "yyyy-MM-dd");
@@ -200,6 +201,11 @@ export default function AdminPlanning() {
   const [qApplied, setQApplied] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | "active" | "inactive">("all");
 
+  // Drag & drop state
+  const [dragging, setDragging] = useState<{ bookingId: string; durationDays: number } | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ vehicleId: string; dayYmd: string } | null>(null);
+  const [moveLoading, setMoveLoading] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [data, setData] = useState<PlanningResponse | null>(null);
@@ -292,6 +298,53 @@ export default function AdminPlanning() {
   );
 
   const gridMinWidth = Math.max(1100, 280 + dayCount * 36);
+
+  const DRAGGABLE_STATUSES = new Set(["pending", "pending_payment"]);
+
+  const handleDragStart = (e: React.DragEvent, booking: PlanningBooking) => {
+    if (!DRAGGABLE_STATUSES.has(booking.status ?? "")) return;
+    const [ys, ms, ds] = booking.start_date.split("-").map(Number);
+    const [ye, me, de] = booking.end_date.split("-").map(Number);
+    const start = new Date(ys, ms - 1, ds);
+    const end = new Date(ye, me - 1, de);
+    const durationDays = differenceInCalendarDays(end, start) + 1;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", booking.id);
+    setDragging({ bookingId: booking.id, durationDays });
+  };
+
+  const handleDragEnd = () => {
+    setDragging(null);
+    setDropTarget(null);
+  };
+
+  const handleDrop = async (vehicleId: string, dayYmd: string) => {
+    if (!dragging || moveLoading) return;
+    const { bookingId, durationDays } = dragging;
+    setDragging(null);
+    setDropTarget(null);
+
+    const [ys, ms, ds] = dayYmd.split("-").map(Number);
+    const startDt = new Date(ys, ms - 1, ds);
+    const endDt = addDays(startDt, durationDays - 1);
+    const newStart = ymdLocal(startDt);
+    const newEnd = ymdLocal(endDt);
+
+    setMoveLoading(true);
+    try {
+      await adminMoveBooking(bookingId, { vehicleId, startDate: newStart, endDate: newEnd });
+      toast({ title: "Réservation déplacée" });
+      await loadPlanning({ silent: true });
+    } catch (e: unknown) {
+      toast({
+        title: "Déplacement impossible",
+        description: e instanceof Error ? e.message : "Erreur",
+        variant: "destructive",
+      });
+    } finally {
+      setMoveLoading(false);
+    }
+  };
 
   if (loading && !data) return <PageLoader />;
 
@@ -438,7 +491,15 @@ export default function AdminPlanning() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-auto border border-border rounded-lg">
+            {dragging && (
+              <div className="mb-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
+                <span>Glissez vers un jour libre pour déplacer la réservation.</span>
+                <button type="button" className="ml-auto text-xs underline opacity-70 hover:opacity-100" onClick={handleDragEnd}>
+                  Annuler
+                </button>
+              </div>
+            )}
+            <div className={cn("overflow-auto border border-border rounded-lg", dragging && "select-none")}>
               <div style={{ minWidth: gridMinWidth }}>
                 <div
                   className="sticky top-0 z-20 grid bg-background/95 backdrop-blur border-b border-border"
@@ -506,23 +567,41 @@ export default function AdminPlanning() {
                               const dayYmd = ymdLocal(d);
                               const occ = dayIsOccupied(rowBookings, dayYmd);
                               const isToday = dayYmd === todayYmd;
+                              const isDropTarget = dropTarget?.vehicleId === v.id && dropTarget?.dayYmd === dayYmd;
                               return (
                                 <button
                                   key={dayYmd}
                                   type="button"
-                                  disabled={occ || loading}
+                                  disabled={loading || moveLoading}
                                   onClick={() => {
-                                    if (occ) return;
+                                    if (occ || dragging) return;
                                     navigate(
                                       `/admin/bookings/new?vehicleId=${encodeURIComponent(v.id)}&start=${encodeURIComponent(dayYmd)}&end=${encodeURIComponent(dayYmd)}`
                                     );
                                   }}
+                                  onDragOver={(e) => {
+                                    if (!dragging) return;
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = "move";
+                                    setDropTarget({ vehicleId: v.id, dayYmd });
+                                  }}
+                                  onDragLeave={() => {
+                                    setDropTarget((prev) =>
+                                      prev?.vehicleId === v.id && prev?.dayYmd === dayYmd ? null : prev
+                                    );
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    void handleDrop(v.id, dayYmd);
+                                  }}
                                   className={cn(
-                                    "border-r last:border-r-0 border-border bg-background text-left",
-                                    "hover:bg-muted/40 transition-colors",
-                                    occ && "cursor-not-allowed hover:bg-background",
+                                    "border-r last:border-r-0 border-border bg-background text-left transition-colors",
+                                    !dragging && !occ && "hover:bg-muted/40",
+                                    occ && !dragging && "cursor-not-allowed",
+                                    dragging && "cursor-copy",
+                                    isDropTarget && "bg-primary/20 ring-2 ring-inset ring-primary/50",
                                     "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-inset",
-                                    isToday && "bg-primary/5"
+                                    isToday && !isDropTarget && "bg-primary/5"
                                   )}
                                   aria-label={`Créer une réservation pour ${v.brand} ${v.model} le ${dayYmd}`}
                                 />
@@ -553,15 +632,26 @@ export default function AdminPlanning() {
                                 : b.booking.id.slice(0, 8) + "…";
                             const barLabel = [refLabel, renterInline].filter(Boolean).join(" · ");
 
+                            const isDraggable = DRAGGABLE_STATUSES.has(b.booking.status ?? "");
+                            const isBeingDragged = dragging?.bookingId === b.booking.id;
+
                             return (
                               <Tooltip key={b.booking.id}>
                                 <TooltipTrigger asChild>
                                   <button
                                     type="button"
-                                    onClick={() => navigate(`/admin/bookings/${b.booking.id}`)}
+                                    draggable={isDraggable}
+                                    onDragStart={(e) => handleDragStart(e, b.booking)}
+                                    onDragEnd={handleDragEnd}
+                                    onClick={() => {
+                                      if (dragging) return;
+                                      navigate(`/admin/bookings/${b.booking.id}`);
+                                    }}
                                     className={cn(
-                                      "absolute rounded-md border px-2 py-1 text-xs text-left shadow-sm hover:shadow transition-shadow",
+                                      "absolute rounded-md border px-2 py-1 text-xs text-left shadow-sm hover:shadow transition-all",
                                       "focus:outline-none focus:ring-2 focus:ring-primary/40",
+                                      isDraggable && "cursor-grab active:cursor-grabbing",
+                                      isBeingDragged && "opacity-40 scale-95",
                                       st.className
                                     )}
                                     style={{
@@ -590,6 +680,9 @@ export default function AdminPlanning() {
                                     <div className="text-xs text-muted-foreground">Statut: {status}</div>
                                     <div className="text-xs text-muted-foreground">Dates: {dates}</div>
                                     <div className="text-xs text-muted-foreground">Pricing: {pricing}</div>
+                                    {isDraggable && (
+                                      <div className="text-xs text-muted-foreground italic">Glisser pour changer de véhicule</div>
+                                    )}
                                     <div className="pt-1 text-xs">
                                       <Link to={`/admin/bookings/${b.booking.id}`} className="text-primary hover:underline">
                                         Ouvrir la fiche →

@@ -350,3 +350,13 @@ export async function adminCreateClaimCharge(
     message: data.message,
   };
 }
+
+export async function adminMoveBooking(
+  bookingId: string,
+  payload: { vehicleId: string; startDate: string; endDate: string }
+): Promise<void> {
+  await adminFetch<{ ok: boolean }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/move`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
