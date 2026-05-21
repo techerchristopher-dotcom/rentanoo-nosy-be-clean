@@ -296,7 +296,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const dateTo = typeof req.query?.date_to === "string" ? req.query.date_to.trim() : "";
 
     const selectCols =
-      "id, reference_number, status, pricing_mode, start_date, end_date, start_time, end_time, deposit_status, deposit_amount_snapshot, rental_contract_signed_at, rental_contract_pdf_url, user_id, vehicle_id, paid_at, stripe_payment_intent_id, stripe_checkout_session_id, created_at";
+      "id, reference_number, status, pricing_mode, start_date, end_date, start_time, end_time, deposit_status, deposit_amount_snapshot, rental_contract_signed_at, rental_contract_pdf_url, user_id, vehicle_id, paid_at, stripe_payment_intent_id, stripe_checkout_session_id, created_at, offline_payment_method";
 
     type BookingListRow = {
       id: string;
@@ -317,6 +317,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       stripe_payment_intent_id: string | null;
       stripe_checkout_session_id: string | null;
       created_at: string | null;
+      offline_payment_method: string | null;
     };
 
     const applyFilters = (q: ReturnType<SupabaseClient["from"]>) => {
@@ -2037,5 +2038,112 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
 
     return res.status(200).json({ ok: true, bookingId, vehicleId: newVehicleId, startDate: newStartDate, endDate: newEndDate });
+  });
+
+  // PATCH /api/admin/bookings/:bookingId/payment-method
+  app.patch("/api/admin/bookings/:bookingId/payment-method", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const { bookingId } = req.params as { bookingId: string };
+    const raw = req.body?.offlinePaymentMethod;
+    const offlinePaymentMethod = raw === "cash" || raw === "card_terminal" ? raw : null;
+
+    const { error } = await supabaseAdmin
+      .from("bookings")
+      .update({ offline_payment_method: offlinePaymentMethod, updated_at: new Date().toISOString() })
+      .eq("id", bookingId);
+
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+    return res.json({ ok: true });
+  });
+
+  // POST /api/admin/bookings/:bookingId/collect
+  app.post("/api/admin/bookings/:bookingId/collect", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const { bookingId } = req.params as { bookingId: string };
+    const paidAtRaw = req.body?.paidAt;
+    const rawOpm = req.body?.offlinePaymentMethod;
+    const offlinePaymentMethod = rawOpm === "cash" || rawOpm === "card_terminal" ? rawOpm : undefined;
+
+    let paidAt: string;
+    if (typeof paidAtRaw === "string" && paidAtRaw.trim()) {
+      const d = new Date(paidAtRaw.trim());
+      paidAt = Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+    } else {
+      paidAt = new Date().toISOString();
+    }
+
+    const { data: booking, error: fetchErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, status, pricing_mode")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (fetchErr || !booking) return res.status(404).json({ ok: false, message: "Réservation introuvable" });
+
+    const COLLECTABLE = new Set(["pending", "pending_payment", "accepted"]);
+    if (!COLLECTABLE.has(booking.status ?? "")) {
+      return res.status(400).json({ ok: false, message: `Statut "${booking.status}" : encaissement impossible` });
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      status: "confirmed",
+      paid_at: paidAt,
+      updated_at: new Date().toISOString(),
+    };
+    if (offlinePaymentMethod !== undefined) updatePayload.offline_payment_method = offlinePaymentMethod;
+
+    const { error: updErr } = await supabaseAdmin
+      .from("bookings")
+      .update(updatePayload)
+      .eq("id", bookingId);
+
+    if (updErr) return res.status(500).json({ ok: false, message: updErr.message });
+    return res.json({ ok: true, paidAt, status: "confirmed" });
+  });
+
+  // GET /api/admin/revenue
+  app.get("/api/admin/revenue", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const dateFrom = typeof req.query?.date_from === "string" ? req.query.date_from.trim() : "";
+    const dateTo = typeof req.query?.date_to === "string" ? req.query.date_to.trim() : "";
+
+    let query = supabaseAdmin
+      .from("bookings")
+      .select(`
+        id, reference_number, status, total_price, paid_at, offline_payment_method,
+        stripe_payment_intent_id, start_date, end_date,
+        user_id
+      `)
+      .not("paid_at", "is", null)
+      .order("paid_at", { ascending: false });
+
+    if (dateFrom) query = query.gte("paid_at", `${dateFrom}T00:00:00.000Z`);
+    if (dateTo) query = query.lte("paid_at", `${dateTo}T23:59:59.999Z`);
+
+    const { data: rows, error } = await query;
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+
+    const bookings = rows ?? [];
+    let totalCash = 0;
+    let totalCardTerminal = 0;
+    let totalStripe = 0;
+    let totalOther = 0;
+
+    for (const b of bookings) {
+      const amount = typeof b.total_price === "number" ? b.total_price : parseFloat(String(b.total_price)) || 0;
+      if (b.offline_payment_method === "cash") totalCash += amount;
+      else if (b.offline_payment_method === "card_terminal") totalCardTerminal += amount;
+      else if (b.stripe_payment_intent_id) totalStripe += amount;
+      else totalOther += amount;
+    }
+
+    const total = totalCash + totalCardTerminal + totalStripe + totalOther;
+    return res.json({ ok: true, bookings, summary: { total, totalCash, totalCardTerminal, totalStripe, totalOther } });
   });
 }

@@ -52,6 +52,7 @@ const AdminBookingDetail = lazy(() => import("./pages/admin/bookings/AdminBookin
 const AdminBookingsList = lazy(() => import("./pages/admin/bookings/AdminBookingsList"));
 const AdminDrafts = lazy(() => import("./pages/admin/drafts/AdminDrafts"));
 const AdminPlanning = lazy(() => import("./pages/admin/planning/AdminPlanning"));
+const AdminRevenue = lazy(() => import("./pages/admin/revenue/AdminRevenue"));
 const AdminPlaceholderUsers = lazy(() =>
   import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderUsers }))
 );
@@ -281,6 +282,14 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <AdminPlaceholderPayments />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="revenue"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminRevenue />
                   </Suspense>
                 }
               />

@@ -35,6 +35,12 @@ export default function AdminLayout() {
             <Link to="/admin/bookings" className="hover:text-primary transition-colors">
               Toutes les réservations
             </Link>
+            <span aria-hidden className="text-border">
+              /
+            </span>
+            <Link to="/admin/revenue" className="hover:text-primary transition-colors">
+              Encaissements
+            </Link>
           </nav>
           <Outlet />
         </div>

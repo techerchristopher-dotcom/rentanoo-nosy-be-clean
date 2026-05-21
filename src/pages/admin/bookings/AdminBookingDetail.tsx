@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
   adminCancelBooking,
+  adminCollectPayment,
   adminCreateClaimCharge,
   adminGetBooking,
   adminListBookingClaimCharges,
+  adminUpdateOfflinePaymentMethod,
   type AdminBookingClaimCharge,
   type AdminBookingClaimChargesSummary,
 } from "@/services/adminApi";
@@ -49,6 +51,16 @@ export default function AdminBookingDetail() {
   const [claimReason, setClaimReason] = useState("");
   const [claimConfirmChecked, setClaimConfirmChecked] = useState(false);
   const [claimSubmitLoading, setClaimSubmitLoading] = useState(false);
+
+  // Mode de paiement éditable
+  const [opmDraft, setOpmDraft] = useState<"cash" | "card_terminal" | "">("");
+  const [opmSaveLoading, setOpmSaveLoading] = useState(false);
+
+  // Encaissement
+  const [collectModalOpen, setCollectModalOpen] = useState(false);
+  const [collectDate, setCollectDate] = useState("");
+  const [collectOpm, setCollectOpm] = useState<"cash" | "card_terminal" | "">("");
+  const [collectLoading, setCollectLoading] = useState(false);
 
   const refreshClaimCharges = useCallback(async () => {
     if (!bookingId) return;
@@ -105,6 +117,24 @@ export default function AdminBookingDetail() {
       cancelled = true;
     };
   }, [bookingId, toast]);
+
+  useEffect(() => {
+    const opm = (payload?.booking as any)?.offline_payment_method ?? "";
+    setOpmDraft(opm === "cash" || opm === "card_terminal" ? opm : "");
+    const paidAtRaw = (payload?.booking as any)?.paid_at;
+    if (paidAtRaw) {
+      const d = new Date(paidAtRaw);
+      if (!Number.isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        setCollectDate(`${y}-${m}-${day}`);
+      }
+    } else {
+      const today = new Date();
+      setCollectDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
+    }
+  }, [payload]);
 
   // IMPORTANT: Tous les hooks ci-dessous doivent être appelés à chaque render
   // (ne pas les placer après un return anticipé).
@@ -180,6 +210,44 @@ export default function AdminBookingDetail() {
       extras: [],
     };
   }, [bookingId, b, v]);
+
+  const runSaveOpm = async () => {
+    if (!bookingId) return;
+    setOpmSaveLoading(true);
+    try {
+      await adminUpdateOfflinePaymentMethod(bookingId, opmDraft || null);
+      const data = await adminGetBooking(bookingId);
+      setPayload(data);
+      toast({ title: "Mode de paiement enregistré" });
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
+    } finally {
+      setOpmSaveLoading(false);
+    }
+  };
+
+  const runCollect = async () => {
+    if (!bookingId) return;
+    if (!collectDate) {
+      toast({ title: "Date requise", description: "Saisissez la date d'encaissement.", variant: "destructive" });
+      return;
+    }
+    setCollectLoading(true);
+    try {
+      await adminCollectPayment(bookingId, {
+        paidAt: `${collectDate}T12:00:00.000Z`,
+        offlinePaymentMethod: collectOpm || undefined,
+      });
+      const data = await adminGetBooking(bookingId);
+      setPayload(data);
+      setCollectModalOpen(false);
+      toast({ title: "Encaissement enregistré", description: "Réservation confirmée." });
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
+    } finally {
+      setCollectLoading(false);
+    }
+  };
 
   const runCancelBooking = async () => {
     if (!bookingId || !canCancelBooking) return;
@@ -441,15 +509,29 @@ export default function AdminBookingDetail() {
             </div>
           ) : null}
 
-          {(b as any).offline_payment_method ? (
-            <div className="border-t border-border pt-4">
-              <div className="text-muted-foreground mb-1">Mode de paiement</div>
-              <div className="font-medium">
-                {(b as any).offline_payment_method === "cash"
-                  ? "Espèces"
-                  : (b as any).offline_payment_method === "card_terminal"
-                    ? "CB (terminal)"
-                    : String((b as any).offline_payment_method)}
+          {isAdminPricing ? (
+            <div className="border-t border-border pt-4 space-y-2">
+              <div className="text-muted-foreground mb-1">Mode de paiement (hors Stripe)</div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <select
+                  className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-w-xs"
+                  value={opmDraft}
+                  onChange={(e) => setOpmDraft(e.target.value as "cash" | "card_terminal" | "")}
+                  disabled={opmSaveLoading}
+                >
+                  <option value="">— Non précisé —</option>
+                  <option value="cash">Espèces</option>
+                  <option value="card_terminal">CB (terminal)</option>
+                </select>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => void runSaveOpm()}
+                  disabled={opmSaveLoading || opmDraft === ((b as any).offline_payment_method ?? "")}
+                >
+                  {opmSaveLoading ? "…" : "Sauvegarder"}
+                </Button>
               </div>
             </div>
           ) : null}
@@ -501,6 +583,27 @@ export default function AdminBookingDetail() {
               <Link to={`/checkin-return/${bookingId}`}>État des lieux retour</Link>
             </Button>
           </div>
+
+          {isAdminPricing && (status === "pending" || status === "pending_payment" || status === "accepted") ? (
+            <div className="border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => setCollectModalOpen(true)}
+                disabled={collectLoading}
+              >
+                Enregistrer l'encaissement
+              </Button>
+              <p className="mt-1 text-xs text-muted-foreground">Marque la réservation comme payée (statut → confirmée).</p>
+            </div>
+          ) : null}
+
+          {(b as any).paid_at && !((b as any).stripe_payment_intent_id) ? (
+            <div className="border-t border-border pt-4">
+              <div className="text-muted-foreground mb-1 text-sm">Encaissé le</div>
+              <div className="font-medium text-sm">{new Date(String((b as any).paid_at)).toLocaleDateString("fr-FR")}</div>
+            </div>
+          ) : null}
 
           {canCancelBooking ? (
             <div className="border-t border-border pt-4">
@@ -700,6 +803,51 @@ export default function AdminBookingDetail() {
             </Button>
             <Button type="button" onClick={() => void runClaimCharge()} disabled={claimSubmitLoading}>
               {claimSubmitLoading ? "Traitement…" : "Confirmer le prélèvement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={collectModalOpen} onOpenChange={setCollectModalOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Enregistrer l'encaissement</DialogTitle>
+            <DialogDescription>
+              La réservation passera au statut « confirmée » et la date d'encaissement sera enregistrée.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="collect-date">Date d'encaissement</Label>
+              <Input
+                id="collect-date"
+                type="date"
+                value={collectDate}
+                onChange={(e) => setCollectDate(e.target.value)}
+                disabled={collectLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="collect-opm">Mode de paiement</Label>
+              <select
+                id="collect-opm"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={collectOpm}
+                onChange={(e) => setCollectOpm(e.target.value as "cash" | "card_terminal" | "")}
+                disabled={collectLoading}
+              >
+                <option value="">— Non précisé —</option>
+                <option value="cash">Espèces</option>
+                <option value="card_terminal">CB (terminal)</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setCollectModalOpen(false)} disabled={collectLoading}>
+              Annuler
+            </Button>
+            <Button type="button" onClick={() => void runCollect()} disabled={collectLoading}>
+              {collectLoading ? "Enregistrement…" : "Confirmer l'encaissement"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -361,3 +361,60 @@ export async function adminMoveBooking(
     body: JSON.stringify(payload),
   });
 }
+
+export async function adminUpdateOfflinePaymentMethod(
+  bookingId: string,
+  offlinePaymentMethod: "cash" | "card_terminal" | null
+): Promise<void> {
+  await adminFetch<{ ok: boolean }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/payment-method`, {
+    method: "PATCH",
+    body: JSON.stringify({ offlinePaymentMethod }),
+  });
+}
+
+export async function adminCollectPayment(
+  bookingId: string,
+  payload: { paidAt: string; offlinePaymentMethod?: "cash" | "card_terminal" }
+): Promise<{ paidAt: string; status: string }> {
+  const data = await adminFetch<{ ok: boolean; paidAt: string; status: string }>(
+    `/api/admin/bookings/${encodeURIComponent(bookingId)}/collect`,
+    { method: "POST", body: JSON.stringify(payload) }
+  );
+  return { paidAt: data.paidAt, status: data.status };
+}
+
+export type AdminRevenueBooking = {
+  id: string;
+  reference_number: number | null;
+  status: string | null;
+  total_price: number;
+  paid_at: string;
+  offline_payment_method: string | null;
+  stripe_payment_intent_id: string | null;
+  start_date: string;
+  end_date: string;
+  user_id: string;
+};
+
+export type AdminRevenueSummary = {
+  total: number;
+  totalCash: number;
+  totalCardTerminal: number;
+  totalStripe: number;
+  totalOther: number;
+};
+
+export async function adminGetRevenue(params: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<{ bookings: AdminRevenueBooking[]; summary: AdminRevenueSummary }> {
+  const sp = new URLSearchParams();
+  if (params.dateFrom) sp.set("date_from", params.dateFrom);
+  if (params.dateTo) sp.set("date_to", params.dateTo);
+  const data = await adminFetch<{
+    ok: boolean;
+    bookings: AdminRevenueBooking[];
+    summary: AdminRevenueSummary;
+  }>(`/api/admin/revenue?${sp.toString()}`);
+  return { bookings: data.bookings ?? [], summary: data.summary };
+}
