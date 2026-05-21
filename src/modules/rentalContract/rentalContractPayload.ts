@@ -89,7 +89,7 @@ export async function getRentalContractPayload(
 
     const { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
-      .select("owner_id, brand, model, year, license_plate, color, fuel_type, mileage, deposit_amount")
+      .select("owner_id, brand, model, year, license_plate, color, fuel_type, mileage, deposit_amount, vin")
       .eq("id", booking.vehicle_id)
       .single();
 
@@ -155,8 +155,7 @@ export async function getRentalContractPayload(
         licensePlate: vehicle.license_plate,
         color: vehicle.color,
         fuelType: vehicle.fuel_type,
-        /** Colonne `vehicles.vin` absente du schéma actuel — à brancher quand ajoutée en DB */
-        vin: null,
+        vin: vehicle.vin ?? null,
         mileage: vehicle.mileage != null ? Number(vehicle.mileage) : null,
         depositAmount: Number.isFinite(vehicleDeposit as number) ? vehicleDeposit : null,
       },

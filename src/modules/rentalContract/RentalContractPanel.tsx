@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignatureCanvas } from "@/components/checkin/SignatureCanvas";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getRentalContractPayload, type RentalContractPayload } from "./rentalContractPayload";
 import { generateAndStoreRentalContractPdf } from "@/services/rentalContractPdfService";
 import { RENTAL_CONTRACT_TEMPLATE_VERSION } from "./constants";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RentalContractPanelProps {
   bookingId: string;
@@ -27,6 +30,15 @@ export function RentalContractPanel({
   const [ownerSig, setOwnerSig] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // KYC fields — pre-filled from profile, editable before signing
+  const [kycBirthdate, setKycBirthdate] = useState("");
+  const [kycAddressLine1, setKycAddressLine1] = useState("");
+  const [kycPostalCode, setKycPostalCode] = useState("");
+  const [kycCity, setKycCity] = useState("");
+  const [kycCountry, setKycCountry] = useState("");
+  const [kycLicenseNumber, setKycLicenseNumber] = useState("");
+  const [kycLicenseIssueDate, setKycLicenseIssueDate] = useState("");
+
   useEffect(() => {
     let cancelled = false;
     setLoadingPayload(true);
@@ -38,6 +50,14 @@ export function RentalContractPanel({
         setPayload(null);
       } else {
         setPayload(data);
+        // Pre-fill KYC fields from profile
+        setKycBirthdate(data.renter.birthdate ?? "");
+        setKycAddressLine1(data.renter.addressLine1 ?? "");
+        setKycPostalCode(data.renter.postalCode ?? "");
+        setKycCity(data.renter.city ?? "");
+        setKycCountry(data.renter.country ?? "");
+        setKycLicenseNumber(data.renter.driverLicenseNumber ?? "");
+        setKycLicenseIssueDate(data.renter.driverLicenseIssueDate ?? "");
       }
       setLoadingPayload(false);
     });
@@ -58,8 +78,23 @@ export function RentalContractPanel({
     }
     setSubmitting(true);
     try {
+      // Merge KYC overrides into payload
+      const enrichedPayload: RentalContractPayload = {
+        ...payload,
+        renter: {
+          ...payload.renter,
+          birthdate: kycBirthdate.trim() || null,
+          addressLine1: kycAddressLine1.trim() || null,
+          postalCode: kycPostalCode.trim() || null,
+          city: kycCity.trim() || null,
+          country: kycCountry.trim() || null,
+          driverLicenseNumber: kycLicenseNumber.trim() || null,
+          driverLicenseIssueDate: kycLicenseIssueDate.trim() || null,
+        },
+      };
+
       const result = await generateAndStoreRentalContractPdf({
-        payload,
+        payload: enrichedPayload,
         renterSignatureDataUrl: renterSig,
         ownerSignatureDataUrl: ownerSig,
       });
@@ -67,6 +102,18 @@ export function RentalContractPanel({
         toast.error(result.error);
         return;
       }
+
+      // Persist KYC back to profiles so future contracts are pre-filled
+      await supabase.from("profiles").update({
+        birthdate: kycBirthdate.trim() || null,
+        address_line1: kycAddressLine1.trim() || null,
+        postal_code: kycPostalCode.trim() || null,
+        city: kycCity.trim() || null,
+        country: kycCountry.trim() || null,
+        driver_license_number: kycLicenseNumber.trim() || null,
+        driver_license_issue_date: kycLicenseIssueDate.trim() || null,
+      }).eq("id", payload.renter.id);
+
       toast.success("Contrat signé et enregistré.");
       onContractComplete();
     } finally {
@@ -109,6 +156,80 @@ export function RentalContractPanel({
         <ScrollArea className="h-[min(420px,50vh)] rounded-md border bg-muted/30 p-4 text-sm leading-relaxed">
           <ContractReadOnlySummary payload={payload} />
         </ScrollArea>
+
+        <Card className="border-dashed">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Informations du locataire</CardTitle>
+            <CardDescription className="text-xs">
+              Ces données apparaissent sur le contrat. Complétez ou corrigez si nécessaire.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="kyc-license-number">N° permis de conduire</Label>
+              <Input
+                id="kyc-license-number"
+                placeholder="12345678901234567"
+                value={kycLicenseNumber}
+                onChange={(e) => setKycLicenseNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="kyc-license-issue">Date de délivrance du permis</Label>
+              <Input
+                id="kyc-license-issue"
+                type="date"
+                value={kycLicenseIssueDate}
+                onChange={(e) => setKycLicenseIssueDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="kyc-birthdate">Date de naissance</Label>
+              <Input
+                id="kyc-birthdate"
+                type="date"
+                value={kycBirthdate}
+                onChange={(e) => setKycBirthdate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="kyc-address">Adresse</Label>
+              <Input
+                id="kyc-address"
+                placeholder="12 rue de la Paix"
+                value={kycAddressLine1}
+                onChange={(e) => setKycAddressLine1(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="kyc-postal">Code postal</Label>
+              <Input
+                id="kyc-postal"
+                placeholder="75001"
+                value={kycPostalCode}
+                onChange={(e) => setKycPostalCode(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="kyc-city">Ville</Label>
+              <Input
+                id="kyc-city"
+                placeholder="Paris"
+                value={kycCity}
+                onChange={(e) => setKycCity(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="kyc-country">Pays</Label>
+              <Input
+                id="kyc-country"
+                placeholder="France"
+                value={kycCountry}
+                onChange={(e) => setKycCountry(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-2">
