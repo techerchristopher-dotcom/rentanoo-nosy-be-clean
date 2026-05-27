@@ -18,10 +18,12 @@ import {
   ChevronRight,
   Gauge,
   HelpCircle,
+  ImageOff,
   Layers,
   PackageX,
   RefreshCw,
   Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -266,6 +268,145 @@ function FilterChip({
   );
 }
 
+/**
+ * Petite vignette ronde du véhicule (photo principale).
+ * Cliquable pour ouvrir un lightbox. Fallback initiales si pas de photo.
+ */
+function VehicleAvatar({
+  src,
+  brand,
+  model,
+  onOpen,
+  size = 36,
+}: {
+  src: string | null;
+  brand: string;
+  model: string;
+  onOpen?: () => void;
+  size?: number;
+}) {
+  const [errored, setErrored] = useState(false);
+  const initials = `${(brand ?? "")[0] ?? "?"}${(model ?? "")[0] ?? ""}`
+    .toUpperCase()
+    .slice(0, 2);
+  const hasPhoto = !!src && !errored;
+
+  const inner = hasPhoto ? (
+    <img
+      src={src!}
+      alt={`${brand} ${model}`}
+      loading="lazy"
+      decoding="async"
+      className="w-full h-full object-cover"
+      onError={() => setErrored(true)}
+    />
+  ) : (
+    <span
+      className="flex items-center justify-center w-full h-full bg-muted text-muted-foreground font-semibold"
+      style={{ fontSize: Math.max(10, Math.floor(size * 0.36)) }}
+      aria-hidden
+    >
+      {initials || <ImageOff className="h-3.5 w-3.5" />}
+    </span>
+  );
+
+  if (!hasPhoto || !onOpen) {
+    return (
+      <div
+        className="shrink-0 rounded-md overflow-hidden border border-border bg-muted"
+        style={{ width: size, height: size }}
+        title={`${brand} ${model}`}
+      >
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen();
+      }}
+      aria-label={`Agrandir la photo de ${brand} ${model}`}
+      title="Agrandir la photo"
+      className={cn(
+        "shrink-0 rounded-md overflow-hidden border border-border bg-muted",
+        "transition-all hover:ring-2 hover:ring-primary/40 hover:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+      )}
+      style={{ width: size, height: size }}
+    >
+      {inner}
+    </button>
+  );
+}
+
+/**
+ * Lightbox plein écran pour afficher la photo d'un véhicule en grand.
+ * Fermeture par clic en dehors, touche Échap, ou bouton X.
+ */
+function VehiclePhotoLightbox({
+  src,
+  brand,
+  model,
+  onClose,
+}: {
+  src: string;
+  brand: string;
+  model: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Photo de ${brand} ${model}`}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 sm:p-8"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        aria-label="Fermer"
+        className="absolute top-3 right-3 sm:top-4 sm:right-4 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <figure
+        className="flex flex-col items-center gap-3 max-w-[95vw]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={src}
+          alt={`${brand} ${model}`}
+          className="max-h-[80vh] max-w-[95vw] object-contain rounded-lg shadow-2xl"
+        />
+        <figcaption className="text-white/90 text-sm sm:text-base font-medium text-center">
+          {brand} {model}
+        </figcaption>
+      </figure>
+    </div>
+  );
+}
+
 function dayIsOccupied(bookings: PlanningBooking[], dayYmd: string): boolean {
   for (const b of bookings) {
     if (!b.start_date || !b.end_date) continue;
@@ -311,6 +452,9 @@ export default function AdminPlanning() {
   const [qApplied, setQApplied] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | "active" | "inactive">("all");
   const [cylindreeFilter, setCylindreeFilter] = useState<CylindreeFilter>("all");
+
+  // Lightbox photo véhicule (ouvert au clic sur l'avatar)
+  const [lightboxVehicle, setLightboxVehicle] = useState<PlanningVehicle | null>(null);
 
   // Drag & drop state — Pointer Events API (HTML5 drag unreliable on buttons/Safari)
   const [dragging, setDragging] = useState<{ bookingId: string; durationDays: number } | null>(null);
@@ -861,6 +1005,7 @@ export default function AdminPlanning() {
                   )
                 }
                 onOpenBooking={(bookingId) => navigate(`/admin/bookings/${bookingId}`)}
+                onOpenPhoto={(v) => setLightboxVehicle(v)}
               />
             ) : (
             <div className={cn("overflow-auto border border-border rounded-lg", dragging && "select-none")}>
@@ -912,16 +1057,25 @@ export default function AdminPlanning() {
                       >
                         <div
                           className={cn(
-                            "sticky left-0 z-10 border-r border-border bg-background px-3 py-3 text-sm flex flex-col justify-center",
+                            "sticky left-0 z-10 border-r border-border bg-background px-3 py-2 text-sm flex items-center gap-2.5",
                             inactive && "bg-muted/30"
                           )}
                         >
-                          <div className="font-medium text-foreground truncate">
-                            {v.brand} {v.model}
-                          </div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-2">
-                            <span className="font-mono">{v.id.slice(0, 8)}…</span>
-                            {inactive ? <span className="text-amber-700 dark:text-amber-500">hors flotte</span> : null}
+                          <VehicleAvatar
+                            src={v.primary_photo_url}
+                            brand={v.brand}
+                            model={v.model}
+                            size={40}
+                            onOpen={v.primary_photo_url ? () => setLightboxVehicle(v) : undefined}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-foreground truncate">
+                              {v.brand} {v.model}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                              <span className="font-mono">{v.id.slice(0, 8)}…</span>
+                              {inactive ? <span className="text-amber-700 dark:text-amber-500">hors flotte</span> : null}
+                            </div>
                           </div>
                         </div>
 
@@ -1066,6 +1220,15 @@ export default function AdminPlanning() {
           </CardContent>
         </Card>
       </div>
+
+      {lightboxVehicle?.primary_photo_url ? (
+        <VehiclePhotoLightbox
+          src={lightboxVehicle.primary_photo_url}
+          brand={lightboxVehicle.brand}
+          model={lightboxVehicle.model}
+          onClose={() => setLightboxVehicle(null)}
+        />
+      ) : null}
     </TooltipProvider>
   );
 }
@@ -1088,6 +1251,7 @@ type MobileVehicleListProps = {
   loading: boolean;
   onCreate: (vehicleId: string, dayYmd: string) => void;
   onOpenBooking: (bookingId: string) => void;
+  onOpenPhoto: (v: PlanningVehicle) => void;
 };
 
 function MobileVehicleList({
@@ -1103,6 +1267,7 @@ function MobileVehicleList({
   loading,
   onCreate,
   onOpenBooking,
+  onOpenPhoto,
 }: MobileVehicleListProps) {
   // Vue semaine : 7 jours tiennent toujours dans la largeur disponible.
   // Vue mois : on impose un minWidth pour permettre le scroll horizontal local
@@ -1234,8 +1399,15 @@ function MobileVehicleList({
               inactive && "bg-muted/30"
             )}
           >
-            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border">
-              <div className="font-medium text-sm text-foreground truncate min-w-0">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+              <VehicleAvatar
+                src={v.primary_photo_url}
+                brand={v.brand}
+                model={v.model}
+                size={36}
+                onOpen={v.primary_photo_url ? () => onOpenPhoto(v) : undefined}
+              />
+              <div className="font-medium text-sm text-foreground truncate min-w-0 flex-1">
                 {v.brand} {v.model}
               </div>
               {inactive ? (

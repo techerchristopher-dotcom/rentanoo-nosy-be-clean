@@ -153,6 +153,11 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const includeInactiveRaw = typeof req.query?.include_inactive === "string" ? req.query.include_inactive.trim() : "";
     const includeInactive = includeInactiveRaw === "0" ? false : true; // défaut "1"
 
+    type PlanningVehiclePhoto = {
+      photo_url: string | null;
+      is_primary: boolean | null;
+      display_order: number | null;
+    };
     type PlanningVehicleRow = {
       id: string;
       brand: string;
@@ -161,11 +166,14 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       vehicle_type: "car" | "moto" | "scooter" | null;
       vehicle_category: string | null;
       engine_capacity: string | null;
+      vehicle_photos: PlanningVehiclePhoto[] | null;
     };
 
     let vq = supabaseAdmin
       .from("vehicles")
-      .select("id, brand, model, available, vehicle_type, vehicle_category, engine_capacity");
+      .select(
+        "id, brand, model, available, vehicle_type, vehicle_category, engine_capacity, vehicle_photos(photo_url, is_primary, display_order)"
+      );
 
     // Par défaut : toute la flotte.
     // include_inactive=0 => masquer véhicules non exploitables.
@@ -191,7 +199,30 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
 
     const vRowsRaw = (vehicles ?? []) as PlanningVehicleRow[];
-    const vRows = vRowsRaw.map((v) => ({ ...v, status: null as null }));
+
+    // Calcule la photo principale (alignée sur pickPrimaryPhotoUrl côté front) :
+    // priorité is_primary, puis plus petit display_order, en ignorant les .heic.
+    function isHeicUrl(url: string | null | undefined): boolean {
+      if (!url) return false;
+      const lower = url.toLowerCase();
+      return lower.endsWith(".heic") || lower.includes(".heic?");
+    }
+    function pickPrimary(photos: PlanningVehiclePhoto[] | null): string | null {
+      const valid = (photos ?? []).filter((p) => p.photo_url && !isHeicUrl(p.photo_url));
+      if (valid.length === 0) return null;
+      const primary = valid.find((p) => p.is_primary);
+      if (primary?.photo_url) return primary.photo_url;
+      const sorted = [...valid].sort(
+        (a, b) => (a.display_order ?? 999) - (b.display_order ?? 999)
+      );
+      return sorted[0]?.photo_url ?? null;
+    }
+
+    const vRows = vRowsRaw.map(({ vehicle_photos, ...rest }) => ({
+      ...rest,
+      status: null as null,
+      primary_photo_url: pickPrimary(vehicle_photos ?? null),
+    }));
     const vehicleIds = vRows.map((v) => v.id).filter(Boolean);
 
     type PlanningBookingRow = {

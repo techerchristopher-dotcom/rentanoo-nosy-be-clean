@@ -10,6 +10,8 @@ export type PlanningVehicle = {
   vehicle_category: string | null;
   /** Cylindrée brute telle qu'enregistrée dans la fiche véhicule (ex: "125", "125 A", "200"). Source de vérité pour le filtre cylindrée. */
   engine_capacity: string | null;
+  /** URL de la photo principale du véhicule (calculée côté serveur depuis vehicle_photos + fallback image_url). null si aucune photo affichable. */
+  primary_photo_url: string | null;
 };
 
 export type PlanningRenter = {
