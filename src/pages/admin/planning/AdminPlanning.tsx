@@ -422,86 +422,13 @@ export default function AdminPlanning() {
   return (
     <TooltipProvider>
       <div className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Planning agence</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm">
-              {viewMode === "week" ? "Vue semaine" : "Vue mois"} —{" "}
-              <span className="font-medium text-foreground">{periodLabel}</span>
-            </p>
-            <p className="mt-2 text-sm">
-              <Link to="/admin" className="text-primary font-medium hover:underline">
-                ← Tableau de bord
-              </Link>
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:items-end">
-            <div className="flex rounded-md border border-border overflow-hidden self-stretch sm:self-end">
-              <button
-                type="button"
-                className={cn(
-                  "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm",
-                  viewMode === "week" && "bg-muted"
-                )}
-                onClick={() => setViewMode("week")}
-                disabled={loading}
-              >
-                Semaine
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm border-l border-border",
-                  viewMode === "month" && "bg-muted"
-                )}
-                onClick={() => setViewMode("month")}
-                disabled={loading}
-              >
-                Mois
-              </button>
-            </div>
-            <div className="grid grid-cols-3 sm:flex sm:flex-wrap sm:items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={runPrev}
-                disabled={loading}
-                className="px-2 sm:px-3"
-                aria-label={viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
-              >
-                <ChevronLeft className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">
-                  {viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
-                </span>
-              </Button>
-              <Button
-                type="button"
-                onClick={runToday}
-                disabled={loading}
-                className="px-2 sm:px-3"
-              >
-                <Calendar className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  {viewMode === "week" ? "Cette semaine" : "Ce mois"}
-                </span>
-                <span className="sm:hidden text-sm">Aujourd'hui</span>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={runNext}
-                disabled={loading}
-                className="px-2 sm:px-3"
-                aria-label={viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
-              >
-                <span className="hidden sm:inline">
-                  {viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
-                </span>
-                <ChevronRight className="h-4 w-4 sm:ml-1" />
-              </Button>
-            </div>
-          </div>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Planning agence</h1>
+          <p className="mt-1 text-sm">
+            <Link to="/admin" className="text-primary font-medium hover:underline">
+              ← Tableau de bord
+            </Link>
+          </p>
         </div>
 
         <Card>
@@ -618,13 +545,86 @@ export default function AdminPlanning() {
         </Card>
 
         <Card>
-          <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl">
-              {viewMode === "week" ? "Vue semaine" : "Vue mois"}
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              {loading ? "Chargement…" : `${vehicles.length} véhicule(s) · ${bookings.length} réservation(s) dans la fenêtre`}
-            </CardDescription>
+          <CardHeader className="px-4 sm:px-6 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div className="min-w-0">
+                <CardTitle className="text-lg sm:text-xl">
+                  {viewMode === "week" ? "Vue semaine" : "Vue mois"}
+                  <span className="ml-2 text-sm font-medium text-muted-foreground">
+                    {periodLabel}
+                  </span>
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {loading ? "Chargement…" : `${vehicles.length} véhicule(s) · ${bookings.length} réservation(s) dans la fenêtre`}
+                </CardDescription>
+              </div>
+
+              <div className="flex rounded-md border border-border overflow-hidden self-stretch sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  className={cn(
+                    "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm",
+                    viewMode === "week" && "bg-muted"
+                  )}
+                  onClick={() => setViewMode("week")}
+                  disabled={loading}
+                >
+                  Semaine
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm border-l border-border",
+                    viewMode === "month" && "bg-muted"
+                  )}
+                  onClick={() => setViewMode("month")}
+                  disabled={loading}
+                >
+                  Mois
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 sm:flex sm:flex-wrap sm:items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={runPrev}
+                disabled={loading}
+                className="px-2 sm:px-3"
+                aria-label={viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
+              >
+                <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">
+                  {viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
+                </span>
+              </Button>
+              <Button
+                type="button"
+                onClick={runToday}
+                disabled={loading}
+                className="px-2 sm:px-3"
+              >
+                <Calendar className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {viewMode === "week" ? "Cette semaine" : "Ce mois"}
+                </span>
+                <span className="sm:hidden text-sm">Aujourd'hui</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={runNext}
+                disabled={loading}
+                className="px-2 sm:px-3"
+                aria-label={viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
+              >
+                <span className="hidden sm:inline">
+                  {viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
+                </span>
+                <ChevronRight className="h-4 w-4 sm:ml-1" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="px-2 sm:px-6">
             {dragging && !isMobile && (
