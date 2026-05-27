@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Mail, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const WHATSAPP_NUMBER = "+33633707569"; // Format international sans espaces pour le lien
 const WHATSAPP_DISPLAY = "+33 (0) 6 33 70 75 69"; // Format affiché
@@ -20,8 +22,24 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// Le header est masqué dès qu'on scrolle (>SCROLL_THRESHOLD) et réapparaît
+// quand on est revenu tout en haut. Mobile + desktop.
+const SCROLL_THRESHOLD = 8;
+
 export function WhatsAppHeader() {
   const { t } = useTranslation("common");
+  const [atTop, setAtTop] = useState(true);
+
+  useEffect(() => {
+    const computeAtTop = () => setAtTop(window.scrollY <= SCROLL_THRESHOLD);
+    computeAtTop();
+    window.addEventListener("scroll", computeAtTop, { passive: true });
+    window.addEventListener("resize", computeAtTop);
+    return () => {
+      window.removeEventListener("scroll", computeAtTop);
+      window.removeEventListener("resize", computeAtTop);
+    };
+  }, []);
 
   const handleWhatsAppClick = () => {
     // Format WhatsApp: https://wa.me/33633707569
@@ -30,7 +48,13 @@ export function WhatsAppHeader() {
   };
 
   return (
-    <div className="sticky top-0 z-[60] bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white shadow-md">
+    <div
+      className={cn(
+        "sticky top-0 z-[60] bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white shadow-md overflow-hidden transition-all duration-200 ease-out",
+        atTop ? "max-h-24 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+      )}
+      aria-hidden={!atTop}
+    >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 min-w-0">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 md:gap-6 py-2 md:py-2.5">
           {/* Section WhatsApp */}
