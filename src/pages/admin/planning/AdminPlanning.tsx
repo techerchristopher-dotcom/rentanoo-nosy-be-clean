@@ -11,7 +11,18 @@ import {
   startOfWeek,
 } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
+import {
+  Calendar,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Gauge,
+  HelpCircle,
+  Layers,
+  PackageX,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -190,6 +201,59 @@ function cylindreeMatchesFilter(cc: number | null, filter: CylindreeFilter): boo
   return true;
 }
 
+/**
+ * Chip de filtre moderne — rond, avec icône optionnelle et badge compteur.
+ * Style cohérent type "Airbnb categories" : actif = rempli primary, inactif = subtil.
+ */
+function FilterChip({
+  label,
+  icon,
+  count,
+  active,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  count?: number;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:text-sm font-medium",
+        "transition-all duration-150 ease-out select-none",
+        "border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1",
+        active
+          ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
+          : "bg-background text-foreground border-border hover:bg-muted hover:border-border/80",
+        disabled && "opacity-50 cursor-not-allowed hover:bg-background"
+      )}
+    >
+      {icon ? <span className="opacity-90">{icon}</span> : null}
+      <span>{label}</span>
+      {typeof count === "number" && (
+        <span
+          className={cn(
+            "ml-0.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] sm:text-[11px] font-semibold tabular-nums",
+            active
+              ? "bg-primary-foreground/20 text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          )}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
 function dayIsOccupied(bookings: PlanningBooking[], dayYmd: string): boolean {
   for (const b of bookings) {
     if (!b.start_date || !b.end_date) continue;
@@ -321,6 +385,39 @@ export default function AdminPlanning() {
     setQ("");
     setQApplied("");
   };
+
+  // Compteurs pour chaque option de filtre — calculés sur la liste post-recherche
+  // (vehiclesRaw vient déjà de l'API filtrée par q + include_inactive).
+  const vehicleAvailabilityCounts = useMemo(() => {
+    let active = 0;
+    let inactive = 0;
+    for (const v of vehiclesRaw) {
+      if (isVehicleInactive(v)) inactive++;
+      else active++;
+    }
+    return { all: vehiclesRaw.length, active, inactive };
+  }, [vehiclesRaw]);
+
+  const cylindreeCounts = useMemo(() => {
+    // Base : les véhicules après le filtre Disponibilité (pour cohérence visuelle)
+    const base = vehiclesRaw.filter((v) => {
+      if (vehicleFilter === "active") return !isVehicleInactive(v);
+      if (vehicleFilter === "inactive") return isVehicleInactive(v);
+      return true;
+    });
+    let lte125 = 0;
+    let mid = 0;
+    let gt200 = 0;
+    let unknown = 0;
+    for (const v of base) {
+      const cc = parseCylindree(v);
+      if (cc == null) unknown++;
+      else if (cc <= 125) lte125++;
+      else if (cc <= 200) mid++;
+      else gt200++;
+    }
+    return { all: base.length, lte125, "126-200": mid, gt200, unknown };
+  }, [vehiclesRaw, vehicleFilter]);
 
   const vehicles = useMemo(() => {
     // 1) Filtre disponibilité (tous / actifs / hors flotte)
@@ -530,116 +627,101 @@ export default function AdminPlanning() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <Label className="text-xs sm:text-sm text-muted-foreground">Véhicules</Label>
-                  <div className="flex rounded-md border border-border overflow-hidden">
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm",
-                        vehicleFilter === "all" && "bg-muted"
-                      )}
-                      onClick={() => setVehicleFilter("all")}
-                      disabled={loading}
-                    >
-                      Tous
-                    </button>
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm border-l border-border",
-                        vehicleFilter === "active" && "bg-muted"
-                      )}
-                      onClick={() => setVehicleFilter("active")}
-                      disabled={loading}
-                    >
-                      Actifs
-                    </button>
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm border-l border-border",
-                        vehicleFilter === "inactive" && "bg-muted"
-                      )}
-                      onClick={() => setVehicleFilter("inactive")}
-                      disabled={loading}
-                    >
-                      Hors flotte
-                    </button>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void loadPlanning()}
-                  disabled={loading}
-                  className="w-full sm:w-auto"
-                >
-                  <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-                  Actualiser
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void loadPlanning()}
+                disabled={loading}
+                className="w-full lg:w-auto shrink-0"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+                Actualiser
+              </Button>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
-              <Label className="text-xs sm:text-sm text-muted-foreground">Cylindrée</Label>
-              <div className="grid grid-cols-3 sm:flex rounded-md border border-border overflow-hidden">
-                <button
-                  type="button"
-                  className={cn(
-                    "px-3 py-2 sm:py-1.5 text-sm",
-                    cylindreeFilter === "all" && "bg-muted"
+            <div className="space-y-3 pt-1">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Label className="text-xs sm:text-sm font-semibold text-foreground">
+                    Disponibilité
+                  </Label>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <FilterChip
+                    label="Tous"
+                    icon={<Layers className="h-3.5 w-3.5" />}
+                    count={vehicleAvailabilityCounts.all}
+                    active={vehicleFilter === "all"}
+                    disabled={loading}
+                    onClick={() => setVehicleFilter("all")}
+                  />
+                  <FilterChip
+                    label="Actifs"
+                    icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+                    count={vehicleAvailabilityCounts.active}
+                    active={vehicleFilter === "active"}
+                    disabled={loading}
+                    onClick={() => setVehicleFilter("active")}
+                  />
+                  <FilterChip
+                    label="Hors flotte"
+                    icon={<PackageX className="h-3.5 w-3.5" />}
+                    count={vehicleAvailabilityCounts.inactive}
+                    active={vehicleFilter === "inactive"}
+                    disabled={loading}
+                    onClick={() => setVehicleFilter("inactive")}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Label className="text-xs sm:text-sm font-semibold text-foreground">
+                    Cylindrée
+                  </Label>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <FilterChip
+                    label="Toutes"
+                    count={cylindreeCounts.all}
+                    active={cylindreeFilter === "all"}
+                    disabled={loading}
+                    onClick={() => setCylindreeFilter("all")}
+                  />
+                  <FilterChip
+                    label="≤ 125 cc"
+                    count={cylindreeCounts.lte125}
+                    active={cylindreeFilter === "lte125"}
+                    disabled={loading || cylindreeCounts.lte125 === 0}
+                    onClick={() => setCylindreeFilter("lte125")}
+                  />
+                  <FilterChip
+                    label="126–200 cc"
+                    count={cylindreeCounts["126-200"]}
+                    active={cylindreeFilter === "126-200"}
+                    disabled={loading || cylindreeCounts["126-200"] === 0}
+                    onClick={() => setCylindreeFilter("126-200")}
+                  />
+                  <FilterChip
+                    label="> 200 cc"
+                    count={cylindreeCounts.gt200}
+                    active={cylindreeFilter === "gt200"}
+                    disabled={loading || cylindreeCounts.gt200 === 0}
+                    onClick={() => setCylindreeFilter("gt200")}
+                  />
+                  {cylindreeCounts.unknown > 0 && (
+                    <FilterChip
+                      label="Non détectée"
+                      icon={<HelpCircle className="h-3.5 w-3.5" />}
+                      count={cylindreeCounts.unknown}
+                      active={cylindreeFilter === "unknown"}
+                      disabled={loading}
+                      onClick={() => setCylindreeFilter("unknown")}
+                    />
                   )}
-                  onClick={() => setCylindreeFilter("all")}
-                  disabled={loading}
-                >
-                  Toutes
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border",
-                    cylindreeFilter === "lte125" && "bg-muted"
-                  )}
-                  onClick={() => setCylindreeFilter("lte125")}
-                  disabled={loading}
-                >
-                  ≤ 125 cc
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border",
-                    cylindreeFilter === "126-200" && "bg-muted"
-                  )}
-                  onClick={() => setCylindreeFilter("126-200")}
-                  disabled={loading}
-                >
-                  126–200
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border",
-                    cylindreeFilter === "gt200" && "bg-muted"
-                  )}
-                  onClick={() => setCylindreeFilter("gt200")}
-                  disabled={loading}
-                >
-                  &gt; 200 cc
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border col-span-3 sm:col-span-1",
-                    cylindreeFilter === "unknown" && "bg-muted"
-                  )}
-                  onClick={() => setCylindreeFilter("unknown")}
-                  disabled={loading}
-                >
-                  Non détectée
-                </button>
+                </div>
               </div>
             </div>
           </CardHeader>
