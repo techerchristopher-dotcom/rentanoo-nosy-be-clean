@@ -158,6 +158,38 @@ function isVehicleInactive(v: PlanningVehicle): boolean {
   return !(available && statusOk);
 }
 
+// Extrait la cylindrée (en cc) depuis le brand/model. Pattern tolérant :
+// "Yamaha Crux 110cc", "Sym Symphonie 125", "Wakaza 250cc Option", etc.
+// Retourne null si rien d'exploitable.
+function parseCylindree(v: PlanningVehicle): number | null {
+  const haystack = `${v.brand ?? ""} ${v.model ?? ""}`;
+  // Préfère un nombre suivi de "cc" (le plus fiable)
+  const ccMatch = haystack.match(/(\d{2,4})\s*cc\b/i);
+  if (ccMatch) {
+    const n = parseInt(ccMatch[1], 10);
+    if (n >= 50 && n <= 2000) return n;
+  }
+  // Sinon, premier nombre 2-4 chiffres isolé (entouré de séparateurs ou bord)
+  const numMatch = haystack.match(/(?:^|[^\d])(\d{2,4})(?:[^\d]|$)/);
+  if (numMatch) {
+    const n = parseInt(numMatch[1], 10);
+    if (n >= 50 && n <= 2000) return n;
+  }
+  return null;
+}
+
+type CylindreeFilter = "all" | "lte125" | "126-200" | "gt200" | "unknown";
+
+function cylindreeMatchesFilter(cc: number | null, filter: CylindreeFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "unknown") return cc == null;
+  if (cc == null) return false;
+  if (filter === "lte125") return cc <= 125;
+  if (filter === "126-200") return cc > 125 && cc <= 200;
+  if (filter === "gt200") return cc > 200;
+  return true;
+}
+
 function dayIsOccupied(bookings: PlanningBooking[], dayYmd: string): boolean {
   for (const b of bookings) {
     if (!b.start_date || !b.end_date) continue;
@@ -202,6 +234,7 @@ export default function AdminPlanning() {
   const [q, setQ] = useState("");
   const [qApplied, setQApplied] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | "active" | "inactive">("all");
+  const [cylindreeFilter, setCylindreeFilter] = useState<CylindreeFilter>("all");
 
   // Drag & drop state — Pointer Events API (HTML5 drag unreliable on buttons/Safari)
   const [dragging, setDragging] = useState<{ bookingId: string; durationDays: number } | null>(null);
@@ -290,10 +323,34 @@ export default function AdminPlanning() {
   };
 
   const vehicles = useMemo(() => {
-    if (vehicleFilter === "all") return vehiclesRaw;
-    if (vehicleFilter === "active") return vehiclesRaw.filter((v) => !isVehicleInactive(v));
-    return vehiclesRaw.filter((v) => isVehicleInactive(v));
-  }, [vehicleFilter, vehiclesRaw]);
+    // 1) Filtre disponibilité (tous / actifs / hors flotte)
+    let list = vehiclesRaw;
+    if (vehicleFilter === "active") list = list.filter((v) => !isVehicleInactive(v));
+    else if (vehicleFilter === "inactive") list = list.filter((v) => isVehicleInactive(v));
+
+    // 2) Filtre cylindrée
+    if (cylindreeFilter !== "all") {
+      list = list.filter((v) => cylindreeMatchesFilter(parseCylindree(v), cylindreeFilter));
+    }
+
+    // 3) Tri par cylindrée croissante (inconnus en fin), puis par nom pour stabilité
+    return [...list].sort((a, b) => {
+      const ca = parseCylindree(a);
+      const cb = parseCylindree(b);
+      if (ca == null && cb == null) {
+        // Tri secondaire: brand puis model alphabétique
+        const an = `${a.brand} ${a.model}`.toLowerCase();
+        const bn = `${b.brand} ${b.model}`.toLowerCase();
+        return an < bn ? -1 : an > bn ? 1 : 0;
+      }
+      if (ca == null) return 1;
+      if (cb == null) return -1;
+      if (ca !== cb) return ca - cb;
+      const an = `${a.brand} ${a.model}`.toLowerCase();
+      const bn = `${b.brand} ${b.model}`.toLowerCase();
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    });
+  }, [vehicleFilter, cylindreeFilter, vehiclesRaw]);
 
   const hasSearch = qApplied.trim().length > 0;
 
@@ -524,6 +581,67 @@ export default function AdminPlanning() {
                 </Button>
               </div>
             </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-1">
+              <Label className="text-xs sm:text-sm text-muted-foreground">Cylindrée</Label>
+              <div className="grid grid-cols-3 sm:flex rounded-md border border-border overflow-hidden">
+                <button
+                  type="button"
+                  className={cn(
+                    "px-3 py-2 sm:py-1.5 text-sm",
+                    cylindreeFilter === "all" && "bg-muted"
+                  )}
+                  onClick={() => setCylindreeFilter("all")}
+                  disabled={loading}
+                >
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border",
+                    cylindreeFilter === "lte125" && "bg-muted"
+                  )}
+                  onClick={() => setCylindreeFilter("lte125")}
+                  disabled={loading}
+                >
+                  ≤ 125 cc
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border",
+                    cylindreeFilter === "126-200" && "bg-muted"
+                  )}
+                  onClick={() => setCylindreeFilter("126-200")}
+                  disabled={loading}
+                >
+                  126–200
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border",
+                    cylindreeFilter === "gt200" && "bg-muted"
+                  )}
+                  onClick={() => setCylindreeFilter("gt200")}
+                  disabled={loading}
+                >
+                  &gt; 200 cc
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "px-3 py-2 sm:py-1.5 text-sm border-l border-border col-span-3 sm:col-span-1",
+                    cylindreeFilter === "unknown" && "bg-muted"
+                  )}
+                  onClick={() => setCylindreeFilter("unknown")}
+                  disabled={loading}
+                >
+                  Non détectée
+                </button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {errorMsg ? (
@@ -544,8 +662,9 @@ export default function AdminPlanning() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="px-4 sm:px-6 space-y-3">
+        <Card className="overflow-visible">
+          {/* Sticky calé juste sous la navbar globale (top 41px + h-16 = 105px mobile, 45px+64 = 109px desktop). */}
+          <CardHeader className="px-4 sm:px-6 space-y-3 sticky top-[105px] md:top-[109px] z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border rounded-t-xl">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <div className="min-w-0">
                 <CardTitle className="text-lg sm:text-xl">
