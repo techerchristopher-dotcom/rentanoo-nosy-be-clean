@@ -8,6 +8,8 @@ export type PlanningVehicle = {
   status: "active" | "inactive" | "review" | null;
   vehicle_type: "car" | "moto" | "scooter" | null;
   vehicle_category: string | null;
+  /** Cylindrée brute telle qu'enregistrée dans la fiche véhicule (ex: "125", "125 A", "200"). Source de vérité pour le filtre cylindrée. */
+  engine_capacity: string | null;
 };
 
 export type PlanningRenter = {

@@ -160,11 +160,12 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       available: boolean | null;
       vehicle_type: "car" | "moto" | "scooter" | null;
       vehicle_category: string | null;
+      engine_capacity: string | null;
     };
 
     let vq = supabaseAdmin
       .from("vehicles")
-      .select("id, brand, model, available, vehicle_type, vehicle_category");
+      .select("id, brand, model, available, vehicle_type, vehicle_category, engine_capacity");
 
     // Par défaut : toute la flotte.
     // include_inactive=0 => masquer véhicules non exploitables.

@@ -169,10 +169,17 @@ function isVehicleInactive(v: PlanningVehicle): boolean {
   return !(available && statusOk);
 }
 
-// Extrait la cylindrée (en cc) depuis le brand/model. Pattern tolérant :
-// "Yamaha Crux 110cc", "Sym Symphonie 125", "Wakaza 250cc Option", etc.
-// Retourne null si rien d'exploitable.
+// Extrait la cylindrée (en cc) d'un véhicule.
+// Source de vérité = vehicles.engine_capacity (renseigné via la fiche véhicule).
+// Fallback tolérant sur brand/model si le champ est manquant (legacy).
+// parseInt("125 A") === 125 → tolère les suffixes ("125 A", "200Cc"…).
 function parseCylindree(v: PlanningVehicle): number | null {
+  const raw = (v.engine_capacity ?? "").trim();
+  if (raw) {
+    const n = parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 50 && n <= 2000) return n;
+  }
+
   const haystack = `${v.brand ?? ""} ${v.model ?? ""}`;
   // Préfère un nombre suivi de "cc" (le plus fiable)
   const ccMatch = haystack.match(/(\d{2,4})\s*cc\b/i);
@@ -189,16 +196,21 @@ function parseCylindree(v: PlanningVehicle): number | null {
   return null;
 }
 
-type CylindreeFilter = "all" | "lte125" | "126-200" | "gt200" | "unknown";
+/**
+ * Filtre cylindrée — basé sur des valeurs réelles présentes en BD.
+ * "all"       → toutes
+ * "unknown"   → cylindrée non renseignée
+ * "<number>"  → égalité stricte (ex: "125" matche tous les véhicules à 125 cc)
+ */
+type CylindreeFilter = string;
 
 function cylindreeMatchesFilter(cc: number | null, filter: CylindreeFilter): boolean {
   if (filter === "all") return true;
   if (filter === "unknown") return cc == null;
   if (cc == null) return false;
-  if (filter === "lte125") return cc <= 125;
-  if (filter === "126-200") return cc > 125 && cc <= 200;
-  if (filter === "gt200") return cc > 200;
-  return true;
+  const target = parseInt(filter, 10);
+  if (!Number.isFinite(target)) return true;
+  return cc === target;
 }
 
 /**
@@ -398,25 +410,31 @@ export default function AdminPlanning() {
     return { all: vehiclesRaw.length, active, inactive };
   }, [vehiclesRaw]);
 
-  const cylindreeCounts = useMemo(() => {
-    // Base : les véhicules après le filtre Disponibilité (pour cohérence visuelle)
+  /**
+   * Groupes de cylindrée dynamiques — calculés à partir des valeurs RÉELLES présentes
+   * dans la flotte (vehicles.engine_capacity) après filtre Disponibilité.
+   * Retourne la liste triée croissante des valeurs cc + un compteur "unknown" + total.
+   */
+  const cylindreeGroups = useMemo(() => {
     const base = vehiclesRaw.filter((v) => {
       if (vehicleFilter === "active") return !isVehicleInactive(v);
       if (vehicleFilter === "inactive") return isVehicleInactive(v);
       return true;
     });
-    let lte125 = 0;
-    let mid = 0;
-    let gt200 = 0;
+    const byCc = new Map<number, number>();
     let unknown = 0;
     for (const v of base) {
       const cc = parseCylindree(v);
-      if (cc == null) unknown++;
-      else if (cc <= 125) lte125++;
-      else if (cc <= 200) mid++;
-      else gt200++;
+      if (cc == null) {
+        unknown++;
+      } else {
+        byCc.set(cc, (byCc.get(cc) ?? 0) + 1);
+      }
     }
-    return { all: base.length, lte125, "126-200": mid, gt200, unknown };
+    const values = Array.from(byCc.entries())
+      .map(([cc, count]) => ({ cc, count }))
+      .sort((a, b) => a.cc - b.cc);
+    return { total: base.length, values, unknown };
   }, [vehiclesRaw, vehicleFilter]);
 
   const vehicles = useMemo(() => {
@@ -685,37 +703,26 @@ export default function AdminPlanning() {
                 <div className="flex flex-wrap items-center gap-2">
                   <FilterChip
                     label="Toutes"
-                    count={cylindreeCounts.all}
+                    count={cylindreeGroups.total}
                     active={cylindreeFilter === "all"}
                     disabled={loading}
                     onClick={() => setCylindreeFilter("all")}
                   />
-                  <FilterChip
-                    label="≤ 125 cc"
-                    count={cylindreeCounts.lte125}
-                    active={cylindreeFilter === "lte125"}
-                    disabled={loading || cylindreeCounts.lte125 === 0}
-                    onClick={() => setCylindreeFilter("lte125")}
-                  />
-                  <FilterChip
-                    label="126–200 cc"
-                    count={cylindreeCounts["126-200"]}
-                    active={cylindreeFilter === "126-200"}
-                    disabled={loading || cylindreeCounts["126-200"] === 0}
-                    onClick={() => setCylindreeFilter("126-200")}
-                  />
-                  <FilterChip
-                    label="> 200 cc"
-                    count={cylindreeCounts.gt200}
-                    active={cylindreeFilter === "gt200"}
-                    disabled={loading || cylindreeCounts.gt200 === 0}
-                    onClick={() => setCylindreeFilter("gt200")}
-                  />
-                  {cylindreeCounts.unknown > 0 && (
+                  {cylindreeGroups.values.map(({ cc, count }) => (
                     <FilterChip
-                      label="Non détectée"
+                      key={cc}
+                      label={`${cc} cc`}
+                      count={count}
+                      active={cylindreeFilter === String(cc)}
+                      disabled={loading || count === 0}
+                      onClick={() => setCylindreeFilter(String(cc))}
+                    />
+                  ))}
+                  {cylindreeGroups.unknown > 0 && (
+                    <FilterChip
+                      label="Non renseignée"
                       icon={<HelpCircle className="h-3.5 w-3.5" />}
-                      count={cylindreeCounts.unknown}
+                      count={cylindreeGroups.unknown}
                       active={cylindreeFilter === "unknown"}
                       disabled={loading}
                       onClick={() => setCylindreeFilter("unknown")}
