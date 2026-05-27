@@ -12,6 +12,7 @@ import {
 } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
+  CalendarDays,
   Calendar,
   CheckCircle2,
   ChevronLeft,
@@ -20,6 +21,8 @@ import {
   HelpCircle,
   ImageOff,
   Layers,
+  LogIn,
+  LogOut,
   PackageX,
   RefreshCw,
   Search,
@@ -170,6 +173,15 @@ function isVehicleInactive(v: PlanningVehicle): boolean {
   const statusOk = v.status == null || v.status === "active";
   return !(available && statusOk);
 }
+
+/** Statuts de booking considérés comme "annulés / inactifs" — alignés sur le backend (server/routes/adminRoutes.ts). */
+const CANCEL_LIKE = new Set(["cancelled", "declined", "rejected", "terminated"]);
+
+function isBookingActive(b: PlanningBooking): boolean {
+  return !CANCEL_LIKE.has((b.status ?? "").toLowerCase());
+}
+
+type TodayFilter = "all" | "departing" | "returning";
 
 // Extrait la cylindrée (en cc) d'un véhicule.
 // Source de vérité = vehicles.engine_capacity (renseigné via la fiche véhicule).
@@ -452,6 +464,7 @@ export default function AdminPlanning() {
   const [qApplied, setQApplied] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState<"all" | "active" | "inactive">("all");
   const [cylindreeFilter, setCylindreeFilter] = useState<CylindreeFilter>("all");
+  const [todayFilter, setTodayFilter] = useState<TodayFilter>("all");
 
   // Lightbox photo véhicule (ouvert au clic sur l'avatar)
   const [lightboxVehicle, setLightboxVehicle] = useState<PlanningVehicle | null>(null);
@@ -521,6 +534,25 @@ export default function AdminPlanning() {
 
   const todayYmd = ymdLocal(new Date());
 
+  /**
+   * Sets des vehicle_id qui ont un départ / retour aujourd'hui.
+   * On exclut les bookings au statut annulé/rejeté/terminé.
+   * Note : les données viennent de la période actuellement chargée. Si l'admin
+   * regarde un mois lointain, ces Sets peuvent être vides ; on force donc le
+   * retour à "aujourd'hui" quand on active un filtre du jour (cf. setTodayFilterAndJump).
+   */
+  const todayOps = useMemo(() => {
+    const departing = new Set<string>();
+    const returning = new Set<string>();
+    for (const b of bookings) {
+      if (!b.vehicle_id) continue;
+      if (!isBookingActive(b)) continue;
+      if (b.start_date === todayYmd) departing.add(b.vehicle_id);
+      if (b.end_date === todayYmd) returning.add(b.vehicle_id);
+    }
+    return { departing, returning };
+  }, [bookings, todayYmd]);
+
   const periodLabel = useMemo(() => {
     if (viewMode === "week") {
       const a = format(periodStart, "d MMM", { locale: fr });
@@ -531,6 +563,19 @@ export default function AdminPlanning() {
   }, [anchor, periodStart, viewMode]);
 
   const runToday = () => setAnchor(new Date());
+
+  /**
+   * Active un filtre "Aujourd'hui" (départs/retours) ET saute sur aujourd'hui
+   * en vue semaine, pour garantir que les bookings du jour sont chargées
+   * (le backend ne renvoie que la période visible).
+   */
+  const handleTodayFilter = (next: TodayFilter) => {
+    setTodayFilter(next);
+    if (next !== "all") {
+      setViewMode("week");
+      setAnchor(new Date());
+    }
+  };
   const runPrev = () =>
     setAnchor((d) => (viewMode === "week" ? addDays(d, -7) : addMonths(d, -1)));
   const runNext = () =>
@@ -553,6 +598,19 @@ export default function AdminPlanning() {
     }
     return { all: vehiclesRaw.length, active, inactive };
   }, [vehiclesRaw]);
+
+  // Compteurs pour les chips "Aujourd'hui". On compte les véhicules concernés
+  // dans la flotte chargée (vehiclesRaw), pas dans la liste filtrée — l'admin
+  // doit toujours voir le compteur réel pour cliquer dessus.
+  const todayCounts = useMemo(() => {
+    let departing = 0;
+    let returning = 0;
+    for (const v of vehiclesRaw) {
+      if (todayOps.departing.has(v.id)) departing++;
+      if (todayOps.returning.has(v.id)) returning++;
+    }
+    return { departing, returning };
+  }, [vehiclesRaw, todayOps]);
 
   /**
    * Groupes de cylindrée dynamiques — calculés à partir des valeurs RÉELLES présentes
@@ -592,7 +650,14 @@ export default function AdminPlanning() {
       list = list.filter((v) => cylindreeMatchesFilter(parseCylindree(v), cylindreeFilter));
     }
 
-    // 3) Tri par cylindrée croissante (inconnus en fin), puis par nom pour stabilité
+    // 3) Filtre "Aujourd'hui" (cumulé) — départs / retours du jour
+    if (todayFilter === "departing") {
+      list = list.filter((v) => todayOps.departing.has(v.id));
+    } else if (todayFilter === "returning") {
+      list = list.filter((v) => todayOps.returning.has(v.id));
+    }
+
+    // 4) Tri par cylindrée croissante (inconnus en fin), puis par nom pour stabilité
     return [...list].sort((a, b) => {
       const ca = parseCylindree(a);
       const cb = parseCylindree(b);
@@ -609,7 +674,7 @@ export default function AdminPlanning() {
       const bn = `${b.brand} ${b.model}`.toLowerCase();
       return an < bn ? -1 : an > bn ? 1 : 0;
     });
-  }, [vehicleFilter, cylindreeFilter, vehiclesRaw]);
+  }, [vehicleFilter, cylindreeFilter, todayFilter, todayOps, vehiclesRaw]);
 
   const hasSearch = qApplied.trim().length > 0;
 
@@ -833,6 +898,43 @@ export default function AdminPlanning() {
                     active={vehicleFilter === "inactive"}
                     disabled={loading}
                     onClick={() => setVehicleFilter("inactive")}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Label className="text-xs sm:text-sm font-semibold text-foreground">
+                    Aujourd'hui
+                  </Label>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground font-normal">
+                    {format(new Date(), "EEEE d MMM", { locale: fr })}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <FilterChip
+                    label="Tout"
+                    count={vehicleAvailabilityCounts.all}
+                    active={todayFilter === "all"}
+                    disabled={loading}
+                    onClick={() => handleTodayFilter("all")}
+                  />
+                  <FilterChip
+                    label="Départs"
+                    icon={<LogOut className="h-3.5 w-3.5" />}
+                    count={todayCounts.departing}
+                    active={todayFilter === "departing"}
+                    disabled={loading}
+                    onClick={() => handleTodayFilter("departing")}
+                  />
+                  <FilterChip
+                    label="Retours"
+                    icon={<LogIn className="h-3.5 w-3.5" />}
+                    count={todayCounts.returning}
+                    active={todayFilter === "returning"}
+                    disabled={loading}
+                    onClick={() => handleTodayFilter("returning")}
                   />
                 </div>
               </div>
