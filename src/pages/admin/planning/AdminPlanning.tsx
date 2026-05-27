@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/page-loader";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -168,6 +169,7 @@ function dayIsOccupied(bookings: PlanningBooking[], dayYmd: string): boolean {
 export default function AdminPlanning() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
   const [anchor, setAnchor] = useState<Date>(() => new Date());
@@ -295,12 +297,22 @@ export default function AdminPlanning() {
 
   const hasSearch = qApplied.trim().length > 0;
 
+  const vehicleColPx = isMobile ? 140 : 280;
+  const dayCellMinPx = isMobile ? 28 : 32;
+  const dayCellTargetPx = isMobile ? 30 : 36;
+
   const gridColsStyle = useMemo(
-    () => ({ gridTemplateColumns: `280px repeat(${dayCount}, minmax(32px, 1fr))` } as const),
-    [dayCount]
+    () =>
+      ({
+        gridTemplateColumns: `${vehicleColPx}px repeat(${dayCount}, minmax(${dayCellMinPx}px, 1fr))`,
+      } as const),
+    [dayCount, vehicleColPx, dayCellMinPx]
   );
 
-  const gridMinWidth = Math.max(1100, 280 + dayCount * 36);
+  const gridMinWidth = Math.max(
+    isMobile ? 540 : 1100,
+    vehicleColPx + dayCount * dayCellTargetPx
+  );
 
   const DRAGGABLE_STATUSES = new Set(["pending", "pending_payment"]);
 
@@ -409,11 +421,11 @@ export default function AdminPlanning() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Planning agence</h1>
-            <p className="text-muted-foreground text-sm">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Planning agence</h1>
+            <p className="text-muted-foreground text-xs sm:text-sm">
               {viewMode === "week" ? "Vue semaine" : "Vue mois"} —{" "}
               <span className="font-medium text-foreground">{periodLabel}</span>
             </p>
@@ -425,10 +437,13 @@ export default function AdminPlanning() {
           </div>
 
           <div className="flex flex-col gap-2 sm:items-end">
-            <div className="flex rounded-md border border-border overflow-hidden self-start sm:self-end">
+            <div className="flex rounded-md border border-border overflow-hidden self-stretch sm:self-end">
               <button
                 type="button"
-                className={cn("px-3 py-1.5 text-sm", viewMode === "week" && "bg-muted")}
+                className={cn(
+                  "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm",
+                  viewMode === "week" && "bg-muted"
+                )}
                 onClick={() => setViewMode("week")}
                 disabled={loading}
               >
@@ -436,63 +451,111 @@ export default function AdminPlanning() {
               </button>
               <button
                 type="button"
-                className={cn("px-3 py-1.5 text-sm border-l border-border", viewMode === "month" && "bg-muted")}
+                className={cn(
+                  "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm border-l border-border",
+                  viewMode === "month" && "bg-muted"
+                )}
                 onClick={() => setViewMode("month")}
                 disabled={loading}
               >
                 Mois
               </button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button type="button" variant="outline" onClick={runPrev} disabled={loading}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                {viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
+            <div className="grid grid-cols-3 sm:flex sm:flex-wrap sm:items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={runPrev}
+                disabled={loading}
+                className="px-2 sm:px-3"
+                aria-label={viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
+              >
+                <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">
+                  {viewMode === "week" ? "Semaine précédente" : "Mois précédent"}
+                </span>
               </Button>
-              <Button type="button" variant="outline" onClick={runNext} disabled={loading}>
-                {viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
-                <ChevronRight className="h-4 w-4 ml-1" />
+              <Button
+                type="button"
+                onClick={runToday}
+                disabled={loading}
+                className="px-2 sm:px-3"
+              >
+                <Calendar className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {viewMode === "week" ? "Cette semaine" : "Ce mois"}
+                </span>
+                <span className="sm:hidden text-sm">Aujourd'hui</span>
               </Button>
-              <Button type="button" onClick={runToday} disabled={loading}>
-                <Calendar className="h-4 w-4 mr-2" />
-                {viewMode === "week" ? "Cette semaine" : "Ce mois"}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={runNext}
+                disabled={loading}
+                className="px-2 sm:px-3"
+                aria-label={viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
+              >
+                <span className="hidden sm:inline">
+                  {viewMode === "week" ? "Semaine suivante" : "Mois suivant"}
+                </span>
+                <ChevronRight className="h-4 w-4 sm:ml-1" />
               </Button>
             </div>
           </div>
         </div>
 
         <Card>
-          <CardHeader className="space-y-2">
-            <CardTitle>Outils</CardTitle>
-            <CardDescription>Recherche, filtres simples, et rafraîchissement.</CardDescription>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
-              <div className="flex items-center gap-2 w-full sm:max-w-md">
+          <CardHeader className="space-y-2 px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">Outils</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Recherche, filtres simples, et rafraîchissement.
+            </CardDescription>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:max-w-md">
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    placeholder="Rechercher un véhicule (marque / modèle)…"
+                    placeholder="Rechercher un véhicule…"
                     className="pl-9"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") applySearch();
                     }}
                   />
                 </div>
-                <Button type="button" variant="secondary" onClick={applySearch} disabled={loading}>
-                  Rechercher
-                </Button>
-                <Button type="button" variant="ghost" onClick={clearSearch} disabled={loading || (!q && !qApplied)}>
-                  Effacer
-                </Button>
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={applySearch}
+                    disabled={loading}
+                    className="w-full sm:w-auto"
+                  >
+                    Rechercher
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={clearSearch}
+                    disabled={loading || (!q && !qApplied)}
+                    className="w-full sm:w-auto"
+                  >
+                    Effacer
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm text-muted-foreground">Véhicules</Label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Label className="text-xs sm:text-sm text-muted-foreground">Véhicules</Label>
                   <div className="flex rounded-md border border-border overflow-hidden">
                     <button
                       type="button"
-                      className={cn("px-3 py-1.5 text-sm", vehicleFilter === "all" && "bg-muted")}
+                      className={cn(
+                        "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm",
+                        vehicleFilter === "all" && "bg-muted"
+                      )}
                       onClick={() => setVehicleFilter("all")}
                       disabled={loading}
                     >
@@ -500,7 +563,10 @@ export default function AdminPlanning() {
                     </button>
                     <button
                       type="button"
-                      className={cn("px-3 py-1.5 text-sm border-l border-border", vehicleFilter === "active" && "bg-muted")}
+                      className={cn(
+                        "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm border-l border-border",
+                        vehicleFilter === "active" && "bg-muted"
+                      )}
                       onClick={() => setVehicleFilter("active")}
                       disabled={loading}
                     >
@@ -508,7 +574,10 @@ export default function AdminPlanning() {
                     </button>
                     <button
                       type="button"
-                      className={cn("px-3 py-1.5 text-sm border-l border-border", vehicleFilter === "inactive" && "bg-muted")}
+                      className={cn(
+                        "flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-sm border-l border-border",
+                        vehicleFilter === "inactive" && "bg-muted"
+                      )}
                       onClick={() => setVehicleFilter("inactive")}
                       disabled={loading}
                     >
@@ -516,7 +585,13 @@ export default function AdminPlanning() {
                     </button>
                   </div>
                 </div>
-                <Button type="button" variant="outline" onClick={() => void loadPlanning()} disabled={loading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void loadPlanning()}
+                  disabled={loading}
+                  className="w-full sm:w-auto"
+                >
                   <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
                   Actualiser
                 </Button>
@@ -543,14 +618,16 @@ export default function AdminPlanning() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{viewMode === "week" ? "Vue semaine" : "Vue mois"}</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">
+              {viewMode === "week" ? "Vue semaine" : "Vue mois"}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {loading ? "Chargement…" : `${vehicles.length} véhicule(s) · ${bookings.length} réservation(s) dans la fenêtre`}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {dragging && (
+          <CardContent className="px-2 sm:px-6">
+            {dragging && !isMobile && (
               <div className="mb-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
                 <span>Glissez vers un jour libre pour déplacer la réservation.</span>
                 <button type="button" className="ml-auto text-xs underline opacity-70 hover:opacity-100" onClick={cancelDrag}>
@@ -558,6 +635,26 @@ export default function AdminPlanning() {
                 </button>
               </div>
             )}
+            {isMobile ? (
+              <MobileVehicleList
+                vehicles={vehicles}
+                days={days}
+                dayCount={dayCount}
+                periodStart={periodStart}
+                periodStartYmd={periodStartYmd}
+                periodEndYmd={periodEndYmd}
+                bookingsByVehicle={bookingsByVehicle}
+                todayYmd={todayYmd}
+                viewMode={viewMode}
+                loading={loading}
+                onCreate={(vehicleId, dayYmd) =>
+                  navigate(
+                    `/admin/bookings/new?vehicleId=${encodeURIComponent(vehicleId)}&start=${encodeURIComponent(dayYmd)}&end=${encodeURIComponent(dayYmd)}`
+                  )
+                }
+                onOpenBooking={(bookingId) => navigate(`/admin/bookings/${bookingId}`)}
+              />
+            ) : (
             <div className={cn("overflow-auto border border-border rounded-lg", dragging && "select-none")}>
               <div style={{ minWidth: gridMinWidth }}>
                 <div
@@ -749,6 +846,7 @@ export default function AdminPlanning() {
                 </div>
               </div>
             </div>
+            )}
 
             {!loading && vehicles.length > 0 && bookings.length === 0 ? (
               <div className="mt-4 text-sm text-muted-foreground">
@@ -761,5 +859,192 @@ export default function AdminPlanning() {
         </Card>
       </div>
     </TooltipProvider>
+  );
+}
+
+// =====================================================================
+// Vue mobile : liste de cartes véhicule avec frise temporelle pleine largeur
+// (drag & drop désactivé sur mobile — pas pratique en tactile)
+// =====================================================================
+
+type MobileVehicleListProps = {
+  vehicles: PlanningVehicle[];
+  days: Date[];
+  dayCount: number;
+  periodStart: Date;
+  periodStartYmd: string;
+  periodEndYmd: string;
+  bookingsByVehicle: Map<string, PlanningBooking[]>;
+  todayYmd: string;
+  viewMode: "week" | "month";
+  loading: boolean;
+  onCreate: (vehicleId: string, dayYmd: string) => void;
+  onOpenBooking: (bookingId: string) => void;
+};
+
+function MobileVehicleList({
+  vehicles,
+  days,
+  dayCount,
+  periodStart,
+  periodStartYmd,
+  periodEndYmd,
+  bookingsByVehicle,
+  todayYmd,
+  viewMode,
+  loading,
+  onCreate,
+  onOpenBooking,
+}: MobileVehicleListProps) {
+  // Vue semaine : 7 jours tiennent toujours dans la largeur disponible.
+  // Vue mois : on impose un minWidth pour permettre le scroll horizontal local
+  // dans chaque carte (sinon les colonnes seraient trop fines pour être tappables).
+  const stripMinWidth = viewMode === "month" ? Math.max(560, dayCount * 22) : 0;
+
+  return (
+    <div className="space-y-2">
+      {vehicles.map((v) => {
+        const inactive = isVehicleInactive(v);
+        const rowBookings = bookingsByVehicle.get(v.id) ?? [];
+        const blocks = layoutBlocksForVehicle({
+          bookings: rowBookings,
+          periodStart,
+          periodStartYmd,
+          periodEndYmd,
+          dayCount,
+        });
+        const lanes = blocks.reduce((max, b) => Math.max(max, b.lane + 1), 1);
+        const lanesHeight = Math.max(36, 6 + lanes * 22);
+
+        const strip = (
+          <div style={stripMinWidth ? { minWidth: stripMinWidth } : undefined}>
+            <div
+              className="grid border-b border-border"
+              style={{ gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))` }}
+            >
+              {days.map((d) => {
+                const ymd = ymdLocal(d);
+                const isToday = ymd === todayYmd;
+                return (
+                  <div
+                    key={ymd}
+                    className={cn(
+                      "text-center py-1 border-r last:border-r-0 border-border leading-tight",
+                      isToday && "bg-primary/15"
+                    )}
+                  >
+                    <div className="text-[10px] font-semibold text-foreground">
+                      {format(d, "EEEEE", { locale: fr })}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {format(d, viewMode === "month" ? "d" : "d/M", { locale: fr })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="relative" style={{ height: lanesHeight }}>
+              <div
+                className="absolute inset-0 grid"
+                style={{ gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))` }}
+              >
+                {days.map((d) => {
+                  const dayYmd = ymdLocal(d);
+                  const occ = dayIsOccupied(rowBookings, dayYmd);
+                  const isToday = dayYmd === todayYmd;
+                  return (
+                    <button
+                      key={dayYmd}
+                      type="button"
+                      disabled={occ || loading}
+                      onClick={() => {
+                        if (occ) return;
+                        onCreate(v.id, dayYmd);
+                      }}
+                      className={cn(
+                        "border-r last:border-r-0 border-border bg-background text-left",
+                        "hover:bg-muted/40 active:bg-muted/60 transition-colors",
+                        occ && "cursor-not-allowed hover:bg-background",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-inset",
+                        isToday && "bg-primary/5"
+                      )}
+                      aria-label={`Créer une réservation pour ${v.brand} ${v.model} le ${dayYmd}`}
+                    />
+                  );
+                })}
+              </div>
+
+              {blocks.length === 0 ? (
+                <div className="absolute inset-0 flex items-center px-3 text-[11px] text-muted-foreground pointer-events-none">
+                  Aucune réservation
+                </div>
+              ) : null}
+
+              {blocks.map((b) => {
+                const leftPct = (b.startIndex / dayCount) * 100;
+                const widthPct = (b.spanDays / dayCount) * 100;
+                const top = 6 + b.lane * 22;
+                const st = bookingStyle(b.booking.status);
+                const renterInline = renterInlineLabel(b.booking);
+                const refLabel =
+                  b.booking.reference_number != null
+                    ? `#${b.booking.reference_number}`
+                    : b.booking.id.slice(0, 8) + "…";
+                const barLabel = [refLabel, renterInline].filter(Boolean).join(" · ");
+                return (
+                  <button
+                    key={b.booking.id}
+                    type="button"
+                    onClick={() => onOpenBooking(b.booking.id)}
+                    className={cn(
+                      "absolute rounded-md border px-1.5 text-[10px] text-left shadow-sm leading-tight",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/40",
+                      st.className
+                    )}
+                    style={{
+                      left: `${leftPct}%`,
+                      width: `${widthPct}%`,
+                      top,
+                      height: 18,
+                    }}
+                    aria-label={`Ouvrir la réservation ${refLabel}`}
+                  >
+                    <div className="truncate font-medium">{barLabel || st.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+
+        return (
+          <div
+            key={v.id}
+            className={cn(
+              "rounded-lg border border-border bg-background overflow-hidden",
+              inactive && "bg-muted/30"
+            )}
+          >
+            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border">
+              <div className="font-medium text-sm text-foreground truncate min-w-0">
+                {v.brand} {v.model}
+              </div>
+              {inactive ? (
+                <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                  hors flotte
+                </span>
+              ) : null}
+            </div>
+
+            {stripMinWidth > 0 ? (
+              <div className="overflow-x-auto">{strip}</div>
+            ) : (
+              strip
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
