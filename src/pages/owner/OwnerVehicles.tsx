@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Plus, Car, Calendar, Settings, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -18,9 +17,52 @@ import { useTranslation } from "react-i18next";
 import { VehicleTypeModal } from "@/components/owner/VehicleTypeModal";
 import { getOptimizedImageUrl } from "@/utils/imageOptimization";
 
+const LOCKED_OPERATIONAL_STATUSES = new Set([
+  "rented",
+  "reserved",
+  "maintenance",
+  "broken",
+  "accident",
+]);
+
+const PUBLICATION_BADGE: Record<string, { label: string; className: string }> = {
+  available: { label: "Publié", className: "bg-green-500 text-white" },
+  retired: { label: "Hors ligne", className: "bg-red-500 text-white" },
+  rented: { label: "En location", className: "bg-blue-500 text-white" },
+  reserved: { label: "Réservé", className: "bg-purple-500 text-white" },
+  maintenance: { label: "En entretien", className: "bg-orange-500 text-white" },
+  broken: { label: "En panne", className: "bg-red-700 text-white" },
+  accident: { label: "Accidenté", className: "bg-red-700 text-white" },
+};
+
+type OwnerVehicleRow = Vehicle & {
+  operationalStatus: string;
+  isPublished: boolean;
+};
+
+function PublicationBadge({
+  operationalStatus,
+  isPublished,
+}: {
+  operationalStatus: string;
+  isPublished: boolean;
+}) {
+  const config =
+    PUBLICATION_BADGE[operationalStatus] ??
+    (isPublished ? PUBLICATION_BADGE.available : PUBLICATION_BADGE.retired);
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${config.className}`}
+    >
+      {config.label}
+    </span>
+  );
+}
+
 const OwnerVehicles = () => {
   const { t } = useTranslation("common");
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<OwnerVehicleRow[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
@@ -117,7 +159,12 @@ const OwnerVehicles = () => {
       // Mettre à jour l'état local
       setVehicles(prev => prev.map(vehicle => 
         vehicle.id === vehicleId 
-          ? { ...vehicle, status: isAvailable ? "active" : "inactive" }
+          ? {
+              ...vehicle,
+              status: isAvailable ? "active" : "inactive",
+              isPublished: isAvailable,
+              operationalStatus: isAvailable ? "available" : "retired",
+            }
           : vehicle
       ));
 
@@ -217,7 +264,7 @@ const OwnerVehicles = () => {
         setVehicles([]);
       } else {
         // Mapper les véhicules Supabase vers le format de l'application
-        const mappedVehicles = vehiclesResult.data.map(supabaseVehicle => ({
+        const mappedVehicles: OwnerVehicleRow[] = vehiclesResult.data.map((supabaseVehicle) => ({
           id: supabaseVehicle.id,
           ownerId: supabaseVehicle.owner_id || "",
           license: supabaseVehicle.id.substring(0, 8).toUpperCase(), // Temporaire
@@ -235,6 +282,8 @@ const OwnerVehicles = () => {
           latitude: 0, // À ajouter dans la DB plus tard
           longitude: 0, // À ajouter dans la DB plus tard
           status: supabaseVehicle.available ? "active" : "inactive",
+          operationalStatus: supabaseVehicle.operational_status ?? "available",
+          isPublished: supabaseVehicle.available ?? false,
           imageUrl: supabaseVehicle.image_url || null,
           createdAt: supabaseVehicle.created_at || new Date().toISOString(),
           updatedAt: supabaseVehicle.updated_at || new Date().toISOString(),
@@ -427,13 +476,19 @@ const OwnerVehicles = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-3 ml-4">
-                        <StatusBadge status={vehicle.status} />
+                        <PublicationBadge
+                          operationalStatus={vehicle.operationalStatus}
+                          isPublished={vehicle.isPublished}
+                        />
                         <div className="flex items-center space-x-2">
                           <Switch
                             id={`availability-${vehicle.id}`}
-                            checked={vehicle.status === 'active'}
+                            checked={vehicle.isPublished}
                             onCheckedChange={(checked) => handleAvailabilityChange(vehicle.id, checked)}
-                            disabled={updatingVehicle === vehicle.id}
+                            disabled={
+                              updatingVehicle === vehicle.id ||
+                              LOCKED_OPERATIONAL_STATUSES.has(vehicle.operationalStatus)
+                            }
                             className="data-[state=checked]:bg-green-500"
                           />
                           {updatingVehicle === vehicle.id && (

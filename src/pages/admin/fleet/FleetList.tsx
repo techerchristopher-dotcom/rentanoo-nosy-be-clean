@@ -78,14 +78,15 @@ export default function FleetList() {
                 <TableHead>Scooter</TableHead>
                 <TableHead>Immat.</TableHead>
                 <TableHead>Km</TableHead>
-                <TableHead>Statut</TableHead>
+                <TableHead>Statut parc</TableHead>
+                <TableHead>Site</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(scooters ?? []).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     Aucun scooter trouvé
                   </TableCell>
                 </TableRow>
@@ -100,6 +101,17 @@ export default function FleetList() {
                     <TableCell>{s.mileage?.toLocaleString("fr-FR") ?? "—"}</TableCell>
                     <TableCell>
                       <StatusBadge status={s.operational_status} />
+                    </TableCell>
+                    <TableCell>
+                      {s.available ? (
+                        <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                          Publié
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          Hors ligne
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
