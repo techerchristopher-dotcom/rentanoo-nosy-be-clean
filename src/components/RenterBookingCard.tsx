@@ -60,10 +60,12 @@ import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
 import { formatCurrency } from '@/utils/currency'
 import { calcServiceFeeRenter, calcRenterTotal } from '@/utils/serviceFees'
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
+import { AdminBookingBadge } from '@/components/AdminBookingBadge'
 
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
   primaryPhoto?: Photo
+  renter?: User
   depositStatus?: 'pending' | 'paid' | 'refunded' | 'card_registered' | 'not_required' | null
   depositAmount?: number | null
   depositAmountSnapshot?: number | null
@@ -152,6 +154,7 @@ export default function RenterBookingCard({
   }, [i18n.language, currentLang, currencyLocale])
   
   const [owner, setOwner] = useState<User | null>(null)
+  const [renterFromFetch, setRenterFromFetch] = useState<User | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -620,6 +623,34 @@ export default function RenterBookingCard({
     loadOwner()
   }, [booking.vehicle?.ownerId])
 
+  // Locataire de la réservation (pas l'utilisateur connecté — important pour les résas admin)
+  useEffect(() => {
+    if (booking.renter) {
+      setRenterFromFetch(null)
+      return
+    }
+    if (!booking.renterId) {
+      setRenterFromFetch(null)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const result = await ProfileService.getUserProfile(booking.renterId)
+        if (!cancelled && result.data) setRenterFromFetch(result.data)
+        else if (!cancelled) setRenterFromFetch(null)
+      } catch (error) {
+        console.error('Erreur lors du chargement du locataire:', error)
+        if (!cancelled) setRenterFromFetch(null)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [booking.renter, booking.renterId])
+
+  const renter = booking.renter ?? renterFromFetch
+
   // Charger les données de l'utilisateur actuel
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -871,6 +902,9 @@ export default function RenterBookingCard({
                       // Fallback vers StatusBadge pour les autres statuts
                       return <StatusBadge status={booking.status} size="sm" />
                     })()}
+                    {isAdminCreatedBooking(booking) && (
+                      <AdminBookingBadge />
+                    )}
                     
                     {/* Motif d'annulation + date de mise à jour */}
                     {(booking.status === 'cancelled' || booking.status === 'declined') && (() => {
@@ -1513,7 +1547,7 @@ export default function RenterBookingCard({
             <Separator />
 
             {/* Section Informations client */}
-            {currentUser && (
+            {renter && (
               <>
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 px-2 mb-3">
@@ -1521,24 +1555,25 @@ export default function RenterBookingCard({
                       <UserPlus className="h-5 w-5 text-primary" />
                     </div>
                     <h4 className="text-sm font-semibold text-foreground">{t('bookings.details.clientInfo')}</h4>
+                    {isAdminCreatedBooking(booking) && <AdminBookingBadge />}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-card rounded-lg border border-border/50">
                       <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.lastName')}</p>
-                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.lastName || t('bookings.details.notProvided')}</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">{renter.lastName || t('bookings.details.notProvided')}</p>
                     </div>
                     <div className="p-3 bg-card rounded-lg border border-border/50">
                       <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.firstName')}</p>
-                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.firstName || t('bookings.details.notProvided')}</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">{renter.firstName || t('bookings.details.notProvided')}</p>
                     </div>
                     <div className="p-3 bg-card rounded-lg border border-border/50">
                       <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.phone')}</p>
-                      <p className="text-sm font-bold text-foreground leading-tight">{currentUser.phone || t('bookings.details.notProvided')}</p>
+                      <p className="text-sm font-bold text-foreground leading-tight">{renter.phone || t('bookings.details.notProvided')}</p>
                     </div>
                     <div className="p-3 bg-card rounded-lg border border-border/50">
                       <p className="text-xs text-muted-foreground font-medium mb-1">{t('bookings.details.email')}</p>
-                      <p className="text-sm font-bold text-foreground break-all leading-tight">{currentUser.email || t('bookings.details.notProvided')}</p>
+                      <p className="text-sm font-bold text-foreground break-all leading-tight">{renter.email || t('bookings.details.notProvided')}</p>
                     </div>
                   </div>
                 </div>

@@ -62,6 +62,7 @@ import { calcServiceFeeOwner, calcServiceFeeRenter, calcOwnerPayout, calcRenterT
 import { useTranslation } from 'react-i18next'
 import { forceDepositForOwner } from '@/lib/depositCaution'
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
+import { AdminBookingBadge } from '@/components/AdminBookingBadge'
 
 /** Libellé locataire pour header, tooltips, alt (pas d’email ici). */
 function formatRenterDisplayName(user: User | null | undefined): string {
@@ -893,6 +894,9 @@ export default function OwnerBookingCard({
                         // Fallback vers StatusBadge pour les autres statuts
                         return <StatusBadge status={booking.status} size="sm" />
                       })()}
+                      {isAdminCreatedBooking(booking) && (
+                        <AdminBookingBadge className="mt-1" />
+                      )}
                       {booking.status === 'pending' && !isAdminCreatedBooking(booking) && (
                         <PaymentCountdown 
                           confirmedAt={new Date((booking as any).updatedAt || (booking as any).createdAt)}
@@ -1464,6 +1468,7 @@ export default function OwnerBookingCard({
                 <div className="flex items-center gap-2 mb-4">
                   <UserIcon className="h-5 w-5 text-primary" />
                   <h4 className="font-semibold text-lg">Informations client</h4>
+                  {isAdminCreatedBooking(booking) && <AdminBookingBadge />}
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -1473,6 +1478,14 @@ export default function OwnerBookingCard({
                   <div>
                     <p className="text-muted-foreground mb-1">Prénom</p>
                     <p className="font-semibold">{renter?.firstName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Téléphone</p>
+                    <p className="font-semibold">{renter?.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Email</p>
+                    <p className="font-semibold break-all">{renter?.email || 'N/A'}</p>
                   </div>
                 </div>
               </div>
