@@ -62,6 +62,24 @@ const AdminPlaceholderVehicles = lazy(() =>
 const AdminPlaceholderPayments = lazy(() =>
   import("./pages/admin/AdminPlaceholders").then((m) => ({ default: m.AdminPlaceholderPayments }))
 );
+const FleetList = lazy(() => import("./pages/admin/fleet/FleetList"));
+const FleetForm = lazy(() => import("./pages/admin/fleet/FleetForm"));
+const FleetDetail = lazy(() => import("./pages/admin/fleet/FleetDetail"));
+const VehicleStateForm = lazy(() => import("./pages/admin/fleet/VehicleStateForm"));
+const PartsList = lazy(() => import("./pages/admin/parts/PartsList"));
+const PartForm = lazy(() => import("./pages/admin/parts/PartForm"));
+const PartDetail = lazy(() => import("./pages/admin/parts/PartDetail"));
+const StockMovementsList = lazy(() => import("./pages/admin/parts/StockMovementsList"));
+const WorkshopList = lazy(() => import("./pages/admin/workshop/WorkshopList"));
+const RepairForm = lazy(() => import("./pages/admin/workshop/RepairForm"));
+const RepairDetail = lazy(() => import("./pages/admin/workshop/RepairDetail"));
+const ReportsDashboard = lazy(() => import("./pages/admin/reports/ReportsDashboard"));
+const SalesList = lazy(() => import("./pages/admin/sales/SalesList"));
+const SaleForm = lazy(() => import("./pages/admin/sales/SaleForm"));
+const SaleDetail = lazy(() => import("./pages/admin/sales/SaleDetail"));
+const SuppliersList = lazy(() => import("./pages/admin/suppliers/SuppliersList"));
+const SupplierForm = lazy(() => import("./pages/admin/suppliers/SupplierForm"));
+const MaintenancePage = lazy(() => import("./pages/admin/maintenance/MaintenancePage"));
 const Checking = lazy(() => import("./pages/Checking"));
 const CheckinReturnPage = lazy(() => import("./pages/checkin-return/[bookingId]"));
 const DictionaryIndex = lazy(() => import("./pages/dictionary/DictionaryIndex"));
@@ -290,6 +308,174 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <AdminRevenue />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="fleet"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <FleetList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="fleet/new"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <FleetForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="fleet/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <FleetDetail />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="fleet/:id/edit"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <FleetForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="fleet/:id/state/new"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <VehicleStateForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="parts"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <PartsList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="parts/new"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <PartForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="parts/movements"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <StockMovementsList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="parts/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <PartDetail />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="parts/:id/edit"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <PartForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="workshop"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <WorkshopList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="workshop/new"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <RepairForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="workshop/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <RepairDetail />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="reports"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ReportsDashboard />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="sales"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SalesList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="sales/new"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SaleForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="sales/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SaleDetail />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="suppliers"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SuppliersList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="suppliers/new"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SupplierForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="suppliers/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SupplierForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="maintenance"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <MaintenancePage />
                   </Suspense>
                 }
               />

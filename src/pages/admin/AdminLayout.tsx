@@ -1,48 +1,19 @@
-import { Link, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { RequireAdmin } from "@/components/admin/RequireAdmin";
 import { Footer } from "@/components/layout/footer";
+import { BackOfficeSidebar } from "@/features/back-office/components/BackOfficeSidebar";
 
 export default function AdminLayout() {
   return (
     <RequireAdmin>
       <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20 flex flex-col">
         <div className="container mx-auto px-4 flex-1 pb-8">
-          <nav className="mb-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground border-b border-border pb-4">
-            <Link to="/admin" className="font-medium text-foreground hover:text-primary transition-colors">
-              Administration
-            </Link>
-            <span aria-hidden className="text-border">
-              /
-            </span>
-            <Link to="/admin/bookings/new" className="hover:text-primary transition-colors">
-              Nouvelle réservation
-            </Link>
-            <span aria-hidden className="text-border">
-              /
-            </span>
-            <Link to="/admin/drafts" className="hover:text-primary transition-colors">
-              Mes brouillons
-            </Link>
-            <span aria-hidden className="text-border">
-              /
-            </span>
-            <Link to="/admin/planning" className="hover:text-primary transition-colors">
-              Planning
-            </Link>
-            <span aria-hidden className="text-border">
-              /
-            </span>
-            <Link to="/admin/bookings" className="hover:text-primary transition-colors">
-              Toutes les réservations
-            </Link>
-            <span aria-hidden className="text-border">
-              /
-            </span>
-            <Link to="/admin/revenue" className="hover:text-primary transition-colors">
-              Encaissements
-            </Link>
-          </nav>
-          <Outlet />
+          <div className="flex flex-col lg:flex-row gap-6">
+            <BackOfficeSidebar />
+            <main className="flex-1 min-w-0">
+              <Outlet />
+            </main>
+          </div>
         </div>
         <Footer />
       </div>

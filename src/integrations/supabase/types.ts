@@ -14,142 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
-      bookings: {
+      admin_booking_drafts: {
         Row: {
-          id: string
-          user_id: string
-          vehicle_id: string
-          start_date: string
-          end_date: string
-          total_price: number
-          status: string | null
-          created_at: string | null
-          updated_at: string | null
-          start_time: string | null
+          converted_booking_id: string | null
+          created_at: string
+          created_by_admin_id: string
+          end_date: string | null
           end_time: string | null
+          id: string
+          notes_admin: string | null
           pickup_location: string | null
-          selected_options: Json | null
-          base_price: number
-          options_total: number
-          service_fee: number
-          subtotal: number
-          price_per_day: number
-          rental_days: number | null
-          reference_number: number | null
-          /** Mode de pricing: web (internet + frais locataire) ou admin/agence (sans frais plateforme côté modèle validé) */
-          pricing_mode: "web" | "admin" | null
-          rental_contract_pdf_url: string | null
-          rental_contract_signed_at: string | null
-          rental_contract_template_version: string | null
-          offline_payment_method: "cash" | "card_terminal" | null
+          pricing_snapshot: Json | null
+          progress_step: string
+          renter_user_id: string | null
+          start_date: string | null
+          start_time: string | null
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+          walk_in_payload: Json | null
         }
         Insert: {
-          id?: string
-          user_id: string
-          vehicle_id: string
-          start_date: string
-          end_date: string
-          total_price: number
-          status?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          start_time?: string | null
+          converted_booking_id?: string | null
+          created_at?: string
+          created_by_admin_id: string
+          end_date?: string | null
           end_time?: string | null
+          id?: string
+          notes_admin?: string | null
           pickup_location?: string | null
-          selected_options?: Json | null
-          base_price?: number
-          options_total?: number
-          service_fee?: number
-          subtotal?: number
-          price_per_day?: number
-          rental_days?: number | null
-          reference_number?: number | null
-          pricing_mode?: "web" | "admin" | null
-          rental_contract_pdf_url?: string | null
-          rental_contract_signed_at?: string | null
-          rental_contract_template_version?: string | null
-          offline_payment_method?: "cash" | "card_terminal" | null
+          pricing_snapshot?: Json | null
+          progress_step?: string
+          renter_user_id?: string | null
+          start_date?: string | null
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          walk_in_payload?: Json | null
         }
         Update: {
-          id?: string
-          user_id?: string
-          vehicle_id?: string
-          start_date?: string
-          end_date?: string
-          total_price?: number
-          status?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-          start_time?: string | null
+          converted_booking_id?: string | null
+          created_at?: string
+          created_by_admin_id?: string
+          end_date?: string | null
           end_time?: string | null
+          id?: string
+          notes_admin?: string | null
           pickup_location?: string | null
-          selected_options?: Json | null
-          base_price?: number
-          options_total?: number
-          service_fee?: number
-          subtotal?: number
-          price_per_day?: number
-          rental_days?: number | null
-          reference_number?: number | null
-          pricing_mode?: "web" | "admin" | null
-          rental_contract_pdf_url?: string | null
-          rental_contract_signed_at?: string | null
-          rental_contract_template_version?: string | null
-          offline_payment_method?: "cash" | "card_terminal" | null
+          pricing_snapshot?: Json | null
+          progress_step?: string
+          renter_user_id?: string | null
+          start_date?: string | null
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+          walk_in_payload?: Json | null
         }
         Relationships: []
-      },
+      }
       booking_claim_charges: {
         Row: {
-          id: string
-          booking_id: string
           amount_cents: number
+          booking_id: string
+          created_at: string
+          created_by_profile_id: string
           currency: string
-          reason: string
-          status: "pending" | "succeeded" | "failed" | "canceled"
-          stripe_payment_intent_id: string | null
-          stripe_charge_id: string | null
           failure_code: string | null
           failure_message: string | null
-          created_by_profile_id: string
-          created_at: string
-          updated_at: string
-          receipt_url: string | null
+          id: string
           metadata: Json
+          reason: string
+          receipt_url: string | null
+          status: string
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
         }
         Insert: {
-          id?: string
-          booking_id: string
           amount_cents: number
+          booking_id: string
+          created_at?: string
+          created_by_profile_id: string
           currency?: string
-          reason: string
-          status: "pending" | "succeeded" | "failed" | "canceled"
-          stripe_payment_intent_id?: string | null
-          stripe_charge_id?: string | null
           failure_code?: string | null
           failure_message?: string | null
-          created_by_profile_id: string
-          created_at?: string
-          updated_at?: string
-          receipt_url?: string | null
+          id?: string
           metadata?: Json
+          reason: string
+          receipt_url?: string | null
+          status: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
         }
         Update: {
-          id?: string
-          booking_id?: string
           amount_cents?: number
+          booking_id?: string
+          created_at?: string
+          created_by_profile_id?: string
           currency?: string
-          reason?: string
-          status?: "pending" | "succeeded" | "failed" | "canceled"
-          stripe_payment_intent_id?: string | null
-          stripe_charge_id?: string | null
           failure_code?: string | null
           failure_message?: string | null
-          created_by_profile_id?: string
-          created_at?: string
-          updated_at?: string
-          receipt_url?: string | null
+          id?: string
           metadata?: Json
+          reason?: string
+          receipt_url?: string | null
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -165,176 +140,1649 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
         ]
-      },
-      conversations: {
+      }
+      bookings: {
         Row: {
-          id: string
-          vehicle_id: string
-          renter_id: string
-          owner_id: string
-          booking_id: string | null
-          status: "active" | "closed" | "archived" | null
+          admin_notes: string | null
+          amount_total_paid: number | null
+          base_price: number
           created_at: string | null
+          created_by_admin_id: string | null
+          currency: string | null
+          deposit_amount_snapshot: number | null
+          deposit_capture_amount: number | null
+          deposit_capture_before: string | null
+          deposit_hold_created_at: string | null
+          deposit_payment_intent_id: string | null
+          deposit_reason: string | null
+          deposit_status: string | null
+          end_date: string
+          end_time: string | null
+          id: string
+          offline_payment_method: string | null
+          options_total: number
+          owner_payout_amount: number | null
+          paid_at: string | null
+          pickup_location: string | null
+          platform_total_fee: number | null
+          price_per_day: number
+          pricing_mode: string | null
+          reference_number: number | null
+          rental_contract_pdf_url: string | null
+          rental_contract_signed_at: string | null
+          rental_contract_template_version: string | null
+          rental_days: number | null
+          selected_options: Json | null
+          service_fee: number
+          service_fee_owner: number | null
+          service_fee_renter: number | null
+          start_date: string
+          start_time: string | null
+          status: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_payment_method_id: string | null
+          subtotal: number
+          total_price: number
           updated_at: string | null
+          user_id: string
+          vehicle_id: string
         }
         Insert: {
-          id?: string
-          vehicle_id: string
-          renter_id: string
-          owner_id: string
-          booking_id?: string | null
-          status?: "active" | "closed" | "archived" | null
+          admin_notes?: string | null
+          amount_total_paid?: number | null
+          base_price: number
           created_at?: string | null
+          created_by_admin_id?: string | null
+          currency?: string | null
+          deposit_amount_snapshot?: number | null
+          deposit_capture_amount?: number | null
+          deposit_capture_before?: string | null
+          deposit_hold_created_at?: string | null
+          deposit_payment_intent_id?: string | null
+          deposit_reason?: string | null
+          deposit_status?: string | null
+          end_date: string
+          end_time?: string | null
+          id?: string
+          offline_payment_method?: string | null
+          options_total: number
+          owner_payout_amount?: number | null
+          paid_at?: string | null
+          pickup_location?: string | null
+          platform_total_fee?: number | null
+          price_per_day: number
+          pricing_mode?: string | null
+          reference_number?: number | null
+          rental_contract_pdf_url?: string | null
+          rental_contract_signed_at?: string | null
+          rental_contract_template_version?: string | null
+          rental_days?: number | null
+          selected_options?: Json | null
+          service_fee: number
+          service_fee_owner?: number | null
+          service_fee_renter?: number | null
+          start_date: string
+          start_time?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          subtotal: number
+          total_price: number
           updated_at?: string | null
+          user_id: string
+          vehicle_id: string
         }
         Update: {
-          id?: string
-          vehicle_id?: string
-          renter_id?: string
-          owner_id?: string
-          booking_id?: string | null
-          status?: "active" | "closed" | "archived" | null
+          admin_notes?: string | null
+          amount_total_paid?: number | null
+          base_price?: number
           created_at?: string | null
+          created_by_admin_id?: string | null
+          currency?: string | null
+          deposit_amount_snapshot?: number | null
+          deposit_capture_amount?: number | null
+          deposit_capture_before?: string | null
+          deposit_hold_created_at?: string | null
+          deposit_payment_intent_id?: string | null
+          deposit_reason?: string | null
+          deposit_status?: string | null
+          end_date?: string
+          end_time?: string | null
+          id?: string
+          offline_payment_method?: string | null
+          options_total?: number
+          owner_payout_amount?: number | null
+          paid_at?: string | null
+          pickup_location?: string | null
+          platform_total_fee?: number | null
+          price_per_day?: number
+          pricing_mode?: string | null
+          reference_number?: number | null
+          rental_contract_pdf_url?: string | null
+          rental_contract_signed_at?: string | null
+          rental_contract_template_version?: string | null
+          rental_days?: number | null
+          selected_options?: Json | null
+          service_fee?: number
+          service_fee_owner?: number | null
+          service_fee_renter?: number | null
+          start_date?: string
+          start_time?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          subtotal?: number
+          total_price?: number
           updated_at?: string | null
+          user_id?: string
+          vehicle_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "scooters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkin_depart: {
+        Row: {
+          booking_departure_datetime: string | null
+          booking_departure_location: string | null
+          booking_id: string | null
+          booking_reference_number: number | null
+          booking_return_datetime: string | null
+          booking_return_location: string | null
+          created_at: string | null
+          data: Json | null
+          degats: Json | null
+          driver_email: string | null
+          driver_phone: string | null
+          edl_email_last_error: string | null
+          edl_email_retry_count: number | null
+          edl_email_sent_at: string | null
+          edl_email_sent_status: string | null
+          id: string
+          kilometrage_depart: number | null
+          legal_pdf_url: string | null
+          niveau_carburant: number | null
+          owner_email: string | null
+          owner_first_name: string | null
+          owner_id: string | null
+          owner_last_name: string | null
+          owner_phone: string | null
+          photo_permis_recto: string | null
+          photo_permis_verso: string | null
+          photos_accessoires: Json | null
+          photos_coffre: Json | null
+          photos_dashboard: Json | null
+          photos_exterieur: Json | null
+          photos_jantes: Json | null
+          remarques_owner: string | null
+          remarques_renter: string | null
+          renter_id: string | null
+          signature_owner: string | null
+          signature_renter: string | null
+          snapshot_legal: Json | null
+          snapshot_version: string | null
+          status: string | null
+          updated_at: string | null
+          validated_at: string | null
+        }
+        Insert: {
+          booking_departure_datetime?: string | null
+          booking_departure_location?: string | null
+          booking_id?: string | null
+          booking_reference_number?: number | null
+          booking_return_datetime?: string | null
+          booking_return_location?: string | null
+          created_at?: string | null
+          data?: Json | null
+          degats?: Json | null
+          driver_email?: string | null
+          driver_phone?: string | null
+          edl_email_last_error?: string | null
+          edl_email_retry_count?: number | null
+          edl_email_sent_at?: string | null
+          edl_email_sent_status?: string | null
+          id?: string
+          kilometrage_depart?: number | null
+          legal_pdf_url?: string | null
+          niveau_carburant?: number | null
+          owner_email?: string | null
+          owner_first_name?: string | null
+          owner_id?: string | null
+          owner_last_name?: string | null
+          owner_phone?: string | null
+          photo_permis_recto?: string | null
+          photo_permis_verso?: string | null
+          photos_accessoires?: Json | null
+          photos_coffre?: Json | null
+          photos_dashboard?: Json | null
+          photos_exterieur?: Json | null
+          photos_jantes?: Json | null
+          remarques_owner?: string | null
+          remarques_renter?: string | null
+          renter_id?: string | null
+          signature_owner?: string | null
+          signature_renter?: string | null
+          snapshot_legal?: Json | null
+          snapshot_version?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+        }
+        Update: {
+          booking_departure_datetime?: string | null
+          booking_departure_location?: string | null
+          booking_id?: string | null
+          booking_reference_number?: number | null
+          booking_return_datetime?: string | null
+          booking_return_location?: string | null
+          created_at?: string | null
+          data?: Json | null
+          degats?: Json | null
+          driver_email?: string | null
+          driver_phone?: string | null
+          edl_email_last_error?: string | null
+          edl_email_retry_count?: number | null
+          edl_email_sent_at?: string | null
+          edl_email_sent_status?: string | null
+          id?: string
+          kilometrage_depart?: number | null
+          legal_pdf_url?: string | null
+          niveau_carburant?: number | null
+          owner_email?: string | null
+          owner_first_name?: string | null
+          owner_id?: string | null
+          owner_last_name?: string | null
+          owner_phone?: string | null
+          photo_permis_recto?: string | null
+          photo_permis_verso?: string | null
+          photos_accessoires?: Json | null
+          photos_coffre?: Json | null
+          photos_dashboard?: Json | null
+          photos_exterieur?: Json | null
+          photos_jantes?: Json | null
+          remarques_owner?: string | null
+          remarques_renter?: string | null
+          renter_id?: string | null
+          signature_owner?: string | null
+          signature_renter?: string | null
+          snapshot_legal?: Json | null
+          snapshot_version?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkin_depart_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_depart_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_depart_renter_id_fkey"
+            columns: ["renter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkin_return: {
+        Row: {
+          booking_id: string
+          checkin_depart_id: string
+          created_at: string
+          data: Json
+          has_new_damage: boolean | null
+          id: string
+          legal_pdf_url: string | null
+          new_damage_count: number | null
+          owner_id: string
+          renter_id: string
+          snapshot_legal: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          checkin_depart_id: string
+          created_at?: string
+          data?: Json
+          has_new_damage?: boolean | null
+          id?: string
+          legal_pdf_url?: string | null
+          new_damage_count?: number | null
+          owner_id: string
+          renter_id: string
+          snapshot_legal?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          checkin_depart_id?: string
+          created_at?: string
+          data?: Json
+          has_new_damage?: boolean | null
+          id?: string
+          legal_pdf_url?: string | null
+          new_damage_count?: number | null
+          owner_id?: string
+          renter_id?: string
+          snapshot_legal?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkin_return_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_return_checkin_depart_id_fkey"
+            columns: ["checkin_depart_id"]
+            isOneToOne: false
+            referencedRelation: "checkin_depart"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_return_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_return_renter_id_fkey"
+            columns: ["renter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          owner_id: string
+          renter_id: string
+          status: string
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          owner_id: string
+          renter_id: string
+          status?: string
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          owner_id?: string
+          renter_id?: string
+          status?: string
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "scooters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dictionary_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          definitions: Json
+          etymology: Json | null
+          id: string
+          language_code: string
+          part_of_speech: string | null
+          pronunciation: string | null
+          related_entry_ids: string[]
+          sources: Json
+          status: string
+          tags: string[]
+          updated_at: string
+          updated_by: string | null
+          verified: boolean
+          word: string
+          word_normalized: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          definitions?: Json
+          etymology?: Json | null
+          id?: string
+          language_code: string
+          part_of_speech?: string | null
+          pronunciation?: string | null
+          related_entry_ids?: string[]
+          sources?: Json
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          verified?: boolean
+          word: string
+          word_normalized: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          definitions?: Json
+          etymology?: Json | null
+          id?: string
+          language_code?: string
+          part_of_speech?: string | null
+          pronunciation?: string | null
+          related_entry_ids?: string[]
+          sources?: Json
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          verified?: boolean
+          word?: string
+          word_normalized?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dictionary_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dictionary_entries_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_rules: {
+        Row: {
+          created_at: string
+          id: string
+          interval_days: number | null
+          interval_km: number | null
+          is_active: boolean
+          maintenance_type: string
+          model_filter: string | null
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          interval_km?: number | null
+          is_active?: boolean
+          maintenance_type: string
+          model_filter?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          interval_km?: number | null
+          is_active?: boolean
+          maintenance_type?: string
+          model_filter?: string | null
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_rules_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "scooters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_rules_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
-          id: string
-          conversation_id: string
-          sender_id: string
+          booking_id: string | null
           content: string
-          message_type: "text" | "image" | "file" | "system" | null
-          is_read: boolean | null
+          conversation_id: string
           created_at: string | null
+          id: string
+          is_read: boolean
+          message_type: string
+          sender_id: string
         }
         Insert: {
-          id?: string
-          conversation_id: string
-          sender_id: string
+          booking_id?: string | null
           content: string
-          message_type?: "text" | "image" | "file" | "system" | null
-          is_read?: boolean | null
+          conversation_id: string
           created_at?: string | null
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          sender_id: string
         }
         Update: {
-          id?: string
-          conversation_id?: string
-          sender_id?: string
+          booking_id?: string | null
           content?: string
-          message_type?: "text" | "image" | "file" | "system" | null
-          is_read?: boolean | null
+          conversation_id?: string
           created_at?: string | null
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          sender_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      parts: {
+        Row: {
+          category: string | null
+          compatible_models: string[] | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          location: string | null
+          name: string
+          purchase_price: number | null
+          quantity_min: number
+          quantity_on_hand: number
+          sale_price: number | null
+          sku: string
+          supplier_id: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          compatible_models?: string[] | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name: string
+          purchase_price?: number | null
+          quantity_min?: number
+          quantity_on_hand?: number
+          sale_price?: number | null
+          sku: string
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          compatible_models?: string[] | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          name?: string
+          purchase_price?: number | null
+          quantity_min?: number
+          quantity_on_hand?: number
+          sale_price?: number | null
+          sku?: string
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string
+          created_at: string | null
+          id: string
+          status: string | null
+          stripe_payment_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          stripe_payment_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          stripe_payment_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
         Row: {
-          id: string
-          email: string | null
-          first_name: string | null
-          last_name: string | null
-          phone: string | null
-          bio: string | null
-          role: "renter" | "owner" | "admin" | null
-          is_admin: boolean | null
-          admin_role: "user" | "admin" | null
-          kyc_status: "pending" | "verified" | "rejected" | null
-          avatar_url: string | null
-          birthdate: string | null
-          created_at: string
-          updated_at: string | null
-          place_of_birth: string | null
           address_line1: string | null
-          postal_code: string | null
+          admin_role: string | null
+          avatar_url: string | null
+          bio: string | null
+          birthdate: string | null
           city: string | null
+          confirmation_email_sent_at: string | null
           country: string | null
-          driver_license_number: string | null
-          driver_license_issue_date: string | null
-          driver_license_expiration_date: string | null
+          created_at: string | null
           driver_license_category: string | null
           driver_license_country: string | null
+          driver_license_expiration_date: string | null
           driver_license_file_path: string | null
-          full_name: string | null
-          welcome_email_sent_at: string | null
+          driver_license_issue_date: string | null
+          driver_license_number: string | null
+          email: string
+          email_confirmed_at: string | null
+          first_name: string | null
+          id: string
+          is_admin: boolean | null
+          kyc_confirmed_at: string | null
+          kyc_status: string | null
+          last_name: string | null
+          phone: string | null
+          place_of_birth: string | null
+          postal_code: string | null
+          role: string | null
+          staff_role: string | null
+          stripe_customer_id: string | null
+          updated_at: string | null
         }
         Insert: {
-          id?: string
-          email?: string | null
-          first_name?: string | null
-          last_name?: string | null
-          phone?: string | null
-          bio?: string | null
-          role?: "renter" | "owner" | "admin" | null
-          is_admin?: boolean | null
-          admin_role?: "user" | "admin" | null
-          kyc_status?: "pending" | "verified" | "rejected" | null
-          avatar_url?: string | null
-          birthdate?: string | null
-          created_at?: string
-          updated_at?: string | null
-          place_of_birth?: string | null
           address_line1?: string | null
-          postal_code?: string | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birthdate?: string | null
           city?: string | null
+          confirmation_email_sent_at?: string | null
           country?: string | null
-          driver_license_number?: string | null
-          driver_license_issue_date?: string | null
-          driver_license_expiration_date?: string | null
+          created_at?: string | null
           driver_license_category?: string | null
           driver_license_country?: string | null
+          driver_license_expiration_date?: string | null
           driver_license_file_path?: string | null
-          full_name?: string | null
-          welcome_email_sent_at?: string | null
+          driver_license_issue_date?: string | null
+          driver_license_number?: string | null
+          email: string
+          email_confirmed_at?: string | null
+          first_name?: string | null
+          id: string
+          is_admin?: boolean | null
+          kyc_confirmed_at?: string | null
+          kyc_status?: string | null
+          last_name?: string | null
+          phone?: string | null
+          place_of_birth?: string | null
+          postal_code?: string | null
+          role?: string | null
+          staff_role?: string | null
+          stripe_customer_id?: string | null
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          email?: string | null
-          first_name?: string | null
-          last_name?: string | null
-          phone?: string | null
-          bio?: string | null
-          role?: "renter" | "owner" | "admin" | null
-          is_admin?: boolean | null
-          admin_role?: "user" | "admin" | null
-          kyc_status?: "pending" | "verified" | "rejected" | null
-          avatar_url?: string | null
-          birthdate?: string | null
-          created_at?: string
-          updated_at?: string | null
-          place_of_birth?: string | null
           address_line1?: string | null
-          postal_code?: string | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birthdate?: string | null
           city?: string | null
+          confirmation_email_sent_at?: string | null
           country?: string | null
-          driver_license_number?: string | null
-          driver_license_issue_date?: string | null
-          driver_license_expiration_date?: string | null
+          created_at?: string | null
           driver_license_category?: string | null
           driver_license_country?: string | null
+          driver_license_expiration_date?: string | null
           driver_license_file_path?: string | null
-          full_name?: string | null
-          welcome_email_sent_at?: string | null
+          driver_license_issue_date?: string | null
+          driver_license_number?: string | null
+          email?: string
+          email_confirmed_at?: string | null
+          first_name?: string | null
+          id?: string
+          is_admin?: boolean | null
+          kyc_confirmed_at?: string | null
+          kyc_status?: string | null
+          last_name?: string | null
+          phone?: string | null
+          place_of_birth?: string | null
+          postal_code?: string | null
+          role?: string | null
+          staff_role?: string | null
+          stripe_customer_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      repair_parts: {
+        Row: {
+          client_request_id: string | null
+          created_at: string
+          id: string
+          line_total: number | null
+          part_id: string
+          quantity: number
+          repair_id: string
+          stock_movement_id: string | null
+          unit_cost: number
+        }
+        Insert: {
+          client_request_id?: string | null
+          created_at?: string
+          id?: string
+          line_total?: number | null
+          part_id: string
+          quantity: number
+          repair_id: string
+          stock_movement_id?: string | null
+          unit_cost: number
+        }
+        Update: {
+          client_request_id?: string | null
+          created_at?: string
+          id?: string
+          line_total?: number | null
+          part_id?: string
+          quantity?: number
+          repair_id?: string
+          stock_movement_id?: string | null
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_parts_repair_id_fkey"
+            columns: ["repair_id"]
+            isOneToOne: false
+            referencedRelation: "repairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_parts_stock_movement_id_fkey"
+            columns: ["stock_movement_id"]
+            isOneToOne: false
+            referencedRelation: "stock_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repairs: {
+        Row: {
+          closed_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          intervention_type: string
+          labor_cost: number
+          mileage_at_repair: number | null
+          notes: string | null
+          opened_at: string
+          parts_cost: number
+          status: string
+          title: string
+          total_cost: number | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          intervention_type: string
+          labor_cost?: number
+          mileage_at_repair?: number | null
+          notes?: string | null
+          opened_at?: string
+          parts_cost?: number
+          status?: string
+          title: string
+          total_cost?: number | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          intervention_type?: string
+          labor_cost?: number
+          mileage_at_repair?: number | null
+          notes?: string | null
+          opened_at?: string
+          parts_cost?: number
+          status?: string
+          title?: string
+          total_cost?: number | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repairs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repairs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "scooters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repairs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          booking_id: string
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          updated_at: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          booking_id: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          updated_at?: string | null
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          booking_id?: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          updated_at?: string | null
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "scooters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_lines: {
+        Row: {
+          created_at: string
+          id: string
+          line_margin: number | null
+          line_total: number | null
+          part_id: string
+          quantity: number
+          sale_id: string
+          stock_movement_id: string | null
+          unit_purchase_price: number
+          unit_sale_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_margin?: number | null
+          line_total?: number | null
+          part_id: string
+          quantity: number
+          sale_id: string
+          stock_movement_id?: string | null
+          unit_purchase_price: number
+          unit_sale_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_margin?: number | null
+          line_total?: number | null
+          part_id?: string
+          quantity?: number
+          sale_id?: string
+          stock_movement_id?: string | null
+          unit_purchase_price?: number
+          unit_sale_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_lines_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_lines_stock_movement_id_fkey"
+            columns: ["stock_movement_id"]
+            isOneToOne: false
+            referencedRelation: "stock_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          amount_paid: number
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string | null
+          discount: number
+          id: string
+          margin_total: number
+          notes: string | null
+          payment_method: string | null
+          payment_status: string
+          sale_date: string
+          subtotal: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          discount?: number
+          id?: string
+          margin_total?: number
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          sale_date?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          discount?: number
+          id?: string
+          margin_total?: number
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          sale_date?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          movement_type: string
+          part_id: string
+          quantity: number
+          reason: string | null
+          repair_id: string | null
+          sale_id: string | null
+          supplier_id: string | null
+          unit_cost: number | null
+          unit_sale_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          movement_type: string
+          part_id: string
+          quantity: number
+          reason?: string | null
+          repair_id?: string | null
+          sale_id?: string | null
+          supplier_id?: string | null
+          unit_cost?: number | null
+          unit_sale_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          movement_type?: string
+          part_id?: string
+          quantity?: number
+          reason?: string | null
+          repair_id?: string | null
+          sale_id?: string | null
+          supplier_id?: string | null
+          unit_cost?: number | null
+          unit_sale_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_repair_id_fkey"
+            columns: ["repair_id"]
+            isOneToOne: false
+            referencedRelation: "repairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vehicle_photos: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_primary: boolean | null
+          photo_url: string
+          storage_path: string
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_primary?: boolean | null
+          photo_url: string
+          storage_path: string
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_primary?: boolean | null
+          photo_url?: string
+          storage_path?: string
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_photos_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "scooters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_photos_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_states: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          created_by: string | null
+          damages: Json
+          fuel_level: number | null
+          general_condition: string | null
+          id: string
+          mileage: number | null
+          photos: Json
+          repair_id: string | null
+          state_date: string
+          state_type: string
+          vehicle_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          damages?: Json
+          fuel_level?: number | null
+          general_condition?: string | null
+          id?: string
+          mileage?: number | null
+          photos?: Json
+          repair_id?: string | null
+          state_date?: string
+          state_type: string
+          vehicle_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          damages?: Json
+          fuel_level?: number | null
+          general_condition?: string | null
+          id?: string
+          mileage?: number | null
+          photos?: Json
+          repair_id?: string | null
+          state_date?: string
+          state_type?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_states_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_states_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_states_repair_id_fkey"
+            columns: ["repair_id"]
+            isOneToOne: false
+            referencedRelation: "repairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_states_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "scooters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_states_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          available: boolean
+          brand: string
+          color: string | null
+          created_at: string | null
+          deposit_amount: number
+          description: string | null
+          engine_capacity: string | null
+          fuel_type: string | null
+          high_season_surcharge: number
+          id: string
+          internal_code: string | null
+          internal_notes: string | null
+          license_plate: string | null
+          long_duration_discount_14: number
+          long_duration_discount_60: number
+          low_season_discount: number
+          mileage: number
+          model: string
+          operational_status: string
+          owner_id: string
+          pickup_zones: Json | null
+          price_per_day: number
+          price_per_day_agency: number | null
+          purchase_date: string | null
+          purchase_price: number | null
+          rental_count: number | null
+          seats: number | null
+          transmission: string | null
+          updated_at: string | null
+          vehicle_category: string | null
+          vehicle_type: string | null
+          vin: string | null
+          year: number
+        }
+        Insert: {
+          available?: boolean
+          brand: string
+          color?: string | null
+          created_at?: string | null
+          deposit_amount?: number
+          description?: string | null
+          engine_capacity?: string | null
+          fuel_type?: string | null
+          high_season_surcharge?: number
+          id?: string
+          internal_code?: string | null
+          internal_notes?: string | null
+          license_plate?: string | null
+          long_duration_discount_14?: number
+          long_duration_discount_60?: number
+          low_season_discount?: number
+          mileage: number
+          model: string
+          operational_status?: string
+          owner_id: string
+          pickup_zones?: Json | null
+          price_per_day: number
+          price_per_day_agency?: number | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          rental_count?: number | null
+          seats?: number | null
+          transmission?: string | null
+          updated_at?: string | null
+          vehicle_category?: string | null
+          vehicle_type?: string | null
+          vin?: string | null
+          year: number
+        }
+        Update: {
+          available?: boolean
+          brand?: string
+          color?: string | null
+          created_at?: string | null
+          deposit_amount?: number
+          description?: string | null
+          engine_capacity?: string | null
+          fuel_type?: string | null
+          high_season_surcharge?: number
+          id?: string
+          internal_code?: string | null
+          internal_notes?: string | null
+          license_plate?: string | null
+          long_duration_discount_14?: number
+          long_duration_discount_60?: number
+          low_season_discount?: number
+          mileage?: number
+          model?: string
+          operational_status?: string
+          owner_id?: string
+          pickup_zones?: Json | null
+          price_per_day?: number
+          price_per_day_agency?: number | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          rental_count?: number | null
+          seats?: number | null
+          transmission?: string | null
+          updated_at?: string | null
+          vehicle_category?: string | null
+          vehicle_type?: string | null
+          vin?: string | null
+          year?: number
         }
         Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      scooters: {
+        Row: {
+          available: boolean | null
+          brand: string | null
+          color: string | null
+          created_at: string | null
+          deposit_amount: number | null
+          description: string | null
+          engine_capacity: string | null
+          fuel_type: string | null
+          high_season_surcharge: number | null
+          id: string | null
+          internal_code: string | null
+          internal_notes: string | null
+          license_plate: string | null
+          long_duration_discount_14: number | null
+          long_duration_discount_60: number | null
+          low_season_discount: number | null
+          mileage: number | null
+          model: string | null
+          operational_status: string | null
+          owner_id: string | null
+          pickup_zones: Json | null
+          price_per_day: number | null
+          price_per_day_agency: number | null
+          purchase_date: string | null
+          purchase_price: number | null
+          rental_count: number | null
+          seats: number | null
+          transmission: string | null
+          updated_at: string | null
+          vehicle_category: string | null
+          vehicle_type: string | null
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          available?: boolean | null
+          brand?: string | null
+          color?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          description?: string | null
+          engine_capacity?: string | null
+          fuel_type?: string | null
+          high_season_surcharge?: number | null
+          id?: string | null
+          internal_code?: string | null
+          internal_notes?: string | null
+          license_plate?: string | null
+          long_duration_discount_14?: number | null
+          long_duration_discount_60?: number | null
+          low_season_discount?: number | null
+          mileage?: number | null
+          model?: string | null
+          operational_status?: string | null
+          owner_id?: string | null
+          pickup_zones?: Json | null
+          price_per_day?: number | null
+          price_per_day_agency?: number | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          rental_count?: number | null
+          seats?: number | null
+          transmission?: string | null
+          updated_at?: string | null
+          vehicle_category?: string | null
+          vehicle_type?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          available?: boolean | null
+          brand?: string | null
+          color?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          description?: string | null
+          engine_capacity?: string | null
+          fuel_type?: string | null
+          high_season_surcharge?: number | null
+          id?: string | null
+          internal_code?: string | null
+          internal_notes?: string | null
+          license_plate?: string | null
+          long_duration_discount_14?: number | null
+          long_duration_discount_60?: number | null
+          low_season_discount?: number | null
+          mileage?: number | null
+          model?: string | null
+          operational_status?: string | null
+          owner_id?: string | null
+          pickup_zones?: Json | null
+          price_per_day?: number | null
+          price_per_day_agency?: number | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          rental_count?: number | null
+          seats?: number | null
+          transmission?: string | null
+          updated_at?: string | null
+          vehicle_category?: string | null
+          vehicle_type?: string | null
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      has_staff_role: { Args: { roles: string[] }; Returns: boolean }
+      is_admin_user: { Args: never; Returns: boolean }
+      normalize_text: { Args: { input_text: string }; Returns: string }
+      rpc_cancel_part_sale: { Args: { p_sale_id: string }; Returns: undefined }
+      rpc_cancel_repair: { Args: { p_repair_id: string }; Returns: undefined }
+      rpc_consume_parts_for_repair: {
+        Args: { p_lines: Json; p_repair_id: string }
+        Returns: Json
+      }
+      rpc_create_part_sale: { Args: { p_payload: Json }; Returns: string }
+      rpc_stock_adjustment: {
+        Args: { p_delta: number; p_part_id: string; p_reason?: string }
+        Returns: string
+      }
+      rpc_stock_in: {
+        Args: {
+          p_part_id: string
+          p_quantity: number
+          p_reason?: string
+          p_supplier_id?: string
+          p_unit_cost: number
+        }
+        Returns: string
+      }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
