@@ -61,6 +61,7 @@ import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
 import { calcServiceFeeOwner, calcServiceFeeRenter, calcOwnerPayout, calcRenterTotal } from '@/utils/serviceFees'
 import { useTranslation } from 'react-i18next'
 import { forceDepositForOwner } from '@/lib/depositCaution'
+import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
 
 /** Libellé locataire pour header, tooltips, alt (pas d’email ici). */
 function formatRenterDisplayName(user: User | null | undefined): string {
@@ -892,7 +893,7 @@ export default function OwnerBookingCard({
                         // Fallback vers StatusBadge pour les autres statuts
                         return <StatusBadge status={booking.status} size="sm" />
                       })()}
-                      {booking.status === 'pending' && (
+                      {booking.status === 'pending' && !isAdminCreatedBooking(booking) && (
                         <PaymentCountdown 
                           confirmedAt={new Date((booking as any).updatedAt || (booking as any).createdAt)}
                           deadlineHours={24}

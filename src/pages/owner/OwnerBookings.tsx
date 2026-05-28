@@ -217,6 +217,8 @@ const OwnerBookings = () => {
         depositStatus: (booking as any).deposit_status || null,
         depositAmountSnapshot: (booking as any).deposit_amount_snapshot ?? null,
         stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null,
+        pricingMode: (booking as any).pricing_mode ?? undefined,
+        createdByAdminId: (booking as any).created_by_admin_id ?? null,
         checkinDepart,
         checkinReturn,
       };

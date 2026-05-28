@@ -219,6 +219,8 @@ export interface Booking {
   updatedAt: string;
   /** Mode de pricing (`bookings.pricing_mode`) */
   pricingMode?: BookingPricingMode;
+  /** Admin ayant créé la réservation (`bookings.created_by_admin_id`) */
+  createdByAdminId?: string | null;
   // État des lieux de départ associé (optionnel)
   checkinDepart?: CheckinDepartSummary;
 }

@@ -59,6 +59,7 @@ import { Download } from 'lucide-react'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
 import { formatCurrency } from '@/utils/currency'
 import { calcServiceFeeRenter, calcRenterTotal } from '@/utils/serviceFees'
+import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
 
 type BookingWithDetails = Booking & {
   vehicle?: Vehicle
@@ -916,8 +917,10 @@ export default function RenterBookingCard({
                     })()}
                   </div>
                   
-                  {/* Compte à rebours si en attente de paiement */}
-                  {booking.status === 'pending_payment' && booking.updatedAt && (
+                  {/* Compte à rebours si en attente de paiement (hors résa admin) */}
+                  {booking.status === 'pending_payment' &&
+                    booking.updatedAt &&
+                    !isAdminCreatedBooking(booking) && (
                     <PaymentCountdown confirmedAt={new Date(booking.updatedAt)} />
                   )}
                   

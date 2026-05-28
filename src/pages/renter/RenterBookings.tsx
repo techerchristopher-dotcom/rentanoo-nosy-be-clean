@@ -540,6 +540,8 @@ export default function RenterBookings() {
                 depositAmount: (booking as any).deposit_amount_snapshot ?? null,
                 depositAmountSnapshot: (booking as any).deposit_amount_snapshot ?? null,
                 stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null,
+                pricingMode: (booking as any).pricing_mode ?? undefined,
+                createdByAdminId: (booking as any).created_by_admin_id ?? null,
                 checkinDepart,
               };
               
@@ -587,7 +589,9 @@ export default function RenterBookings() {
                 depositStatus: (booking as any).deposit_status || null,
                 depositAmount: (booking as any).deposit_amount_snapshot ?? null,
                 depositAmountSnapshot: (booking as any).deposit_amount_snapshot ?? null,
-                stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null
+                stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null,
+                pricingMode: (booking as any).pricing_mode ?? undefined,
+                createdByAdminId: (booking as any).created_by_admin_id ?? null
               };
             }
           })

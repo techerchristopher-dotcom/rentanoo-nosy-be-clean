@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import type { BookingPricingMode } from '@/types';
+import { isAdminCreatedBooking } from '@/utils/bookingAdmin';
 import { ProfileService } from './profile';
 import { SupabaseVehiclesService } from '@/services/supabaseVehiclesService';
 
@@ -431,6 +432,11 @@ export class SupabaseBookingsService {
 
       // Vérifier chaque réservation
       for (const booking of bookings) {
+        // Réservations admin : pas de délai 24h (encaissement hors Stripe)
+        if (isAdminCreatedBooking(booking)) {
+          continue;
+        }
+
         // Vérifier si le délai de 24h est dépassé
         const confirmedAt = new Date(booking.updated_at || booking.created_at);
         const deadline = new Date(confirmedAt.getTime() + 24 * 60 * 60 * 1000); // +24h
