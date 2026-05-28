@@ -13,13 +13,16 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageLoader } from "@/components/ui/page-loader";
+import { VehicleAvatar, VehiclePhotoLightbox } from "@/components/vehicles/VehicleAvatar";
 import { StatusBadge } from "@/features/back-office/components/StatusBadge";
 import { useScooters } from "@/features/back-office/hooks/useScooters";
+import type { ScooterListItem } from "@/features/back-office/services/scootersService";
 import { OPERATIONAL_STATUS_LABELS, type OperationalStatus } from "@/features/back-office/types";
 
 export default function FleetList() {
   const [status, setStatus] = useState<OperationalStatus | "all">("all");
   const [search, setSearch] = useState("");
+  const [lightboxScooter, setLightboxScooter] = useState<ScooterListItem | null>(null);
   const { data: scooters, isLoading } = useScooters({ operational_status: status, search });
 
   if (isLoading) return <PageLoader />;
@@ -95,7 +98,23 @@ export default function FleetList() {
                   <TableRow key={s.id}>
                     <TableCell className="font-mono font-medium">{s.internal_code ?? "—"}</TableCell>
                     <TableCell>
-                      {s.brand} {s.model} ({s.year})
+                      <div className="flex items-center gap-2.5 min-w-[180px]">
+                        <VehicleAvatar
+                          src={s.primaryPhotoUrl}
+                          brand={s.brand}
+                          model={s.model}
+                          size={40}
+                          onOpen={
+                            s.primaryPhotoUrl ? () => setLightboxScooter(s) : undefined
+                          }
+                        />
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            {s.brand} {s.model}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{s.year}</div>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>{s.license_plate ?? "—"}</TableCell>
                     <TableCell>{s.mileage?.toLocaleString("fr-FR") ?? "—"}</TableCell>
@@ -125,6 +144,15 @@ export default function FleetList() {
           </Table>
         </CardContent>
       </Card>
+
+      {lightboxScooter?.primaryPhotoUrl ? (
+        <VehiclePhotoLightbox
+          src={lightboxScooter.primaryPhotoUrl}
+          brand={lightboxScooter.brand}
+          model={lightboxScooter.model}
+          onClose={() => setLightboxScooter(null)}
+        />
+      ) : null}
     </div>
   );
 }
