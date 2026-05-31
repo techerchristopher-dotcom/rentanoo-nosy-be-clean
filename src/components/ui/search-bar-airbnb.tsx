@@ -369,10 +369,17 @@ export function SearchBarAirbnb({
             <Button
               onClick={onSearch}
               disabled={searching}
+              aria-label={
+                searching
+                  ? t('common.searchBar.searching', 'Recherche en cours…')
+                  : t('common.searchBar.launchSearch', 'Je lance la recherche')
+              }
               className="bg-gradient-lagoon hover:opacity-90 text-white rounded-2xl px-5 md:px-6 py-3 md:py-3 font-semibold shadow-lagoon hover:shadow-2xl transition-all duration-300 disabled:opacity-50 flex items-center justify-center min-h-[48px] md:min-h-[54px] text-sm md:text-base ml-12 md:ml-16"
             >
               <Search className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-              {searching ? 'Recherche...' : t('common.search', 'Rechercher')}
+              {searching
+                ? t('common.searchBar.searching', 'Recherche en cours…')
+                : t('common.searchBar.launchSearch', 'Je lance la recherche')}
             </Button>
 
             {/* Bouton Reset - apparaît seulement si des critères sont sélectionnés */}

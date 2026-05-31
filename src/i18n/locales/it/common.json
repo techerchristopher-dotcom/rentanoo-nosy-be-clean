@@ -106,7 +106,9 @@
       "departure": "Partenza",
       "return": "Ritorno",
       "date": "Data",
-      "time": "Ora"
+      "time": "Ora",
+      "launchSearch": "Avvio la ricerca",
+      "searching": "Ricerca in corso…"
     }
   },
   "home": {

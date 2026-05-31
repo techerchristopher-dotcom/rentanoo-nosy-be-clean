@@ -83,7 +83,9 @@
       "departure": "Départ",
       "return": "Retour",
       "date": "Date",
-      "time": "Heure"
+      "time": "Heure",
+      "launchSearch": "Je lance la recherche",
+      "searching": "Recherche en cours…"
     },
     "vehicle": {
       "places": "{{count}} places",

@@ -160,9 +160,18 @@
   @apply right-4;
 }
 
-.airbnb-calendar-modal .react-datepicker__month-container {
-  @apply mx-2;
+.search-bar-date-modal .airbnb-calendar-modal {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  max-width: 100%;
+  max-height: none;
+  overflow: visible;
+  box-shadow: none;
+  padding: 8px 0 16px;
 }
+
 
 .react-datepicker__input-container {
   display: none;

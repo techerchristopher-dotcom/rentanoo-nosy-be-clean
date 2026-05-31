@@ -106,7 +106,9 @@
       "departure": "Abfahrt",
       "return": "Rückgabe",
       "date": "Datum",
-      "time": "Uhrzeit"
+      "time": "Uhrzeit",
+      "launchSearch": "Suche starten",
+      "searching": "Suche läuft…"
     }
   },
   "home": {
