@@ -4,6 +4,7 @@ import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 import type { BookingPricingMode } from '@/types';
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin';
 import { ProfileService } from './profile';
+import { SupabaseVehiclesService } from '@/services/supabaseVehiclesService';
 
 type SupabaseBooking = Tables<'bookings'>;
 type SupabaseBookingUpdate = TablesUpdate<'bookings'>;
