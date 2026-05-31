@@ -6,6 +6,10 @@ import { requireAdmin } from "../lib/adminAuth";
 import { getStripe } from "../lib/stripe";
 import { updateClaimChargeRowFromPaymentIntent } from "../lib/bookingClaimChargesSync";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
+import {
+  sanitizeAndRecalculateBookingOptions,
+  type RawBookingOptionInput,
+} from "@/utils/bookingOptionSecurity";
 
 /** Build id — doit correspondre aux en-têtes HTTP et au champ debug de la réponse 201. */
 const ADMIN_BOOKING_CREATE_BUILD_ID = "agency-v2-debug-20260328";
@@ -41,6 +45,43 @@ function localYmd(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function parseSelectedOptionsFromBody(raw: unknown): RawBookingOptionInput[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RawBookingOptionInput[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const name = typeof o.name === "string" ? o.name.trim() : "";
+    if (!name && typeof o.id !== "string") continue;
+    out.push({
+      id: typeof o.id === "string" ? o.id : undefined,
+      name: name || String(o.id),
+      pricePerDay: typeof o.pricePerDay === "number" ? o.pricePerDay : undefined,
+      totalPrice: typeof o.totalPrice === "number" ? o.totalPrice : undefined,
+    });
+  }
+  return out;
+}
+
+/** Tarification agence : base + options plateforme, sans frais service 15 %. */
+function computeAdminBookingPricing(basePrice: number, rawOptions: RawBookingOptionInput[] | undefined) {
+  const sanitized = sanitizeAndRecalculateBookingOptions(rawOptions, basePrice);
+  return {
+    selected_options: sanitized.selectedOptions.length > 0 ? sanitized.selectedOptions : null,
+    options_total: sanitized.optionsTotal,
+    subtotal: sanitized.subtotal,
+    service_fee: 0,
+    total_price: sanitized.subtotal,
+  };
+}
+
+function selectedOptionsFromDraftSnapshot(draft: { pricing_snapshot?: unknown }): RawBookingOptionInput[] {
+  const snap = draft.pricing_snapshot;
+  if (!snap || typeof snap !== "object") return [];
+  const raw = (snap as Record<string, unknown>).selectedOptions;
+  return parseSelectedOptionsFromBody(raw);
 }
 
 const DIAG = "[DIAG][admin/clients]";
@@ -876,26 +917,24 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
 
     const { basePrice, rentalDays } = computeBaseRentalPrice(agencyPricePerDay, startDt, endDt);
-    const optionsTotal = 0;
-    const subtotal = basePrice + optionsTotal;
-    const serviceFee = 0;
-    const totalPrice = subtotal;
+    const draftSelectedOptions = selectedOptionsFromDraftSnapshot(draft as { pricing_snapshot?: unknown });
+    const pricing = computeAdminBookingPricing(basePrice, draftSelectedOptions);
 
     const insertPayload = {
       user_id: renterUserId,
       vehicle_id: vehicleId,
       start_date: startYmd,
       end_date: endYmd,
-      total_price: totalPrice,
+      total_price: pricing.total_price,
       status: "pending" as const,
       start_time: startTime.length >= 5 ? startTime : null,
       end_time: endTime.length >= 5 ? endTime : null,
       pickup_location: pickupLocation,
-      selected_options: null as null,
+      selected_options: pricing.selected_options,
       base_price: basePrice,
-      options_total: optionsTotal,
-      service_fee: serviceFee,
-      subtotal,
+      options_total: pricing.options_total,
+      service_fee: pricing.service_fee,
+      subtotal: pricing.subtotal,
       price_per_day: agencyPricePerDay,
       rental_days: rentalDays,
       pricing_mode: "admin" as const,
@@ -1241,6 +1280,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const adminNotes = typeof req.body?.adminNotes === "string" ? req.body.adminNotes.trim() : null;
     const rawOpm = req.body?.offlinePaymentMethod;
     const offlinePaymentMethod = rawOpm === "cash" || rawOpm === "card_terminal" ? rawOpm : null;
+    const selectedOptionsRaw = parseSelectedOptionsFromBody(req.body?.selectedOptions);
     const adminId = gate.userId;
 
     if (!renterUserId || !vehicleId || !startDateRaw || !endDateRaw) {
@@ -1348,26 +1388,23 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
 
     const { basePrice, rentalDays } = computeBaseRentalPrice(agencyPricePerDay, startDt, endDt);
-    const optionsTotal = 0;
-    const subtotal = basePrice + optionsTotal;
-    const serviceFee = 0;
-    const totalPrice = subtotal;
+    const pricing = computeAdminBookingPricing(basePrice, selectedOptionsRaw);
 
     const insertPayload = {
       user_id: renterUserId,
       vehicle_id: vehicleId,
       start_date: startYmd,
       end_date: endYmd,
-      total_price: totalPrice,
+      total_price: pricing.total_price,
       status: "pending" as const,
       start_time: startTime.length >= 5 ? startTime : null,
       end_time: endTime.length >= 5 ? endTime : null,
       pickup_location: pickupLocation,
-      selected_options: null as null,
+      selected_options: pricing.selected_options,
       base_price: basePrice,
-      options_total: optionsTotal,
-      service_fee: serviceFee,
-      subtotal,
+      options_total: pricing.options_total,
+      service_fee: pricing.service_fee,
+      subtotal: pricing.subtotal,
       price_per_day: agencyPricePerDay,
       rental_days: rentalDays,
       pricing_mode: "admin" as const,

@@ -37,3 +37,27 @@ export const LEGACY_AIRPORT_OPTION_ID_MAP: Record<string, string> = {
   "airport-pickup-retrieval": PLATFORM_AIRPORT_PICKUP_ID,
   "airport-pickup-return": PLATFORM_AIRPORT_RETURN_ID,
 };
+
+export interface PlatformBookingOptionPayload {
+  id: string;
+  name: string;
+  pricePerDay: number;
+  totalPrice: number;
+}
+
+/** Construit le payload `selected_options` à partir des IDs cochés (prix plateforme). */
+export function buildPlatformOptionPayload(
+  selectedIds: Iterable<string>
+): PlatformBookingOptionPayload[] {
+  const idSet = new Set(selectedIds);
+  return PLATFORM_AIRPORT_OPTIONS.filter((opt) => idSet.has(opt.id)).map((opt) => ({
+    id: opt.id,
+    name: opt.name,
+    pricePerDay: 0,
+    totalPrice: opt.totalPrice,
+  }));
+}
+
+export function platformOptionsTotal(selectedIds: Iterable<string>): number {
+  return buildPlatformOptionPayload(selectedIds).reduce((sum, opt) => sum + opt.totalPrice, 0);
+}

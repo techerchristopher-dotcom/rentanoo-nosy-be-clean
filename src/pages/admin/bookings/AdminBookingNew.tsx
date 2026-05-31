@@ -21,6 +21,14 @@ import {
 } from "@/services/adminDraftsApi";
 import { SupabaseVehiclesService, type Vehicle } from "@/services/supabaseVehiclesService";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
+import {
+  buildPlatformOptionPayload,
+  PLATFORM_AIRPORT_PICKUP_ID,
+  PLATFORM_AIRPORT_RETURN_ID,
+  PLATFORM_AIRPORT_OPTIONS,
+  type PlatformBookingOptionPayload,
+} from "@/constants/platformBookingOptions";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function isValidYmd(s: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
@@ -90,6 +98,9 @@ export default function AdminBookingNew() {
   const [pickupLocation, setPickupLocation] = useState("Agence");
   const [adminNotes, setAdminNotes] = useState("");
   const [offlinePaymentMethod, setOfflinePaymentMethod] = useState<"cash" | "card_terminal" | "">("");
+
+  const [airportPickup, setAirportPickup] = useState(false);
+  const [airportReturn, setAirportReturn] = useState(false);
 
   const [submitLoading, setSubmitLoading] = useState(false);
   const [renterPhoneDraft, setRenterPhoneDraft] = useState("");
@@ -179,6 +190,30 @@ export default function AdminBookingNew() {
         }
 
         toast({ title: "Brouillon chargé", description: `Brouillon ${d.id.slice(0, 8)}…` });
+
+        const ps =
+          d.pricing_snapshot && typeof d.pricing_snapshot === "object"
+            ? (d.pricing_snapshot as Record<string, unknown>)
+            : null;
+        const snapOptions = ps?.selectedOptions;
+        if (Array.isArray(snapOptions)) {
+          setAirportPickup(
+            snapOptions.some(
+              (o) =>
+                o &&
+                typeof o === "object" &&
+                (o as { id?: string }).id === PLATFORM_AIRPORT_PICKUP_ID
+            )
+          );
+          setAirportReturn(
+            snapOptions.some(
+              (o) =>
+                o &&
+                typeof o === "object" &&
+                (o as { id?: string }).id === PLATFORM_AIRPORT_RETURN_ID
+            )
+          );
+        }
       } catch (e: unknown) {
         toast({
           title: "Chargement du brouillon impossible",
@@ -199,6 +234,13 @@ export default function AdminBookingNew() {
 
   const selectedVehicle = useMemo(() => vehicles.find((v) => v.id === vehicleId) ?? null, [vehicles, vehicleId]);
 
+  const selectedOptions = useMemo((): PlatformBookingOptionPayload[] => {
+    const ids: string[] = [];
+    if (airportPickup) ids.push(PLATFORM_AIRPORT_PICKUP_ID);
+    if (airportReturn) ids.push(PLATFORM_AIRPORT_RETURN_ID);
+    return buildPlatformOptionPayload(ids);
+  }, [airportPickup, airportReturn]);
+
   const pricePreview = useMemo(() => {
     if (!selectedVehicle) return null;
     const ppd = agencyPricePerDayFromVehicle(selectedVehicle);
@@ -207,10 +249,11 @@ export default function AdminBookingNew() {
     const end = combineYmdTime(endDate, endTime);
     if (!start || !end || end.getTime() <= start.getTime()) return null;
     const { basePrice, rentalDays } = computeBaseRentalPrice(ppd, start, end);
-    const subtotal = basePrice;
+    const optionsTotal = selectedOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
+    const subtotal = basePrice + optionsTotal;
     const total = subtotal;
-    return { basePrice, rentalDays, subtotal, total, agencyPpd: ppd };
-  }, [selectedVehicle, startDate, endDate, startTime, endTime]);
+    return { basePrice, rentalDays, optionsTotal, selectedOptions, subtotal, total, agencyPpd: ppd };
+  }, [selectedVehicle, startDate, endDate, startTime, endTime, selectedOptions]);
 
   const runSearch = async () => {
     setSearchLoading(true);
@@ -287,6 +330,7 @@ export default function AdminBookingNew() {
         pickupLocation: pickupLocation.trim() || "Agence",
         adminNotes: adminNotes.trim() || undefined,
         offlinePaymentMethod: offlinePaymentMethod || null,
+        selectedOptions: selectedOptions.length > 0 ? selectedOptions : undefined,
       });
       toast({ title: "Réservation créée", description: `Réf. ${booking.id.slice(0, 8)}…` });
       navigate(`/admin/bookings/${booking.id}`);
@@ -346,6 +390,8 @@ export default function AdminBookingNew() {
           agencyPpd: pricePreview.agencyPpd,
           basePrice: pricePreview.basePrice,
           rentalDays: pricePreview.rentalDays,
+          optionsTotal: pricePreview.optionsTotal,
+          selectedOptions: pricePreview.selectedOptions,
           subtotal: pricePreview.subtotal,
           total: pricePreview.total,
         }
@@ -630,6 +676,33 @@ export default function AdminBookingNew() {
               <option value="card_terminal">CB (terminal)</option>
             </select>
           </div>
+          <div className="space-y-3 rounded-md border border-border p-4">
+            <div className="font-medium text-sm">Services supplémentaires</div>
+            <p className="text-xs text-muted-foreground">
+              Options plateforme à tarif fixe (identiques à la réservation web).
+            </p>
+            {PLATFORM_AIRPORT_OPTIONS.map((opt) => {
+              const checked =
+                opt.id === PLATFORM_AIRPORT_PICKUP_ID ? airportPickup : airportReturn;
+              const setChecked =
+                opt.id === PLATFORM_AIRPORT_PICKUP_ID ? setAirportPickup : setAirportReturn;
+              return (
+                <div key={opt.id} className="flex items-start gap-3">
+                  <Checkbox
+                    id={`admin-opt-${opt.id}`}
+                    checked={checked}
+                    onCheckedChange={(v) => setChecked(v === true)}
+                  />
+                  <div className="grid gap-0.5 leading-none">
+                    <Label htmlFor={`admin-opt-${opt.id}`} className="cursor-pointer font-normal">
+                      {opt.name} — {opt.totalPrice.toFixed(2)} €
+                    </Label>
+                    <p className="text-xs text-muted-foreground">{opt.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
           {pricePreview ? (
             <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
               <div>
@@ -639,11 +712,25 @@ export default function AdminBookingNew() {
                 Location (base) : <strong>{pricePreview.basePrice.toFixed(2)} €</strong> ({pricePreview.rentalDays}{" "}
                 j. facturés)
               </div>
+              {pricePreview.selectedOptions.length > 0 ? (
+                <>
+                  {pricePreview.selectedOptions.map((opt) => (
+                    <div key={opt.id} className="text-muted-foreground">
+                      + {opt.name} : <strong>{opt.totalPrice.toFixed(2)} €</strong>
+                    </div>
+                  ))}
+                  <div>
+                    Total options : <strong>{pricePreview.optionsTotal.toFixed(2)} €</strong>
+                  </div>
+                </>
+              ) : (
+                <div>Options : <strong>0,00 €</strong></div>
+              )}
               <div>
                 Frais service locataire (agence) : <strong>0,00 €</strong>
               </div>
               <div>
-                Total locataire : <strong>{pricePreview.total.toFixed(2)} €</strong> (= sous-total)
+                Total réservation : <strong>{pricePreview.total.toFixed(2)} €</strong> (= sous-total)
               </div>
             </div>
           ) : selectedVehicle && agencyPricePerDayFromVehicle(selectedVehicle) == null ? (

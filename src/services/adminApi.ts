@@ -162,6 +162,12 @@ export async function adminCreateBooking(payload: {
   pickupLocation?: string;
   adminNotes?: string;
   offlinePaymentMethod?: "cash" | "card_terminal" | null;
+  selectedOptions?: Array<{
+    id?: string;
+    name: string;
+    pricePerDay?: number;
+    totalPrice?: number;
+  }>;
 }): Promise<{ id: string; status: string | null; createdAt: string | null }> {
   const data = await adminFetch<{
     ok: boolean;
