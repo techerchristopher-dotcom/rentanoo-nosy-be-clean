@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { FEATURES } from "@/config/features";
+import { cn } from "@/lib/utils";
+import "@/styles/search-bar.css";
 
 const SingleLocationModal = lazy(() =>
   import("@/components/ui/single-location-modal").then((m) => ({ default: m.SingleLocationModal }))
@@ -145,6 +147,8 @@ export function SearchBarAirbnb({
       openDateModal();
     }
   };
+
+  const isReadyToLaunch = Boolean(startDate && endDate);
 
   return (
     <div className="relative mx-auto w-full max-w-5xl px-4">
@@ -374,12 +378,17 @@ export function SearchBarAirbnb({
                   ? t('common.searchBar.searching', 'Recherche en cours…')
                   : t('common.searchBar.launchSearch', 'Je lance la recherche')
               }
-              className="bg-gradient-lagoon hover:opacity-90 text-white rounded-2xl px-5 md:px-6 py-3 md:py-3 font-semibold shadow-lagoon hover:shadow-2xl transition-all duration-300 disabled:opacity-50 flex items-center justify-center min-h-[48px] md:min-h-[54px] text-sm md:text-base ml-12 md:ml-16"
+              className={cn(
+                "bg-gradient-lagoon hover:opacity-90 text-white rounded-2xl px-5 md:px-6 py-3 md:py-3 font-semibold shadow-lagoon hover:shadow-2xl transition-all duration-300 disabled:opacity-50 flex items-center justify-center min-h-[48px] md:min-h-[54px] text-sm md:text-base ml-12 md:ml-16",
+                !searching && isReadyToLaunch && "search-launch-cta"
+              )}
             >
-              <Search className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-              {searching
-                ? t('common.searchBar.searching', 'Recherche en cours…')
-                : t('common.searchBar.launchSearch', 'Je lance la recherche')}
+              <Search className="relative z-[1] h-4 w-4 md:h-5 md:w-5 mr-2" />
+              <span className="relative z-[1]">
+                {searching
+                  ? t('common.searchBar.searching', 'Recherche en cours…')
+                  : t('common.searchBar.launchSearch', 'Je lance la recherche')}
+              </span>
             </Button>
 
             {/* Bouton Reset - apparaît seulement si des critères sont sélectionnés */}
