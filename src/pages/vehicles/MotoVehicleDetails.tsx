@@ -1063,7 +1063,7 @@ export default function MotoVehicleDetails() {
                 {/* Badges spécifiques voiture (Parking réservé / Transmission) masqués pour la page moto */}
               </div>
 
-              {ENABLE_PICKUP_ZONES_SECTION ? (
+              {ENABLE_PICKUP_ZONES_SECTION && (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">
@@ -1115,14 +1115,6 @@ export default function MotoVehicleDetails() {
                       </p>
                     </div>
                   </CardContent>
-                </Card>
-              ) : (
-                <Card className="border-primary/20 bg-primary/5">
-                  <CardHeader className="pb-3 flex justify-center">
-                    <CardTitle className="text-lg text-primary text-center">
-                      {t("motoDetails.freeHotelDelivery")}
-                    </CardTitle>
-                  </CardHeader>
                 </Card>
               )}
 
