@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -44,31 +44,20 @@ interface ServiceOption {
 export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOptionsProps) {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [hotelName, setHotelName] = useState("");
+  const hydratedRef = useRef(false);
   
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // INITIALISER LES SERVICES SÉLECTIONNÉS DEPUIS LE BROUILLON EXISTANT
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Initialiser depuis le brouillon avant toute écriture localStorage
   useEffect(() => {
-    // Initialiser selectedServices depuis le brouillon existant
     const draft = getBookingDraft();
-    console.log('🔍 [DEBUG] Initialisation - Brouillon trouvé:', draft);
-    
     if (draft?.selectedOptions && draft.selectedOptions.length > 0) {
       const existingSelectedIds = draft.selectedOptions
         .filter(opt => opt.selected)
         .map(opt => LEGACY_AIRPORT_OPTION_ID_MAP[opt.id] ?? opt.id);
-      
-      console.log('🔄 [DEBUG] Initialisation selectedServices depuis le brouillon:', {
-        allOptions: draft.selectedOptions,
-        selectedOptions: existingSelectedIds
-      });
       setSelectedServices(existingSelectedIds);
       if (draft.hotelName) setHotelName(draft.hotelName);
-    } else {
-      console.log('🔄 [DEBUG] Aucun brouillon existant ou pas d\'options, selectedServices reste vide');
-      // Ne pas forcer à vide, laisser l'état initial
     }
-  }, []); // Se déclenche seulement au montage
+    hydratedRef.current = true;
+  }, []);
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // CONSTRUIRE LA LISTE DES SERVICES DEPUIS LES DONNÉES DU VÉHICULE
@@ -246,13 +235,8 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   // METTRE À JOUR LOCALSTORAGE À CHAQUE CHANGEMENT
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   useEffect(() => {
-    console.log('🔄 [DEBUG] useEffect principal déclenché avec:', {
-      selectedServices,
-      availableServicesLength: availableServices.length,
-      selectedServicesLength: selectedServices.length,
-      timestamp: new Date().toISOString()
-    });
-    
+    if (!hydratedRef.current) return;
+
     const selectedOptionsData: BookingOption[] = availableServices
       .filter(service => selectedServices.includes(service.id))
       .map(service => ({
@@ -269,15 +253,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
       filteredCount: selectedOptionsData.length
     });
     
-    // Mettre à jour localStorage
-    console.log('🔄 [VehicleServiceOptions] Appel updateBookingOptions avec:', selectedOptionsData);
     updateBookingOptions(selectedOptionsData);
-    
-    console.log('✨ [VehicleServiceOptions] Services sélectionnés:', {
-      count: selectedOptionsData.length,
-      services: selectedOptionsData.map(s => `${s.name}: ${s.totalPrice}€`),
-      total: selectedOptionsData.reduce((sum, s) => sum + s.totalPrice, 0)
-    });
   }, [selectedServices, availableServices]);
 
   const showHotelField = requiresHotelName(selectedServices);
@@ -286,39 +262,6 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
     if (!showHotelField) return;
     updateBookingComplementaryMeta({ hotelName: hotelName.trim() || undefined });
   }, [hotelName, showHotelField]);
-  
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // SURVEILLER LES CHANGEMENTS DU LOCALSTORAGE POUR SYNCHRONISER LES CHECKBOXES
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  useEffect(() => {
-    // Surveiller les changements du localStorage pour synchroniser les checkboxes
-    const interval = setInterval(() => {
-      const draft = getBookingDraft();
-      if (draft?.selectedOptions) {
-        // Récupérer les IDs des services sélectionnés depuis le localStorage
-        const selectedIdsFromStorage = draft.selectedOptions
-          .filter(opt => opt.selected)
-          .map(opt => LEGACY_AIRPORT_OPTION_ID_MAP[opt.id] ?? opt.id);
-        
-        // Comparer avec l'état actuel
-        const currentSelectedIds = selectedServices;
-        
-        // Vérifier s'il y a une différence
-        const hasChanged = selectedIdsFromStorage.length !== currentSelectedIds.length ||
-          !selectedIdsFromStorage.every(id => currentSelectedIds.includes(id));
-        
-        if (hasChanged) {
-          console.log('🔄 [VehicleServiceOptions] Synchronisation depuis localStorage:', {
-            fromStorage: selectedIdsFromStorage,
-            current: currentSelectedIds
-          });
-          setSelectedServices(selectedIdsFromStorage);
-        }
-      }
-    }, 200); // Vérifier toutes les 200ms
-    
-    return () => clearInterval(interval);
-  }, []); // Pas de dépendances pour éviter les conflits avec le useEffect principal
   
   // Si aucun service n'est disponible pour ce véhicule, ne rien afficher
   if (availableServices.length === 0) {

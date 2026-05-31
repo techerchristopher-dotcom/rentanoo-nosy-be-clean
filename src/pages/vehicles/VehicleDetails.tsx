@@ -44,7 +44,7 @@ import { Vehicle } from "@/services/supabaseVehiclesService";
 import { createVehicleRentalInfo } from "@/lib/utils";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
 import { formatCurrency } from "@/utils/currency";
-import { createBookingDraft, getBookingDraft, clearBookingDraft, saveBookingDraft } from "@/services/localStorage/bookingStorage";
+import { createBookingDraft, getBookingDraft, clearBookingDraft, saveBookingDraft, finalizeBookingDraftForCheckout } from "@/services/localStorage/bookingStorage";
 import { shouldShowComplementaryServicesModal } from "@/utils/bookingUpsell";
 import { requiresHotelName } from "@/utils/bookingLocations";
 import { markPageRefresh } from "@/services/localStorage/searchStorage";
@@ -402,7 +402,6 @@ export default function VehicleDetails() {
         vehicleModel: vehicle.model,
         vehicleYear: vehicle.year,
         vehicleImageUrl: photos.length > 0 ? photos[0].url : undefined,
-        pickupLocation: navigationState.pickupLocation || 'Non spécifié',
         startDate: navigationState.rentalCalculation.startDate.toISOString(),
         endDate: navigationState.rentalCalculation.endDate.toISOString(),
         startTime: navigationState.rentalCalculation.startTime,
@@ -414,10 +413,9 @@ export default function VehicleDetails() {
         selectedOptions: existingSelectedOptions,
         updatedAt: new Date().toISOString()
       };
-      
-      // Sauvegarder le brouillon mis à jour
-      saveBookingDraft(bookingDraft);
     }
+
+    bookingDraft = finalizeBookingDraftForCheckout(bookingDraft);
     
     console.log('💾 [DEBUG] Brouillon final:', bookingDraft);
     

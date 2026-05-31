@@ -130,6 +130,14 @@ function syncDraftLocations(draft: BookingDraft, options: BookingOption[]): void
   draft.returnLocation = locations.returnLocation;
 }
 
+/** Recalcule lieux + sauvegarde avant ouverture modale de confirmation. */
+export function finalizeBookingDraftForCheckout(draft: BookingDraft): BookingDraft {
+  syncDraftLocations(draft, draft.selectedOptions ?? []);
+  draft.updatedAt = new Date().toISOString();
+  saveBookingDraft(draft);
+  return draft;
+}
+
 export function updateBookingComplementaryMeta(patch: {
   hotelName?: string;
   declinedComplementaryServices?: boolean;

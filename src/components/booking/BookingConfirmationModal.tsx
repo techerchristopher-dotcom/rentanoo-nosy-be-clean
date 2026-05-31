@@ -76,48 +76,31 @@ export function BookingConfirmationModal({
     totalPrice: number;
     selected: boolean;
   }>>([]);
+  const [draftPickupLocation, setDraftPickupLocation] = useState<string | undefined>();
+  const [draftReturnLocation, setDraftReturnLocation] = useState<string | undefined>();
   
+  const syncDraftState = () => {
+    const draft = getBookingDraft();
+    if (draft?.selectedOptions) {
+      const selectedOptionsFromDraft = draft.selectedOptions.filter(opt => opt.selected);
+      setDraftOptions(selectedOptionsFromDraft);
+    } else {
+      setDraftOptions([]);
+    }
+    setDraftPickupLocation(draft?.pickupLocation);
+    setDraftReturnLocation(draft?.returnLocation);
+  };
+
   // Charger le brouillon depuis localStorage quand la modal s'ouvre
   useEffect(() => {
-    if (isOpen) {
-      const draft = getBookingDraft();
-      console.log('📖 [BookingConfirmationModal] Brouillon chargé:', draft);
-      if (draft?.selectedOptions) {
-        // Filtrer seulement les options sélectionnées
-        const selectedOptionsFromDraft = draft.selectedOptions.filter(opt => opt.selected);
-        setDraftOptions(selectedOptionsFromDraft);
-        console.log('✅ [BookingConfirmationModal] Options sélectionnées:', selectedOptionsFromDraft);
-      }
-    }
+    if (!isOpen) return;
+    syncDraftState();
+    const interval = setInterval(syncDraftState, 100);
+    return () => clearInterval(interval);
   }, [isOpen]);
   
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // SURVEILLER LES CHANGEMENTS DU BROUILLON POUR RECHARGER LES OPTIONS
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  useEffect(() => {
-    if (isOpen) {
-      // Créer un intervalle pour surveiller les changements du localStorage
-      const interval = setInterval(() => {
-        const draft = getBookingDraft();
-        if (draft?.selectedOptions) {
-          const selectedOptionsFromDraft = draft.selectedOptions.filter(opt => opt.selected);
-          
-          // Vérifier si les options ont changé
-          const hasChanged = selectedOptionsFromDraft.length !== draftOptions.length ||
-            !selectedOptionsFromDraft.every((opt, index) => 
-              draftOptions[index]?.id === opt.id && draftOptions[index]?.totalPrice === opt.totalPrice
-            );
-          
-          if (hasChanged) {
-            console.log('🔄 [BookingConfirmationModal] Options mises à jour détectées:', selectedOptionsFromDraft);
-            setDraftOptions(selectedOptionsFromDraft);
-          }
-        }
-      }, 100); // Vérifier toutes les 100ms
-      
-      return () => clearInterval(interval);
-    }
-  }, [isOpen, draftOptions]);
+  const pickupLocation = draftPickupLocation ?? rentalInfo.pickupLocation;
+  const returnLocation = draftReturnLocation ?? rentalInfo.returnLocation;
   
   // Calculer le total des options (utiliser draftOptions au lieu de selectedOptions)
   const optionsTotal = draftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
@@ -227,11 +210,11 @@ export function BookingConfirmationModal({
           </div>
 
           {/* Lieux de prise en charge / restitution */}
-          {(rentalInfo.pickupLocation || rentalInfo.returnLocation) && (
+          {(pickupLocation || returnLocation) && (
             <>
               <Separator />
               <div className="space-y-3 px-2">
-                {rentalInfo.pickupLocation && (
+                {pickupLocation && (
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary-soft rounded-lg">
                       <MapPin className="h-5 w-5 text-primary" />
@@ -239,12 +222,12 @@ export function BookingConfirmationModal({
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-1">{t("lieu_de_prise_en_charge")}</p>
                       <p className="text-base font-semibold text-foreground">
-                        {rentalInfo.pickupLocation}
+                        {pickupLocation}
                       </p>
                     </div>
                   </div>
                 )}
-                {rentalInfo.returnLocation && (
+                {returnLocation && (
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary-soft rounded-lg">
                       <MapPin className="h-5 w-5 text-primary" />
@@ -254,7 +237,7 @@ export function BookingConfirmationModal({
                         {t("booking.confirmation.returnLocation")}
                       </p>
                       <p className="text-base font-semibold text-foreground">
-                        {rentalInfo.returnLocation}
+                        {returnLocation}
                       </p>
                     </div>
                   </div>

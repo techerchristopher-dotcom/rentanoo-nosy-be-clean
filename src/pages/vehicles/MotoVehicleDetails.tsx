@@ -70,6 +70,7 @@ import {
   getBookingDraft,
   clearBookingDraft,
   saveBookingDraft,
+  finalizeBookingDraftForCheckout,
 } from "@/services/localStorage/bookingStorage";
 import { shouldShowComplementaryServicesModal } from "@/utils/bookingUpsell";
 import { requiresHotelName } from "@/utils/bookingLocations";
@@ -431,7 +432,6 @@ export default function MotoVehicleDetails() {
         vehicleModel: vehicle.model,
         vehicleYear: vehicle.year,
         vehicleImageUrl: photos.length > 0 ? photos[0].url : undefined,
-        pickupLocation: navigationState.pickupLocation || t("motoDetails.notSpecified"),
         startDate: navigationState.rentalCalculation.startDate.toISOString(),
         endDate: navigationState.rentalCalculation.endDate.toISOString(),
         startTime: navigationState.rentalCalculation.startTime,
@@ -442,9 +442,9 @@ export default function MotoVehicleDetails() {
         selectedOptions: existingSelectedOptions,
         updatedAt: new Date().toISOString(),
       };
-
-      saveBookingDraft(bookingDraft);
     }
+
+    bookingDraft = finalizeBookingDraftForCheckout(bookingDraft);
 
     console.log("💾 [DEBUG] Brouillon final (moto):", bookingDraft);
 
