@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Plane, Ship, Home, Baby, UserPlus } from "lucide-react";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import { updateBookingOptions, getBookingDraft, BookingOption } from "@/services/localStorage/bookingStorage";
+import {
+  LEGACY_AIRPORT_OPTION_ID_MAP,
+  PLATFORM_AIRPORT_OPTIONS,
+} from "@/constants/platformBookingOptions";
 
 interface VehicleServiceOptionsProps {
   vehicle: Vehicle;
@@ -39,7 +43,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
     if (draft?.selectedOptions && draft.selectedOptions.length > 0) {
       const existingSelectedIds = draft.selectedOptions
         .filter(opt => opt.selected)
-        .map(opt => opt.id);
+        .map(opt => LEGACY_AIRPORT_OPTION_ID_MAP[opt.id] ?? opt.id);
       
       console.log('🔄 [DEBUG] Initialisation selectedServices depuis le brouillon:', {
         allOptions: draft.selectedOptions,
@@ -59,48 +63,21 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   const buildAvailableServices = (): ServiceOption[] => {
     const services: ServiceOption[] = [];
     
-    // 🔍 DEBUG: Vérifier les propriétés du véhicule
-    console.log('🔍 [VehicleServiceOptions] Propriétés du véhicule:', {
-      vehicleId: vehicle.id,
-      airport_pickup_retrieval: vehicle.airport_pickup_retrieval,
-      airport_pickup_return: vehicle.airport_pickup_return,
-      baby_seat_service: vehicle.baby_seat_service,
-      additional_driver_service: vehicle.additional_driver_service,
-      barge_grande_terre_retrieval: vehicle.barge_grande_terre_retrieval,
-      barge_petite_terre_retrieval: vehicle.barge_petite_terre_retrieval
-    });
-    
-    // 1️⃣ 🛩️ Récupération à l'aéroport (forfait)
-    if (vehicle.airport_pickup_retrieval) {
-      const price = vehicle.airport_pickup_retrieval_free ? 0 : (vehicle.airport_pickup_retrieval_price || 0);
+    // Options aéroport plateforme (16 € fixes, tous véhicules)
+    for (const opt of PLATFORM_AIRPORT_OPTIONS) {
       services.push({
-        id: 'airport-pickup-retrieval',
-        name: 'Récupération à l\'aéroport',
-        description: 'Le propriétaire vous amène le véhicule à l\'aéroport de Nosy Be (Fascène)',
+        id: opt.id,
+        name: opt.name,
+        description: opt.description,
         icon: Plane,
-        type: 'flat_rate',
+        type: "flat_rate",
         pricePerDay: 0,
-        totalPrice: price,
-        isFree: vehicle.airport_pickup_retrieval_free || false
+        totalPrice: opt.totalPrice,
+        isFree: false,
       });
     }
-    
-    // 2️⃣ 🛩️ Retour à l'aéroport (forfait)
-      if (vehicle.airport_pickup_return) {
-      const price = vehicle.airport_pickup_return_free ? 0 : (vehicle.airport_pickup_return_price || 0);
-      services.push({
-        id: 'airport-pickup-return',
-        name: 'Retour à l\'aéroport',
-        description: 'Vous rendez le véhicule directement à l\'aéroport de Nosy Be (Fascène)',
-        icon: Plane,
-        type: 'flat_rate',
-        pricePerDay: 0,
-        totalPrice: price,
-        isFree: vehicle.airport_pickup_return_free || false
-      });
-    }
-    
-    // 3️⃣ 🚢 Barge Grande Terre - Récupération (forfait)
+
+    // Barge Grande Terre - Récupération (forfait)
     if (vehicle.barge_grande_terre_retrieval) {
       const price = vehicle.barge_grande_terre_retrieval_free ? 0 : (vehicle.barge_grande_terre_retrieval_price || 0);
       services.push({
@@ -294,7 +271,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
         // Récupérer les IDs des services sélectionnés depuis le localStorage
         const selectedIdsFromStorage = draft.selectedOptions
           .filter(opt => opt.selected)
-          .map(opt => opt.id);
+          .map(opt => LEGACY_AIRPORT_OPTION_ID_MAP[opt.id] ?? opt.id);
         
         // Comparer avec l'état actuel
         const currentSelectedIds = selectedServices;
@@ -361,7 +338,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
                 >
                   <Icon 
                     className={`h-5 w-5 text-primary flex-shrink-0 ${
-                      service.id === 'airport-pickup-retrieval' ? 'rotate-180' : ''
+                      service.id === "platform-airport-pickup" ? "rotate-180" : ""
                               }`} 
                             />
                   <span>{service.name}</span>

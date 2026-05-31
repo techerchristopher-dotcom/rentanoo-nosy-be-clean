@@ -582,6 +582,7 @@ export default function VehicleDetails() {
     const selectedOptions = bookingDraft?.selectedOptions ? bookingDraft.selectedOptions
       .filter(option => option.selected)
       .map(option => ({
+        id: option.id,
         name: option.name,
         pricePerDay: option.pricePerDay,
         totalPrice: option.totalPrice

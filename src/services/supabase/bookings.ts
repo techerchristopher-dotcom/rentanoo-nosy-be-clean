@@ -1,14 +1,30 @@
 // Service Supabase pour la gestion des réservations
 import { supabase } from '@/integrations/supabase/client';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 import type { BookingPricingMode } from '@/types';
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin';
 import { ProfileService } from './profile';
-import { SupabaseVehiclesService } from '@/services/supabaseVehiclesService';
 
 type SupabaseBooking = Tables<'bookings'>;
-type SupabaseBookingInsert = TablesInsert<'bookings'>;
 type SupabaseBookingUpdate = TablesUpdate<'bookings'>;
+
+/** Réponse JSON de la RPC Postgres `create_web_booking`. */
+interface CreateWebBookingRpcResult {
+  id: string;
+  reference_number: number | null;
+  status: string;
+  created_at: string;
+}
+
+function mapCreateWebBookingRpcError(message: string): string {
+  if (message.includes('PHONE_REQUIRED')) return 'PHONE_REQUIRED';
+  if (message.includes('VEHICLE_NOT_FOUND')) return 'VEHICLE_NOT_FOUND';
+  if (message.includes('VEHICLE_UNAVAILABLE')) return 'VEHICLE_UNAVAILABLE';
+  if (message.includes('INVALID_DATETIME_RANGE')) return 'INVALID_DATETIME_RANGE';
+  if (message.includes('INVALID_PRICE_PER_DAY')) return 'INVALID_PRICE_PER_DAY';
+  if (message.includes('UNAUTHENTICATED')) return 'UNAUTHENTICATED';
+  return message;
+}
 
 export interface BookingData {
   vehicleId: string;
@@ -21,6 +37,7 @@ export interface BookingData {
   endTime?: string; // Format "14:00"
   // Nouvelles colonnes
   selectedOptions?: Array<{
+    id?: string;
     name: string;
     pricePerDay: number;
     totalPrice: number;
@@ -74,50 +91,47 @@ export class SupabaseBookingsService {
 
       const startMs = new Date(bookingData.startDate).getTime();
       const endMs = new Date(bookingData.endDate).getTime();
-      if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
         return { data: null, error: 'INVALID_DATETIME_RANGE' };
       }
 
-      // Préparer les données pour l'insertion
-      const insertData: SupabaseBookingInsert = {
-        user_id: bookingData.renterId,
-        vehicle_id: bookingData.vehicleId,
-        start_date: bookingData.startDate.split('T')[0], // Extraire seulement la date
-        end_date: bookingData.endDate.split('T')[0],
-        total_price: bookingData.totalPrice,
-        status: 'pending',
-        start_time: bookingData.startTime || null,
-        end_time: bookingData.endTime || null,
-        pickup_location: bookingData.pickupLocation || null,
-        // Nouvelles colonnes
-        selected_options: bookingData.selectedOptions ? JSON.stringify(bookingData.selectedOptions) : null,
-        base_price: bookingData.basePrice || 0,
-        options_total: bookingData.optionsTotal || 0,
-        service_fee: bookingData.serviceFee || 0,
-        subtotal: bookingData.subtotal || 0,
-        price_per_day: bookingData.pricePerDay || 0,
-        rental_days: bookingData.rentalDays || null,
-        /** Parcours web uniquement (admin passe par l’API Express). */
-        pricing_mode: 'web',
-      };
+      // 🔒 Création via RPC SECURITY DEFINER (recalcul serveur des montants, RLS INSERT bloqué)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_web_booking', {
+        p_vehicle_id: bookingData.vehicleId,
+        p_start_date: bookingData.startDate.split('T')[0],
+        p_end_date: bookingData.endDate.split('T')[0],
+        p_start_time: bookingData.startTime || null,
+        p_end_time: bookingData.endTime || null,
+        p_pickup_location: bookingData.pickupLocation || null,
+        p_selected_options: bookingData.selectedOptions ?? [],
+      });
 
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert(insertData)
-        .select()
-        .single();
+      if (rpcError) {
+        return { data: null, error: mapCreateWebBookingRpcError(rpcError.message) };
+      }
 
-      if (error) {
-        // Erreur lors de l'insertion en base de données
-        return { data: null, error: error.message };
+      const created = rpcData as CreateWebBookingRpcResult | null;
+      if (!created?.id) {
+        return { data: null, error: 'Erreur lors de la création de la réservation' };
+      }
+
+      if (import.meta.env.DEV) {
+        const clientBasePrice = Number(bookingData.basePrice ?? 0) || 0;
+        const clientSubtotal = Number(bookingData.subtotal ?? 0) || 0;
+        console.debug('[SupabaseBookingsService.createBooking] Réservation créée via RPC', {
+          bookingId: created.id,
+          clientBasePrice,
+          clientSubtotal,
+          rpcResult: created,
+        });
       }
 
       return {
         data: {
-          id: data.id,
-          referenceNumber: data.reference_number || 0,
-          status: data.status || 'pending',
-          createdAt: data.created_at || new Date().toISOString(),
+          id: created.id,
+          referenceNumber: created.reference_number ?? 0,
+          status: created.status || 'pending',
+          createdAt: created.created_at || new Date().toISOString(),
         },
         error: null,
       };

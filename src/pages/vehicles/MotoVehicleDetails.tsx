@@ -568,6 +568,7 @@ export default function MotoVehicleDetails() {
       ? bookingDraft.selectedOptions
           .filter((option) => option.selected)
           .map((option) => ({
+            id: option.id,
             name: option.name,
             pricePerDay: option.pricePerDay,
             totalPrice: option.totalPrice,

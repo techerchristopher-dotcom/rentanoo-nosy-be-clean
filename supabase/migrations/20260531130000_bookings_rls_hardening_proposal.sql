@@ -1,0 +1,47 @@
+-- PROPOSITION Phase 5 — durcissement RLS bookings (non appliqué automatiquement)
+-- Contexte audit :
+--   - INSERT autorisé si auth.uid() = user_id (policies "Users can create bookings",
+--     "renters_can_insert_own_bookings") SANS contrôle sur base_price, subtotal, total_price.
+--   - Un client authentifié peut INSERT directement via supabase-js en contournant l'app.
+--   - UPDATE locataire ("renters_can_update_own_bookings") sans restriction de colonnes :
+--     risque de modification post-création des montants.
+--
+-- Mitigation actuelle (app) :
+--   SupabaseBookingsService.createBooking() recalcule base_price, options et totaux
+--   depuis vehicles.price_per_day + dates/heures + constantes options plateforme.
+--
+-- Piste recommandée (nécessite validation métier avant activation) :
+--   1) Fonction SECURITY DEFINER create_web_booking(...) appelée par RPC
+--      et révoquer INSERT direct sur bookings pour le rôle authenticated.
+--   2) Trigger BEFORE UPDATE empêchant la modification de base_price, subtotal,
+--      options_total, service_fee, total_price par le locataire (auth.uid() = user_id).
+--   3) WITH CHECK INSERT : pricing_mode = 'web' AND status = 'pending' pour le parcours client.
+--
+-- Exemple de trigger UPDATE (à adapter / tester en staging) :
+--
+-- CREATE OR REPLACE FUNCTION public.bookings_prevent_renter_pricing_update()
+-- RETURNS trigger
+-- LANGUAGE plpgsql
+-- AS $$
+-- BEGIN
+--   IF auth.uid() IS NOT NULL
+--      AND auth.uid() = OLD.user_id
+--      AND current_setting('request.jwt.claim.role', true) IS DISTINCT FROM 'service_role'
+--   THEN
+--     NEW.base_price := OLD.base_price;
+--     NEW.options_total := OLD.options_total;
+--     NEW.subtotal := OLD.subtotal;
+--     NEW.service_fee := OLD.service_fee;
+--     NEW.total_price := OLD.total_price;
+--     NEW.selected_options := OLD.selected_options;
+--     NEW.price_per_day := OLD.price_per_day;
+--     NEW.rental_days := OLD.rental_days;
+--   END IF;
+--   RETURN NEW;
+-- END;
+-- $$;
+--
+-- DROP TRIGGER IF EXISTS bookings_prevent_renter_pricing_update ON public.bookings;
+-- CREATE TRIGGER bookings_prevent_renter_pricing_update
+--   BEFORE UPDATE ON public.bookings
+--   FOR EACH ROW EXECUTE FUNCTION public.bookings_prevent_renter_pricing_update();

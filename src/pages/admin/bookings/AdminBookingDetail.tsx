@@ -31,6 +31,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ExternalLink } from "lucide-react";
+import { normalizeBookingOptions } from "@/utils/bookingOptions";
+import { calcRenterTotal, calcServiceFeeRenter } from "@/utils/serviceFees";
+import { formatMoney } from "@/features/back-office/components/MoneyInput";
+
+function parseBookingSelectedOptions(raw: unknown): unknown {
+  if (raw == null) return null;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return raw;
+}
+
+function extractPayableOptions(raw: unknown) {
+  const parsed = parseBookingSelectedOptions(raw);
+  return normalizeBookingOptions(parsed).filter((opt) => Boolean(opt.name?.trim()));
+}
 
 export default function AdminBookingDetail() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -143,18 +163,61 @@ export default function AdminBookingDetail() {
   const r = payload?.renter ?? null;
 
   const status = typeof b.status === "string" ? b.status : "—";
-  const total =
-    typeof b.total_price === "number"
-      ? `${b.total_price.toFixed(2)} €`
-      : b.total_price != null
-        ? String(b.total_price)
-        : "—";
+  const pricingMode = typeof (b as any).pricing_mode === "string" ? String((b as any).pricing_mode) : null;
+  const isAdminPricing = pricingMode === "admin";
+
+  const bookingFinancials = useMemo(() => {
+    const basePrice = Number((b as any).base_price ?? 0) || 0;
+    const options = extractPayableOptions((b as any).selected_options);
+    const optionsSumFromList = options.reduce((sum, opt) => sum + opt.totalPrice, 0);
+    const optionsTotalDB = Number((b as any).options_total ?? 0) || 0;
+    const optionsTotal =
+      optionsTotalDB > 0 ? optionsTotalDB : optionsSumFromList;
+
+    const subtotalDB = Number((b as any).subtotal ?? 0) || 0;
+    const totalPriceDB = Number((b as any).total_price ?? 0) || 0;
+    const subtotal =
+      subtotalDB > 0
+        ? subtotalDB
+        : totalPriceDB > 0
+          ? totalPriceDB
+          : basePrice + optionsTotal;
+
+    const serviceFeeDB =
+      Number((b as any).service_fee_renter ?? (b as any).service_fee ?? 0) || 0;
+    const serviceFee =
+      isAdminPricing
+        ? 0
+        : serviceFeeDB > 0
+          ? serviceFeeDB
+          : calcServiceFeeRenter(subtotal);
+
+    const amountTotalPaid = Number((b as any).amount_total_paid ?? 0) || 0;
+    const totalTTC =
+      amountTotalPaid > 0
+        ? amountTotalPaid
+        : isAdminPricing
+          ? subtotal
+          : calcRenterTotal(subtotal);
+
+    return {
+      basePrice,
+      options,
+      optionsTotal,
+      subtotal,
+      serviceFee,
+      totalTTC,
+      amountTotalPaid,
+      /** En base, total_price = sous-total (base + options), pas le TTC. */
+      totalPriceStoredAsSubtotal: totalPriceDB,
+    };
+  }, [b, isAdminPricing]);
+
+  const total = formatMoney(bookingFinancials.totalTTC);
 
   const canPayNow = status === "pending_payment";
   const canCancelBooking =
     status === "pending" || status === "pending_payment" || status === "confirmed";
-  const pricingMode = typeof (b as any).pricing_mode === "string" ? String((b as any).pricing_mode) : null;
-  const isAdminPricing = pricingMode === "admin";
   const depositStatus = typeof (b as any).deposit_status === "string" ? String((b as any).deposit_status) : null;
   const depositAmountSnapshot = Number((b as any).deposit_amount_snapshot ?? 0);
   const stripePaymentMethodId = (b as any).stripe_payment_method_id ?? null;
@@ -457,7 +520,7 @@ export default function AdminBookingDetail() {
               <div className="font-medium">{paymentLabel}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Total (locataire)</div>
+              <div className="text-muted-foreground">Total TTC (locataire)</div>
               <div className="font-medium">{total}</div>
             </div>
             <div>
@@ -617,6 +680,101 @@ export default function AdminBookingDetail() {
               </Button>
             </div>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Détail financier</CardTitle>
+          <CardDescription>
+            Décomposition du montant locataire. Le champ{" "}
+            <span className="font-mono text-xs">total_price</span> en base correspond au sous-total
+            (location + options), pas au TTC.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <div className="rounded-md border border-border bg-muted/30 p-4 space-y-3">
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Prix de location</span>
+              <span className="font-medium tabular-nums">{formatMoney(bookingFinancials.basePrice)}</span>
+            </div>
+
+            {bookingFinancials.options.length > 0 ? (
+              <div className="space-y-2 border-t border-border/60 pt-3">
+                <div className="text-muted-foreground">Options sélectionnées</div>
+                <ul className="space-y-1.5">
+                  {bookingFinancials.options.map((option, index) => (
+                    <li
+                      key={
+                        option.raw?.id ??
+                        `${option.name}-${index}`
+                      }
+                      className="flex justify-between gap-4 pl-2"
+                    >
+                      <span className="text-foreground">{option.name}</span>
+                      <span className="font-medium tabular-nums shrink-0">
+                        {formatMoney(option.totalPrice)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex justify-between gap-4 border-t border-border/40 pt-2">
+                  <span className="text-muted-foreground">Total options</span>
+                  <span className="font-medium tabular-nums">
+                    {formatMoney(bookingFinancials.optionsTotal)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between gap-4 border-t border-border/60 pt-3">
+                <span className="text-muted-foreground">Options sélectionnées</span>
+                <span className="text-muted-foreground">Aucune</span>
+              </div>
+            )}
+
+            <div className="flex justify-between gap-4 border-t border-border/60 pt-3">
+              <span className="text-muted-foreground">Sous-total</span>
+              <span className="font-medium tabular-nums">{formatMoney(bookingFinancials.subtotal)}</span>
+            </div>
+
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">
+                {isAdminPricing
+                  ? "Frais de service plateforme"
+                  : "Frais de service (15 % locataire)"}
+              </span>
+              <span className="font-medium tabular-nums">
+                {isAdminPricing ? "—" : formatMoney(bookingFinancials.serviceFee)}
+              </span>
+            </div>
+
+            <div className="flex justify-between gap-4 border-t border-border pt-3">
+              <span className="font-semibold text-foreground">Total TTC locataire</span>
+              <span className="font-bold tabular-nums text-base">
+                {formatMoney(bookingFinancials.totalTTC)}
+              </span>
+            </div>
+          </div>
+
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>
+              <strong>Calcul TTC :</strong>{" "}
+              {bookingFinancials.amountTotalPaid > 0
+                ? "montant réellement encaissé (amount_total_paid en base)."
+                : isAdminPricing
+                  ? "réservation agence — pas de frais checkout Stripe ; TTC = sous-total."
+                  : "sous-total + 15 % frais locataire (calcRenterTotal), aligné sur le checkout Stripe web."}
+            </p>
+            {bookingFinancials.totalPriceStoredAsSubtotal > 0 &&
+            Math.abs(
+              bookingFinancials.totalPriceStoredAsSubtotal - bookingFinancials.subtotal
+            ) > 0.01 ? (
+              <p>
+                Note : total_price en base ({formatMoney(bookingFinancials.totalPriceStoredAsSubtotal)})
+                diffère du sous-total recalculé ({formatMoney(bookingFinancials.subtotal)}).
+              </p>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
 

@@ -484,8 +484,10 @@ export default function RenterBookingCard({
   // Fonction pour déterminer l'icône selon le nom du service (copié-collé de VehicleServiceOptions)
   const getServiceIcon = (serviceName: string) => {
     switch (serviceName) {
+      case "Prise en charge à l'aéroport":
       case 'Récupération à l\'aéroport':
         return <Plane className="h-4 w-4 text-primary" />;
+      case "Restitution à l'aéroport":
       case 'Retour à l\'aéroport':
         return <Plane className="h-4 w-4 text-primary" />;
       case 'Récupération Barge Grande Terre':
