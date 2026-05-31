@@ -18,6 +18,7 @@ import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
 import { formatDuration } from "@/utils/formatDuration";
+import { formatCurrency } from "@/utils/currency";
 import { 
   getOptimizedImageUrl, 
   generateSrcSet, 
@@ -61,9 +62,8 @@ const getLocationIcon = (zone: string) => {
 };
 
 export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalInfo, index = 0, deferImages = false }: VehicleCardProps) {
-  const {
-    t: t,
-  } = useTranslation('common');
+  const { t } = useTranslation('common');
+  const { t: tDuration } = useTranslation();
 
   const fuelLabels = {
     gasoline: t("vehicle.fuel.gasoline"),
@@ -157,12 +157,10 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
     }
   };
 
-  // Construction de la durée formatée via i18n (jours/heures)
-  // Utiliser formatDuration() pour partager la même source avec BookingConfirmationModal
-  const buildDurationLabel = () => {
-    if (!rentalInfo) return "";
-    return formatDuration(t, rentalInfo.days, rentalInfo.hours) || "";
-  };
+  const durationLabel =
+    rentalInfo && typeof rentalInfo.days === "number" && typeof rentalInfo.hours === "number"
+      ? formatDuration(tDuration, rentalInfo.days, rentalInfo.hours)
+      : null;
 
   return (
     <Card 
@@ -278,12 +276,11 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
                   {vehicle.dailyPrice}
                 </div>
                 <div className="text-xs text-muted-foreground">{t('par_jour')}</div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {t("pricing.total_for_duration", {
-                    total: rentalInfo.totalCost,
-                    duration: buildDurationLabel(),
-                  })}
-                </div>
+                {durationLabel && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {formatCurrency(rentalInfo.pricePerDay)}/{t("par_jour")} × {durationLabel}
+                  </div>
+                )}
               </div>)
             ) : (
               // Affichage par défaut sans calcul
