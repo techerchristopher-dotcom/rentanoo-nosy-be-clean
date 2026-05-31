@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { GoogleIcon, FacebookIcon, AppleIcon } from "@/components/ui/social-icons";
+import { GoogleIcon } from "@/components/ui/social-icons";
 import { AUTH_CALLBACK_URL } from "@/lib/config";
 
 const registerSchema = z.object({
@@ -157,46 +157,6 @@ export default function Register() {
                   >
                     <GoogleIcon className="h-5 w-5 mr-3" />
                     {loading ? "Redirection..." : "Continuer avec Google"}
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 border-2 bg-[#1877F2] hover:bg-[#166fe5] text-white border-[#1877F2]"
-                    onClick={async () => {
-                      setLoading(true);
-                      try {
-                        await supabase.auth.signInWithOAuth({
-                          provider: 'facebook',
-                          options: {
-                            redirectTo: AUTH_CALLBACK_URL
-                          }
-                        });
-                      } catch (error) {
-                        toast({
-                          title: "Erreur",
-                          description: "Erreur lors de l'inscription avec Facebook",
-                          variant: "destructive",
-                        });
-                        setLoading(false);
-                      }
-                    }}
-                    disabled={loading}
-                    data-testid="btn-facebook-register-header"
-                    aria-label="Continuer avec Facebook (inscription)"
-                  >
-                    <FacebookIcon className="h-5 w-5 mr-3" />
-                    {loading ? "Redirection..." : "Continuer avec Facebook"}
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 border-2 bg-black hover:bg-gray-800 text-white border-black"
-                    onClick={() => toast({ title: "Fonctionnalité bientôt disponible", description: "L'inscription avec Apple sera disponible prochainement" })}
-                  >
-                    <AppleIcon className="h-5 w-5 mr-3 fill-white" />
-                    Continuer avec Apple
                   </Button>
                 </div>
 
