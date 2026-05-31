@@ -23,6 +23,7 @@ function mapCreateWebBookingRpcError(message: string): string {
   if (message.includes('VEHICLE_UNAVAILABLE')) return 'VEHICLE_UNAVAILABLE';
   if (message.includes('INVALID_DATETIME_RANGE')) return 'INVALID_DATETIME_RANGE';
   if (message.includes('INVALID_PRICE_PER_DAY')) return 'INVALID_PRICE_PER_DAY';
+  if (message.includes('HOTEL_NAME_REQUIRED')) return 'HOTEL_NAME_REQUIRED';
   if (message.includes('UNAUTHENTICATED')) return 'UNAUTHENTICATED';
   return message;
 }
@@ -34,6 +35,7 @@ export interface BookingData {
   endDate: string; // Format ISO
   totalPrice: number;
   pickupLocation?: string;
+  hotelName?: string;
   startTime?: string; // Format "06:30"
   endTime?: string; // Format "14:00"
   // Nouvelles colonnes
@@ -105,6 +107,7 @@ export class SupabaseBookingsService {
         p_end_time: bookingData.endTime || null,
         p_pickup_location: bookingData.pickupLocation || null,
         p_selected_options: bookingData.selectedOptions ?? [],
+        p_hotel_name: bookingData.hotelName?.trim() || null,
       });
 
       if (rpcError) {

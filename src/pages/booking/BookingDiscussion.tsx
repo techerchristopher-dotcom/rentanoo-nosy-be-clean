@@ -166,6 +166,7 @@ const BookingDiscussion = () => {
     };
     rentalInfo: {
       pickupLocation: string;
+      returnLocation?: string;
       startDate: string;
       endDate: string;
       startTime: string;
@@ -318,6 +319,7 @@ const BookingDiscussion = () => {
               },
               rentalInfo: {
                 pickupLocation: latestBooking.pickup_location || 'Non spécifié',
+                returnLocation: latestBooking.return_location || latestBooking.pickup_location || 'Non spécifié',
                 startDate: latestBooking.start_date,
                 endDate: latestBooking.end_date,
                 startTime: latestBooking.start_time || '06:30',
@@ -1294,6 +1296,17 @@ const BookingDiscussion = () => {
                                 })}
                               </span>
                             </div>
+                            {bookingData?.rentalInfo?.returnLocation &&
+                              bookingData.rentalInfo.returnLocation !== bookingData.rentalInfo.pickupLocation && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className={`h-4 w-4 ${isRenter ? 'text-white/80' : 'text-gray-600'}`} />
+                                <span className={`text-xs ${isRenter ? 'text-white/90' : 'text-gray-800'}`}>
+                                  {t("booking.discussion.returnLocation", {
+                                    returnLocation: bookingData.rentalInfo.returnLocation
+                                  })}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         ) : null}
                         

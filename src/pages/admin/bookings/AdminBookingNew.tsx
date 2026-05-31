@@ -25,9 +25,12 @@ import {
   buildPlatformOptionPayload,
   PLATFORM_AIRPORT_PICKUP_ID,
   PLATFORM_AIRPORT_RETURN_ID,
-  PLATFORM_AIRPORT_OPTIONS,
+  PLATFORM_HOTEL_PICKUP_ID,
+  PLATFORM_HOTEL_RETURN_ID,
+  PLATFORM_TRANSPORT_OPTIONS,
   type PlatformBookingOptionPayload,
 } from "@/constants/platformBookingOptions";
+import { requiresHotelName } from "@/utils/bookingLocations";
 import { Checkbox } from "@/components/ui/checkbox";
 
 function isValidYmd(s: string): boolean {
@@ -101,6 +104,9 @@ export default function AdminBookingNew() {
 
   const [airportPickup, setAirportPickup] = useState(false);
   const [airportReturn, setAirportReturn] = useState(false);
+  const [hotelPickup, setHotelPickup] = useState(false);
+  const [hotelReturn, setHotelReturn] = useState(false);
+  const [hotelName, setHotelName] = useState("");
 
   const [submitLoading, setSubmitLoading] = useState(false);
   const [renterPhoneDraft, setRenterPhoneDraft] = useState("");
@@ -213,7 +219,26 @@ export default function AdminBookingNew() {
                 (o as { id?: string }).id === PLATFORM_AIRPORT_RETURN_ID
             )
           );
+          setHotelPickup(
+            snapOptions.some(
+              (o) =>
+                o &&
+                typeof o === "object" &&
+                (o as { id?: string }).id === PLATFORM_HOTEL_PICKUP_ID
+            )
+          );
+          setHotelReturn(
+            snapOptions.some(
+              (o) =>
+                o &&
+                typeof o === "object" &&
+                (o as { id?: string }).id === PLATFORM_HOTEL_RETURN_ID
+            )
+          );
         }
+        const snapHotel =
+          ps && typeof ps.hotelName === "string" ? ps.hotelName : "";
+        if (snapHotel) setHotelName(snapHotel);
       } catch (e: unknown) {
         toast({
           title: "Chargement du brouillon impossible",
@@ -238,8 +263,12 @@ export default function AdminBookingNew() {
     const ids: string[] = [];
     if (airportPickup) ids.push(PLATFORM_AIRPORT_PICKUP_ID);
     if (airportReturn) ids.push(PLATFORM_AIRPORT_RETURN_ID);
+    if (hotelPickup) ids.push(PLATFORM_HOTEL_PICKUP_ID);
+    if (hotelReturn) ids.push(PLATFORM_HOTEL_RETURN_ID);
     return buildPlatformOptionPayload(ids);
-  }, [airportPickup, airportReturn]);
+  }, [airportPickup, airportReturn, hotelPickup, hotelReturn]);
+
+  const showHotelField = hotelPickup || hotelReturn;
 
   const pricePreview = useMemo(() => {
     if (!selectedVehicle) return null;
@@ -317,6 +346,14 @@ export default function AdminBookingNew() {
       toast({ title: "Dates invalides", description: "Vérifiez début / fin.", variant: "destructive" });
       return;
     }
+    if (requiresHotelName(selectedOptions.map((o) => o.id)) && !hotelName.trim()) {
+      toast({
+        title: "Nom d'hôtel requis",
+        description: "Indiquez le nom de l'hôtel pour les options hôtel.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSubmitLoading(true);
     try {
@@ -328,6 +365,7 @@ export default function AdminBookingNew() {
         startTime,
         endTime,
         pickupLocation: pickupLocation.trim() || "Agence",
+        hotelName: showHotelField ? hotelName.trim() : undefined,
         adminNotes: adminNotes.trim() || undefined,
         offlinePaymentMethod: offlinePaymentMethod || null,
         selectedOptions: selectedOptions.length > 0 ? selectedOptions : undefined,
@@ -394,6 +432,7 @@ export default function AdminBookingNew() {
           selectedOptions: pricePreview.selectedOptions,
           subtotal: pricePreview.subtotal,
           total: pricePreview.total,
+          hotelName: showHotelField ? hotelName.trim() : null,
         }
       : null;
 
@@ -681,11 +720,30 @@ export default function AdminBookingNew() {
             <p className="text-xs text-muted-foreground">
               Options plateforme à tarif fixe (identiques à la réservation web).
             </p>
-            {PLATFORM_AIRPORT_OPTIONS.map((opt) => {
+            {PLATFORM_TRANSPORT_OPTIONS.map((opt) => {
               const checked =
-                opt.id === PLATFORM_AIRPORT_PICKUP_ID ? airportPickup : airportReturn;
-              const setChecked =
-                opt.id === PLATFORM_AIRPORT_PICKUP_ID ? setAirportPickup : setAirportReturn;
+                opt.id === PLATFORM_AIRPORT_PICKUP_ID
+                  ? airportPickup
+                  : opt.id === PLATFORM_AIRPORT_RETURN_ID
+                    ? airportReturn
+                    : opt.id === PLATFORM_HOTEL_PICKUP_ID
+                      ? hotelPickup
+                      : hotelReturn;
+              const setChecked = (value: boolean) => {
+                if (opt.id === PLATFORM_AIRPORT_PICKUP_ID) {
+                  setAirportPickup(value);
+                  if (value) setHotelPickup(false);
+                } else if (opt.id === PLATFORM_AIRPORT_RETURN_ID) {
+                  setAirportReturn(value);
+                  if (value) setHotelReturn(false);
+                } else if (opt.id === PLATFORM_HOTEL_PICKUP_ID) {
+                  setHotelPickup(value);
+                  if (value) setAirportPickup(false);
+                } else {
+                  setHotelReturn(value);
+                  if (value) setAirportReturn(false);
+                }
+              };
               return (
                 <div key={opt.id} className="flex items-start gap-3">
                   <Checkbox
@@ -702,6 +760,17 @@ export default function AdminBookingNew() {
                 </div>
               );
             })}
+            {showHotelField && (
+              <div className="space-y-1 pt-1">
+                <Label htmlFor="admin-hotel-name">Nom de l'hôtel</Label>
+                <Input
+                  id="admin-hotel-name"
+                  placeholder="Ex. Royal Beach Hotel"
+                  value={hotelName}
+                  onChange={(e) => setHotelName(e.target.value)}
+                />
+              </div>
+            )}
           </div>
           {pricePreview ? (
             <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">

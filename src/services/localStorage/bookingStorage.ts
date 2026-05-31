@@ -5,6 +5,8 @@
 
 import { RentalCalculation } from "@/types";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
+import { deriveBookingLocations } from "@/utils/bookingLocations";
+import { isPlatformTransportOption } from "@/constants/platformBookingOptions";
 
 // Clé du localStorage
 const BOOKING_STORAGE_KEY = "lagon_booking_draft";
@@ -27,8 +29,12 @@ export interface BookingDraft {
   vehicleYear?: number;
   vehicleImageUrl?: string;
   
-  // Zone de prise en charge
+  // Zone de prise en charge / restitution
   pickupLocation: string;
+  returnLocation?: string;
+  hotelName?: string;
+  /** true si le client a refusé la modale services complémentaires (aller à l'agence). */
+  declinedComplementaryServices?: boolean;
   
   // Dates et heures
   startDate: string; // ISO string
@@ -112,6 +118,70 @@ export function getBookingDraft(): BookingDraft | null {
   }
 }
 
+function syncDraftLocations(draft: BookingDraft, options: BookingOption[]): void {
+  const selectedIds = options.filter((o) => o.selected).map((o) => o.id);
+  const hasTransport = selectedIds.some((id) => isPlatformTransportOption(id));
+  const locations = deriveBookingLocations({
+    selectedOptionIds: selectedIds,
+    hotelName: draft.hotelName,
+    forceAgency: draft.declinedComplementaryServices === true && !hasTransport,
+  });
+  draft.pickupLocation = locations.pickupLocation;
+  draft.returnLocation = locations.returnLocation;
+}
+
+export function updateBookingComplementaryMeta(patch: {
+  hotelName?: string;
+  declinedComplementaryServices?: boolean;
+  pickupLocation?: string;
+  returnLocation?: string;
+}): void {
+  const draft = getBookingDraft();
+  if (!draft) return;
+  const next: BookingDraft = {
+    ...draft,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  if (draft.selectedOptions?.length) {
+    syncDraftLocations(next, draft.selectedOptions);
+  } else if (patch.declinedComplementaryServices) {
+    const locations = deriveBookingLocations({ selectedOptionIds: [], forceAgency: true });
+    next.pickupLocation = locations.pickupLocation;
+    next.returnLocation = locations.returnLocation;
+  }
+  saveBookingDraft(next);
+}
+
+export function applyComplementaryServicesToDraft(params: {
+  selectedPlatformIds: string[];
+  platformOptionDefs: Array<{ id: string; name: string; totalPrice: number }>;
+  hotelName?: string;
+  declinedAgency?: boolean;
+}): void {
+  const draft = getBookingDraft();
+  if (!draft) return;
+
+  const defById = new Map(params.platformOptionDefs.map((d) => [d.id, d]));
+  const nonPlatform = (draft.selectedOptions ?? []).filter((o) => !isPlatformTransportOption(o.id));
+
+  const platformOptions: BookingOption[] = params.selectedPlatformIds.map((id) => {
+    const def = defById.get(id);
+    return {
+      id,
+      name: def?.name ?? id,
+      pricePerDay: 0,
+      totalPrice: def?.totalPrice ?? 0,
+      selected: true,
+    };
+  });
+
+  draft.declinedComplementaryServices = params.declinedAgency ?? false;
+  draft.hotelName = params.hotelName?.trim() || undefined;
+  saveBookingDraft(draft);
+  updateBookingOptions([...nonPlatform, ...platformOptions]);
+}
+
 /**
  * Mettre à jour les options sélectionnées
  */
@@ -173,6 +243,8 @@ export function updateBookingOptions(options: BookingOption[]): void {
       totalAmount,
       updatedAt: new Date().toISOString()
     };
+
+    syncDraftLocations(updatedDraft, options);
     
     saveBookingDraft(updatedDraft);
     console.log('🔄 [localStorage] Options mises à jour:', {

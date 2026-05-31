@@ -10,6 +10,12 @@ import {
   sanitizeAndRecalculateBookingOptions,
   type RawBookingOptionInput,
 } from "@/utils/bookingOptionSecurity";
+import {
+  deriveBookingLocations,
+  requiresHotelName,
+  sanitizeHotelName,
+} from "@/utils/bookingLocations";
+import { isPlatformTransportOption } from "@/constants/platformBookingOptions";
 
 /** Build id — doit correspondre aux en-têtes HTTP et au champ debug de la réponse 201. */
 const ADMIN_BOOKING_CREATE_BUILD_ID = "agency-v2-debug-20260328";
@@ -74,7 +80,32 @@ function computeAdminBookingPricing(basePrice: number, rawOptions: RawBookingOpt
     subtotal: sanitized.subtotal,
     service_fee: 0,
     total_price: sanitized.subtotal,
+    sanitizedOptions: sanitized.selectedOptions,
   };
+}
+
+function deriveAdminBookingLocations(
+  sanitizedOptions: Array<{ id: string }>,
+  hotelName: string | null | undefined,
+  manualPickupLocation: string
+): { pickup_location: string; return_location: string } {
+  const transportIds = sanitizedOptions
+    .map((o) => o.id)
+    .filter((id) => isPlatformTransportOption(id));
+
+  if (transportIds.length > 0) {
+    const derived = deriveBookingLocations({
+      selectedOptionIds: transportIds,
+      hotelName,
+    });
+    return {
+      pickup_location: derived.pickupLocation,
+      return_location: derived.returnLocation,
+    };
+  }
+
+  const pickup = manualPickupLocation.trim() || "Agence";
+  return { pickup_location: pickup, return_location: pickup };
 }
 
 function selectedOptionsFromDraftSnapshot(draft: { pricing_snapshot?: unknown }): RawBookingOptionInput[] {
@@ -920,6 +951,29 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const draftSelectedOptions = selectedOptionsFromDraftSnapshot(draft as { pricing_snapshot?: unknown });
     const pricing = computeAdminBookingPricing(basePrice, draftSelectedOptions);
 
+    const snap =
+      (draft as { pricing_snapshot?: unknown }).pricing_snapshot &&
+      typeof (draft as { pricing_snapshot?: unknown }).pricing_snapshot === "object"
+        ? ((draft as { pricing_snapshot?: unknown }).pricing_snapshot as Record<string, unknown>)
+        : null;
+    const draftHotelName =
+      typeof snap?.hotelName === "string" ? sanitizeHotelName(snap.hotelName) : "";
+
+    const transportOptionIds = (pricing.sanitizedOptions ?? []).map((o) => o.id);
+    if (requiresHotelName(transportOptionIds) && !draftHotelName) {
+      return res.status(400).json({
+        ok: false,
+        error: "HOTEL_NAME_REQUIRED",
+        message: "Nom d'hôtel requis pour les options hôtel (brouillon)",
+      });
+    }
+
+    const locations = deriveAdminBookingLocations(
+      pricing.sanitizedOptions ?? [],
+      draftHotelName,
+      pickupLocation
+    );
+
     const insertPayload = {
       user_id: renterUserId,
       vehicle_id: vehicleId,
@@ -929,7 +983,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       status: "pending" as const,
       start_time: startTime.length >= 5 ? startTime : null,
       end_time: endTime.length >= 5 ? endTime : null,
-      pickup_location: pickupLocation,
+      pickup_location: locations.pickup_location,
+      return_location: locations.return_location,
       selected_options: pricing.selected_options,
       base_price: basePrice,
       options_total: pricing.options_total,
@@ -1281,6 +1336,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const rawOpm = req.body?.offlinePaymentMethod;
     const offlinePaymentMethod = rawOpm === "cash" || rawOpm === "card_terminal" ? rawOpm : null;
     const selectedOptionsRaw = parseSelectedOptionsFromBody(req.body?.selectedOptions);
+    const hotelName =
+      typeof req.body?.hotelName === "string" ? sanitizeHotelName(req.body.hotelName) : "";
     const adminId = gate.userId;
 
     if (!renterUserId || !vehicleId || !startDateRaw || !endDateRaw) {
@@ -1390,6 +1447,21 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const { basePrice, rentalDays } = computeBaseRentalPrice(agencyPricePerDay, startDt, endDt);
     const pricing = computeAdminBookingPricing(basePrice, selectedOptionsRaw);
 
+    const transportOptionIds = (pricing.sanitizedOptions ?? []).map((o) => o.id);
+    if (requiresHotelName(transportOptionIds) && !hotelName) {
+      return res.status(400).json({
+        ok: false,
+        error: "HOTEL_NAME_REQUIRED",
+        message: "Nom d'hôtel requis pour les options hôtel",
+      });
+    }
+
+    const locations = deriveAdminBookingLocations(
+      pricing.sanitizedOptions ?? [],
+      hotelName,
+      pickupLocation
+    );
+
     const insertPayload = {
       user_id: renterUserId,
       vehicle_id: vehicleId,
@@ -1399,7 +1471,8 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       status: "pending" as const,
       start_time: startTime.length >= 5 ? startTime : null,
       end_time: endTime.length >= 5 ? endTime : null,
-      pickup_location: pickupLocation,
+      pickup_location: locations.pickup_location,
+      return_location: locations.return_location,
       selected_options: pricing.selected_options,
       base_price: basePrice,
       options_total: pricing.options_total,

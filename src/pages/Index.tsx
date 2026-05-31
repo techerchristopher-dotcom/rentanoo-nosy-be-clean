@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -36,6 +36,16 @@ const Index = () => {
   const [selectedTransmissions, setSelectedTransmissions] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const shouldScrollToResultsRef = useRef(false);
+
+  const scrollToResults = () => {
+    requestAnimationFrame(() => {
+      document.getElementById("search-results")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
 
   // Variables pour le calcul de location (structure structurée)
   const [rentalCalculation, setRentalCalculation] = useState<RentalCalculation | null>(null);
@@ -138,6 +148,14 @@ const Index = () => {
       clearTimeout(t);
     };
   }, []);
+
+  useEffect(() => {
+    if (!searching && shouldScrollToResultsRef.current) {
+      shouldScrollToResultsRef.current = false;
+      const timer = setTimeout(scrollToResults, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [searching, filteredVehicles]);
 
   // Restaurer les critères de recherche depuis localStorage au montage
   useEffect(() => {
@@ -292,6 +310,7 @@ const Index = () => {
       return;
     }
 
+    shouldScrollToResultsRef.current = true;
     setSearching(true);
     try {
       const searchFilters: {

@@ -160,6 +160,7 @@ export async function adminCreateBooking(payload: {
   startTime?: string;
   endTime?: string;
   pickupLocation?: string;
+  hotelName?: string;
   adminNotes?: string;
   offlinePaymentMethod?: "cash" | "card_terminal" | null;
   selectedOptions?: Array<{

@@ -312,7 +312,7 @@ export const checkinReturnSnapshotService = {
         departureDatetime: booking?.start_date ? `${booking.start_date}T${booking.start_time || '00:00'}:00` : null,
         returnDatetime: booking?.end_date ? `${booking.end_date}T${booking.end_time || '00:00'}:00` : null,
         departureLocation: booking?.pickup_location ?? null,
-        returnLocation: booking?.pickup_location ?? null, // Pour l'instant = departureLocation
+        returnLocation: booking?.return_location ?? booking?.pickup_location ?? null,
       };
 
       // 3.3. Vehicle

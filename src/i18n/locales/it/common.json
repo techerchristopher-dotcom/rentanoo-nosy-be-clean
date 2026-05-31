@@ -694,6 +694,7 @@
       "email": "Email",
       "notProvided": "Non fornito",
       "pickupZone": "Zona di ritiro",
+      "returnZone": "Zona di restituzione",
       "notSpecified": "Non specificata",
       "rentalDates": "Date di noleggio",
       "baseRate": "Tariffa base",
@@ -859,7 +860,19 @@
     },
     "confirmation": {
       "title": "Conferma la tua prenotazione",
-      "subtitle": "Controlla i dettagli qui sotto prima di confermare"
+      "subtitle": "Controlla i dettagli qui sotto prima di confermare",
+      "returnLocation": "Luogo di restituzione"
+    },
+    "complementaryServices": {
+      "title": "Servizi complementari",
+      "subtitle": "Semplifica arrivo e partenza con le nostre opzioni di trasporto.",
+      "hotelNameLabel": "Nome dell'hotel",
+      "hotelNamePlaceholder": "Es. Royal Beach Hotel",
+      "optionsTotal": "Totale servizi",
+      "continueWithServices": "Continua con i servizi selezionati",
+      "declineAgency": "No grazie, verrò in agenzia",
+      "hotelRequiredTitle": "Nome hotel obbligatorio",
+      "hotelRequiredDescription": "Indica il nome del tuo hotel per la consegna o la restituzione."
     },
     "durationLabel": "Durata:",
     "vehicleRental": "Noleggio veicolo",
@@ -892,7 +905,8 @@
         "owner": "Ciao! Hai una nuova richiesta di prenotazione. Ecco i dettagli:"
       },
       "departureTime": "Partenza alle {{startTime}}",
-      "pickupLocation": "Luogo: {{pickupLocation}}",
+      "pickupLocation": "Ritiro: {{pickupLocation}}",
+      "returnLocation": "Restituzione: {{returnLocation}}",
       "additionalOptions": "Opzioni aggiuntive:",
       "optionsTotal": "Inclusi {{optionsTotal}}€ di opzioni",
       "confirmAvailability": {

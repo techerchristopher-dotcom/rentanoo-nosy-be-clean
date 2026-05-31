@@ -142,7 +142,19 @@
     },
     "confirmation": {
       "title": "Confirm your booking",
-      "subtitle": "Please review the details below before confirming"
+      "subtitle": "Please review the details below before confirming",
+      "returnLocation": "Return location"
+    },
+    "complementaryServices": {
+      "title": "Complementary services",
+      "subtitle": "Make your arrival and departure easier with our transport options.",
+      "hotelNameLabel": "Hotel name",
+      "hotelNamePlaceholder": "e.g. Royal Beach Hotel",
+      "optionsTotal": "Services total",
+      "continueWithServices": "Continue with selected services",
+      "declineAgency": "No thanks, I'll come to the agency",
+      "hotelRequiredTitle": "Hotel name required",
+      "hotelRequiredDescription": "Please enter your hotel name for delivery or return."
     },
     "durationLabel": "Duration:",
     "vehicleRental": "Vehicle rental",
@@ -175,7 +187,8 @@
         "owner": "Hello! You have a new booking request. Here are the details:"
       },
       "departureTime": "Departure at {{startTime}}",
-      "pickupLocation": "Location: {{pickupLocation}}",
+      "pickupLocation": "Pickup: {{pickupLocation}}",
+      "returnLocation": "Return: {{returnLocation}}",
       "additionalOptions": "Additional options:",
       "optionsTotal": "Including {{optionsTotal}}€ of options",
       "confirmAvailability": {
@@ -791,6 +804,7 @@
       "email": "Email",
       "notProvided": "Not provided",
       "pickupZone": "Pickup zone",
+      "returnZone": "Return zone",
       "notSpecified": "Not specified",
       "rentalDates": "Rental dates",
       "baseRate": "Base rate",

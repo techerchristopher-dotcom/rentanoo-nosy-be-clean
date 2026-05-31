@@ -206,6 +206,7 @@ const OwnerBookings = () => {
         startTime: (booking.start_time as string) || '08:00',
         endTime: (booking.end_time as string) || '10:00',
         pickupLocation: (booking.pickup_location as string) || '',
+        returnLocation: (booking.return_location as string) || (booking.pickup_location as string) || '',
         selectedOptions: selectedOptions, // Utiliser la variable calculée
         basePrice: booking.base_price,
         optionsTotal: booking.options_total,

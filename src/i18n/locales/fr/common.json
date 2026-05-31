@@ -142,7 +142,19 @@
     },
     "confirmation": {
       "title": "Confirmation de votre réservation",
-      "subtitle": "Vérifiez les détails ci-dessous avant de confirmer"
+      "subtitle": "Vérifiez les détails ci-dessous avant de confirmer",
+      "returnLocation": "Lieu de restitution"
+    },
+    "complementaryServices": {
+      "title": "Services complémentaires",
+      "subtitle": "Simplifiez votre arrivée et votre départ avec nos options de transport.",
+      "hotelNameLabel": "Nom de l'hôtel",
+      "hotelNamePlaceholder": "Ex. Royal Beach Hotel",
+      "optionsTotal": "Total des services",
+      "continueWithServices": "Continuer avec les services sélectionnés",
+      "declineAgency": "Non merci, je viendrai à l'agence",
+      "hotelRequiredTitle": "Nom d'hôtel requis",
+      "hotelRequiredDescription": "Indiquez le nom de votre hôtel pour la livraison ou la restitution."
     },
     "durationLabel": "Durée :",
     "vehicleRental": "Location véhicule",
@@ -175,7 +187,8 @@
         "owner": "Bonjour ! Vous avez une nouvelle demande de réservation. Voici les détails :"
       },
       "departureTime": "Départ à {{startTime}}",
-      "pickupLocation": "Lieu : {{pickupLocation}}",
+      "pickupLocation": "Prise en charge : {{pickupLocation}}",
+      "returnLocation": "Restitution : {{returnLocation}}",
       "additionalOptions": "Options supplémentaires :",
       "optionsTotal": "Dont {{optionsTotal}}€ d'options",
       "confirmAvailability": {
@@ -794,6 +807,7 @@
       "email": "Email",
       "notProvided": "Non renseigné",
       "pickupZone": "Zone de prise en charge",
+      "returnZone": "Zone de restitution",
       "notSpecified": "Non spécifiée",
       "rentalDates": "Dates de location",
       "baseRate": "Tarif de base",

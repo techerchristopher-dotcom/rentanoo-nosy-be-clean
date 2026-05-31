@@ -166,6 +166,7 @@ export type Database = {
           owner_payout_amount: number | null
           paid_at: string | null
           pickup_location: string | null
+          return_location: string | null
           platform_total_fee: number | null
           price_per_day: number
           pricing_mode: string | null
@@ -212,6 +213,7 @@ export type Database = {
           owner_payout_amount?: number | null
           paid_at?: string | null
           pickup_location?: string | null
+          return_location?: string | null
           platform_total_fee?: number | null
           price_per_day: number
           pricing_mode?: string | null
@@ -258,6 +260,7 @@ export type Database = {
           owner_payout_amount?: number | null
           paid_at?: string | null
           pickup_location?: string | null
+          return_location?: string | null
           platform_total_fee?: number | null
           price_per_day?: number
           pricing_mode?: string | null

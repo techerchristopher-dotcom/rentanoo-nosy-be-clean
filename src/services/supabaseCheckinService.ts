@@ -696,7 +696,7 @@ export const SupabaseCheckinService = {
         departureDatetime: departureIso,
         returnDatetime: returnIso,
         departureLocation: booking?.pickup_location ?? null,
-        returnLocation: booking?.pickup_location ?? null, // Pour l'instant = departureLocation
+        returnLocation: booking?.return_location ?? booking?.pickup_location ?? null,
       };
 
       // 3.5. Vehicle (véhicule)

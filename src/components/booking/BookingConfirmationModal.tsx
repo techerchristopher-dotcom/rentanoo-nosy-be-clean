@@ -27,6 +27,7 @@ interface BookingConfirmationModalProps {
   };
   rentalInfo: {
     pickupLocation?: string;
+    returnLocation?: string;
     startDate: Date;
     endDate: Date;
     startTime: string;
@@ -225,20 +226,39 @@ export function BookingConfirmationModal({
             </div>
           </div>
 
-          {/* Section Zone de prise en charge */}
-          {rentalInfo.pickupLocation && (
+          {/* Lieux de prise en charge / restitution */}
+          {(rentalInfo.pickupLocation || rentalInfo.returnLocation) && (
             <>
               <Separator />
-              <div className="flex items-center gap-3 px-2">
-                <div className="p-2 bg-primary-soft rounded-lg">
-                  <MapPin className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">{t("lieu_de_prise_en_charge")}</p>
-                  <p className="text-base font-semibold text-foreground">
-                    {rentalInfo.pickupLocation || t("common.not_specified")}
-                  </p>
-                </div>
+              <div className="space-y-3 px-2">
+                {rentalInfo.pickupLocation && (
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary-soft rounded-lg">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">{t("lieu_de_prise_en_charge")}</p>
+                      <p className="text-base font-semibold text-foreground">
+                        {rentalInfo.pickupLocation}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {rentalInfo.returnLocation && (
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary-soft rounded-lg">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {t("booking.confirmation.returnLocation")}
+                      </p>
+                      <p className="text-base font-semibold text-foreground">
+                        {rentalInfo.returnLocation}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
               <Separator />
             </>

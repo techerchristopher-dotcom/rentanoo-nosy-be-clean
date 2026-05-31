@@ -1,8 +1,10 @@
 import {
   LEGACY_AIRPORT_OPTION_ID_MAP,
-  PLATFORM_AIRPORT_OPTIONS,
+  PLATFORM_TRANSPORT_OPTIONS,
   PLATFORM_AIRPORT_PICKUP_ID,
   PLATFORM_AIRPORT_RETURN_ID,
+  PLATFORM_HOTEL_PICKUP_ID,
+  PLATFORM_HOTEL_RETURN_ID,
 } from "@/constants/platformBookingOptions";
 import { calcServiceFeeRenter } from "@/utils/serviceFees";
 
@@ -10,9 +12,11 @@ import { calcServiceFeeRenter } from "@/utils/serviceFees";
 export const ALLOWED_PLATFORM_OPTION_IDS = new Set<string>([
   PLATFORM_AIRPORT_PICKUP_ID,
   PLATFORM_AIRPORT_RETURN_ID,
+  PLATFORM_HOTEL_PICKUP_ID,
+  PLATFORM_HOTEL_RETURN_ID,
 ]);
 
-export const MAX_PLATFORM_OPTIONS_TOTAL = PLATFORM_AIRPORT_OPTIONS.reduce(
+export const MAX_PLATFORM_OPTIONS_TOTAL = PLATFORM_TRANSPORT_OPTIONS.reduce(
   (sum, opt) => sum + opt.totalPrice,
   0
 );
@@ -41,7 +45,7 @@ export interface SanitizedBookingPricing {
 }
 
 const PLATFORM_OPTION_BY_ID = new Map(
-  PLATFORM_AIRPORT_OPTIONS.map((opt) => [opt.id, opt])
+  PLATFORM_TRANSPORT_OPTIONS.map((opt) => [opt.id, opt])
 );
 
 function resolveOptionId(rawId: string | undefined): string | undefined {

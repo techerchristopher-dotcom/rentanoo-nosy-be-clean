@@ -1596,6 +1596,23 @@ export default function RenterBookingCard({
               </div>
             </div>
 
+            {(booking as any).returnLocation &&
+              (booking as any).returnLocation !== (booking as any).pickupLocation && (
+              <>
+                <div className="flex items-center gap-3 px-2">
+                  <div className="p-2 bg-primary-soft rounded-lg">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground mb-1">{t('bookings.details.returnZone')}</p>
+                    <p className="text-base font-semibold text-foreground">
+                      {(booking as any).returnLocation}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+
             <Separator />
 
             {/* Section Dates et Durée */}

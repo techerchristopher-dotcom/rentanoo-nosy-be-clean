@@ -541,6 +541,10 @@ export default function AdminBookingDetail() {
               <div className="text-muted-foreground">Prise en charge</div>
               <div className="font-medium">{String(b.pickup_location ?? "—")}</div>
             </div>
+            <div className="sm:col-span-2">
+              <div className="text-muted-foreground">Restitution</div>
+              <div className="font-medium">{String(b.return_location ?? b.pickup_location ?? "—")}</div>
+            </div>
           </div>
 
           {r ? (

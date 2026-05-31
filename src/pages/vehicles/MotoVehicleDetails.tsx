@@ -52,6 +52,7 @@ import {
 import { Footer } from "@/components/layout/footer";
 import { MultiVehicleModal } from "@/components/vehicles/MultiVehicleModal";
 import { BookingConfirmationModal } from "@/components/booking/BookingConfirmationModal";
+import { ComplementaryServicesModal } from "@/components/booking/ComplementaryServicesModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { LazyPhoneInput } from "@/components/ui/lazy-phone-input";
@@ -70,6 +71,8 @@ import {
   clearBookingDraft,
   saveBookingDraft,
 } from "@/services/localStorage/bookingStorage";
+import { shouldShowComplementaryServicesModal } from "@/utils/bookingUpsell";
+import { requiresHotelName } from "@/utils/bookingLocations";
 import { markPageRefresh } from "@/services/localStorage/searchStorage";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { PhotoService } from "@/services/supabase/photos";
@@ -151,6 +154,7 @@ export default function MotoVehicleDetails() {
   const [loading, setLoading] = useState(true);
   const [showMultiVehicleModal, setShowMultiVehicleModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showComplementaryModal, setShowComplementaryModal] = useState(false);
   const [showPhoneRequiredModal, setShowPhoneRequiredModal] = useState(false);
   const [phoneReturnTo, setPhoneReturnTo] = useState<string>("");
   const [phone, setPhone] = useState<string | undefined>('');
@@ -444,7 +448,11 @@ export default function MotoVehicleDetails() {
 
     console.log("💾 [DEBUG] Brouillon final (moto):", bookingDraft);
 
-    setShowConfirmationModal(true);
+    if (shouldShowComplementaryServicesModal()) {
+      setShowComplementaryModal(true);
+    } else {
+      setShowConfirmationModal(true);
+    }
   };
 
   // Handler pour sauvegarder le téléphone et continuer la réservation
@@ -575,6 +583,21 @@ export default function MotoVehicleDetails() {
           }))
       : [];
 
+    const selectedOptionIds = selectedOptions.map((o) => o.id);
+    if (requiresHotelName(selectedOptionIds) && !bookingDraft?.hotelName?.trim()) {
+      toast({
+        title: t("booking.complementaryServices.hotelRequiredTitle"),
+        description: t("booking.complementaryServices.hotelRequiredDescription"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (bookingDraft?.pickupLocation) {
+      pickupLocation = bookingDraft.pickupLocation;
+    }
+    const returnLocation = bookingDraft?.returnLocation ?? pickupLocation;
+
     const optionsTotal = selectedOptions.reduce(
       (sum, option) => sum + option.totalPrice,
       0
@@ -595,6 +618,7 @@ export default function MotoVehicleDetails() {
       },
       rentalInfo: {
         pickupLocation,
+        returnLocation,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         startTime,
@@ -618,7 +642,8 @@ export default function MotoVehicleDetails() {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         totalPrice: totalPriceWithOptions,
-        pickupLocation: bookingData.rentalInfo.pickupLocation,
+        pickupLocation: bookingDraft?.pickupLocation ?? bookingData.rentalInfo.pickupLocation,
+        hotelName: bookingDraft?.hotelName?.trim() || undefined,
         startTime: bookingData.rentalInfo.startTime,
         endTime: bookingData.rentalInfo.endTime,
         selectedOptions: bookingData.selectedOptions,
@@ -629,6 +654,15 @@ export default function MotoVehicleDetails() {
         pricePerDay: vehicle.dailyPrice,
         rentalDays: bookingData.rentalInfo.rentalDays,
       });
+
+      if (bookingResult.error === "HOTEL_NAME_REQUIRED") {
+        toast({
+          title: t("booking.complementaryServices.hotelRequiredTitle"),
+          description: t("booking.complementaryServices.hotelRequiredDescription"),
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (bookingResult.error === "INVALID_DATETIME_RANGE") {
         toast({
@@ -1495,6 +1529,15 @@ export default function MotoVehicleDetails() {
 
       <Footer />
 
+      <ComplementaryServicesModal
+        isOpen={showComplementaryModal}
+        onClose={() => setShowComplementaryModal(false)}
+        onContinue={() => {
+          setShowComplementaryModal(false);
+          setShowConfirmationModal(true);
+        }}
+      />
+
       {vehicle && navigationState?.rentalCalculation && (
         <BookingConfirmationModal
           isOpen={showConfirmationModal}
@@ -1507,7 +1550,8 @@ export default function MotoVehicleDetails() {
             imageUrl: photos.length > 0 ? photos[0].url : undefined,
           }}
           rentalInfo={{
-            pickupLocation: navigationState.pickupLocation || t("motoDetails.notSpecified"),
+            pickupLocation: getBookingDraft()?.pickupLocation || navigationState.pickupLocation || t("motoDetails.notSpecified"),
+            returnLocation: getBookingDraft()?.returnLocation,
             startDate: new Date(navigationState.startDate!),
             endDate: new Date(navigationState.endDate!),
             startTime: navigationState.startTime!,

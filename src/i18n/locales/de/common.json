@@ -694,6 +694,7 @@
       "email": "E-Mail",
       "notProvided": "Nicht angegeben",
       "pickupZone": "Abholzone",
+      "returnZone": "Rückgabezone",
       "notSpecified": "Nicht angegeben",
       "rentalDates": "Mietdaten",
       "baseRate": "Grundpreis",
@@ -859,7 +860,19 @@
     },
     "confirmation": {
       "title": "Bestätigung Ihrer Buchung",
-      "subtitle": "Bitte überprüfen Sie die unten stehenden Details vor der Bestätigung"
+      "subtitle": "Bitte überprüfen Sie die unten stehenden Details vor der Bestätigung",
+      "returnLocation": "Rückgabeort"
+    },
+    "complementaryServices": {
+      "title": "Zusatzleistungen",
+      "subtitle": "Vereinfachen Sie An- und Abreise mit unseren Transportoptionen.",
+      "hotelNameLabel": "Hotelname",
+      "hotelNamePlaceholder": "z. B. Royal Beach Hotel",
+      "optionsTotal": "Gesamt der Leistungen",
+      "continueWithServices": "Mit ausgewählten Leistungen fortfahren",
+      "declineAgency": "Nein danke, ich komme zur Agentur",
+      "hotelRequiredTitle": "Hotelname erforderlich",
+      "hotelRequiredDescription": "Bitte geben Sie Ihren Hotelnamen für Lieferung oder Rückgabe an."
     },
     "durationLabel": "Dauer:",
     "vehicleRental": "Fahrzeugmiete",
@@ -892,7 +905,8 @@
         "owner": "Hallo! Sie haben eine neue Buchungsanfrage. Hier sind die Details:"
       },
       "departureTime": "Abfahrt um {{startTime}}",
-      "pickupLocation": "Ort: {{pickupLocation}}",
+      "pickupLocation": "Abholung: {{pickupLocation}}",
+      "returnLocation": "Rückgabe: {{returnLocation}}",
       "additionalOptions": "Zusätzliche Optionen:",
       "optionsTotal": "Einschließlich {{optionsTotal}}€ Optionen",
       "confirmAvailability": {

@@ -2,13 +2,25 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plane, Ship, Home, Baby, UserPlus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plane, Ship, Home, Baby, UserPlus, Building2 } from "lucide-react";
 import { Vehicle } from "@/services/supabaseVehiclesService";
-import { updateBookingOptions, getBookingDraft, BookingOption } from "@/services/localStorage/bookingStorage";
+import {
+  updateBookingOptions,
+  getBookingDraft,
+  updateBookingComplementaryMeta,
+  BookingOption,
+} from "@/services/localStorage/bookingStorage";
 import {
   LEGACY_AIRPORT_OPTION_ID_MAP,
-  PLATFORM_AIRPORT_OPTIONS,
+  PLATFORM_TRANSPORT_OPTIONS,
+  isPlatformPickupOption,
+  isPlatformReturnOption,
+  resolvePickupExclusion,
+  resolveReturnExclusion,
 } from "@/constants/platformBookingOptions";
+import { requiresHotelName } from "@/utils/bookingLocations";
 
 interface VehicleServiceOptionsProps {
   vehicle: Vehicle;
@@ -31,6 +43,7 @@ interface ServiceOption {
 
 export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOptionsProps) {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [hotelName, setHotelName] = useState("");
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // INITIALISER LES SERVICES SÉLECTIONNÉS DEPUIS LE BROUILLON EXISTANT
@@ -50,6 +63,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
         selectedOptions: existingSelectedIds
       });
       setSelectedServices(existingSelectedIds);
+      if (draft.hotelName) setHotelName(draft.hotelName);
     } else {
       console.log('🔄 [DEBUG] Aucun brouillon existant ou pas d\'options, selectedServices reste vide');
       // Ne pas forcer à vide, laisser l'état initial
@@ -63,13 +77,14 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   const buildAvailableServices = (): ServiceOption[] => {
     const services: ServiceOption[] = [];
     
-    // Options aéroport plateforme (16 € fixes, tous véhicules)
-    for (const opt of PLATFORM_AIRPORT_OPTIONS) {
+    // Options plateforme transport (aéroport + hôtel, tous véhicules)
+    for (const opt of PLATFORM_TRANSPORT_OPTIONS) {
+      const isHotel = opt.id.includes("hotel");
       services.push({
         id: opt.id,
         name: opt.name,
         description: opt.description,
-        icon: Plane,
+        icon: isHotel ? Building2 : Plane,
         type: "flat_rate",
         pricePerDay: 0,
         totalPrice: opt.totalPrice,
@@ -211,14 +226,19 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   // GÉRER LA SÉLECTION/DÉSÉLECTION D'UN SERVICE
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const handleToggleService = (serviceId: string) => {
-    console.log('🎯 [DEBUG] handleToggleService appelé avec serviceId:', serviceId);
-    setSelectedServices(prev => {
-      const newSelectedServices = prev.includes(serviceId) 
-        ? prev.filter(id => id !== serviceId)
-        : [...prev, serviceId];
-      
-      console.log('🎯 [DEBUG] selectedServices changé de', prev, 'vers', newSelectedServices);
-      return newSelectedServices;
+    setSelectedServices((prev) => {
+      const isSelected = prev.includes(serviceId);
+      if (isSelected) {
+        return prev.filter((id) => id !== serviceId);
+      }
+      let next = [...prev, serviceId];
+      if (isPlatformPickupOption(serviceId)) {
+        next = resolvePickupExclusion(serviceId, next);
+      }
+      if (isPlatformReturnOption(serviceId)) {
+        next = resolveReturnExclusion(serviceId, next);
+      }
+      return next;
     });
   };
   
@@ -259,6 +279,13 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
       total: selectedOptionsData.reduce((sum, s) => sum + s.totalPrice, 0)
     });
   }, [selectedServices, availableServices]);
+
+  const showHotelField = requiresHotelName(selectedServices);
+
+  useEffect(() => {
+    if (!showHotelField) return;
+    updateBookingComplementaryMeta({ hotelName: hotelName.trim() || undefined });
+  }, [hotelName, showHotelField]);
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // SURVEILLER LES CHANGEMENTS DU LOCALSTORAGE POUR SYNCHRONISER LES CHECKBOXES
@@ -382,6 +409,18 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
               );
             })}
         
+        {showHotelField && (
+          <div className="space-y-2 rounded-lg border border-border p-3">
+            <Label htmlFor="vehicle-hotel-name">Nom de l'hôtel</Label>
+            <Input
+              id="vehicle-hotel-name"
+              placeholder="Ex. Royal Beach Hotel"
+              value={hotelName}
+              onChange={(e) => setHotelName(e.target.value)}
+            />
+          </div>
+        )}
+
         {/* Récapitulatif des services sélectionnés */}
         {selectedServices.length > 0 && (
           <div className="mt-4 pt-4 border-t border-muted">
