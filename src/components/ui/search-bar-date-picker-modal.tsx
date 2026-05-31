@@ -37,9 +37,9 @@ export function SearchBarDatePickerModal({
   }, []);
 
   const content = (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
       <div
-        className="search-bar-date-modal bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-4xl flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+        className="search-bar-date-modal bg-white rounded-2xl shadow-2xl w-full sm:max-w-4xl flex flex-col max-h-[min(calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-1.5rem),92vh)] sm:max-h-[90vh]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="search-bar-date-picker-title"
@@ -82,7 +82,7 @@ export function SearchBarDatePickerModal({
         </div>
 
         {startDate && endDate && (
-          <div className="shrink-0 sticky bottom-0 z-10 border-t border-gray-100 bg-white px-4 py-3 sm:px-6 sm:py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+          <div className="shrink-0 sticky bottom-0 z-10 border-t border-gray-100 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
             <div className="flex justify-center">
               <Button
                 type="button"

@@ -115,61 +115,63 @@ export function ComplementaryServicesModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex w-[calc(100%-1.5rem)] max-w-md flex-col gap-0 overflow-hidden p-0 top-[50%] max-h-[min(calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-1rem),90vh)] translate-x-[-50%] translate-y-[-50%] rounded-2xl sm:rounded-lg">
+        <DialogHeader className="shrink-0 space-y-1.5 px-5 pb-2 pt-5 text-left sm:px-6 sm:pt-6">
           <DialogTitle>{t("booking.complementaryServices.title")}</DialogTitle>
           <p className="text-sm text-muted-foreground">
             {t("booking.complementaryServices.subtitle")}
           </p>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
-          {PLATFORM_TRANSPORT_OPTIONS.map((opt) => {
-            const Icon = optionIcon(opt.id);
-            const checked = selectedIds.includes(opt.id);
-            return (
-              <div key={opt.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                <Checkbox
-                  id={`upsell-${opt.id}`}
-                  checked={checked}
-                  onCheckedChange={() => toggleOption(opt.id)}
-                />
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor={`upsell-${opt.id}`} className="flex cursor-pointer items-center gap-2 font-medium">
-                    <Icon className="h-4 w-4 text-primary" />
-                    {opt.name}
-                    <span className="text-primary">+{formatCurrency(opt.totalPrice)}</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground">{opt.description}</p>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-2 sm:px-6">
+          <div className="space-y-3">
+            {PLATFORM_TRANSPORT_OPTIONS.map((opt) => {
+              const Icon = optionIcon(opt.id);
+              const checked = selectedIds.includes(opt.id);
+              return (
+                <div key={opt.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                  <Checkbox
+                    id={`upsell-${opt.id}`}
+                    checked={checked}
+                    onCheckedChange={() => toggleOption(opt.id)}
+                  />
+                  <div className="flex-1 space-y-1">
+                    <Label htmlFor={`upsell-${opt.id}`} className="flex cursor-pointer items-center gap-2 font-medium">
+                      <Icon className="h-4 w-4 text-primary" />
+                      {opt.name}
+                      <span className="text-primary">+{formatCurrency(opt.totalPrice)}</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">{opt.description}</p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {showHotelField && (
-            <div className="space-y-2 pt-1">
-              <Label htmlFor="upsell-hotel-name">{t("booking.complementaryServices.hotelNameLabel")}</Label>
-              <Input
-                id="upsell-hotel-name"
-                placeholder={t("booking.complementaryServices.hotelNamePlaceholder")}
-                value={hotelName}
-                onChange={(e) => setHotelName(e.target.value)}
-              />
-            </div>
-          )}
-
-          {optionsTotal > 0 && (
-            <>
-              <Separator />
-              <div className="flex justify-between text-sm">
-                <span>{t("booking.complementaryServices.optionsTotal")}</span>
-                <strong>{formatCurrency(optionsTotal)}</strong>
+            {showHotelField && (
+              <div className="space-y-2 pt-1">
+                <Label htmlFor="upsell-hotel-name">{t("booking.complementaryServices.hotelNameLabel")}</Label>
+                <Input
+                  id="upsell-hotel-name"
+                  placeholder={t("booking.complementaryServices.hotelNamePlaceholder")}
+                  value={hotelName}
+                  onChange={(e) => setHotelName(e.target.value)}
+                />
               </div>
-            </>
-          )}
+            )}
+
+            {optionsTotal > 0 && (
+              <>
+                <Separator />
+                <div className="flex justify-between text-sm">
+                  <span>{t("booking.complementaryServices.optionsTotal")}</span>
+                  <strong>{formatCurrency(optionsTotal)}</strong>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="flex flex-col gap-2 sm:flex-col">
+        <DialogFooter className="sticky bottom-0 z-10 flex shrink-0 flex-col gap-2 border-t bg-background px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-col sm:px-6">
           <Button type="button" className="w-full" onClick={handleContinueWithServices}>
             {t("booking.complementaryServices.continueWithServices")}
           </Button>
