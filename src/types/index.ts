@@ -110,6 +110,11 @@ export interface Vehicle {
   fuel: FuelType;
   year: number;
   hasAC: boolean;
+  hasGPS?: boolean;
+  hasCruiseControl?: boolean;
+  hasBluetooth?: boolean;
+  hasCarPlay?: boolean;
+  hasAudioInput?: boolean;
   doors: number;
   transmission: Transmission;
   mileage: number;

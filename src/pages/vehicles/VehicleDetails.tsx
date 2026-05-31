@@ -5,35 +5,17 @@ import {
   Car, 
   Fuel, 
   Settings, 
-  Wind, 
   MapPin, 
-  Euro, 
   Users,
-  Calendar,
   ArrowLeft,
   Star,
   ChevronLeft,
   ChevronRight,
   Shield,
   Clock,
-  UserCheck,
-  Navigation,
-  Bluetooth,
-  Smartphone,
-  Volume2,
-  Thermometer,
   Phone,
   CheckCircle,
-  Info,
-  Heart,
-  BarChart3,
   MessageSquare,
-  Camera,
-  FileText,
-  HelpCircle,
-  Gauge,
-  Cog,
-  Calendar as CalendarIcon,
   Plane,
   Ship,
   Zap
@@ -57,7 +39,7 @@ import { VehiclesService, PhotosService } from "@/services";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
 import { ProfileService } from "@/services/supabase/profile";
 import { calcServiceFeeRenter } from "@/utils/serviceFees";
-import { Photo, User, RentalCalculation, VehicleRentalInfo } from "@/types";
+import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle as AppVehicle } from "@/types";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import { createVehicleRentalInfo } from "@/lib/utils";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
@@ -88,6 +70,8 @@ import {
   buildVehicleBreadcrumbSchema,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
+import { isMoto } from "@/utils/vehicleType";
+import { getCarEquipmentItems, mapSupabaseEquipment } from "@/utils/vehicleEquipment";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -135,7 +119,7 @@ export default function VehicleDetails() {
   console.log('🎯 [DEBUG] Navigate function:', typeof navigate);
   console.log('🎯 [DEBUG] Location state:', location.state);
   
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [vehicle, setVehicle] = useState<AppVehicle | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [vehiclePhotos, setVehiclePhotos] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -215,8 +199,13 @@ export default function VehicleDetails() {
              const vehicle = allVehicles.find(v => v.id.substring(0, 8).toUpperCase() === license.toUpperCase());
       
       if (vehicle) {
+        if (isMoto(vehicle)) {
+          navigate(`/moto/${license}`, { replace: true, state: location.state });
+          return;
+        }
+
         // Convertir le véhicule Supabase vers l'interface Vehicle attendue
-        const mappedVehicle: Vehicle = {
+        const mappedVehicle: AppVehicle = {
           id: vehicle.id,
           ownerId: vehicle.owner_id || "",
           license: license,
@@ -225,7 +214,7 @@ export default function VehicleDetails() {
           color: vehicle.color || "Non spécifié",
           fuel: (vehicle.fuel_type as any) || "gasoline",
           year: vehicle.year,
-          hasAC: true, // À ajouter dans la DB plus tard
+          ...mapSupabaseEquipment(vehicle),
           doors: vehicle.seats || 5,
           transmission: (vehicle.transmission as any) || "manual",
           mileage: vehicle.mileage || 0,
@@ -1289,7 +1278,11 @@ export default function VehicleDetails() {
                 </Card>
               </Collapsible>
 
-              {/* Options and Accessories */}
+              {/* Options and Accessories — voitures uniquement, options réelles */}
+              {(() => {
+                const carEquipment = vehicle ? getCarEquipmentItems(vehicle) : [];
+                if (carEquipment.length === 0) return null;
+                return (
               <Collapsible open={expandedSections.options} onOpenChange={() => toggleSection('options')}>
                 <Card className="overflow-hidden">
                   <CollapsibleTrigger asChild>
@@ -1303,35 +1296,22 @@ export default function VehicleDetails() {
                   <CollapsibleContent>
                     <CardContent className="pt-0 p-4">
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
-                          <Wind className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                          <span className="text-xs font-medium">Climatisation</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
-                          <Navigation className="h-4 w-4 text-green-500 flex-shrink-0" />
-                          <span className="text-xs font-medium">GPS</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
-                          <Gauge className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                          <span className="text-xs font-medium">Régulateur</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
-                          <Volume2 className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                          <span className="text-xs font-medium">Audio/iPod</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
-                          <Bluetooth className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                          <span className="text-xs font-medium">Bluetooth</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
-                          <Smartphone className="h-4 w-4 text-gray-600 flex-shrink-0" />
-                          <span className="text-xs font-medium">CarPlay</span>
-                        </div>
+                        {carEquipment.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div key={item.key} className="flex items-center gap-2 p-2 bg-gray-50/50 rounded-lg">
+                              <Icon className={`h-4 w-4 flex-shrink-0 ${item.color}`} />
+                              <span className="text-xs font-medium">{item.label}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </CollapsibleContent>
                 </Card>
               </Collapsible>
+                );
+              })()}
 
               {/* Reviews */}
               <Collapsible open={expandedSections.reviews} onOpenChange={() => toggleSection('reviews')}>

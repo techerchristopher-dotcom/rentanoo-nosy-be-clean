@@ -1,5 +1,6 @@
 import { Vehicle } from "@/types";
 import { Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
+import { mapSupabaseEquipment } from "@/utils/vehicleEquipment";
 
 // Mapping voiture : copie conforme du mapping inline actuel dans Index.tsx
 export const mapToCarVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
@@ -11,7 +12,7 @@ export const mapToCarVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   color: "Non spécifié", // À ajouter dans la DB plus tard
   fuel: (vehicle.fuel_type as any) || "gasoline",
   year: vehicle.year,
-  hasAC: true, // À ajouter dans la DB plus tard
+  ...mapSupabaseEquipment(vehicle),
   doors: vehicle.seats || 5,
   transmission: (vehicle.transmission as any) || "manual",
   mileage: 0, // À ajouter dans la DB plus tard
