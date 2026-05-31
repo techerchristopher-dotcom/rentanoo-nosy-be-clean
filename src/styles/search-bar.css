@@ -1,72 +1,56 @@
-@keyframes search-launch-heartbeat {
+/* Halo qui s'étend = "action disponible ici, cliquez" — sans déformer le bouton */
+@keyframes search-launch-ring {
   0%,
   100% {
-    transform: scale(1);
-    box-shadow: var(--shadow-lagoon);
+    transform: translateY(-1px);
+    box-shadow:
+      0 10px 26px -6px hsl(185 84% 25% / 0.35),
+      0 0 0 0 hsl(var(--primary-glow) / 0.45);
   }
-  10% {
-    transform: scale(1.025);
-    box-shadow: 0 0 18px hsl(var(--primary-glow) / 0.3);
-  }
-  20% {
-    transform: scale(1);
-    box-shadow: var(--shadow-lagoon);
-  }
-  30% {
-    transform: scale(1.015);
-    box-shadow: 0 0 14px hsl(var(--primary-glow) / 0.22);
-  }
-  40%,
-  100% {
-    transform: scale(1);
-    box-shadow: var(--shadow-lagoon);
+  50% {
+    transform: translateY(-2px);
+    box-shadow:
+      0 14px 32px -4px hsl(185 84% 25% / 0.42),
+      0 0 0 10px hsl(var(--primary-glow) / 0);
   }
 }
 
-@keyframes search-launch-shimmer {
-  0% {
-    transform: translateX(-120%) skewX(-12deg);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
+/* L'icône loupe avance légèrement → suggère "lancer" */
+@keyframes search-launch-icon-go {
+  0%,
+  78%,
   100% {
-    transform: translateX(220%) skewX(-12deg);
-    opacity: 0;
+    transform: translateX(0);
+    opacity: 1;
+  }
+  88% {
+    transform: translateX(4px);
+    opacity: 0.85;
+  }
+  94% {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
 .search-launch-cta {
   position: relative;
-  overflow: hidden;
   isolation: isolate;
-  animation: search-launch-heartbeat 4.5s ease-in-out infinite;
+  animation: search-launch-ring 3.5s ease-in-out infinite;
 }
 
-.search-launch-cta::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.45) 50%,
-    transparent 70%
-  );
-  animation: search-launch-shimmer 2.8s ease-in-out infinite;
-  pointer-events: none;
+.search-launch-cta .search-launch-icon {
+  animation: search-launch-icon-go 3.5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .search-launch-cta {
     animation: none;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 26px -6px hsl(185 84% 25% / 0.35);
   }
 
-  .search-launch-cta::after {
-    display: none;
+  .search-launch-cta .search-launch-icon {
+    animation: none;
   }
 }

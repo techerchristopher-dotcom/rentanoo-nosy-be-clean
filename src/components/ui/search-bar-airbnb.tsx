@@ -383,7 +383,12 @@ export function SearchBarAirbnb({
                 !searching && isReadyToLaunch && "search-launch-cta"
               )}
             >
-              <Search className="relative z-[1] h-4 w-4 md:h-5 md:w-5 mr-2" />
+              <Search
+                className={cn(
+                  "relative z-[1] h-4 w-4 md:h-5 md:w-5 mr-2",
+                  !searching && isReadyToLaunch && "search-launch-icon"
+                )}
+              />
               <span className="relative z-[1]">
                 {searching
                   ? t('common.searchBar.searching', 'Recherche en cours…')
