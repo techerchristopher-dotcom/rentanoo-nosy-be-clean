@@ -100,7 +100,9 @@
       "separator": " + "
     },
     "pricing": {
-      "total_for_duration": "gesamt {{total}}€ ({{duration}})"
+      "total_for_duration": "gesamt {{total}}€ ({{duration}})",
+      "perDayShort": "Tag",
+      "totalExcludingOptions": "also {{total}} (ohne Zusatzoptionen)"
     },
     "searchBar": {
       "departure": "Abfahrt",

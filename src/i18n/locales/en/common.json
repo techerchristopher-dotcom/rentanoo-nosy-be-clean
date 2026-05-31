@@ -110,7 +110,9 @@
       "separator": " + "
     },
     "pricing": {
-      "total_for_duration": "total {{total}} ({{duration}})"
+      "total_for_duration": "total {{total}} ({{duration}})",
+      "perDayShort": "day",
+      "totalExcludingOptions": "total {{total}} (excluding additional options)"
     }
   },
   "vehicle": {
@@ -129,7 +131,9 @@
     "places_other": "{{count}} seats"
   },
   "pricing": {
-    "total_for_duration": "total {{total}} ({{duration}})"
+    "total_for_duration": "total {{total}} ({{duration}})",
+    "perDayShort": "day",
+    "totalExcludingOptions": "total {{total}} (excluding additional options)"
   },
   "booking": {
     "baseRateLabel": "Base rate*:",

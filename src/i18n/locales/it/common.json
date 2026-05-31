@@ -100,7 +100,9 @@
       "separator": " + "
     },
     "pricing": {
-      "total_for_duration": "totale {{total}}€ ({{duration}})"
+      "total_for_duration": "totale {{total}}€ ({{duration}})",
+      "perDayShort": "giorno",
+      "totalExcludingOptions": "ossia {{total}} (escluse opzioni aggiuntive)"
     },
     "searchBar": {
       "departure": "Partenza",

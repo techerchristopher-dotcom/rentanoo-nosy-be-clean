@@ -7,7 +7,6 @@ import {
   Fuel,
   Settings,
   MapPin,
-  Euro,
   Users,
   Gauge,
   Plane,
@@ -16,8 +15,7 @@ import {
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
-import { formatDuration } from "@/utils/formatDuration";
-import { formatCurrency } from "@/utils/currency";
+import { VehicleCardRentalPricing } from "@/components/vehicles/VehicleCardRentalPricing";
 import { 
   getOptimizedImageUrl, 
   generateSrcSet, 
@@ -144,10 +142,6 @@ export function MotoVehicleCard({
   const engineCapacity = vehicle.engineCapacity as string | undefined;
   const fuel = vehicle.fuel as string | undefined;
   const transmission = vehicle.transmission as string | undefined;
-  const durationLabel =
-    rentalInfo && typeof rentalInfo.days === "number" && typeof rentalInfo.hours === "number"
-      ? formatDuration(t, rentalInfo.days, rentalInfo.hours)
-      : null;
 
   return (
     <Card
@@ -252,34 +246,7 @@ export function MotoVehicleCard({
           </div>
 
           <div className="text-right ml-2">
-            {rentalInfo ? (
-              // Affichage avec calcul de location (aligné comme voiture)
-              <div className="flex flex-col items-end">
-                <div className="flex items-center text-2xl font-bold text-primary">
-                  <Euro className="h-5 w-5" />
-                  {vehicle.dailyPrice}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {t("par_jour")}
-                </div>
-                {durationLabel && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {formatCurrency(rentalInfo.pricePerDay)}/{t("par_jour")} × {durationLabel || ""}
-                  </div>
-                )}
-              </div>
-            ) : (
-              // Affichage par défaut sans calcul
-              <>
-                <div className="flex items-center text-2xl font-bold text-primary">
-                  <Euro className="h-5 w-5" />
-                  {vehicle.dailyPrice}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {t("par_jour")}
-                </div>
-              </>
-            )}
+            <VehicleCardRentalPricing dailyPrice={vehicle.dailyPrice} rentalInfo={rentalInfo} />
           </div>
         </div>
 
