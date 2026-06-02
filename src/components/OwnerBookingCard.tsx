@@ -45,6 +45,8 @@ import { useToast } from '@/hooks/use-toast'
 import { normalizeBookingOptions } from '@/utils/bookingOptions'
 import { Booking, Vehicle, Photo, User, CheckinDepartSummary, CheckinReturnSummary } from '@/types'
 import { cn } from '@/lib/utils'
+import { getBookingRentalPricing } from '@/utils/rentalPriceFromDates'
+import { formatBillableDays } from '@/utils/formatDuration'
 import { ProfileService } from '@/services/supabase/profile'
 import { SupabaseBookingsService } from '@/services/supabase/bookings'
 import { supabase } from '@/integrations/supabase/client'
@@ -138,32 +140,25 @@ export default function OwnerBookingCard({
   const [isStartingCheckin, setIsStartingCheckin] = useState(false)
   const [isForcingDeposit, setIsForcingDeposit] = useState(false)
 
-  // Afficher la durée calculée depuis les heures réelles
   const calculateRealDuration = () => {
-    const startDate = new Date(booking.startDate)
-    const endDate = new Date(booking.endDate)
-    
-    // Récupérer les heures depuis booking
     const startTime = (booking as any).startTime || '06:30'
     const endTime = (booking as any).endTime || '14:00'
-    
-    const [startHour, startMinute] = startTime.split(':')
-    const [endHour, endMinute] = endTime.split(':')
-    
-    startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-    endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-    
-    const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-    const completeDays = Math.floor(rentalHours / 24)
-    const extraHours = Math.floor(rentalHours % 24)
-    
-    if (rentalHours < 24) {
-      return '1 jour'
-    } else if (extraHours === 0) {
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'}`
-    } else {
-      return `${completeDays} ${completeDays === 1 ? 'jour' : 'jours'} + ${Math.floor(extraHours)} ${Math.floor(extraHours) === 1 ? 'heure' : 'heures'}`
-    }
+    const pricing = booking.vehicle?.dailyPrice
+      ? getBookingRentalPricing({
+          pricePerDay: booking.vehicle.dailyPrice,
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          startTime,
+          endTime,
+        })
+      : null
+
+    if (!pricing) return t('duration.day_one', { count: 1 })
+
+    return (
+      formatBillableDays(t, pricing.billableDays) ??
+      t('duration.day_one', { count: 1 })
+    )
   }
 
   // Fonction pour déterminer l'icône selon le nom du service
@@ -356,30 +351,15 @@ export default function OwnerBookingCard({
               basePrice = (booking as any).base_price
               optionsTotal = (booking as any).options_total || 0
             } else {
-              // Calculer le basePrice à partir des dates et heures
-              const startDateTime = new Date(booking.startDate)
-              const endDateTime = new Date(booking.endDate)
-              
-              const [startHour, startMinute] = startTime.split(':')
-              const [endHour, endMinute] = endTime.split(':')
-              startDateTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-              endDateTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-              
-              const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60)
-              const completeDays = Math.floor(rentalHours / 24)
-              const extraHours = Math.floor(rentalHours % 24)
-              
               const dailyPrice = booking.vehicle?.dailyPrice || 0
-              
-              if (rentalHours < 24) {
-                basePrice = dailyPrice
-              } else if (extraHours === 0) {
-                basePrice = completeDays * dailyPrice
-              } else {
-                const hourPrice = dailyPrice / 24
-                const extraHoursPrice = extraHours * hourPrice
-                basePrice = Math.ceil((completeDays * dailyPrice) + extraHoursPrice)
-              }
+              const pricing = getBookingRentalPricing({
+                pricePerDay: dailyPrice,
+                startDate: booking.startDate,
+                endDate: booking.endDate,
+                startTime,
+                endTime,
+              })
+              basePrice = pricing?.basePrice ?? dailyPrice
               
               // Calculer optionsTotal depuis selectedOptions
               optionsTotal = booking.selectedOptions?.reduce((sum, opt) => sum + (opt.totalPrice || opt.price || 0), 0) || 0

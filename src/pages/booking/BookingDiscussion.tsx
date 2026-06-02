@@ -38,7 +38,8 @@ import { getBookingDraft } from "@/services/localStorage/bookingStorage";
 import { toast } from "@/hooks/use-toast";
 import { PaymentFlowModal, type ReservationPayment } from "@/components/PaymentFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
-import { formatDuration } from "@/utils/formatDuration";
+import { formatBillableDays } from "@/utils/formatDuration";
+import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 
 const BookingDiscussion = () => {
@@ -761,42 +762,20 @@ const BookingDiscussion = () => {
   };
 
   const calculateTotalPrice = () => {
-    // Recalculer le prix avec la nouvelle logique (TOTAL TTC avec frais de service)
     if (currentBooking && vehicle) {
-      const startDateTime = new Date(currentBooking.start_date);
-      const endDateTime = new Date(currentBooking.end_date);
-      
-      if (currentBooking.start_time) {
-        const [startHour, startMinute] = currentBooking.start_time.split(':');
-        startDateTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
+      const pricing = getBookingRentalPricing({
+        pricePerDay: vehicle.dailyPrice,
+        startDate: currentBooking.start_date,
+        endDate: currentBooking.end_date,
+        startTime: currentBooking.start_time,
+        endTime: currentBooking.end_time,
+      });
+
+      if (pricing) {
+        const optionsTotal =
+          currentBooking?.options_total || bookingData?.rentalInfo?.optionsTotal || 0;
+        return calcRenterTotal(pricing.basePrice + optionsTotal);
       }
-      if (currentBooking.end_time) {
-        const [endHour, endMinute] = currentBooking.end_time.split(':');
-        endDateTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
-      }
-      
-      const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
-      const completeDays = Math.floor(rentalHours / 24);
-      const extraHours = Math.floor(rentalHours % 24);
-      
-      let basePrice: number;
-      if (rentalHours < 24) {
-        basePrice = vehicle.dailyPrice;
-      } else if (extraHours === 0) {
-        basePrice = completeDays * vehicle.dailyPrice;
-      } else {
-        // Toujours facturer les heures supplémentaires au prorata
-        // Peu importe si heure retour < heure départ
-        const hourPrice = vehicle.dailyPrice / 24;
-        const extraHoursPrice = extraHours * hourPrice;
-        basePrice = Math.ceil((completeDays * vehicle.dailyPrice) + extraHoursPrice);
-      }
-      
-      const optionsTotal = currentBooking?.options_total || bookingData?.rentalInfo?.optionsTotal || 0;
-      const subtotal = basePrice + optionsTotal;
-      
-      // Retourner le TOTAL TTC (avec frais de service 15%)
-      return calcRenterTotal(subtotal);
     }
     
     // Fallback: utiliser le prix de Supabase (si c'est déjà le total TTC)
@@ -836,12 +815,15 @@ const BookingDiscussion = () => {
     
     // Sinon, calculer de base
     if (!startDate || !endDate || !vehicle) return 0;
-    
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    
-    const basePrice = vehicle.dailyPrice * days;
+
+    const pricing = getBookingRentalPricing({
+      pricePerDay: vehicle.dailyPrice,
+      startDate,
+      endDate,
+      startTime: bookingData?.rentalInfo?.startTime,
+      endTime: bookingData?.rentalInfo?.endTime,
+    });
+    const basePrice = pricing?.basePrice ?? 0;
     const optionsTotal = bookingData?.rentalInfo?.optionsTotal || 0;
     const subtotal = basePrice + optionsTotal;
     
@@ -849,66 +831,40 @@ const BookingDiscussion = () => {
     return calcRenterTotal(subtotal);
   };
 
-  // Calculer la durée réelle en heures pour affichage précis
   const calculateRealDuration = () => {
-    // Déterminer les dates et heures
-    let startDateTime: Date;
-    let endDateTime: Date;
-    
+    let pricing = null;
+
     if (currentBooking) {
-      startDateTime = new Date(currentBooking.start_date);
-      endDateTime = new Date(currentBooking.end_date);
-      
-      if (currentBooking.start_time) {
-        const [startHour, startMinute] = currentBooking.start_time.split(':');
-        startDateTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
-      }
-      if (currentBooking.end_time) {
-        const [endHour, endMinute] = currentBooking.end_time.split(':');
-        endDateTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
-      }
+      pricing = getBookingRentalPricing({
+        pricePerDay: vehicle?.dailyPrice ?? 0,
+        startDate: currentBooking.start_date,
+        endDate: currentBooking.end_date,
+        startTime: currentBooking.start_time,
+        endTime: currentBooking.end_time,
+      });
     } else if (bookingData?.rentalInfo) {
-      startDateTime = new Date(bookingData.rentalInfo.startDate);
-      endDateTime = new Date(bookingData.rentalInfo.endDate);
-      
-      const [startHour, startMinute] = bookingData.rentalInfo.startTime.split(':');
-      const [endHour, endMinute] = bookingData.rentalInfo.endTime.split(':');
-      startDateTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
-      endDateTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
-    } else {
-      // Fallback: 1 jour traduit
+      pricing = getBookingRentalPricing({
+        pricePerDay: vehicle?.dailyPrice ?? bookingData.rentalInfo.basePrice ?? 0,
+        startDate: bookingData.rentalInfo.startDate,
+        endDate: bookingData.rentalInfo.endDate,
+        startTime: bookingData.rentalInfo.startTime,
+        endTime: bookingData.rentalInfo.endTime,
+      });
+    }
+
+    if (!pricing) {
       return t("duration.day_one", { count: 1 });
     }
-    
-    const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
-    const completeDays = Math.floor(rentalHours / 24);
-    const extraHours = Math.floor(rentalHours % 24);
 
-    let result: string | null = null;
-
-    if (rentalHours < 24) {
-      // Moins de 24h: exprimer uniquement en heures si possible, sinon 1 jour minimum
-      const hours = Math.max(1, Math.round(rentalHours));
-      result = formatDuration(t, 0, hours) || t("duration.day_one", { count: 1 });
-    } else if (extraHours === 0) {
-      // Cas simple: jours uniquement (sans heures)
-      result = formatDuration(t, completeDays, 0) || t(completeDays === 1 ? "duration.day_one" : "duration.day_other", { count: completeDays });
-    } else {
-      // Cas composite: jours + heures, entièrement localisé via formatDuration()
-      result = formatDuration(t, completeDays, extraHours);
-    }
-
-    if (!result) {
-      // Fallback ultime en cas de problème inattendu
-      result = t("duration.day_one", { count: 1 });
-    }
+    const result =
+      formatBillableDays(t, pricing.billableDays) ??
+      t("duration.day_one", { count: 1 });
 
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log("[i18n DEV][BookingDiscussion] calculateRealDuration:", {
-        rentalHours,
-        completeDays,
-        extraHours,
+        billableDays: pricing.billableDays,
+        rentalHours: pricing.rentalHours,
         result,
       });
     }

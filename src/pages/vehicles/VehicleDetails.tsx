@@ -42,6 +42,7 @@ import { calcServiceFeeRenter } from "@/utils/serviceFees";
 import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle as AppVehicle } from "@/types";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import { createVehicleRentalInfo } from "@/lib/utils";
+import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
 import { formatCurrency } from "@/utils/currency";
 import { createBookingDraft, getBookingDraft, clearBookingDraft, saveBookingDraft, finalizeBookingDraftForCheckout } from "@/services/localStorage/bookingStorage";
@@ -529,11 +530,16 @@ export default function VehicleDetails() {
       });
     }
     
-    // Calculer les informations de réservation pour la modal
-    // Calcul précis en heures (durée réelle)
-    const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+    // Calcul jours calendaires + règle 9h/12h retour
+    const pricing = getBookingRentalPricing({
+      pricePerDay: vehicle.dailyPrice,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+    });
 
-    if (rentalHours <= 0) {
+    if (!pricing) {
       toast({
         title: "Dates invalides",
         description: "L’heure de fin doit être après l’heure de départ.",
@@ -542,35 +548,14 @@ export default function VehicleDetails() {
       return;
     }
 
-    // Calcul par blocs de 24h + heures supplémentaires
-    const completeDays = Math.floor(rentalHours / 24);
-    const extraHours = rentalHours % 24;
-    
-    // Prix = (jours complets × prix/jour) + (heures supplémentaires × prix/heure) arrondi supérieur
-    // Si < 24h → minimum 1 jour
-    let totalPrice: number;
-    if (rentalHours < 24) {
-      totalPrice = vehicle.dailyPrice; // Minimum 1 jour
-    } else if (extraHours === 0) {
-      totalPrice = completeDays * vehicle.dailyPrice;
-    } else {
-      // Toujours facturer les heures supplémentaires au prorata
-      // Peu importe si heure retour < heure départ
-      const hourPrice = vehicle.dailyPrice / 24;
-      const extraHoursPrice = extraHours * hourPrice;
-      totalPrice = Math.ceil((completeDays * vehicle.dailyPrice) + extraHoursPrice);
-    }
-    
-    console.log('⏱️ [DEBUG] Calcul durée réelle:', {
-      rentalHours: rentalHours.toFixed(2),
-      completeDays: completeDays,
-      extraHours: extraHours.toFixed(2),
-      totalPrice: totalPrice
+    console.log('⏱️ [DEBUG] Calcul durée facturable:', {
+      billableDays: pricing.billableDays,
+      rentalHours: pricing.rentalHours.toFixed(2),
+      totalPrice: pricing.basePrice,
     });
-    
-    // Pour l'affichage, on utilise rentalDays = nombre de jours complets + 1 si heures supplémentaires
-    const rentalDays = rentalHours < 24 ? 1 : completeDays + (extraHours > 0 ? 1 : 0);
-    const basePrice = totalPrice;
+
+    const rentalDays = pricing.rentalDays;
+    const basePrice = pricing.basePrice;
     
     // Récupérer les options sélectionnées depuis bookingStorage
     const bookingDraft = getBookingDraft();

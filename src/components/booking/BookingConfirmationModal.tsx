@@ -11,7 +11,8 @@ import { de as deLocale } from "date-fns/locale/de";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getBookingDraft, updateBookingOptions } from "@/services/localStorage/bookingStorage";
-import { formatDuration } from "@/utils/formatDuration";
+import { formatBillableDays } from "@/utils/formatDuration";
+import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatCurrency } from "@/utils/currency";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 
@@ -118,34 +119,16 @@ export function BookingConfirmationModal({
   const formattedStartDate = format(rentalInfo.startDate, "EEEE d MMMM yyyy", { locale: dateLocale });
   const formattedEndDate = format(rentalInfo.endDate, "EEEE d MMMM yyyy", { locale: dateLocale });
   
-  // Calculer la durée en jours et heures pour formatDuration
-  const startDateTime = new Date(rentalInfo.startDate);
-  const endDateTime = new Date(rentalInfo.endDate);
-  const startHour = parseInt(rentalInfo.startTime.split(':')[0]);
-  const startMinute = parseInt(rentalInfo.startTime.split(':')[1]);
-  const endHour = parseInt(rentalInfo.endTime.split(':')[0]);
-  const endMinute = parseInt(rentalInfo.endTime.split(':')[1]);
-  
-  startDateTime.setHours(startHour, startMinute, 0, 0);
-  endDateTime.setHours(endHour, endMinute, 0, 0);
-  
-  const rentalHours = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60);
-  
-  // Calculer jours et heures pour formatDuration
-  let days: number;
-  let hours: number;
-  
-  if (rentalHours < 24) {
-    // Si moins de 24h, on considère comme 1 jour
-    days = 1;
-    hours = 0;
-  } else {
-    days = Math.floor(rentalHours / 24);
-    hours = Math.floor(rentalHours % 24);
-  }
-  
-  // Utiliser formatDuration pour la durée localisée
-  const durationText = formatDuration(t, days, hours);
+  const pricingPreview = getBookingRentalPricing({
+    pricePerDay: rentalInfo.pricePerDay,
+    startDate: rentalInfo.startDate,
+    endDate: rentalInfo.endDate,
+    startTime: rentalInfo.startTime,
+    endTime: rentalInfo.endTime,
+  });
+  const durationText =
+    formatBillableDays(t, pricingPreview?.billableDays ?? rentalInfo.rentalDays) ??
+    t("duration.day_one", { count: 1 });
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // FONCTION POUR SUPPRIMER UNE OPTION DEPUIS LA MODAL

@@ -97,7 +97,9 @@
       "day_other": "{{count}} Tage",
       "hour_one": "{{count}} Stunde",
       "hour_other": "{{count}} Stunden",
-      "separator": " + "
+      "separator": " + ",
+      "half_day": "halber Tag",
+      "half_day_suffix": "und halb"
     },
     "pricing": {
       "total_for_duration": "gesamt {{total}}€ ({{duration}})",

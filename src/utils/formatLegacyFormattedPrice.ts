@@ -1,6 +1,6 @@
 import { TFunction } from "i18next";
 import { VehicleRentalInfo } from "@/types";
-import { formatDuration } from "@/utils/formatDuration";
+import { formatBillableDays } from "@/utils/formatDuration";
 import { formatCurrency } from "@/utils/currency";
 
 /**
@@ -11,7 +11,7 @@ export function formatLegacyFormattedPrice(
   t: TFunction,
   info: VehicleRentalInfo
 ): string {
-  const duration = formatDuration(t, info.days, info.hours);
+  const duration = formatBillableDays(t, info.days);
 
   if (!duration) {
     // Pas de durée exploitable → afficher simplement le prix par jour

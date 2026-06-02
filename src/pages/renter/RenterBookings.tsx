@@ -22,6 +22,7 @@ import { DepositFlowModal } from "@/components/DepositFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
 import { useTranslation } from "react-i18next";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
+import { computeBillableRentalDays } from "@/utils/rentalPriceFromDates";
 import { logRadixPortalDebug, subscribeRadixPortalDebug } from "@/lib/debugRadixPortal";
 
 interface BookingWithDetails extends Booking {
@@ -666,10 +667,14 @@ export default function RenterBookings() {
   };
 
   const getDuration = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return `${days} jour${days > 1 ? 's' : ''}`;
+    const days = computeBillableRentalDays(
+      new Date(startDate),
+      new Date(endDate),
+      "06:30",
+      "14:00"
+    );
+    if (days === 1) return "1 jour";
+    return `${days} jours`;
   };
 
   const handleBookingDeleted = (bookingId: string) => {

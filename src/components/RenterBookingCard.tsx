@@ -59,6 +59,8 @@ import { Download } from 'lucide-react'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
 import { formatCurrency } from '@/utils/currency'
 import { calcServiceFeeRenter, calcRenterTotal } from '@/utils/serviceFees'
+import { getBookingRentalPricing } from '@/utils/rentalPriceFromDates'
+import { formatBillableDays } from '@/utils/formatDuration'
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
 import { AdminBookingBadge } from '@/components/AdminBookingBadge'
 
@@ -307,101 +309,33 @@ export default function RenterBookingCard({
     }
   }, [i18n, t, booking.startDate, booking.endDate, currentLang, dateLocale])
   
-  // Afficher la durée calculée depuis les heures réelles (localisée via i18n)
-  const calculateRealDuration = () => {
-    const startDate = new Date(booking.startDate)
-    const endDate = new Date(booking.endDate)
-    
-    // Récupérer les heures depuis booking
-    const startTime = (booking as any).startTime || '06:30'
-    const endTime = (booking as any).endTime || '14:00'
-    
-    const [startHour, startMinute] = startTime.split(':')
-    const [endHour, endMinute] = endTime.split(':')
-    
-    startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-    endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-    
-    const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-    const completeDays = Math.floor(rentalHours / 24)
-    const extraHours = Math.floor(rentalHours % 24)
-    
-    // Formatage localisé avec clés i18n
-    let daysText: string
-    let hoursText: string
-    let separator: string
-    let result: string
-    
-    if (rentalHours < 24) {
-      // Cas: moins de 24h -> "1 jour"
-      daysText = t('duration.day_one', { count: 1 })
-      result = daysText
-    } else if (extraHours === 0) {
-      // Cas: jours complets uniquement -> "X jours"
-      daysText = t('duration.day_other', { count: completeDays })
-      result = daysText
-    } else {
-      // Cas: jours + heures supplémentaires
-      daysText = t(completeDays === 1 ? 'duration.day_one' : 'duration.day_other', { count: completeDays })
-      const hourCount = Math.floor(extraHours)
-      hoursText = t(hourCount === 1 ? 'duration.hour_one' : 'duration.hour_other', { count: hourCount })
-      separator = t('duration.separator')
-      result = `${daysText}${separator}${hoursText}`
-    }
-    
-    // DEV-only: Debug complet pour diagnostiquer pourquoi duration.* ne se résout pas
-    if (import.meta.env.DEV) {
-      const resolvedLang = i18n.resolvedLanguage || i18n.language
-      const storeData = i18n.store?.data || {}
-      
-      // eslint-disable-next-line no-console
-      console.info('[duration-debug]', {
-        // 1) État de la langue
-        language: i18n.language,
-        resolvedLanguage: i18n.resolvedLanguage,
-        fallbackLng: i18n.options.fallbackLng,
-        supportedLngs: i18n.options.supportedLngs,
-        load: i18n.options.load,
-        
-        // 2) Configuration namespace
-        ns: i18n.options.ns,
-        defaultNS: i18n.options.defaultNS,
-        currentNS: 'translation', // namespace utilisé dans useTranslation() (defaultNS)
-        
-        // 3) Résultats des traductions
-        translations: {
-          'duration.day_other': t('duration.day_other', { count: 2 }),
-          'duration.separator': t('duration.separator'),
-          'duration.hour_other': t('duration.hour_other', { count: 2 }),
-          'bookings.card.startLabel': t('bookings.card.startLabel'), // comparaison avec clé qui fonctionne
-        },
-        
-        // 4) État du store i18n
-        store: {
-          availableLanguages: Object.keys(storeData),
-          currentLangData: resolvedLang ? Object.keys(storeData[resolvedLang] || {}) : [],
-          enData: Object.keys(storeData['en'] || {}),
-          enGBData: Object.keys(storeData['en-GB'] || {}),
-          commonKeys: resolvedLang && storeData[resolvedLang]?.common 
-            ? Object.keys(storeData[resolvedLang].common) 
-            : [],
-          commonDurationKeys: resolvedLang && storeData[resolvedLang]?.common?.duration
-            ? Object.keys(storeData[resolvedLang].common.duration)
-            : [],
-        },
-        
-        // 5) Vérification directe des clés dans le store
-        directStoreCheck: {
-          'en.common.duration': storeData['en']?.common?.duration ? 'EXISTS' : 'MISSING',
-          'en.translation.duration': storeData['en']?.translation?.duration ? 'EXISTS' : 'MISSING',
-          [`${resolvedLang}.common.duration`]: storeData[resolvedLang]?.common?.duration ? 'EXISTS' : 'MISSING',
-          [`${resolvedLang}.translation.duration`]: storeData[resolvedLang]?.translation?.duration ? 'EXISTS' : 'MISSING',
-        },
+  const cardStartTime = (booking as any).startTime || '06:30'
+  const cardEndTime = (booking as any).endTime || '14:00'
+  const cardRentalPricing = booking.vehicle?.dailyPrice
+    ? getBookingRentalPricing({
+        pricePerDay: booking.vehicle.dailyPrice,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        startTime: cardStartTime,
+        endTime: cardEndTime,
       })
-    }
-    
-    return result
-  }
+    : null
+  const cardOptionsTotal = normalizeBookingOptions(booking.selectedOptions).reduce(
+    (sum, option) => sum + option.totalPrice,
+    0
+  )
+  const cardBasePrice =
+    cardRentalPricing?.basePrice ?? (booking as any).basePrice ?? 0
+  const cardSubtotal = cardBasePrice + cardOptionsTotal
+  const cardServiceFee = calcServiceFeeRenter(cardSubtotal)
+  const cardTotalAmount = calcRenterTotal(cardSubtotal)
+  const cardDurationText =
+    (cardRentalPricing &&
+      (formatBillableDays(t, cardRentalPricing.billableDays) ??
+        t('duration.day_one', { count: 1 }))) ||
+    t('duration.day_one', { count: 1 })
+
+  const calculateRealDuration = () => cardDurationText
 
   // Fonction pour générer le badge de statut enrichi et le CTA selon les règles métier (locataire)
   const getUserBookingStatusUI = () => {
@@ -1095,50 +1029,7 @@ export default function RenterBookingCard({
                       <Euro className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
                       <span className="font-medium text-foreground">{t('bookings.card.totalLabel')}</span>
                       <span className="ml-2 font-bold text-primary text-lg">
-                        {formatMoney((() => {
-                          // Recalculer le prix avec la nouvelle logique si véhicule disponible
-                          if (booking.vehicle?.dailyPrice) {
-                            const startDate = new Date(booking.startDate)
-                            const endDate = new Date(booking.endDate)
-                            const startTime = (booking as any).startTime || '06:30'
-                            const endTime = (booking as any).endTime || '14:00'
-                            const [startHour, startMinute] = startTime.split(':')
-                            const [endHour, endMinute] = endTime.split(':')
-                            startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-                            endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-                            const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-                            const completeDays = Math.floor(rentalHours / 24)
-                            const extraHours = Math.floor(rentalHours % 24)
-                            
-                            let basePrice: number;
-                            if (rentalHours < 24) {
-                              basePrice = booking.vehicle.dailyPrice
-                            } else if (extraHours === 0) {
-                              basePrice = completeDays * booking.vehicle.dailyPrice
-                            } else {
-                              // Toujours facturer les heures supplémentaires au prorata
-                              // Peu importe si heure retour < heure départ
-                              const hourPrice = booking.vehicle.dailyPrice / 24
-                              const extraHoursPrice = extraHours * hourPrice
-                              basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + extraHoursPrice)
-                            }
-                            
-                            // Ajouter le coût des options sélectionnées
-                            const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, option) => sum + option.totalPrice, 0)
-                            
-                            // Calculer le sous-total (base + options)
-                            const subtotal = basePrice + optionsTotal
-                            
-                            // Ajouter les frais de service (15%)
-                            const serviceFee = calcServiceFeeRenter(subtotal)
-                            
-                            // Calculer le total final
-                            const totalAmount = calcRenterTotal(subtotal)
-                            
-                            return totalAmount
-                          }
-                          return booking.totalAmount || 0
-                        })())}
+                        {formatMoney(cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0))}
                       </span>
                       <TooltipProvider>
                         <Tooltip>
@@ -1150,78 +1041,32 @@ export default function RenterBookingCard({
                           <TooltipContent className="max-w-xs" side="top" align="start">
                             <div className="space-y-2 text-sm">
                               <div className="font-semibold mb-2">Détail du prix :</div>
-                              {(() => {
-                                // Recalculer les détails pour le tooltip
-                                if (booking.vehicle?.dailyPrice) {
-                                  const startDate = new Date(booking.startDate)
-                                  const endDate = new Date(booking.endDate)
-                                  const startTime = (booking as any).startTime || '06:30'
-                                  const endTime = (booking as any).endTime || '14:00'
-                                  const [startHour, startMinute] = startTime.split(':')
-                                  const [endHour, endMinute] = endTime.split(':')
-                                  startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-                                  endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-                                  const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-                                  const completeDays = Math.floor(rentalHours / 24)
-                                  const extraHours = Math.floor(rentalHours % 24)
-                                  
-                                  let basePrice: number;
-                                  let durationText: string;
-                                  if (rentalHours < 24) {
-                                    basePrice = booking.vehicle.dailyPrice
-                                    durationText = t('duration.day_one', { count: 1 })
-                                  } else if (extraHours === 0) {
-                                    basePrice = completeDays * booking.vehicle.dailyPrice
-                                    durationText = t('duration.day_other', { count: completeDays })
-                                  } else {
-                                    // Toujours facturer les heures supplémentaires au prorata
-                                    const hourPrice = booking.vehicle.dailyPrice / 24
-                                    basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + (extraHours * hourPrice))
-                                    const daysText = t('duration.day_other', { count: completeDays })
-                                    const hoursText = t('duration.hour_other', { count: Math.floor(extraHours) })
-                                    const separator = t('duration.separator')
-                                    durationText = `${daysText}${separator}${hoursText}`
-                                  }
-                                  
-                                  const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, option) => sum + option.totalPrice, 0)
-                                  const subtotal = basePrice + optionsTotal
-                                  const serviceFee = calcServiceFeeRenter(subtotal)
-                                  const totalAmount = calcRenterTotal(subtotal)
-                                  
-                                  return (
-                                    <>
-                                      {/* TODO(i18n): bookings.details.vehicleRental */}
-                                      <div className="flex justify-between">
-                                        <span>Location ({durationText})</span>
-                                        <span className="font-semibold">{formatMoney(basePrice)}</span>
-                                      </div>
-                                      {optionsTotal > 0 && (
-                                        <div className="flex justify-between">
-                                          {/* TODO(i18n): bookings.card.servicesTitle */}
-                                          <span>Options supplémentaires</span>
-                                          <span className="font-semibold">+{formatMoney(optionsTotal)}</span>
-                                        </div>
-                                      )}
-                                      <div className="flex justify-between border-t pt-1">
-                                        {/* TODO(i18n): bookings.details.subtotal */}
-                                        <span>Sous-total</span>
-                                        <span className="font-semibold">{formatMoney(subtotal)}</span>
-                                      </div>
-                                      <div className="flex justify-between text-muted-foreground">
-                                        {/* TODO(i18n): bookings.details.serviceFee */}
-                                        <span>Frais de service (15%)</span>
-                                        <span>+{formatMoney(serviceFee)}</span>
-                                      </div>
-                                      <div className="flex justify-between font-bold border-t pt-1">
-                                        {/* TODO(i18n): bookings.details.totalToPay */}
-                                        <span>TOTAL</span>
-                                        <span>{formatMoney(totalAmount)}</span>
-                                      </div>
-                                    </>
-                                  )
-                                }
-                                return null
-                              })()}
+                              {cardRentalPricing ? (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span>Location ({cardDurationText})</span>
+                                    <span className="font-semibold">{formatMoney(cardBasePrice)}</span>
+                                  </div>
+                                  {cardOptionsTotal > 0 && (
+                                    <div className="flex justify-between">
+                                      <span>Options supplémentaires</span>
+                                      <span className="font-semibold">+{formatMoney(cardOptionsTotal)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between border-t pt-1">
+                                    <span>Sous-total</span>
+                                    <span className="font-semibold">{formatMoney(cardSubtotal)}</span>
+                                  </div>
+                                  <div className="flex justify-between text-muted-foreground">
+                                    <span>Frais de service (15%)</span>
+                                    <span>+{formatMoney(cardServiceFee)}</span>
+                                  </div>
+                                  <div className="flex justify-between font-bold border-t pt-1">
+                                    <span>TOTAL</span>
+                                    <span>{formatMoney(cardTotalAmount)}</span>
+                                  </div>
+                                </>
+                              ) : null}
                             </div>
                           </TooltipContent>
                         </Tooltip>
@@ -1677,73 +1522,11 @@ export default function RenterBookingCard({
                       Location véhicule
                     </span>
                     <span className="text-base font-bold text-primary">
-                      {formatMoney((() => {
-                        if (booking.vehicle?.dailyPrice) {
-                          const startDate = new Date(booking.startDate)
-                          const endDate = new Date(booking.endDate)
-                          const startTime = (booking as any).startTime || '06:30'
-                          const endTime = (booking as any).endTime || '14:00'
-                          const [startHour, startMinute] = startTime.split(':')
-                          const [endHour, endMinute] = endTime.split(':')
-                          startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-                          endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-                          const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-                          const completeDays = Math.floor(rentalHours / 24)
-                          const extraHours = Math.floor(rentalHours % 24)
-                          
-                          let basePrice: number;
-                          let durationText: string;
-                          if (rentalHours < 24) {
-                            basePrice = booking.vehicle.dailyPrice
-                            durationText = t('duration.day_one', { count: 1 })
-                          } else if (extraHours === 0) {
-                            basePrice = completeDays * booking.vehicle.dailyPrice
-                            durationText = t('duration.day_other', { count: completeDays })
-                          } else {
-                            const hourPrice = booking.vehicle.dailyPrice / 24
-                            const extraHoursPrice = extraHours * hourPrice
-                            basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + extraHoursPrice)
-                            const daysText = t('duration.day_other', { count: completeDays })
-                            const hoursText = t('duration.hour_other', { count: Math.floor(extraHours) })
-                            const separator = t('duration.separator')
-                            durationText = `${daysText}${separator}${hoursText}`
-                          }
-                          return { price: basePrice, duration: durationText }
-                        }
-                        return { price: 0, duration: '' }
-                      })().price)}
+                      {formatMoney(cardRentalPricing ? cardBasePrice : 0)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground text-right">
-                    {formatMoney(booking.vehicle?.dailyPrice || 0)}/jour × {(() => {
-                      if (booking.vehicle?.dailyPrice) {
-                        const startDate = new Date(booking.startDate)
-                        const endDate = new Date(booking.endDate)
-                        const startTime = (booking as any).startTime || '06:30'
-                        const endTime = (booking as any).endTime || '14:00'
-                        const [startHour, startMinute] = startTime.split(':')
-                        const [endHour, endMinute] = endTime.split(':')
-                        startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-                        endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-                        const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-                        const completeDays = Math.floor(rentalHours / 24)
-                        const extraHours = Math.floor(rentalHours % 24)
-                        
-                        let durationText: string;
-                        if (rentalHours < 24) {
-                          durationText = t('duration.day_one', { count: 1 })
-                        } else if (extraHours === 0) {
-                          durationText = t('duration.day_other', { count: completeDays })
-                        } else {
-                          const daysText = t('duration.day_other', { count: completeDays })
-                          const hoursText = t('duration.hour_other', { count: Math.floor(extraHours) })
-                          const separator = t('duration.separator')
-                          durationText = `${daysText}${separator}${hoursText}`
-                        }
-                        return durationText
-                      }
-                      return ''
-                    })()}
+                    {formatMoney(booking.vehicle?.dailyPrice || 0)}/jour × {cardDurationText}
                   </p>
                 </div>
               </div>
@@ -1790,36 +1573,7 @@ export default function RenterBookingCard({
               <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground font-medium">Sous-total</span>
-                  <span className="text-base font-bold text-foreground min-w-[100px] text-right">{formatMoney((() => {
-                    if (booking.vehicle?.dailyPrice) {
-                      const startDate = new Date(booking.startDate)
-                      const endDate = new Date(booking.endDate)
-                      const startTime = (booking as any).startTime || '06:30'
-                      const endTime = (booking as any).endTime || '14:00'
-                      const [startHour, startMinute] = startTime.split(':')
-                      const [endHour, endMinute] = endTime.split(':')
-                      startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-                      endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-                      const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-                      const completeDays = Math.floor(rentalHours / 24)
-                      const extraHours = Math.floor(rentalHours % 24)
-                      
-                      let basePrice: number;
-                      if (rentalHours < 24) {
-                        basePrice = booking.vehicle.dailyPrice
-                      } else if (extraHours === 0) {
-                        basePrice = completeDays * booking.vehicle.dailyPrice
-                      } else {
-                        const hourPrice = booking.vehicle.dailyPrice / 24
-                        const extraHoursPrice = extraHours * hourPrice
-                        basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + extraHoursPrice)
-                      }
-                      
-                      const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)
-                      return basePrice + optionsTotal
-                    }
-                    return 0
-                  })())}</span>
+                  <span className="text-base font-bold text-foreground min-w-[100px] text-right">{formatMoney(cardRentalPricing ? cardSubtotal : 0)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -1828,37 +1582,7 @@ export default function RenterBookingCard({
                     Frais de service (15%)
                   </span>
                   <span className="text-base font-bold text-muted-foreground min-w-[100px] text-right">
-                    + {formatMoney((() => {
-                      if (booking.vehicle?.dailyPrice) {
-                        const startDate = new Date(booking.startDate)
-                        const endDate = new Date(booking.endDate)
-                        const startTime = (booking as any).startTime || '06:30'
-                        const endTime = (booking as any).endTime || '14:00'
-                        const [startHour, startMinute] = startTime.split(':')
-                        const [endHour, endMinute] = endTime.split(':')
-                        startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-                        endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-                        const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-                        const completeDays = Math.floor(rentalHours / 24)
-                        const extraHours = Math.floor(rentalHours % 24)
-                        
-                        let basePrice: number;
-                        if (rentalHours < 24) {
-                          basePrice = booking.vehicle.dailyPrice
-                        } else if (extraHours === 0) {
-                          basePrice = completeDays * booking.vehicle.dailyPrice
-                        } else {
-                          const hourPrice = booking.vehicle.dailyPrice / 24
-                          const extraHoursPrice = extraHours * hourPrice
-                          basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + extraHoursPrice)
-                        }
-                        
-                        const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)
-                        const subtotal = basePrice + optionsTotal
-                        return calcServiceFeeRenter(subtotal)
-                      }
-                      return 0
-                    })())}
+                    + {formatMoney(cardRentalPricing ? cardServiceFee : 0)}
                   </span>
                 </div>
 
@@ -1868,38 +1592,7 @@ export default function RenterBookingCard({
                   {/* TODO(i18n): bookings.details.totalToPay */}
                   <span className="text-lg font-bold text-foreground">TOTAL À PAYER</span>
                   <span className="text-3xl font-bold text-primary min-w-[100px] text-right">
-                    {formatMoney((() => {
-                      if (booking.vehicle?.dailyPrice) {
-                        const startDate = new Date(booking.startDate)
-                        const endDate = new Date(booking.endDate)
-                        const startTime = (booking as any).startTime || '06:30'
-                        const endTime = (booking as any).endTime || '14:00'
-                        const [startHour, startMinute] = startTime.split(':')
-                        const [endHour, endMinute] = endTime.split(':')
-                        startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0)
-                        endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0)
-                        const rentalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-                        const completeDays = Math.floor(rentalHours / 24)
-                        const extraHours = Math.floor(rentalHours % 24)
-                        
-                        let basePrice: number;
-                        if (rentalHours < 24) {
-                          basePrice = booking.vehicle.dailyPrice
-                        } else if (extraHours === 0) {
-                          basePrice = completeDays * booking.vehicle.dailyPrice
-                        } else {
-                          const hourPrice = booking.vehicle.dailyPrice / 24
-                          const extraHoursPrice = extraHours * hourPrice
-                          basePrice = Math.ceil((completeDays * booking.vehicle.dailyPrice) + extraHoursPrice)
-                        }
-                        
-                        const optionsTotal = getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)
-                        const subtotal = basePrice + optionsTotal
-                        const serviceFee = calcServiceFeeRenter(subtotal)
-                        return calcRenterTotal(subtotal)
-                      }
-                      return 0
-                    })())}
+                    {formatMoney(cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0))}
                   </span>
                 </div>
               </div>

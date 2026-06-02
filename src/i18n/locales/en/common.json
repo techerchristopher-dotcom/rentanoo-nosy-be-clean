@@ -107,7 +107,9 @@
       "day_other": "{{count}} days",
       "hour_one": "{{count}} hour",
       "hour_other": "{{count}} hours",
-      "separator": " + "
+      "separator": " + ",
+      "half_day": "half day",
+      "half_day_suffix": "and a half"
     },
     "pricing": {
       "total_for_duration": "total {{total}} ({{duration}})",

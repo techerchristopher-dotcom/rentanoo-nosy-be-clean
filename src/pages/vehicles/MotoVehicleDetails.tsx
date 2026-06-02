@@ -62,9 +62,10 @@ import { ProfileService } from "@/services/supabase/profile";
 import { calcServiceFeeRenter } from "@/utils/serviceFees";
 import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle } from "@/types";
 import { createVehicleRentalInfo } from "@/lib/utils";
+import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
 import { formatCurrency } from "@/utils/currency";
-import { formatDuration } from "@/utils/formatDuration";
+import { formatBillableDays } from "@/utils/formatDuration";
 import {
   createBookingDraft,
   getBookingDraft,
@@ -368,9 +369,8 @@ export default function MotoVehicleDetails() {
         )
       : null;
 
-  // Utiliser formatDuration directement avec les valeurs de vehicleRentalInfo (comme BookingConfirmationModal)
-  const durationText = vehicleRentalInfo 
-    ? formatDuration(t, vehicleRentalInfo.days, vehicleRentalInfo.hours)
+  const durationText = vehicleRentalInfo
+    ? formatBillableDays(t, vehicleRentalInfo.days)
     : null;
 
   const handleBooking = () => {
@@ -538,10 +538,15 @@ export default function MotoVehicleDetails() {
       endDate.setHours(14, 0, 0, 0);
     }
 
-    const rentalHours =
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+    const pricing = getBookingRentalPricing({
+      pricePerDay: vehicle.dailyPrice,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+    });
 
-    if (rentalHours <= 0) {
+    if (!pricing) {
       toast({
         title: t("motoDetails.errors.invalidDates.title", "Dates invalides"),
         description: t(
@@ -553,23 +558,8 @@ export default function MotoVehicleDetails() {
       return;
     }
 
-    const completeDays = Math.floor(rentalHours / 24);
-    const extraHours = rentalHours % 24;
-
-    let totalPrice: number;
-    if (rentalHours < 24) {
-      totalPrice = vehicle.dailyPrice;
-    } else if (extraHours === 0) {
-      totalPrice = completeDays * vehicle.dailyPrice;
-    } else {
-      const hourPrice = vehicle.dailyPrice / 24;
-      const extraHoursPrice = extraHours * hourPrice;
-      totalPrice = Math.ceil(completeDays * vehicle.dailyPrice + extraHoursPrice);
-    }
-
-    const rentalDays =
-      rentalHours < 24 ? 1 : completeDays + (extraHours > 0 ? 1 : 0);
-    const basePrice = totalPrice;
+    const rentalDays = pricing.rentalDays;
+    const basePrice = pricing.basePrice;
 
     const bookingDraft = getBookingDraft();
     const selectedOptions = bookingDraft?.selectedOptions

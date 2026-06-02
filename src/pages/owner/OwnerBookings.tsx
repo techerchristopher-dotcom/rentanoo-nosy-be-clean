@@ -17,7 +17,7 @@ import {
   RotateCcw,
   Filter
 } from "lucide-react";
-import { ProfileService } from "@/services/supabase/profile";
+import { computeBillableRentalDays } from "@/utils/rentalPriceFromDates";
 import { BookingsService } from "@/services";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
 import { ConversationsService } from "@/services/supabase/conversations";
@@ -510,10 +510,15 @@ const OwnerBookings = () => {
   };
 
   const getDuration = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return `${days} jour${days > 1 ? 's' : ''}`;
+    const days = computeBillableRentalDays(
+      new Date(startDate),
+      new Date(endDate),
+      "06:30",
+      "14:00"
+    );
+    if (days === 1) return "1 jour";
+    if (Number.isInteger(days)) return `${days} jours`;
+    return `${days} jours`;
   };
 
   const formatTime = (dateStr: string) => {
@@ -523,12 +528,13 @@ const OwnerBookings = () => {
     });
   };
 
-  const calculateDuration = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return days;
-  };
+  const calculateDuration = (startDate: string, endDate: string) =>
+    computeBillableRentalDays(
+      new Date(startDate),
+      new Date(endDate),
+      "06:30",
+      "14:00"
+    );
 
   const handleOpenConversation = (booking: BookingWithDetails) => {
     if (!booking.vehicle) {

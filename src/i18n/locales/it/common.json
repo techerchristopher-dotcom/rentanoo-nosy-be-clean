@@ -97,7 +97,9 @@
       "day_other": "{{count}} giorni",
       "hour_one": "{{count}} ora",
       "hour_other": "{{count}} ore",
-      "separator": " + "
+      "separator": " + ",
+      "half_day": "mezza giornata",
+      "half_day_suffix": "e mezzo"
     },
     "pricing": {
       "total_for_duration": "totale {{total}}€ ({{duration}})",

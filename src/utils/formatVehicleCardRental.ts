@@ -1,7 +1,7 @@
 import { TFunction } from "i18next";
 import { VehicleRentalInfo } from "@/types";
 import { formatCurrency } from "@/utils/currency";
-import { formatDuration } from "@/utils/formatDuration";
+import { formatBillableDays } from "@/utils/formatDuration";
 
 export interface VehicleCardRentalPricingLabels {
   perDayLabel: string;
@@ -17,7 +17,7 @@ export function getVehicleCardRentalPricing(
   t: TFunction,
   rentalInfo: VehicleRentalInfo
 ): VehicleCardRentalPricingLabels {
-  const duration = formatDuration(t, rentalInfo.days, rentalInfo.hours);
+  const duration = formatBillableDays(t, rentalInfo.days);
   const perDayShort = t("pricing.perDayShort", "jour");
 
   return {
