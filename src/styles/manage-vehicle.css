@@ -1,0 +1,8 @@
+/* ManageVehicle — utilitaires responsive */
+.manage-vehicle-tabs-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.manage-vehicle-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}

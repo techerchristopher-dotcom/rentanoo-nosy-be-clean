@@ -1,4 +1,5 @@
 import "@/styles/preview-banner.css";
+import "@/styles/manage-vehicle.css";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X } from "lucide-react";
@@ -1560,7 +1561,7 @@ export default function ManageVehicle() {
   if (loading) {
     return (
       <>
-        <div className="container mx-auto px-4 py-8 pt-24">
+        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 pt-20 sm:pt-24">
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
@@ -1573,7 +1574,7 @@ export default function ManageVehicle() {
   if (!vehicle) {
     return (
       <>
-        <div className="container mx-auto px-4 py-8 pt-24">
+        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 pt-20 sm:pt-24">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Véhicule non trouvé</h1>
             <Button onClick={() => handleNavigation(() => navigate("/me/owner/vehicles"))}>
@@ -1590,45 +1591,49 @@ export default function ManageVehicle() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8 pt-24">
-        {/* Header amélioré */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleNavigation(() => navigate("/me/owner/vehicles"))}
-              className="hover:bg-gray-100"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Gérer {vehicle.brand} {vehicle.model}
-              </h1>
-              <div className="flex items-center gap-4 mt-2">
-                <p className="text-gray-600">ID: {vehicle.license}</p>
-                <Badge variant="outline" className="text-xs">
-                  <Clock className="h-3 w-3 mr-1" />
-                  Mis à jour le {new Date(vehicle.updatedAt).toLocaleDateString('fr-FR')}
-                </Badge>
+      <div
+        className={`container mx-auto px-3 sm:px-4 py-4 sm:py-8 pt-20 sm:pt-24 max-w-6xl sm:pb-8 ${
+          activeTab === "preview" && previewMode ? "pb-44" : "pb-28"
+        }`}
+      >
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleNavigation(() => navigate("/me/owner/vehicles"))}
+                className="hover:bg-gray-100 shrink-0 mt-0.5"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words">
+                  Gérer {vehicle.brand} {vehicle.model}
+                </h1>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 mt-2">
+                  <p className="text-sm sm:text-base text-gray-600 truncate">ID: {vehicle.license}</p>
+                  <Badge variant="outline" className="text-xs w-fit">
+                    <Clock className="h-3 w-3 mr-1 shrink-0" />
+                    Mis à jour le {new Date(vehicle.updatedAt).toLocaleDateString('fr-FR')}
+                  </Badge>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:shrink-0 pl-11 sm:pl-0">
               {getStatusBadge(formData.available)}
-
-              {/* Bouton Aperçu */}
               <Button
                 variant="outline"
                 onClick={togglePreviewMode}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
+                size="sm"
               >
-                {previewMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {previewMode ? "Masquer l'aperçu" : "Aperçu"}
+                {previewMode ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
+                <span className="truncate">{previewMode ? "Masquer l'aperçu" : "Aperçu"}</span>
               </Button>
             </div>
           </div>
-
         </div>
 
         {/* Alert pour les modifications non sauvegardées */}
@@ -1642,51 +1647,59 @@ export default function ManageVehicle() {
         )}
 
         {/* Contenu principal avec tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid ${previewMode ? 'grid-cols-5' : 'grid-cols-4'} w-full bg-gray-100 p-1 rounded-lg`}>
-            <TabsTrigger 
-              value="vehicle-info"
-              className="relative transition-all duration-300 ease-in-out hover:bg-white hover:shadow-md hover:scale-105 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:scale-105 rounded-md px-4 py-2 font-medium"
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          <div className="-mx-3 px-3 sm:mx-0 sm:px-0 overflow-x-auto manage-vehicle-tabs-scroll">
+            <TabsList
+              className={`inline-flex h-auto min-w-full w-max sm:w-full sm:grid gap-1 ${
+                previewMode ? "sm:grid-cols-5" : "sm:grid-cols-4"
+              } bg-gray-100 p-1 rounded-lg`}
             >
-              Informations véhicule
-            </TabsTrigger>
-            <TabsTrigger 
-              value="listing"
-              className="relative transition-all duration-300 ease-in-out hover:bg-white hover:shadow-md hover:scale-105 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:scale-105 rounded-md px-4 py-2 font-medium"
-            >
-              Annonce
-            </TabsTrigger>
-            <TabsTrigger 
-              value="pricing"
-              className="relative transition-all duration-300 ease-in-out hover:bg-white hover:shadow-md hover:scale-105 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:scale-105 rounded-md px-4 py-2 font-medium"
-            >
-              <div className="flex items-center gap-2">
-                Tarifs & conditions
-                {pendingConfigurations.length > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="bg-orange-500 text-white text-xs px-2 py-0.5 animate-pulse border-0"
-                  >
-                    {pendingConfigurations.length}
-                  </Badge>
-                )}
-              </div>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="photos"
-              className="relative transition-all duration-300 ease-in-out hover:bg-white hover:shadow-md hover:scale-105 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:scale-105 rounded-md px-4 py-2 font-medium"
-            >
-              Photos
-            </TabsTrigger>
-            {previewMode && (
-              <TabsTrigger 
-                value="preview"
-                className="relative transition-all duration-300 ease-in-out hover:bg-white hover:shadow-md hover:scale-105 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:scale-105 rounded-md px-4 py-2 font-medium"
+              <TabsTrigger
+                value="vehicle-info"
+                className="relative shrink-0 sm:shrink transition-all duration-300 ease-in-out hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
               >
-                Aperçu
+                <span className="sm:hidden">Infos</span>
+                <span className="hidden sm:inline">Informations véhicule</span>
               </TabsTrigger>
-            )}
-          </TabsList>
+              <TabsTrigger
+                value="listing"
+                className="relative shrink-0 sm:shrink transition-all duration-300 ease-in-out hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
+              >
+                Annonce
+              </TabsTrigger>
+              <TabsTrigger
+                value="pricing"
+                className="relative shrink-0 sm:shrink transition-all duration-300 ease-in-out hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
+              >
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="sm:hidden">Tarifs</span>
+                  <span className="hidden sm:inline">Tarifs & conditions</span>
+                  {pendingConfigurations.length > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="bg-orange-500 text-white text-xs px-1.5 py-0 sm:px-2 animate-pulse border-0 shrink-0"
+                    >
+                      {pendingConfigurations.length}
+                    </Badge>
+                  )}
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="photos"
+                className="relative shrink-0 sm:shrink transition-all duration-300 ease-in-out hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
+              >
+                Photos
+              </TabsTrigger>
+              {previewMode && (
+                <TabsTrigger
+                  value="preview"
+                  className="relative shrink-0 sm:shrink transition-all duration-300 ease-in-out hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
+                >
+                  Aperçu
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
           {/* Informations véhicule - Lecture seule */}
           {/* 🆕 REFACTO - Composant extrait pour meilleure modularité */}
@@ -1746,9 +1759,9 @@ export default function ManageVehicle() {
                     
                     {formData.pickupZones && formData.pickupZones.length > 0 ? (
                       <div className="space-y-3">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                           {formData.pickupZones.map((zone, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg transition-all duration-200 ease-in-out hover:bg-green-100 hover:border-green-300 hover:shadow-sm">
+                            <div key={index} className="flex items-center justify-between gap-2 p-2 bg-green-50 border border-green-200 rounded-lg transition-all duration-200 ease-in-out hover:bg-green-100 hover:border-green-300 hover:shadow-sm min-w-0">
                               <div className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-green-600" />
                                 <span className="text-sm font-medium text-green-900">{zone}</span>
@@ -1854,7 +1867,7 @@ export default function ManageVehicle() {
                     Les futurs locataires ne pourront plus choisir cette zone.
                   </p>
                   
-                  <div className="flex gap-3 justify-end">
+                  <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                     <Button
                       onClick={confirmDeleteZone}
                       className="bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md hover:border-gray-400 group"
@@ -1919,7 +1932,7 @@ export default function ManageVehicle() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
+                  <div className="flex flex-col-reverse sm:flex-row gap-3">
                     <Button
                       onClick={handleConfigureLater}
                       className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md group"
@@ -1980,7 +1993,7 @@ export default function ManageVehicle() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
+                  <div className="flex flex-col-reverse sm:flex-row gap-3">
                     <Button
                       onClick={handleCancelSave}
                       className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md group"
@@ -2037,7 +2050,7 @@ export default function ManageVehicle() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-3">
+                  <div className="flex flex-col-reverse sm:flex-row gap-3">
                     <Button
                       onClick={handleAbandonChanges}
                       className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md group"
@@ -2076,15 +2089,15 @@ export default function ManageVehicle() {
                   <Alert className="border-orange-200 bg-orange-50">
                     <AlertTriangle className="h-4 w-4 text-orange-600" />
                     <AlertDescription className="text-orange-800">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <strong>⚠️ Configurations en attente :</strong>
-                          <span className="ml-2">{pendingConfigurations.length} service{pendingConfigurations.length > 1 ? 's' : ''} à configurer</span>
+                          <span className="ml-0 sm:ml-2 block sm:inline mt-1 sm:mt-0">{pendingConfigurations.length} service{pendingConfigurations.length > 1 ? 's' : ''} à configurer</span>
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-orange-700 border-orange-300 hover:bg-orange-100"
+                          className="text-orange-700 border-orange-300 hover:bg-orange-100 w-full sm:w-auto shrink-0"
                           onClick={() => {
                             setActiveTab('pricing');
                             setTimeout(() => {
@@ -2201,7 +2214,7 @@ export default function ManageVehicle() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="lowSeasonDiscount">Remise basse saison (%)</Label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Input
                           id="lowSeasonDiscount"
                           type="number"
@@ -2221,7 +2234,7 @@ export default function ManageVehicle() {
 
                     <div className="space-y-2">
                       <Label htmlFor="highSeasonSurcharge">Supplément haute saison (%)</Label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Input
                           id="highSeasonSurcharge"
                           type="number"
@@ -2245,7 +2258,7 @@ export default function ManageVehicle() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="longDurationDiscount14">Remise 14+ jours (%)</Label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Input
                           id="longDurationDiscount14"
                           type="number"
@@ -2265,7 +2278,7 @@ export default function ManageVehicle() {
 
                     <div className="space-y-2">
                       <Label htmlFor="longDurationDiscount60">Remise 60+ jours (%)</Label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Input
                           id="longDurationDiscount60"
                           type="number"
@@ -2354,13 +2367,13 @@ export default function ManageVehicle() {
                         : 'border-border'
                     }`}>
                       {/* Section 1: Dépôt / Restitution Aéroport */}
-                      <div className="flex items-center justify-between p-4 border-b border-border">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-success/10 rounded-md">
                             <Plane className="h-4 w-4 text-success" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <h4 className="text-sm font-semibold text-foreground">Dépôt / Restitution Aéroport</h4>
                               {pendingConfigurations.includes('Aéroport') && (
                                 <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 animate-pulse">
@@ -2388,7 +2401,7 @@ export default function ManageVehicle() {
                       {formData.airportPickupService && (
                         <>
                           {/* Section 2: Retrait à l'aéroport */}
-                          <div className="flex items-center justify-between p-4 pl-8 border-b border-border">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8 border-b border-border">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowDownToLine className="h-4 w-4 text-success" />
@@ -2407,8 +2420,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Retrait */}
                           {formData.airportPickupRetrieval && (
-                            <div className="p-4 pl-8 border-b border-border bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 border-b border-border bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.airportPickupRetrievalFree ? "default" : "outline"}
@@ -2460,7 +2473,7 @@ export default function ManageVehicle() {
                           )}
 
                           {/* Section 3: Restitution à l'aéroport */}
-                          <div className="flex items-center justify-between p-4 pl-8">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowUpFromLine className="h-4 w-4 text-success" />
@@ -2479,8 +2492,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Restitution */}
                           {formData.airportPickupReturn && (
-                            <div className="p-4 pl-8 bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.airportPickupReturnFree ? "default" : "outline"}
@@ -2543,13 +2556,13 @@ export default function ManageVehicle() {
                         : 'border-border'
                     }`}>
                       {/* Section 1: Dépôt / Restitution Barge Petite Terre */}
-                      <div className="flex items-center justify-between p-4 border-b border-border">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-success/10 rounded-md">
                             <Ship className="h-4 w-4 text-success" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <h4 className="text-sm font-semibold text-foreground">Dépôt / Restitution Barge Petite Terre</h4>
                               {pendingConfigurations.includes('Barge Petite Terre') && (
                                 <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 animate-pulse">
@@ -2577,7 +2590,7 @@ export default function ManageVehicle() {
                       {formData.bargePetiteTerreService && (
                         <>
                           {/* Section 2: Retrait à la barge Petite Terre */}
-                          <div className="flex items-center justify-between p-4 pl-8 border-b border-border">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8 border-b border-border">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowDownToLine className="h-4 w-4 text-success" />
@@ -2596,8 +2609,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Retrait */}
                           {formData.bargePetiteTerreRetrieval && (
-                            <div className="p-4 pl-8 border-b border-border bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 border-b border-border bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.bargePetiteTerreRetrievalFree ? "default" : "outline"}
@@ -2649,7 +2662,7 @@ export default function ManageVehicle() {
                           )}
 
                           {/* Section 3: Restitution à la barge Petite Terre */}
-                          <div className="flex items-center justify-between p-4 pl-8">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowUpFromLine className="h-4 w-4 text-success" />
@@ -2668,8 +2681,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Restitution */}
                           {formData.bargePetiteTerreReturn && (
-                            <div className="p-4 pl-8 bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.bargePetiteTerreReturnFree ? "default" : "outline"}
@@ -2732,13 +2745,13 @@ export default function ManageVehicle() {
                         : 'border-border'
                     }`}>
                       {/* Section 1: Dépôt / Restitution Barge Grande Terre */}
-                      <div className="flex items-center justify-between p-4 border-b border-border">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-success/10 rounded-md">
                             <Ship className="h-4 w-4 text-success" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <h4 className="text-sm font-semibold text-foreground">Dépôt / Restitution Barge Grande Terre</h4>
                               {pendingConfigurations.includes('Barge Grande Terre') && (
                                 <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 animate-pulse">
@@ -2766,7 +2779,7 @@ export default function ManageVehicle() {
                       {formData.bargeGrandeTerreService && (
                         <>
                           {/* Section 2: Retrait à la barge Grande Terre */}
-                          <div className="flex items-center justify-between p-4 pl-8 border-b border-border">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8 border-b border-border">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowDownToLine className="h-4 w-4 text-success" />
@@ -2785,8 +2798,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Retrait */}
                           {formData.bargeGrandeTerreRetrieval && (
-                            <div className="p-4 pl-8 border-b border-border bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 border-b border-border bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.bargeGrandeTerreRetrievalFree ? "default" : "outline"}
@@ -2838,7 +2851,7 @@ export default function ManageVehicle() {
                           )}
 
                           {/* Section 3: Restitution à la barge Grande Terre */}
-                          <div className="flex items-center justify-between p-4 pl-8">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowUpFromLine className="h-4 w-4 text-success" />
@@ -2857,8 +2870,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Restitution */}
                           {formData.bargeGrandeTerreReturn && (
-                            <div className="p-4 pl-8 bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.bargeGrandeTerreReturnFree ? "default" : "outline"}
@@ -2920,13 +2933,13 @@ export default function ManageVehicle() {
                       : 'border-border'
                   }`}>
                       {/* Section 1: Livraison / Récupération à domicile */}
-                      <div className="flex items-center justify-between p-4 border-b border-border">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-success/10 rounded-md">
                             <Home className="h-4 w-4 text-success" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <h4 className="text-sm font-semibold text-foreground">Livraison / Récupération à domicile</h4>
                               {pendingConfigurations.includes('Livraison à domicile') && (
                                 <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 animate-pulse">
@@ -2954,7 +2967,7 @@ export default function ManageVehicle() {
                       {formData.homeDeliveryService && (
                         <>
                           {/* Section 2: Livraison à domicile */}
-                          <div className="flex items-center justify-between p-4 pl-8 border-b border-border">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8 border-b border-border">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowDownToLine className="h-4 w-4 text-success" />
@@ -2973,8 +2986,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Livraison */}
                           {formData.homeDeliveryPickup && (
-                            <div className="p-4 pl-8 border-b border-border bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 border-b border-border bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.homeDeliveryPickupFree ? "default" : "outline"}
@@ -3026,7 +3039,7 @@ export default function ManageVehicle() {
                           )}
 
                           {/* Section 3: Récupération à domicile */}
-                          <div className="flex items-center justify-between p-4 pl-8">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 pl-4 sm:pl-8">
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-success/10 rounded-md">
                                 <ArrowUpFromLine className="h-4 w-4 text-success" />
@@ -3045,8 +3058,8 @@ export default function ManageVehicle() {
 
                           {/* Options de paiement pour Récupération */}
                           {formData.homeDeliveryReturn && (
-                            <div className="p-4 pl-8 bg-muted/20">
-                              <div className="flex items-center gap-1">
+                            <div className="p-4 pl-4 sm:pl-8 bg-muted/20">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant={formData.homeDeliveryReturnFree ? "default" : "outline"}
@@ -3106,13 +3119,13 @@ export default function ManageVehicle() {
                       ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-200' 
                       : 'border-border'
                   }`}>
-                    <div className="flex items-center justify-between p-4 border-b border-border">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-success/10 rounded-md">
                           <Baby className="h-4 w-4 text-success" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <h4 className="text-sm font-semibold text-foreground">Siège bébé</h4>
                             {pendingConfigurations.includes('Siège bébé') && (
                               <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 animate-pulse">
@@ -3132,7 +3145,7 @@ export default function ManageVehicle() {
 
                     {formData.babySeatService && (
                       <div className="p-4 bg-muted/20">
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button
                             type="button"
                             variant={formData.babySeatFree ? "default" : "outline"}
@@ -3188,13 +3201,13 @@ export default function ManageVehicle() {
                       ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-200' 
                       : 'border-border'
                   }`}>
-                    <div className="flex items-center justify-between p-4 border-b border-border">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-success/10 rounded-md">
                           <UserPlus className="h-4 w-4 text-success" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <h4 className="text-sm font-semibold text-foreground">Conducteur additionnel</h4>
                             {pendingConfigurations.includes('Conducteur additionnel') && (
                               <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 animate-pulse">
@@ -3214,7 +3227,7 @@ export default function ManageVehicle() {
 
                     {formData.additionalDriverService && (
                       <div className="p-4 bg-muted/20">
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button
                             type="button"
                             variant={formData.additionalDriverFree ? "default" : "outline"}
@@ -3344,7 +3357,7 @@ export default function ManageVehicle() {
 
                 {/* Galerie de photos existantes */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
                     <h3 className="text-lg font-semibold">
                       Photos actuelles ({photos.length})
                     </h3>
@@ -3373,7 +3386,7 @@ export default function ManageVehicle() {
                           <Button
                             variant="destructive"
                             size="icon"
-                            className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-2 right-2 h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                             onClick={() => handleDeletePhoto(photo.url)}
                             disabled={deletingPhoto === photo.url}
                           >
@@ -3423,7 +3436,7 @@ export default function ManageVehicle() {
                         
                         <div className="relative p-6">
                           {/* Contenu principal */}
-                          <div className="flex items-center justify-center space-x-4">
+                          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:space-x-4 sm:gap-0 text-center sm:text-left">
                             {/* Icône avec style Lagoon et pulsation */}
                             <div className="flex-shrink-0">
                               <div className="relative">
@@ -3507,7 +3520,7 @@ export default function ManageVehicle() {
                           
                           {/* Photo Thumbnails */}
                           {photos.length > 1 && (
-                            <div className="grid grid-cols-6 gap-2">
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                               {photos.slice(0, 6).map((photo, index) => (
                                 <button
                                   key={photo.id}
@@ -3531,8 +3544,8 @@ export default function ManageVehicle() {
 
                         {/* Vehicle Title and Info */}
                         <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <Badge variant="secondary" className="text-sm">{vehicle?.license}</Badge>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+                            <Badge variant="secondary" className="text-sm w-fit">{vehicle?.license}</Badge>
                             <div className="flex items-center space-x-1">
                               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                               <span className="font-semibold">5.0</span>
@@ -3937,21 +3950,21 @@ export default function ManageVehicle() {
                 </div>
                 
                 {/* Mobile Sticky Bottom Price Card */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
+                <div className="lg:hidden fixed left-0 right-0 z-30 bg-background border-t bottom-[calc(5.25rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)]">
+                  <div className="p-3 sm:p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 max-w-6xl mx-auto">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-xl font-bold text-primary">{formData.pricePerDay}€</span>
                         <span className="text-sm text-muted-foreground line-through">{Math.round(parseFloat(formData.pricePerDay || '0') * 1.2)}€</span>
                         <span className="text-sm text-muted-foreground">par jour</span>
                       </div>
                       <Button
-                        size="lg"
-                        className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6"
+                        size="default"
+                        className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 w-full sm:w-auto shrink-0"
                         disabled
                       >
-                        <CalendarIcon className="h-4 w-4 mr-2" />
-                        Envoyer une demande
+                        <CalendarIcon className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">Envoyer une demande</span>
                       </Button>
                     </div>
                   </div>
@@ -3961,52 +3974,56 @@ export default function ManageVehicle() {
           )}
         </Tabs>
 
-        {/* Actions */}
-        <div className="flex justify-between items-center mt-8">
-          {/* Bouton de suppression à gauche */}
-          <Button 
-            variant="destructive"
-            onClick={handleDeleteVehicle}
-            disabled={deletingVehicle}
-            className="flex items-center gap-2"
-          >
-            {deletingVehicle ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Suppression...
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4" />
-                Supprimer mon véhicule
-              </>
-            )}
-          </Button>
-
-          {/* Actions principales à droite */}
-          <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => handleNavigation(() => navigate("/me/owner/vehicles"))}
+        {/* Actions — barre fixe sur mobile */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 sm:static sm:mt-8 border-t sm:border-0 bg-background/95 backdrop-blur supports-[padding:max(0px)]:pb-[max(0.75rem,env(safe-area-inset-bottom))] p-3 sm:p-0 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] sm:shadow-none">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center max-w-6xl mx-auto">
+            <Button
+              variant="destructive"
+              onClick={handleDeleteVehicle}
+              disabled={deletingVehicle}
+              className="flex items-center justify-center gap-2 w-full sm:w-auto order-2 sm:order-1"
+              size="sm"
             >
-              Annuler
-            </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-            >
-              {saving ? (
+              {deletingVehicle ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sauvegarde...
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  Suppression...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Sauvegarder
+                  <Trash2 className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Supprimer mon véhicule</span>
                 </>
               )}
             </Button>
+            <div className="flex gap-2 sm:gap-3 order-1 sm:order-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => handleNavigation(() => navigate("/me/owner/vehicles"))}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !hasChanges}
+                className="flex-1 sm:flex-none"
+                size="sm"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />
+                    Sauvegarde...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2 shrink-0" />
+                    Sauvegarder
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -4040,7 +4057,7 @@ export default function ManageVehicle() {
               </p>
             </div>
             
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
               <Button 
                 onClick={confirmAvailabilityChange}
                 className="bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md hover:border-gray-400 group"
@@ -4084,7 +4101,7 @@ export default function ManageVehicle() {
               </p>
             </div>
             
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
               <Button 
                 onClick={confirmFirstDelete}
                 className="bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md hover:border-gray-400 group"
@@ -4140,7 +4157,7 @@ export default function ManageVehicle() {
               </div>
             </div>
             
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
               <Button 
                 onClick={confirmSecondDelete}
                 className="bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300 transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-md hover:border-gray-400 group"

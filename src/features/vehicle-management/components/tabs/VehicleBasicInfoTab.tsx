@@ -26,7 +26,7 @@ export function VehicleBasicInfoTab({ formData }: VehicleBasicInfoTabProps) {
       <CardContent className="space-y-6">
         {/* Informations générales */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-4 flex flex-wrap items-center gap-2">
             <Settings className="h-5 w-5 text-primary" />
             Informations générales
           </h3>
@@ -60,7 +60,7 @@ export function VehicleBasicInfoTab({ formData }: VehicleBasicInfoTabProps) {
 
         {/* Caractéristiques techniques */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-4 flex flex-wrap items-center gap-2">
             <Gauge className="h-5 w-5 text-primary" />
             Caractéristiques techniques
           </h3>
@@ -108,11 +108,11 @@ export function VehicleBasicInfoTab({ formData }: VehicleBasicInfoTabProps) {
 
         {/* Équipements & Options */}
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-4 flex flex-wrap items-center gap-2">
             <Settings className="h-5 w-5 text-primary" />
             Équipements & Options
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {formData.hasAC && (
               <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
                 <Wind className="h-4 w-4 text-blue-600" />
