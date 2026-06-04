@@ -245,11 +245,14 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
   app.get("/api/public/exchange-rate", async (_req: Request, res: Response) => {
     const settings = await ensureLiveExchangeFresh(supabaseAdmin);
     const config = toPublicExchangeConfig(settings);
+    const { getExchangeRateTrend } = await import("../lib/exchangeRateService");
+    const trend = await getExchangeRateTrend(settings);
     return res.json({
       ok: true,
       rate: config.rate,
       effectiveFrom: config.effectiveFrom,
       mode: settings.mode,
+      trend,
     });
   });
 

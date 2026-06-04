@@ -125,6 +125,11 @@
       "exchangeManual": "1 € = {{rate}} Ar",
       "pricesHint": "Preise in € mit Ariary-Äquivalent",
       "weatherUnavailable": "Wetter nicht verfügbar",
+      "rateTrend": {
+        "up": "Kurs gestiegen gegenüber gestern",
+        "down": "Kurs gefallen gegenüber gestern",
+        "stable": "Kurs unverändert gegenüber gestern"
+      },
       "weather": {
         "clear": "Sonnig",
         "cloudy": "Bewölkt",

@@ -14,6 +14,24 @@ export type FrankfurterEurMgaQuote = {
   date: string;
 };
 
+export type ExchangeRateTrend = "up" | "down" | "stable";
+
+export async function fetchFrankfurterEurMgaOnDate(date: string): Promise<FrankfurterEurMgaQuote | null> {
+  const url = `https://api.frankfurter.dev/v2/rate/EUR/MGA/${date}`;
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as { rate?: number; date?: string };
+  const rate = Number(json.rate);
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  return {
+    rate: Math.round(rate),
+    date: typeof json.date === "string" ? json.date : date,
+  };
+}
+
 export async function fetchFrankfurterEurMga(): Promise<FrankfurterEurMgaQuote> {
   const res = await fetch(FRANKFURTER_EUR_MGA_URL, {
     headers: { Accept: "application/json" },
@@ -111,6 +129,53 @@ export async function ensureLiveExchangeFresh(
 }
 
 let schedulerStarted = false;
+
+const TREND_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+let trendCache: { key: string; trend: ExchangeRateTrend | null; expiresAt: number } | null = null;
+
+function shiftYmd(ymd: string, days: number): string {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+async function fetchPreviousFrankfurterRate(beforeDate: string): Promise<number | null> {
+  for (let i = 1; i <= 7; i++) {
+    const quote = await fetchFrankfurterEurMgaOnDate(shiftYmd(beforeDate, -i));
+    if (quote) return quote.rate;
+  }
+  return null;
+}
+
+function computeTrend(current: number, previous: number | null): ExchangeRateTrend | null {
+  if (previous == null) return null;
+  if (current > previous) return "up";
+  if (current < previous) return "down";
+  return "stable";
+}
+
+/** Tendance vs veille Frankfurter (live uniquement). */
+export async function getExchangeRateTrend(
+  settings: EurMgaExchangeSettings
+): Promise<ExchangeRateTrend | null> {
+  if (settings.mode !== "live") return null;
+
+  const cacheKey = `${settings.rate}:${settings.effectiveFrom}`;
+  if (trendCache && trendCache.key === cacheKey && Date.now() < trendCache.expiresAt) {
+    return trendCache.trend;
+  }
+
+  let trend: ExchangeRateTrend | null = null;
+  try {
+    const previous = await fetchPreviousFrankfurterRate(settings.effectiveFrom);
+    trend = computeTrend(settings.rate, previous);
+  } catch {
+    trend = null;
+  }
+
+  trendCache = { key: cacheKey, trend, expiresAt: Date.now() + TREND_CACHE_TTL_MS };
+  return trend;
+}
 
 export function startExchangeRateScheduler(supabaseAdmin: SupabaseClient): void {
   if (schedulerStarted) return;

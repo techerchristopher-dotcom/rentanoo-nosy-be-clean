@@ -3,6 +3,7 @@
 export const DEFAULT_EUR_MGA_RATE = 5000;
 
 export type ExchangeRateMode = "manual" | "live";
+export type ExchangeRateTrend = "up" | "down" | "stable";
 export type LiveExchangeProvider = "frankfurter";
 
 export type EurMgaExchangeConfig = {
