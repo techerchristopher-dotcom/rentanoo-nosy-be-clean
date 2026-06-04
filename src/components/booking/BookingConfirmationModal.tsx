@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -157,8 +157,17 @@ export function BookingConfirmationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] sm:max-w-3xl lg:max-h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-y-auto p-6">
+      <DialogContent
+        className={[
+          "flex w-[calc(100%-1rem)] max-w-2xl sm:max-w-3xl flex-col gap-0 overflow-hidden p-0",
+          "top-[50%] translate-x-[-50%] translate-y-[-50%]",
+          "h-[min(calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-1rem),92vh)]",
+          "max-h-[min(calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-1rem),92vh)]",
+          "rounded-2xl sm:rounded-lg sm:top-[2rem] sm:translate-y-0",
+          "sm:h-[min(calc(100vh-2rem),95vh)] sm:max-h-[min(calc(100vh-2rem),95vh)]",
+        ].join(" ")}
+      >
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
         <DialogHeader className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="p-2 bg-primary rounded-full">
@@ -412,18 +421,6 @@ export function BookingConfirmationModal({
           </div>
         </div>
 
-        </div>
-
-        <DialogFooter className="flex-shrink-0 flex-col sm:flex-row gap-2 p-4 pt-0 border-t bg-background">
-          <Button 
-            onClick={onConfirm}
-            className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
-          >
-            <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
-            {t("booking.confirmBooking")}
-          </Button>
-        </DialogFooter>
-
         {/* DEBUG PANEL - DEV ONLY */}
         {import.meta.env.DEV && (() => {
           const bundleTranslation = i18n.getResourceBundle(i18n.language, "translation");
@@ -520,6 +517,19 @@ export function BookingConfirmationModal({
             </div>
           );
         })()}
+        </div>
+
+        {/* CTA sticky — toujours visible sur mobile */}
+        <div className="sticky bottom-0 z-10 flex shrink-0 flex-col border-t bg-background px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
+          <Button
+            onClick={onConfirm}
+            size="lg"
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 font-semibold"
+          >
+            <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
+            {t("booking.confirmBooking")}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
