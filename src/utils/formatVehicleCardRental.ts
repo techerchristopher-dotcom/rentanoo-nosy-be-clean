@@ -1,34 +1,22 @@
 import { TFunction } from "i18next";
 import { VehicleRentalInfo } from "@/types";
-import { formatCurrency } from "@/utils/currency";
 import { formatBillableDays } from "@/utils/formatDuration";
 
-export interface VehicleCardRentalPricingLabels {
-  perDayLabel: string;
-  detailLine: string | null;
-  totalLine: string | null;
-}
-
 /**
- * Libellés prix/durée/total pour les cartes véhicules (home, résultats recherche).
- * Utiliser avec le namespace `translation` (defaultNS).
+ * Ligne compacte pour cartes véhicules quand des dates sont sélectionnées.
+ * Ex. « 2 jours · 20,49 € total »
  */
-export function getVehicleCardRentalPricing(
+export function getVehicleCardTotalSummary(
   t: TFunction,
   rentalInfo: VehicleRentalInfo,
-  formatAmount: (eur: number) => string = (n) => formatCurrency(n)
-): VehicleCardRentalPricingLabels {
+  formatEurPrimary: (amountMga: number) => string
+): string | null {
   const duration = formatBillableDays(t, rentalInfo.days);
-  const perDayShort = t("pricing.perDayShort", "jour");
+  if (!duration || rentalInfo.totalCost <= 0) return null;
 
-  return {
-    perDayLabel: t("par_jour", "par jour"),
-    detailLine: duration
-      ? `${formatAmount(rentalInfo.pricePerDay)}/${perDayShort} × ${duration}`
-      : null,
-    totalLine: t("pricing.totalExcludingOptions", {
-      total: formatAmount(rentalInfo.totalCost),
-      defaultValue: `soit ${formatAmount(rentalInfo.totalCost)} (hors options supplémentaires)`,
-    }),
-  };
+  return t("pricing.cardTotalSummary", {
+    duration,
+    total: formatEurPrimary(rentalInfo.totalCost),
+    defaultValue: "{{duration}} · {{total}} total",
+  });
 }

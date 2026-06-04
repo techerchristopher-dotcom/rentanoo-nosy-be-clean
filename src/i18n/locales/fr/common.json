@@ -135,7 +135,8 @@
   "pricing": {
     "total_for_duration": "soit {{total}} ({{duration}})",
     "perDayShort": "jour",
-    "totalExcludingOptions": "soit {{total}} (hors options supplémentaires)"
+    "totalExcludingOptions": "soit {{total}} (hors options supplémentaires)",
+    "cardTotalSummary": "{{duration}} · {{total}} total"
   },
   "booking": {
     "baseRateLabel": "Tarif de base* :",

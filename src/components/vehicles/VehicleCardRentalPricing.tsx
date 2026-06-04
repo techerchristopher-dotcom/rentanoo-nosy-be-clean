@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { VehicleRentalInfo } from "@/types";
-import { getVehicleCardRentalPricing } from "@/utils/formatVehicleCardRental";
-import { DualPrice } from "@/components/currency/DualPrice";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { getVehicleCardTotalSummary } from "@/utils/formatVehicleCardRental";
 
 interface VehicleCardRentalPricingProps {
   dailyPrice: number;
@@ -14,40 +13,24 @@ export function VehicleCardRentalPricing({
   rentalInfo,
 }: VehicleCardRentalPricingProps) {
   const { t } = useTranslation();
-  const { footnote, formatClientInline } = useExchangeRate();
+  const { formatClient } = useExchangeRate();
 
-  if (!rentalInfo) {
-    return (
-      <>
-        <DualPrice
-          amountMga={dailyPrice}
-          variant="client"
-          className="items-end"
-          primaryClassName="text-2xl font-bold text-primary flex items-center gap-0.5"
-        />
-        <div className="text-xs text-muted-foreground">{t("par_jour", "par jour")}</div>
-      </>
-    );
-  }
-
-  const { perDayLabel, detailLine, totalLine } = getVehicleCardRentalPricing(t, rentalInfo, formatClientInline);
+  const daily = formatClient(dailyPrice);
+  const perDayShort = t("pricing.perDayShort", "jour");
+  const totalSummary =
+    rentalInfo && rentalInfo.days > 0 && rentalInfo.totalCost > 0
+      ? getVehicleCardTotalSummary(t, rentalInfo, (mga) => formatClient(mga).primary)
+      : null;
 
   return (
-    <div className="flex flex-col items-end">
-      <DualPrice
-        amountMga={dailyPrice}
-        variant="client"
-        className="items-end"
-        primaryClassName="text-2xl font-bold text-primary"
-      />
-      <div className="text-xs text-muted-foreground">{perDayLabel}</div>
-      {detailLine && (
-        <div className="text-sm text-muted-foreground mt-1">{detailLine}</div>
-      )}
-      {totalLine && (
-        <div className="text-sm text-muted-foreground mt-0.5">{totalLine}</div>
-      )}
-      <div className="text-[10px] text-muted-foreground/80 mt-1 text-right max-w-[200px]">{footnote}</div>
+    <div className="flex shrink-0 flex-col items-end text-right">
+      <span className="text-2xl font-bold tabular-nums leading-none text-primary">{daily.primary}</span>
+      <span className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+        {daily.secondary} / {perDayShort}
+      </span>
+      {totalSummary ? (
+        <span className="mt-1.5 text-xs font-medium tabular-nums text-muted-foreground">{totalSummary}</span>
+      ) : null}
     </div>
   );
 }

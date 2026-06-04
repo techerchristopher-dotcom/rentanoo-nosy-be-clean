@@ -104,7 +104,8 @@
     "pricing": {
       "total_for_duration": "gesamt {{total}}€ ({{duration}})",
       "perDayShort": "Tag",
-      "totalExcludingOptions": "also {{total}} (ohne Zusatzoptionen)"
+      "totalExcludingOptions": "also {{total}} (ohne Zusatzoptionen)",
+      "cardTotalSummary": "{{duration}} · {{total}} gesamt"
     },
     "searchBar": {
       "departure": "Abfahrt",
