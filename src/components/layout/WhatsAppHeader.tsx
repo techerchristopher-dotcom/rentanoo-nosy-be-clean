@@ -50,7 +50,7 @@ export function WhatsAppHeader() {
   return (
     <div
       className={cn(
-        "sticky top-0 z-[60] bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white shadow-md overflow-hidden transition-all duration-200 ease-out",
+        "hidden md:block sticky top-0 z-[60] bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white shadow-md overflow-hidden transition-all duration-200 ease-out",
         atTop ? "max-h-24 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
       )}
       aria-hidden={!atTop}

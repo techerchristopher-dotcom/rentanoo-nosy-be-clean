@@ -144,7 +144,7 @@ export function Navbar() {
       <WhatsAppHeader />
       
       {/* Navbar principale */}
-      <header className="border-b bg-gradient-to-r from-background to-primary-soft/20 backdrop-blur-sm sticky top-[41px] md:top-[45px] z-50" translate="no">
+      <header className="border-b bg-gradient-to-r from-background to-primary-soft/20 backdrop-blur-sm sticky top-0 md:top-[45px] z-50" translate="no">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
