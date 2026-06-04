@@ -233,7 +233,7 @@ export function PaymentFlowModal({
                 ) : (
                   <>
                     <span className="shrink-0 mr-2">🔒</span>
-                    Payer {reservation.totalTTC.toFixed(2)} € via Stripe et confirmer ma location
+                    Payer {payLabel} via Stripe et confirmer ma location
                   </>
                 )}
               </Button>
