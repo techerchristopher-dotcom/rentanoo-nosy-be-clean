@@ -26,27 +26,27 @@ import { SEO_EXCHANGE_URL, SEO_WEATHER_PATH } from "@/config/seoRoutes";
 import type { ExchangeRateTrend } from "@/utils/dualCurrency";
 import { cn } from "@/lib/utils";
 
-function TrendBadge({ trend, large }: { trend: ExchangeRateTrend | null; large?: boolean }) {
+function TrendBadge({ trend, large, onDark }: { trend: ExchangeRateTrend | null; large?: boolean; onDark?: boolean }) {
   const { t } = useTranslation("common");
   if (!trend) return null;
   const label = t(`home.dayContext.rateTrend.${trend}`);
   const iconClass = cn("shrink-0", large ? "h-6 w-6" : "h-5 w-5");
   if (trend === "up") {
     return (
-      <span className="inline-flex items-center text-emerald-600 dark:text-emerald-400" aria-label={label}>
+      <span className={cn("inline-flex items-center", onDark ? "text-emerald-300" : "text-emerald-600 dark:text-emerald-400")} aria-label={label}>
         <TrendingUp className={iconClass} />
       </span>
     );
   }
   if (trend === "down") {
     return (
-      <span className="inline-flex items-center text-rose-600 dark:text-rose-400" aria-label={label}>
+      <span className={cn("inline-flex items-center", onDark ? "text-rose-300" : "text-rose-600 dark:text-rose-400")} aria-label={label}>
         <TrendingDown className={iconClass} />
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center text-muted-foreground" aria-label={label}>
+    <span className={cn("inline-flex items-center", onDark ? "text-white/60" : "text-muted-foreground")} aria-label={label}>
       <Equal className={iconClass} />
     </span>
   );
@@ -104,10 +104,11 @@ export default function TauxChangeMadagascarPage() {
       >
         <div className="mt-8 max-w-xl">
           <SeoStatCard
+            variant="dark"
             label={t("tauxChangePage.liveLabel")}
             loading={rateLoading}
             loadingLabel={t("home.dayContext.loading")}
-            icon={<TrendBadge trend={trend} large />}
+            icon={<TrendBadge trend={trend} large onDark />}
             value={`1 € = ${rateFormatted} Ar`}
             sub={
               <>
@@ -153,10 +154,10 @@ export default function TauxChangeMadagascarPage() {
         <SeoFaqSection title={t("tauxChangePage.faqTitle")} items={faqItems} />
 
         <SeoCtaPanel title={t("tauxChangePage.ctaTitle")} text={t("tauxChangePage.ctaText")}>
-          <Button asChild className="bg-gradient-lagoon shadow-lagoon hover:opacity-90">
+          <Button asChild className="bg-white text-primary font-semibold hover:bg-white/90 shadow-md">
             <Link to="/">{t("tauxChangePage.ctaRent")}</Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="border-white/50 bg-transparent text-white hover:bg-white/10">
             <Link to={SEO_WEATHER_PATH}>{t("tauxChangePage.ctaWeather")}</Link>
           </Button>
         </SeoCtaPanel>

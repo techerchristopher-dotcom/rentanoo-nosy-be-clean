@@ -17,6 +17,8 @@ import {
   SeoCtaPanel,
   SeoDataPanel,
   SeoFaqSection,
+  SeoForecastDayCard,
+  SeoForecastSkeleton,
   SeoPageHero,
   SeoPageShell,
   SeoStatCard,
@@ -103,6 +105,7 @@ export default function MeteoNosyBePage() {
       >
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <SeoStatCard
+            variant="dark"
             label={t("meteoNosyBePage.liveLabel")}
             loading={loading && !weather}
             loadingLabel={t("home.dayContext.loading")}
@@ -120,8 +123,9 @@ export default function MeteoNosyBePage() {
             }
           />
           <SeoStatCard
+            variant="dark"
             label={t("meteoNosyBePage.localTime")}
-            icon={<Clock className="h-5 w-5 text-primary" aria-hidden />}
+            icon={<Clock className="h-5 w-5 text-amber-200" aria-hidden />}
             value={localTime}
             sub={t("meteoNosyBePage.timezone")}
           />
@@ -130,40 +134,25 @@ export default function MeteoNosyBePage() {
 
       <SeoDataPanel title={t("meteoNosyBePage.forecastTitle")} hint={t("meteoNosyBePage.sourceNote")}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-          {(weather?.forecast ?? []).map((day) => {
+          {(weather?.forecast ?? []).map((day, index) => {
             const cat = resolveWeatherCategory({
               weatherCode: day.weatherCode,
               precipitationMm: day.precipitationMm,
               precipitationProbMax: day.precipitationProbMax,
             });
             return (
-              <div
+              <SeoForecastDayCard
                 key={day.date}
-                className="flex flex-col items-center rounded-2xl border border-border/60 bg-card/80 p-4 text-center shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
-              >
-                <p className="text-[11px] font-medium capitalize text-muted-foreground">
-                  {formatForecastDate(day.date, locale)}
-                </p>
-                <div className="my-3 flex h-10 items-center justify-center">
-                  <WeatherIcon category={cat} className="h-6 w-6 text-primary" />
-                </div>
-                <p className="text-sm font-semibold tabular-nums">
-                  {day.tempMinC}° / {day.tempMaxC}°
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                  {t(`home.dayContext.weather.${cat}`)}
-                </p>
-              </div>
+                highlight={index === 0}
+                dateLabel={formatForecastDate(day.date, locale)}
+                icon={<WeatherIcon category={cat} className="h-6 w-6 text-primary" />}
+                temps={`${day.tempMinC}° / ${day.tempMaxC}°`}
+                condition={t(`home.dayContext.weather.${cat}`)}
+              />
             );
           })}
           {loading && !weather?.forecast?.length
-            ? Array.from({ length: 7 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex h-[8.5rem] animate-pulse flex-col items-center justify-center rounded-2xl border border-border/40 bg-muted/30"
-                  aria-hidden
-                />
-              ))
+            ? Array.from({ length: 7 }).map((_, i) => <SeoForecastSkeleton key={i} />)
             : null}
         </div>
       </SeoDataPanel>
@@ -177,10 +166,10 @@ export default function MeteoNosyBePage() {
         <SeoFaqSection title={t("meteoNosyBePage.faqTitle")} items={faqItems} />
 
         <SeoCtaPanel title={t("meteoNosyBePage.ctaTitle")} text={t("meteoNosyBePage.ctaText")}>
-          <Button asChild className="bg-gradient-lagoon shadow-lagoon hover:opacity-90">
+          <Button asChild className="bg-white text-primary font-semibold hover:bg-white/90 shadow-md">
             <Link to="/">{t("meteoNosyBePage.ctaRent")}</Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="border-white/50 bg-transparent text-white hover:bg-white/10">
             <Link to={SEO_EXCHANGE_PATH}>{t("meteoNosyBePage.ctaExchange")}</Link>
           </Button>
         </SeoCtaPanel>

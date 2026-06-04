@@ -112,29 +112,40 @@ function ContextChip({
   tooltip,
 }: ContextChipProps) {
   const cardClass = cn(
-    "group flex flex-col gap-1 rounded-xl px-4 py-3.5 text-left transition-all duration-200",
-    "focus-visible:outline-none focus-visible:ring-2",
+    "premium-card-shine premium-accent-top premium-accent-top-dark group relative flex flex-col gap-1.5 rounded-2xl px-4 py-4 text-left",
+    "transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
     isHero
-      ? "bg-white/[0.08] border border-white/20 text-white backdrop-blur-md hover:bg-white/[0.14] hover:scale-[1.02] focus-visible:ring-white/50"
-      : "bg-background/80 border border-border text-foreground shadow-sm hover:bg-muted/80 hover:scale-[1.01] focus-visible:ring-ring"
+      ? "premium-glass-dark hover:-translate-y-0.5 hover:shadow-[0_8px_28px_-6px_hsl(200_20%_10%/0.45)] focus-visible:ring-white/50"
+      : "premium-glass-light premium-accent-top hover:-translate-y-0.5 hover:shadow-lagoon focus-visible:ring-ring"
   );
 
   const labelClass = cn(
-    "text-[10px] font-medium uppercase tracking-widest",
+    "text-[10px] font-semibold uppercase tracking-[0.18em]",
     isHero ? "text-white/55" : "text-muted-foreground"
   );
 
-  const subClass = cn("text-xs truncate", isHero ? "text-white/65" : "text-muted-foreground");
+  const subClass = cn("text-xs leading-snug truncate", isHero ? "text-white/65" : "text-muted-foreground");
+
+  const iconBadge = icon ? (
+    <span
+      className={cn(
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105",
+        isHero ? "bg-white/10 ring-1 ring-white/15" : "bg-primary/10 ring-1 ring-primary/15"
+      )}
+    >
+      {icon}
+    </span>
+  ) : null;
 
   const content = (
     <>
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <span className={labelClass}>{label}</span>
-        {icon ? <span className="opacity-90">{icon}</span> : null}
+        {iconBadge}
       </div>
       <div
         className={cn(
-          "flex min-h-[1.25rem] items-center text-base font-semibold tabular-nums tracking-tight leading-tight",
+          "flex min-h-[1.35rem] items-center text-lg font-bold tabular-nums tracking-tight leading-tight md:text-xl",
           isHero ? "text-white" : "text-foreground"
         )}
       >
@@ -214,10 +225,20 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
         className={cn("mx-auto w-full max-w-4xl", isHero ? "mb-8" : "mb-6", className)}
         aria-label={t("home.dayContext.ariaLabel")}
       >
+        {isHero ? (
+          <div className="mb-3 flex items-center justify-center gap-2">
+            <span className="h-px w-6 bg-gradient-to-r from-transparent to-white/40" aria-hidden />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
+              {t("home.dayContext.title")}
+            </span>
+            <span className="h-px w-6 bg-gradient-to-l from-transparent to-white/40" aria-hidden />
+          </div>
+        ) : null}
         <div
           className={cn(
             "grid gap-3",
-            cardCount === 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3"
+            cardCount === 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3",
+            isHero && "rounded-2xl p-1.5 ring-1 ring-white/10"
           )}
         >
           <ContextChip

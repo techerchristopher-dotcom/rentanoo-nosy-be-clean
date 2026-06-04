@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { ExternalLink, Info, Loader2, PlaneLanding, PlaneTakeoff } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Seo } from "@/components/seo/Seo";
 import {
   SeoContentSection,
@@ -12,9 +11,11 @@ import {
   SeoDataPanel,
   SeoDataTable,
   SeoDayPills,
+  SeoDisclaimerAlert,
   SeoFaqSection,
   SeoPageHero,
   SeoPageShell,
+  SeoSectionIconTitle,
   SeoStatCard,
   SeoTableBody,
   SeoTableHead,
@@ -47,12 +48,10 @@ function FlightTable({
 
   return (
     <div>
-      <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight md:text-2xl">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-          <Icon className="h-5 w-5 text-primary" aria-hidden />
-        </span>
-        {title}
-      </h2>
+      <SeoSectionIconTitle
+        icon={<Icon className="h-5 w-5 text-primary" aria-hidden />}
+        title={title}
+      />
       <div className="mt-4">
         <SeoDataTable minWidth={520}>
           <SeoTableHead>
@@ -174,48 +173,52 @@ export default function VolsNosyBePage() {
         title={t("volsNosyBePage.title")}
         intro={t("volsNosyBePage.intro")}
       >
-        <Alert className="mt-8 rounded-2xl border-amber-200/80 bg-amber-50/90 text-amber-950 shadow-sm backdrop-blur-sm dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-50">
-          <Info className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden />
-          <AlertTitle>{t("volsNosyBePage.officialDisclaimerTitle")}</AlertTitle>
-          <AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
-            <p>{t("volsNosyBePage.officialDisclaimerText")}</p>
-            <a
-              href={NOSY_BE_OFFICIAL_FLIGHTS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 font-semibold text-amber-950 underline underline-offset-2 hover:text-amber-800 dark:text-amber-50 dark:hover:text-amber-200"
-            >
-              {t("volsNosyBePage.officialDisclaimerLink")}
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            </a>
-          </AlertDescription>
-        </Alert>
+        <SeoDisclaimerAlert>
+          <div className="flex gap-3 text-amber-50">
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-200" aria-hidden />
+            <div>
+              <p className="font-semibold text-white">{t("volsNosyBePage.officialDisclaimerTitle")}</p>
+              <p className="mt-2 text-sm leading-relaxed text-white/80">{t("volsNosyBePage.officialDisclaimerText")}</p>
+              <a
+                href={NOSY_BE_OFFICIAL_FLIGHTS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-100 underline underline-offset-2 hover:text-white"
+              >
+                {t("volsNosyBePage.officialDisclaimerLink")}
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </a>
+            </div>
+          </div>
+        </SeoDisclaimerAlert>
 
         {!configured ? (
-          <div className="mt-8 rounded-2xl border border-dashed border-border/60 bg-card/50 p-6 text-sm text-muted-foreground">
+          <div className="mt-8 rounded-2xl border border-dashed border-white/25 bg-white/5 p-6 text-sm text-white/70 backdrop-blur-sm">
             {t("volsNosyBePage.notConfigured")}
           </div>
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <SeoStatCard
+              variant="dark"
               label={t("volsNosyBePage.nextArrival")}
               loading={loading && !data}
               loadingLabel={t("home.dayContext.loading")}
-              icon={<PlaneLanding className="h-5 w-5 text-sky-600 dark:text-sky-400" aria-hidden />}
+              icon={<PlaneLanding className="h-5 w-5 text-sky-200" aria-hidden />}
               value={nextArrival?.scheduledTime ?? "—"}
               sub={formatFlightSub(nextArrival)}
             />
             <SeoStatCard
+              variant="dark"
               label={t("volsNosyBePage.nextDeparture")}
               loading={loading && !data}
               loadingLabel={t("home.dayContext.loading")}
-              icon={<PlaneTakeoff className="h-5 w-5 text-sky-600 dark:text-sky-400" aria-hidden />}
+              icon={<PlaneTakeoff className="h-5 w-5 text-sky-200" aria-hidden />}
               value={nextDeparture?.scheduledTime ?? "—"}
               sub={formatFlightSub(nextDeparture)}
             />
           </div>
         )}
-        {error ? <p className="mt-4 text-sm text-muted-foreground">{t("volsNosyBePage.unavailable")}</p> : null}
+        {error ? <p className="mt-4 text-sm text-white/70">{t("volsNosyBePage.unavailable")}</p> : null}
       </SeoPageHero>
 
       {configured ? (
@@ -263,13 +266,13 @@ export default function VolsNosyBePage() {
         <SeoFaqSection title={t("volsNosyBePage.faqTitle")} items={faqItems} />
 
         <SeoCtaPanel title={t("volsNosyBePage.ctaTitle")} text={t("volsNosyBePage.ctaText")}>
-          <Button asChild className="bg-gradient-lagoon shadow-lagoon hover:opacity-90">
+          <Button asChild className="bg-white text-primary font-semibold hover:bg-white/90 shadow-md">
             <Link to="/">{t("volsNosyBePage.ctaRent")}</Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="border-white/50 bg-transparent text-white hover:bg-white/10">
             <Link to={SEO_WEATHER_PATH}>{t("volsNosyBePage.ctaWeather")}</Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="border-white/50 bg-transparent text-white hover:bg-white/10">
             <Link to={SEO_EXCHANGE_PATH}>{t("volsNosyBePage.ctaExchange")}</Link>
           </Button>
         </SeoCtaPanel>

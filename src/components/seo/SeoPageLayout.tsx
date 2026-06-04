@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
 
 export type SeoHeroTheme = "weather" | "flights" | "exchange";
 
-const heroThemes: Record<SeoHeroTheme, string> = {
-  weather: "from-sky-100/90 via-teal-50/40 to-background dark:from-sky-950/50 dark:via-teal-950/20",
-  flights: "from-slate-100/90 via-primary/5 to-background dark:from-slate-900/50 dark:via-primary/10",
-  exchange: "from-emerald-100/90 via-teal-50/40 to-background dark:from-emerald-950/40 dark:via-teal-950/20",
+const heroAccents: Record<SeoHeroTheme, string> = {
+  weather: "from-sky-400/20 via-transparent to-amber-300/10",
+  flights: "from-white/10 via-transparent to-sky-300/10",
+  exchange: "from-emerald-400/15 via-transparent to-amber-300/10",
 };
 
 export function SeoPageShell({ children }: { children: ReactNode }) {
@@ -34,20 +34,43 @@ export function SeoPageHero({
   children?: ReactNode;
 }) {
   return (
-    <section className="relative overflow-hidden border-b border-border/40">
-      <div className={cn("absolute inset-0 -z-10 bg-gradient-to-b", heroThemes[theme])} />
+    <section className="relative overflow-hidden bg-gradient-lagoon text-white">
+      <div className="absolute inset-0 premium-mesh" aria-hidden />
       <div
-        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,hsl(var(--primary)/0.12),transparent)]"
+        className={cn(
+          "absolute inset-0 bg-gradient-to-br opacity-60",
+          heroAccents[theme]
+        )}
         aria-hidden
       />
-      <div className="mx-auto max-w-4xl px-4 py-12 md:py-16">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">{eyebrow}</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
+      <div
+        className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-white/10 blur-3xl premium-float-slow"
+        aria-hidden
+      />
+      <div
+        className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-amber-300/10 blur-3xl"
+        style={{ animationDelay: "2s" }}
+        aria-hidden
+      />
+
+      <div className="relative mx-auto max-w-4xl px-4 py-14 md:py-20">
+        <div className="flex items-center gap-3">
+          <span className="h-px w-8 bg-gradient-to-r from-amber-200/80 to-transparent" aria-hidden />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-amber-100/90">
+            {eyebrow}
+          </p>
+        </div>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-5xl md:leading-[1.1] lg:text-[3.25rem]">
           {title}
         </h1>
-        <p className="mt-4 max-w-2xl text-base md:text-lg leading-relaxed text-muted-foreground">{intro}</p>
+        <p className="mt-5 max-w-2xl text-base md:text-lg leading-relaxed text-white/80">{intro}</p>
         {children}
       </div>
+
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"
+        aria-hidden
+      />
     </section>
   );
 }
@@ -60,6 +83,7 @@ export function SeoStatCard({
   loading,
   loadingLabel,
   className,
+  variant = "dark",
 }: {
   label: string;
   value: ReactNode;
@@ -68,28 +92,104 @@ export function SeoStatCard({
   loading?: boolean;
   loadingLabel?: string;
   className?: string;
+  variant?: "dark" | "light";
 }) {
+  const isDark = variant === "dark";
+
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border/60 bg-card/90 p-5 md:p-6 shadow-sm backdrop-blur-sm",
-        "transition-all duration-200 hover:shadow-md hover:border-border",
+        "premium-card-shine premium-accent-top relative rounded-2xl p-5 md:p-6",
+        "transition-all duration-300 hover:-translate-y-0.5",
+        isDark
+          ? "premium-glass-dark premium-accent-top-dark hover:shadow-[0_8px_32px_-8px_hsl(200_20%_10%/0.4)]"
+          : "premium-glass-light premium-accent-top hover:shadow-lagoon",
         className
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{label}</p>
-        {icon ? <span className="opacity-90">{icon}</span> : null}
+        <p
+          className={cn(
+            "text-[10px] font-semibold uppercase tracking-[0.2em]",
+            isDark ? "text-white/55" : "text-muted-foreground"
+          )}
+        >
+          {label}
+        </p>
+        {icon ? (
+          <span
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+              isDark ? "bg-white/10 ring-1 ring-white/15" : "bg-primary/10 ring-1 ring-primary/15"
+            )}
+          >
+            {icon}
+          </span>
+        ) : null}
       </div>
-      <div className="mt-3 flex min-h-[2.25rem] items-center text-3xl font-bold tabular-nums tracking-tight md:text-4xl">
+      <div
+        className={cn(
+          "mt-4 flex min-h-[2.5rem] items-center text-3xl font-bold tabular-nums tracking-tight md:text-[2.5rem] md:leading-none",
+          isDark ? "text-white" : "text-foreground"
+        )}
+      >
         {loading ? (
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" aria-label={loadingLabel} />
+          <Loader2
+            className={cn("h-7 w-7 animate-spin", isDark ? "text-white/70" : "text-muted-foreground")}
+            aria-label={loadingLabel}
+          />
         ) : (
           value
         )}
       </div>
-      {!loading && sub ? <div className="mt-2 text-sm text-muted-foreground">{sub}</div> : null}
+      {!loading && sub ? (
+        <div className={cn("mt-2.5 text-sm leading-snug", isDark ? "text-white/70" : "text-muted-foreground")}>
+          {sub}
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+export function SeoForecastDayCard({
+  dateLabel,
+  icon,
+  temps,
+  condition,
+  highlight,
+}: {
+  dateLabel: string;
+  icon: ReactNode;
+  temps: string;
+  condition: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "premium-card-shine premium-accent-top relative flex flex-col items-center rounded-2xl p-4 text-center",
+        "premium-glass-light transition-all duration-300 hover:-translate-y-1 hover:shadow-lagoon",
+        highlight && "ring-2 ring-primary/30 shadow-lagoon"
+      )}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground capitalize">
+        {dateLabel}
+      </p>
+      <div className="my-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/8 ring-1 ring-primary/15">
+        {icon}
+      </div>
+      <p className="text-base font-bold tabular-nums tracking-tight">{temps}</p>
+      <p className="mt-1.5 text-xs leading-snug text-muted-foreground line-clamp-2">{condition}</p>
+    </div>
+  );
+}
+
+export function SeoForecastSkeleton() {
+  return (
+    <div
+      className="flex h-[9.5rem] animate-pulse flex-col items-center justify-center rounded-2xl border border-border/40 bg-muted/20"
+      aria-hidden
+    />
   );
 }
 
@@ -105,12 +205,16 @@ export function SeoDataPanel({
   className?: string;
 }) {
   return (
-    <section className={cn("mx-auto max-w-4xl px-4 py-10", className)}>
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-        <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{title}</h2>
-        {hint ? <p className="text-xs text-muted-foreground sm:text-right sm:max-w-xs">{hint}</p> : null}
+    <section className={cn("mx-auto max-w-4xl px-4 py-12 md:py-14", className)}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div>
+          <h2 className="premium-section-title text-xl font-bold tracking-tight md:text-2xl">{title}</h2>
+        </div>
+        {hint ? (
+          <p className="text-xs leading-relaxed text-muted-foreground sm:max-w-xs sm:text-right">{hint}</p>
+        ) : null}
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-6">{children}</div>
     </section>
   );
 }
@@ -123,10 +227,12 @@ export function SeoDataTable({
   minWidth?: number;
 }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card/50 shadow-sm">
-      <table className="w-full text-sm" style={minWidth ? { minWidth } : undefined}>
-        {children}
-      </table>
+    <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.04]">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={minWidth ? { minWidth } : undefined}>
+          {children}
+        </table>
+      </div>
     </div>
   );
 }
@@ -134,7 +240,7 @@ export function SeoDataTable({
 export function SeoTableHead({ children }: { children: ReactNode }) {
   return (
     <thead>
-      <tr className="border-b border-border/60 bg-muted/30 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+      <tr className="border-b border-border/50 bg-gradient-to-r from-muted/50 to-muted/30 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
         {children}
       </tr>
     </thead>
@@ -142,16 +248,16 @@ export function SeoTableHead({ children }: { children: ReactNode }) {
 }
 
 export function SeoTableTh({ children, className }: { children: ReactNode; className?: string }) {
-  return <th className={cn("px-4 py-3.5 font-medium", className)}>{children}</th>;
+  return <th className={cn("px-5 py-4 font-semibold", className)}>{children}</th>;
 }
 
 export function SeoTableBody({ children }: { children: ReactNode }) {
-  return <tbody>{children}</tbody>;
+  return <tbody className="divide-y divide-border/40">{children}</tbody>;
 }
 
 export function SeoTableRow({ children }: { children: ReactNode }) {
   return (
-    <tr className="border-b border-border/40 last:border-0 transition-colors hover:bg-muted/25">{children}</tr>
+    <tr className="transition-colors hover:bg-primary/[0.03]">{children}</tr>
   );
 }
 
@@ -165,7 +271,7 @@ export function SeoTableTd({
   colSpan?: number;
 }) {
   return (
-    <td colSpan={colSpan} className={cn("px-4 py-3.5", className)}>
+    <td colSpan={colSpan} className={cn("px-5 py-4", className)}>
       {children}
     </td>
   );
@@ -174,8 +280,8 @@ export function SeoTableTd({
 export function SeoTableLoadingRow({ colSpan, label }: { colSpan: number; label?: string }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-4 py-10 text-center">
-        <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" aria-label={label} />
+      <td colSpan={colSpan} className="px-5 py-12 text-center">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary/60" aria-label={label} />
       </td>
     </tr>
   );
@@ -193,7 +299,11 @@ export function SeoDayPills({
   ariaLabel: string;
 }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin" role="tablist" aria-label={ariaLabel}>
+    <div
+      className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]"
+      role="tablist"
+      aria-label={ariaLabel}
+    >
       {options.map(({ id, label }) => {
         const selected = id === value;
         return (
@@ -204,10 +314,10 @@ export function SeoDayPills({
             aria-selected={selected}
             onClick={() => onChange(id)}
             className={cn(
-              "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
+              "shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300",
               selected
-                ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                : "border-border/60 bg-card/80 text-foreground hover:border-primary/40 hover:bg-muted/50"
+                ? "bg-gradient-lagoon text-white shadow-lagoon scale-[1.02]"
+                : "border border-border/60 bg-card/90 text-foreground hover:border-primary/40 hover:bg-muted/40"
             )}
           >
             {label}
@@ -219,7 +329,7 @@ export function SeoDayPills({
 }
 
 export function SeoContentSection({ children }: { children: ReactNode }) {
-  return <section className="mx-auto max-w-4xl px-4 pb-12">{children}</section>;
+  return <section className="mx-auto max-w-4xl px-4 pb-16">{children}</section>;
 }
 
 export function SeoFaqSection({
@@ -230,13 +340,19 @@ export function SeoFaqSection({
   items: Array<{ q: string; a: string }>;
 }) {
   return (
-    <div className="mt-12">
-      <h2 className="text-xl font-semibold tracking-tight md:text-2xl">{title}</h2>
-      <Accordion type="single" collapsible className="mt-5 rounded-2xl border border-border/60 bg-card/40 px-1 shadow-sm">
+    <div className="mt-14">
+      <h2 className="premium-section-title text-xl font-bold tracking-tight md:text-2xl">{title}</h2>
+      <Accordion
+        type="single"
+        collapsible
+        className="mt-6 overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.04]"
+      >
         {items.map((item, i) => (
-          <AccordionItem key={i} value={`faq-${i}`} className="border-border/40 px-3">
-            <AccordionTrigger className="text-left hover:no-underline">{item.q}</AccordionTrigger>
-            <AccordionContent className="text-muted-foreground">{item.a}</AccordionContent>
+          <AccordionItem key={i} value={`faq-${i}`} className="border-border/40 px-4">
+            <AccordionTrigger className="py-4 text-left font-medium hover:no-underline hover:text-primary">
+              {item.q}
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 leading-relaxed text-muted-foreground">{item.a}</AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
@@ -254,13 +370,46 @@ export function SeoCtaPanel({
   children: ReactNode;
 }) {
   return (
-    <div className="relative mt-12 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-6 md:p-8 shadow-sm">
-      <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+    <div className="premium-cta-panel relative mt-14 overflow-hidden rounded-2xl p-7 md:p-10 text-white">
+      <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-3xl" aria-hidden />
+      <div className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-amber-300/15 blur-3xl" aria-hidden />
       <div className="relative">
-        <h2 className="text-lg font-semibold md:text-xl">{title}</h2>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{text}</p>
-        <div className="mt-5 flex flex-wrap gap-3">{children}</div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">Rentanoo</p>
+        <h2 className="mt-2 text-xl font-bold md:text-2xl">{title}</h2>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/85 md:text-base">{text}</p>
+        <div className="mt-6 flex flex-wrap gap-3 [&_a]:shadow-md">{children}</div>
       </div>
     </div>
+  );
+}
+
+export function SeoDisclaimerAlert({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "mt-8 rounded-2xl border border-amber-200/30 bg-amber-50/10 p-5 backdrop-blur-md",
+        "ring-1 ring-amber-100/20 shadow-sm",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function SeoSectionIconTitle({
+  icon,
+  title,
+}: {
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <h2 className="flex items-center gap-3 text-xl font-bold tracking-tight md:text-2xl">
+      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20 shadow-sm">
+        {icon}
+      </span>
+      {title}
+    </h2>
   );
 }
