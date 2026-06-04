@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import multer from "multer";
 import Stripe from "stripe";
 import { requireAdmin } from "../lib/adminAuth";
 import { getStripe } from "../lib/stripe";
@@ -31,6 +32,14 @@ import {
   saveExchangeSettings,
   startExchangeRateScheduler,
 } from "../lib/exchangeRateService";
+import {
+  loadWhatsAppContact,
+  removeWhatsAppProfilePhoto,
+  updateWhatsAppPhone,
+  uploadWhatsAppProfilePhoto,
+  whatsAppContactToPublicJson,
+} from "../lib/whatsappContactService";
+import { formatWhatsAppPhoneDisplay } from "@/utils/whatsappContact";
 import {
   sanitizeAndRecalculateBookingOptions,
   type RawBookingOptionInput,
@@ -283,6 +292,19 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     });
   });
 
+  // GET /api/public/whatsapp-contact — numéro + photo profil (bouton flottant)
+  app.get("/api/public/whatsapp-contact", async (_req: Request, res: Response) => {
+    try {
+      const contact = await loadWhatsAppContact(supabaseAdmin);
+      return res.json(whatsAppContactToPublicJson(contact));
+    } catch (e: unknown) {
+      return res.status(500).json({
+        ok: false,
+        message: e instanceof Error ? e.message : "Contact WhatsApp indisponible",
+      });
+    }
+  });
+
   // GET /api/public/weather-nosy-be — météo actuelle Nosy Be (Open-Meteo)
   app.get("/api/public/weather-nosy-be", async (req: Request, res: Response) => {
     try {
@@ -409,6 +431,85 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       });
     }
   });
+
+  const whatsappPhotoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const ok = /^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype);
+      cb(null, ok);
+    },
+  });
+
+  function whatsAppContactAdminJson(contact: Awaited<ReturnType<typeof loadWhatsAppContact>>) {
+    return {
+      ok: true,
+      phoneE164: contact.phoneE164,
+      phoneDisplay: formatWhatsAppPhoneDisplay(contact.phoneE164),
+      profilePhotoUrl: contact.profilePhotoUrl,
+    };
+  }
+
+  // GET /api/admin/settings/whatsapp-contact
+  app.get("/api/admin/settings/whatsapp-contact", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    try {
+      const contact = await loadWhatsAppContact(supabaseAdmin);
+      return res.json(whatsAppContactAdminJson(contact));
+    } catch (e: unknown) {
+      return res.status(500).json({ ok: false, message: e instanceof Error ? e.message : "Erreur" });
+    }
+  });
+
+  // PATCH /api/admin/settings/whatsapp-contact — numéro et/ou suppression photo
+  app.patch("/api/admin/settings/whatsapp-contact", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    try {
+      if (req.body?.removePhoto === true) {
+        const contact = await removeWhatsAppProfilePhoto(supabaseAdmin);
+        return res.json(whatsAppContactAdminJson(contact));
+      }
+
+      const phoneRaw = req.body?.phone;
+      if (typeof phoneRaw !== "string" || !phoneRaw.trim()) {
+        return res.status(400).json({ ok: false, message: "Numéro WhatsApp requis." });
+      }
+
+      const contact = await updateWhatsAppPhone(supabaseAdmin, phoneRaw.trim());
+      return res.json(whatsAppContactAdminJson(contact));
+    } catch (e: unknown) {
+      return res.status(400).json({ ok: false, message: e instanceof Error ? e.message : "Erreur" });
+    }
+  });
+
+  // POST /api/admin/settings/whatsapp-contact/photo
+  app.post(
+    "/api/admin/settings/whatsapp-contact/photo",
+    whatsappPhotoUpload.single("photo"),
+    async (req: Request, res: Response) => {
+      const gate = await requireAdmin(req, supabaseAdmin);
+      if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+      const file = req.file;
+      if (!file?.buffer?.length) {
+        return res.status(400).json({ ok: false, message: "Photo requise (JPG, PNG ou WebP, max 2 Mo)." });
+      }
+
+      try {
+        const contact = await uploadWhatsAppProfilePhoto(
+          supabaseAdmin,
+          file.buffer,
+          file.mimetype
+        );
+        return res.json(whatsAppContactAdminJson(contact));
+      } catch (e: unknown) {
+        return res.status(400).json({ ok: false, message: e instanceof Error ? e.message : "Erreur" });
+      }
+    }
+  );
 
   startExchangeRateScheduler(supabaseAdmin);
 

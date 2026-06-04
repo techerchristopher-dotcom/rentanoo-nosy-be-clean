@@ -6,6 +6,7 @@ import {
   FileText,
   LayoutDashboard,
   Menu,
+  MessageCircle,
   Package,
   Receipt,
   Settings2,
@@ -53,7 +54,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Paramètres",
-    items: [{ to: "/admin/settings/exchange", label: "Taux EUR / Ar", icon: Settings2 }],
+    items: [
+      { to: "/admin/settings/exchange", label: "Taux EUR / Ar", icon: Settings2 },
+      { to: "/admin/settings/whatsapp", label: "Contact WhatsApp", icon: MessageCircle },
+    ],
   },
   {
     title: "Rapports",

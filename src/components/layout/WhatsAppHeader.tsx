@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Mail, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getWhatsAppUrl, WHATSAPP_DISPLAY } from "@/constants/contact";
+import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppIcon";
 
 const DIRECT_LINE_NUMBER = "+261373437912"; // Format E.164 pour tel:
@@ -15,6 +15,7 @@ const SCROLL_THRESHOLD = 8;
 
 export function WhatsAppHeader() {
   const { t } = useTranslation("common");
+  const { waUrl, phoneDisplay } = useWhatsAppContact();
   const [atTop, setAtTop] = useState(true);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export function WhatsAppHeader() {
   }, []);
 
   const handleWhatsAppClick = () => {
-    window.open(getWhatsAppUrl(), "_blank", "noopener,noreferrer");
+    window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -46,11 +47,11 @@ export function WhatsAppHeader() {
           <button
             onClick={handleWhatsAppClick}
             className="flex items-center gap-2 md:gap-3 hover:bg-[#25D366]/20 transition-colors duration-200 group px-2 py-1 rounded min-w-0 max-w-full"
-            aria-label={`Contacter le service client via WhatsApp: ${WHATSAPP_DISPLAY}`}
+            aria-label={`Contacter le service client via WhatsApp: ${phoneDisplay}`}
           >
             <WhatsAppIcon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
             <span className="font-bold text-sm md:text-base tracking-tight truncate">
-              {WHATSAPP_DISPLAY}
+              {phoneDisplay}
             </span>
             <span className="text-xs md:text-sm opacity-90 hidden sm:inline truncate">
               {t("whatsapp.contactOnly", "Contact WhatsApp uniquement")}

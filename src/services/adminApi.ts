@@ -573,3 +573,87 @@ export async function adminRefreshExchangeRate(): Promise<EurMgaExchangeRate> {
   }>("/api/admin/settings/exchange-rate/refresh", { method: "POST" });
   return mapExchangeRateResponse(data);
 }
+
+export type WhatsAppContactAdmin = {
+  phoneE164: string;
+  phoneDisplay: string;
+  profilePhotoUrl: string | null;
+};
+
+function mapWhatsAppContactResponse(data: {
+  phoneE164?: string;
+  phoneDisplay?: string;
+  profilePhotoUrl?: string | null;
+}): WhatsAppContactAdmin {
+  return {
+    phoneE164: data.phoneE164 ?? "",
+    phoneDisplay: data.phoneDisplay ?? "",
+    profilePhotoUrl: data.profilePhotoUrl ?? null,
+  };
+}
+
+export async function adminGetWhatsAppContact(): Promise<WhatsAppContactAdmin> {
+  const data = await adminFetch<{
+    ok: boolean;
+    phoneE164: string;
+    phoneDisplay: string;
+    profilePhotoUrl: string | null;
+  }>("/api/admin/settings/whatsapp-contact");
+  return mapWhatsAppContactResponse(data);
+}
+
+export async function adminUpdateWhatsAppPhone(phone: string): Promise<WhatsAppContactAdmin> {
+  const data = await adminFetch<{
+    ok: boolean;
+    phoneE164: string;
+    phoneDisplay: string;
+    profilePhotoUrl: string | null;
+  }>("/api/admin/settings/whatsapp-contact", {
+    method: "PATCH",
+    body: JSON.stringify({ phone }),
+  });
+  return mapWhatsAppContactResponse(data);
+}
+
+export async function adminRemoveWhatsAppPhoto(): Promise<WhatsAppContactAdmin> {
+  const data = await adminFetch<{
+    ok: boolean;
+    phoneE164: string;
+    phoneDisplay: string;
+    profilePhotoUrl: string | null;
+  }>("/api/admin/settings/whatsapp-contact", {
+    method: "PATCH",
+    body: JSON.stringify({ removePhoto: true }),
+  });
+  return mapWhatsAppContactResponse(data);
+}
+
+export async function adminUploadWhatsAppPhoto(file: File): Promise<WhatsAppContactAdmin> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("Session expirée : reconnectez-vous.");
+  }
+
+  const form = new FormData();
+  form.append("photo", file);
+
+  const url = resolveAdminApiUrl("/api/admin/settings/whatsapp-contact/photo");
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: form,
+  });
+
+  const json = (await res.json().catch(() => ({}))) as WhatsAppContactAdmin & {
+    ok?: boolean;
+    message?: string;
+  };
+
+  if (!res.ok) {
+    throw new Error(typeof json.message === "string" ? json.message : `Erreur ${res.status}`);
+  }
+
+  return mapWhatsAppContactResponse(json);
+}

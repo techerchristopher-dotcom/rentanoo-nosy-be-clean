@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
+import { WhatsAppContactProvider } from "@/contexts/WhatsAppContactContext";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import { sendPageView } from "@/lib/gtag";
@@ -86,6 +87,7 @@ const SuppliersList = lazy(() => import("./pages/admin/suppliers/SuppliersList")
 const SupplierForm = lazy(() => import("./pages/admin/suppliers/SupplierForm"));
 const MaintenancePage = lazy(() => import("./pages/admin/maintenance/MaintenancePage"));
 const AdminExchangeSettings = lazy(() => import("./pages/admin/settings/AdminExchangeSettings"));
+const AdminWhatsAppSettings = lazy(() => import("./pages/admin/settings/AdminWhatsAppSettings"));
 const Checking = lazy(() => import("./pages/Checking"));
 const CheckinReturnPage = lazy(() => import("./pages/checkin-return/[bookingId]"));
 const DictionaryIndex = lazy(() => import("./pages/dictionary/DictionaryIndex"));
@@ -117,6 +119,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ExchangeRateProvider>
+        <WhatsAppContactProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -327,6 +330,14 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <AdminExchangeSettings />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="settings/whatsapp"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminWhatsAppSettings />
                   </Suspense>
                 }
               />
@@ -548,6 +559,7 @@ const App = () => (
             </div>
           </BrowserRouter>
         </TooltipProvider>
+        </WhatsAppContactProvider>
         </ExchangeRateProvider>
       </AuthProvider>
     </QueryClientProvider>
