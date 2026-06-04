@@ -79,7 +79,11 @@ function FlightTable({
 export default function VolsNosyBePage() {
   const { t, i18n } = useTranslation("common");
   const [selectedDate, setSelectedDate] = useState(todayYmdNosyBe);
+  const { data: liveData, loading: liveLoading } = useNosyBeFlights();
   const { data, loading, error, configured } = useNosyBeFlights(selectedDate);
+
+  const nextArrival = liveData?.nextArrival ?? null;
+  const nextDeparture = liveData?.nextDeparture ?? null;
 
   const dayOptions = useMemo(() => {
     if (data?.availableDates?.length) return data.availableDates;
@@ -149,11 +153,17 @@ export default function VolsNosyBePage() {
                   {t("volsNosyBePage.nextArrival")}
                 </p>
                 <p className="mt-2 text-2xl font-bold tabular-nums">
-                  {loading && !data ? "…" : data?.nextArrival?.scheduledTime ?? "—"}
+                  {liveLoading && !liveData ? "…" : nextArrival?.scheduledTime ?? "—"}
                 </p>
-                {data?.nextArrival ? (
+                {nextArrival ? (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {data.nextArrival.flightNumber} · {data.nextArrival.airportCode}
+                    {nextArrival.flightNumber} · {nextArrival.airportCode}
+                    {nextArrival.scheduledDate !== todayYmdNosyBe()
+                      ? ` · ${formatYmdLabel(nextArrival.scheduledDate, i18n.language, {
+                          today: t("volsNosyBePage.dayToday"),
+                          tomorrow: t("volsNosyBePage.dayTomorrow"),
+                        })}`
+                      : null}
                   </p>
                 ) : null}
               </Card>
@@ -163,11 +173,17 @@ export default function VolsNosyBePage() {
                   {t("volsNosyBePage.nextDeparture")}
                 </p>
                 <p className="mt-2 text-2xl font-bold tabular-nums">
-                  {loading && !data ? "…" : data?.nextDeparture?.scheduledTime ?? "—"}
+                  {liveLoading && !liveData ? "…" : nextDeparture?.scheduledTime ?? "—"}
                 </p>
-                {data?.nextDeparture ? (
+                {nextDeparture ? (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {data.nextDeparture.flightNumber} · {data.nextDeparture.airportCode}
+                    {nextDeparture.flightNumber} · {nextDeparture.airportCode}
+                    {nextDeparture.scheduledDate !== todayYmdNosyBe()
+                      ? ` · ${formatYmdLabel(nextDeparture.scheduledDate, i18n.language, {
+                          today: t("volsNosyBePage.dayToday"),
+                          tomorrow: t("volsNosyBePage.dayTomorrow"),
+                        })}`
+                      : null}
                   </p>
                 ) : null}
               </Card>

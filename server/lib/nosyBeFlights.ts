@@ -99,6 +99,12 @@ function parseCounterpart(
   };
 }
 
+function normalizeStatus(raw: string): string {
+  const s = raw.trim();
+  if (!s || s.toLowerCase() === "unknown") return "Scheduled";
+  return s;
+}
+
 function parseFlight(record: unknown, type: "arrival" | "departure"): NosyBeFlight | null {
   if (!record || typeof record !== "object") return null;
   const r = record as Record<string, unknown>;
@@ -118,7 +124,7 @@ function parseFlight(record: unknown, type: "arrival" | "departure"): NosyBeFlig
     scheduledDate,
     scheduledLocal,
     scheduledTime,
-    status: pickString(r.status, "Scheduled") || "Scheduled",
+    status: normalizeStatus(pickString(r.status, "Scheduled") || "Scheduled"),
   };
 }
 
