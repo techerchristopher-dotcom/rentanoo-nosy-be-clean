@@ -105,7 +105,7 @@ export default function VehicleDetails() {
   const location = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation("common");
-  const { footnote, formatClientInline } = useExchangeRate();
+  const { footnote, formatClient, formatClientInline } = useExchangeRate();
 
   const fuelLabels = {
     gasoline: t("vehicle.fuel.gasoline"),
@@ -866,7 +866,7 @@ export default function VehicleDetails() {
                   secondaryClassName="text-sm"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  {formatLegacyFormattedPrice(t, vehicleRentalInfo)}
+                  {formatLegacyFormattedPrice(t, vehicleRentalInfo, (mga) => formatClient(mga).primary)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   * Hors options et frais de service

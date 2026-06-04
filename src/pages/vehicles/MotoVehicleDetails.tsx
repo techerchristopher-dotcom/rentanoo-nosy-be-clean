@@ -64,6 +64,7 @@ import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle } from "@/ty
 import { createVehicleRentalInfo } from "@/lib/utils";
 import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
+import { getVehicleCardTotalSummary } from "@/utils/formatVehicleCardRental";
 import { formatCurrency } from "@/utils/currency";
 import { DualPrice } from "@/components/currency/DualPrice";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
@@ -138,7 +139,7 @@ export default function MotoVehicleDetails() {
   const location = useLocation();
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
-  const { footnote, formatClientInline } = useExchangeRate();
+  const { footnote, formatClient, formatClientInline } = useExchangeRate();
   
   // Locale pour formatCurrency (comme dans BookingConfirmationModal)
   const currentLang = i18n.language || "fr";
@@ -829,7 +830,7 @@ export default function MotoVehicleDetails() {
                   secondaryClassName="text-sm"
                 />
                 <p className="text-sm text-muted-foreground">
-                  {formatLegacyFormattedPrice(t, vehicleRentalInfo)}
+                  {formatLegacyFormattedPrice(t, vehicleRentalInfo, (mga) => formatClient(mga).primary)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   {t("booking.excludingFeesNote")}
@@ -1485,8 +1486,8 @@ export default function MotoVehicleDetails() {
                     primaryClassName="text-2xl font-bold text-primary"
                     secondaryClassName="text-xs"
                   />
-                  <div className="text-xs text-muted-foreground">
-                    {formatClientInline(vehicleRentalInfo.pricePerDay)}/{t("par_jour")} × {durationText || ""}
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    {getVehicleCardTotalSummary(t, vehicleRentalInfo, (mga) => formatClient(mga).primary)}
                   </div>
                 </>
               ) : (

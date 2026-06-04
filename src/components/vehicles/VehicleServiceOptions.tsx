@@ -21,6 +21,7 @@ import {
   resolveReturnExclusion,
 } from "@/constants/platformBookingOptions";
 import { requiresHotelName } from "@/utils/bookingLocations";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 interface VehicleServiceOptionsProps {
   vehicle: Vehicle;
@@ -45,6 +46,8 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [hotelName, setHotelName] = useState("");
   const hydratedRef = useRef(false);
+  const { formatClient } = useExchangeRate();
+  const formatEur = (amountMga: number) => formatClient(amountMga).primary;
   
   // Initialiser depuis le brouillon avant toute écriture localStorage
   useEffect(() => {
@@ -203,7 +206,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
     
     console.log('📊 [VehicleServiceOptions] Services construits:', {
       totalServices: services.length,
-      servicesList: services.map(s => `${s.name} (${s.isFree ? 'Gratuit' : s.totalPrice + '€'})`)
+      servicesList: services.map(s => `${s.name} (${s.isFree ? 'Gratuit' : formatEur(s.totalPrice)})`)
     });
 
     return services;
@@ -322,7 +325,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
                 {/* Type de tarification */}
                 <p className="text-xs text-muted-foreground mt-1">
                   {service.type === 'per_day' ? (
-                    `${service.pricePerDay}€/jour × ${rentalDays} ${rentalDays === 1 ? 'jour' : 'jours'}`
+                    `${formatEur(service.pricePerDay)}/jour × ${rentalDays} ${rentalDays === 1 ? 'jour' : 'jours'}`
                   ) : (
                     'Forfait unique'
                   )}
@@ -337,12 +340,12 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
                                 </Badge>
                               ) : (
                   <>
-                    <p className="font-bold text-primary text-lg">
-                      +{service.totalPrice}€
+                    <p className="font-bold text-primary text-lg tabular-nums">
+                      +{formatEur(service.totalPrice)}
                     </p>
                     {service.type === 'per_day' && (
-                      <p className="text-xs text-muted-foreground">
-                        {service.pricePerDay}€/jour
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {formatEur(service.pricePerDay)}/jour
                       </p>
                     )}
                   </>
@@ -369,10 +372,12 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
           <div className="mt-4 pt-4 border-t border-muted">
             <div className="flex justify-between items-center">
               <span className="font-medium">Total options :</span>
-              <span className="font-bold text-primary text-xl">
-                +{availableServices
-                  .filter(s => selectedServices.includes(s.id))
-                  .reduce((sum, s) => sum + s.totalPrice, 0)}€
+              <span className="font-bold text-primary text-xl tabular-nums">
+                +{formatEur(
+                  availableServices
+                    .filter(s => selectedServices.includes(s.id))
+                    .reduce((sum, s) => sum + s.totalPrice, 0)
+                )}
               </span>
             </div>
           </div>
