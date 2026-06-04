@@ -363,3 +363,41 @@ All colors MUST be HSL.
   opacity: 0 !important;
   display: none !important;
 }
+
+/* Bouton WhatsApp flottant mobile */
+@keyframes whatsapp-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes whatsapp-halo {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.18);
+  }
+}
+
+.whatsapp-fab-float {
+  animation: whatsapp-float 3.5s ease-in-out infinite;
+}
+
+.whatsapp-fab-halo {
+  animation: whatsapp-halo 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-fab-float,
+  .whatsapp-fab-halo {
+    animation: none !important;
+  }
+}
