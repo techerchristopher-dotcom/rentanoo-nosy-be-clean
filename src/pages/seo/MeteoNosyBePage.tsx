@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  Clock,
   Cloud,
   CloudFog,
   CloudRain,
@@ -10,14 +11,16 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Seo } from "@/components/seo/Seo";
+import {
+  SeoContentSection,
+  SeoCtaPanel,
+  SeoDataPanel,
+  SeoFaqSection,
+  SeoPageHero,
+  SeoPageShell,
+  SeoStatCard,
+} from "@/components/seo/SeoPageLayout";
 import { useNosyBeLocalTime } from "@/hooks/useNosyBeLocalTime";
 import { useNosyBeWeatherExtended } from "@/hooks/useNosyBeWeatherExtended";
 import { SEO_EXCHANGE_PATH, SEO_WEATHER_URL } from "@/config/seoRoutes";
@@ -76,7 +79,7 @@ export default function MeteoNosyBePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <SeoPageShell>
       <Seo
         title={t("seo.meteoNosyBe.title")}
         description={t("seo.meteoNosyBe.description")}
@@ -92,120 +95,98 @@ export default function MeteoNosyBePage() {
         extraStructuredData={faqSchema}
       />
 
-      <section className="relative overflow-hidden border-b">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-sky-50 via-background to-background dark:from-sky-950/30" />
-        <div className="mx-auto max-w-4xl px-4 py-10 md:py-14">
-          <p className="text-sm font-semibold text-primary">{t("meteoNosyBePage.eyebrow")}</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
-            {t("meteoNosyBePage.title")}
-          </h1>
-          <p className="mt-4 text-base leading-7 text-muted-foreground">
-            {t("meteoNosyBePage.intro")}
-          </p>
+      <SeoPageHero
+        theme="weather"
+        eyebrow={t("meteoNosyBePage.eyebrow")}
+        title={t("meteoNosyBePage.title")}
+        intro={t("meteoNosyBePage.intro")}
+      >
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <SeoStatCard
+            label={t("meteoNosyBePage.liveLabel")}
+            loading={loading && !weather}
+            loadingLabel={t("home.dayContext.loading")}
+            icon={category ? <WeatherIcon category={category} className="text-amber-500" /> : null}
+            value={weather ? `${weather.tempC}°C` : "—"}
+            sub={
+              category ? (
+                <span className="inline-flex items-center gap-2">
+                  <WeatherIcon category={category} className="text-amber-500" />
+                  {t(`home.dayContext.weather.${category}`)}
+                </span>
+              ) : error ? (
+                t("home.dayContext.weatherUnavailable")
+              ) : undefined
+            }
+          />
+          <SeoStatCard
+            label={t("meteoNosyBePage.localTime")}
+            icon={<Clock className="h-5 w-5 text-primary" aria-hidden />}
+            value={localTime}
+            sub={t("meteoNosyBePage.timezone")}
+          />
+        </div>
+      </SeoPageHero>
 
-          <Card className="mt-8 p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">{t("meteoNosyBePage.liveLabel")}</p>
-                <p className="mt-1 text-4xl font-bold tabular-nums">
-                  {loading && !weather ? "…" : weather ? `${weather.tempC}°C` : "—"}
+      <SeoDataPanel title={t("meteoNosyBePage.forecastTitle")} hint={t("meteoNosyBePage.sourceNote")}>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+          {(weather?.forecast ?? []).map((day) => {
+            const cat = resolveWeatherCategory({
+              weatherCode: day.weatherCode,
+              precipitationMm: day.precipitationMm,
+              precipitationProbMax: day.precipitationProbMax,
+            });
+            return (
+              <div
+                key={day.date}
+                className="flex flex-col items-center rounded-2xl border border-border/60 bg-card/80 p-4 text-center shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
+              >
+                <p className="text-[11px] font-medium capitalize text-muted-foreground">
+                  {formatForecastDate(day.date, locale)}
                 </p>
-                {category ? (
-                  <p className="mt-1 flex items-center gap-2 text-muted-foreground">
-                    <WeatherIcon category={category} className="text-amber-500" />
-                    {t(`home.dayContext.weather.${category}`)}
-                  </p>
-                ) : error ? (
-                  <p className="mt-1 text-sm text-muted-foreground">{t("home.dayContext.weatherUnavailable")}</p>
-                ) : null}
+                <div className="my-3 flex h-10 items-center justify-center">
+                  <WeatherIcon category={cat} className="h-6 w-6 text-primary" />
+                </div>
+                <p className="text-sm font-semibold tabular-nums">
+                  {day.tempMinC}° / {day.tempMaxC}°
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                  {t(`home.dayContext.weather.${cat}`)}
+                </p>
               </div>
-              <div className="text-right text-sm text-muted-foreground">
-                <p>{t("meteoNosyBePage.localTime")}</p>
-                <p className="text-lg font-semibold tabular-nums text-foreground">{localTime}</p>
-                <p className="mt-1">{t("meteoNosyBePage.timezone")}</p>
-              </div>
-            </div>
-          </Card>
+            );
+          })}
+          {loading && !weather?.forecast?.length
+            ? Array.from({ length: 7 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex h-[8.5rem] animate-pulse flex-col items-center justify-center rounded-2xl border border-border/40 bg-muted/30"
+                  aria-hidden
+                />
+              ))
+            : null}
         </div>
-      </section>
+      </SeoDataPanel>
 
-      <section className="mx-auto max-w-4xl px-4 py-10">
-        <h2 className="text-xl font-semibold">{t("meteoNosyBePage.forecastTitle")}</h2>
-        <p className="mt-2 text-xs text-muted-foreground">{t("meteoNosyBePage.sourceNote")}</p>
-        <div className="mt-4 overflow-x-auto rounded-xl border">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-4 py-3 font-medium">{t("meteoNosyBePage.tableDay")}</th>
-                <th className="px-4 py-3 font-medium">{t("meteoNosyBePage.tableCondition")}</th>
-                <th className="px-4 py-3 font-medium">{t("meteoNosyBePage.tableTemp")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(weather?.forecast ?? []).map((day) => {
-                const cat = resolveWeatherCategory({
-                  weatherCode: day.weatherCode,
-                  precipitationMm: day.precipitationMm,
-                  precipitationProbMax: day.precipitationProbMax,
-                });
-                return (
-                  <tr key={day.date} className="border-b last:border-0">
-                    <td className="px-4 py-3 capitalize">{formatForecastDate(day.date, locale)}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-2">
-                        <WeatherIcon category={cat} className="text-primary" />
-                        {t(`home.dayContext.weather.${cat}`)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">
-                      {day.tempMinC}° / {day.tempMaxC}°C
-                    </td>
-                  </tr>
-                );
-              })}
-              {loading && !weather?.forecast?.length ? (
-                <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">…</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-4xl px-4 pb-10">
-        <div className="prose prose-neutral dark:prose-invert max-w-none">
+      <SeoContentSection>
+        <div className="prose prose-neutral dark:prose-invert max-w-none prose-headings:tracking-tight">
           <h2>{t("meteoNosyBePage.seoBlockTitle")}</h2>
           <p>{t("meteoNosyBePage.seoBlock")}</p>
         </div>
 
-        <div className="mt-10">
-          <h2 className="text-xl font-semibold">{t("meteoNosyBePage.faqTitle")}</h2>
-          <Accordion type="single" collapsible className="mt-4">
-            {faqItems.map((item, i) => (
-              <AccordionItem key={i} value={`faq-${i}`}>
-                <AccordionTrigger>{item.q}</AccordionTrigger>
-                <AccordionContent>{item.a}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
+        <SeoFaqSection title={t("meteoNosyBePage.faqTitle")} items={faqItems} />
 
-        <Card className="mt-10 p-6 bg-primary/5 border-primary/20">
-          <h2 className="text-lg font-semibold">{t("meteoNosyBePage.ctaTitle")}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{t("meteoNosyBePage.ctaText")}</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button asChild>
-              <Link to="/">{t("meteoNosyBePage.ctaRent")}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to={SEO_EXCHANGE_PATH}>{t("meteoNosyBePage.ctaExchange")}</Link>
-            </Button>
-          </div>
-        </Card>
-      </section>
+        <SeoCtaPanel title={t("meteoNosyBePage.ctaTitle")} text={t("meteoNosyBePage.ctaText")}>
+          <Button asChild className="bg-gradient-lagoon shadow-lagoon hover:opacity-90">
+            <Link to="/">{t("meteoNosyBePage.ctaRent")}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to={SEO_EXCHANGE_PATH}>{t("meteoNosyBePage.ctaExchange")}</Link>
+          </Button>
+        </SeoCtaPanel>
+      </SeoContentSection>
 
       <Footer />
-    </div>
+    </SeoPageShell>
   );
 }

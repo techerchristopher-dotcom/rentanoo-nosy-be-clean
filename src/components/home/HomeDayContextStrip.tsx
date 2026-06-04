@@ -6,6 +6,7 @@ import {
   CloudRain,
   CloudSun,
   Equal,
+  Loader2,
   PlaneLanding,
   PlaneTakeoff,
   Sun,
@@ -77,6 +78,16 @@ function RateTrendIcon({
   return <Equal className={cn(iconClass, stableClass)} aria-label={label} />;
 }
 
+function ChipLoadingValue({ isHero }: { isHero: boolean }) {
+  const { t } = useTranslation("common");
+  return (
+    <Loader2
+      className={cn("h-5 w-5 animate-spin", isHero ? "text-white/75" : "text-muted-foreground")}
+      aria-label={t("home.dayContext.loading")}
+    />
+  );
+}
+
 type ContextChipProps = {
   label: string;
   value: ReactNode;
@@ -123,14 +134,13 @@ function ContextChip({
       </div>
       <div
         className={cn(
-          "text-base font-semibold tabular-nums tracking-tight leading-tight",
-          loading && "animate-pulse opacity-60",
+          "flex min-h-[1.25rem] items-center text-base font-semibold tabular-nums tracking-tight leading-tight",
           isHero ? "text-white" : "text-foreground"
         )}
       >
-        {value}
+        {loading ? <ChipLoadingValue isHero={isHero} /> : value}
       </div>
-      {sub ? <div className={subClass}>{sub}</div> : null}
+      {!loading && sub ? <div className={subClass}>{sub}</div> : null}
     </>
   );
 
@@ -165,7 +175,7 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
 
   const isHero = variant === "hero";
   const weatherLoadingState = weatherLoading && !weather;
-  const rateLoadingState = rateLoading;
+  const rateLoadingState = rateLoading && !trend;
   const flightsLoadingState = flightsLoading && !flights;
 
   const weatherCategory = weather ? weatherCodeCategory(weather.weatherCode) : null;
@@ -193,8 +203,8 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
     ? t("home.dayContext.flightsTomorrow")
     : t("home.dayContext.flightsToday");
 
-  const arrivalTime = flightsLoadingState ? "…" : nextArrival?.scheduledTime ?? "—";
-  const departureTime = flightsLoadingState ? "…" : nextDeparture?.scheduledTime ?? "—";
+  const arrivalTime = nextArrival?.scheduledTime ?? "—";
+  const departureTime = nextDeparture?.scheduledTime ?? "—";
 
   const cardCount = flightsConfigured ? 4 : 3;
 
@@ -221,8 +231,8 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
                 <WeatherIcon category={weatherCategory} className={isHero ? "text-amber-200" : "text-primary"} />
               ) : null
             }
-            value={weatherLoadingState ? "…" : weather ? `${weather.tempC}°C` : "—"}
-            sub={weatherSub}
+            value={weather ? `${weather.tempC}°C` : "—"}
+            sub={weatherLoadingState ? undefined : weatherSub}
           />
 
           {flightsConfigured ? (
@@ -232,7 +242,7 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
               href={SEO_FLIGHTS_PATH}
               ariaLabel={t("home.dayContext.flightsLinkLabel")}
               loading={flightsLoadingState}
-              sub={flightsSub}
+              sub={flightsLoadingState ? undefined : flightsSub}
               value={
                 <span className="inline-flex items-center gap-2 flex-wrap">
                   <span className="inline-flex items-center gap-1">
@@ -268,7 +278,7 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
                 <span>{exchangeValue}</span>
               </span>
             }
-            sub={exchangeSub}
+            sub={rateLoadingState ? undefined : exchangeSub}
           />
 
           <ContextChip

@@ -347,6 +347,7 @@
       "flightsTomorrow": "Next flights tomorrow",
       "exchangeShort": "1 € = {{rate}} Ar",
       "exchangeLiveHint": "Today's rate",
+      "loading": "Loading",
       "exchangeLive": "1 € = {{rate}} Ar (today's rate)",
       "exchangeManual": "1 € = {{rate}} Ar",
       "pricesHint": "Prices shown in € with ariary equivalent",

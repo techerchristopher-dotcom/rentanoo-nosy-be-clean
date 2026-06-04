@@ -1,77 +1,91 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { PlaneLanding, PlaneTakeoff, Info, ExternalLink } from "lucide-react";
+import { ExternalLink, Info, Loader2, PlaneLanding, PlaneTakeoff } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Seo } from "@/components/seo/Seo";
+import {
+  SeoContentSection,
+  SeoCtaPanel,
+  SeoDataPanel,
+  SeoDataTable,
+  SeoDayPills,
+  SeoFaqSection,
+  SeoPageHero,
+  SeoPageShell,
+  SeoStatCard,
+  SeoTableBody,
+  SeoTableHead,
+  SeoTableLoadingRow,
+  SeoTableRow,
+  SeoTableTd,
+  SeoTableTh,
+} from "@/components/seo/SeoPageLayout";
 import { useNosyBeFlights, type NosyBeFlight } from "@/hooks/useNosyBeFlights";
 import { NOSY_BE_OFFICIAL_FLIGHTS_URL, SEO_EXCHANGE_PATH, SEO_FLIGHTS_URL, SEO_WEATHER_PATH } from "@/config/seoRoutes";
 import { formatYmdLabel, todayYmdNosyBe } from "@/utils/nosyBeDates";
-import { cn } from "@/lib/utils";
 
 function FlightTable({
   title,
   flights,
   type,
   emptyLabel,
+  loading,
+  loadingLabel,
 }: {
   title: string;
   flights: NosyBeFlight[];
   type: "arrival" | "departure";
   emptyLabel: string;
+  loading?: boolean;
+  loadingLabel?: string;
 }) {
   const { t } = useTranslation("common");
   const Icon = type === "arrival" ? PlaneLanding : PlaneTakeoff;
 
   return (
     <div>
-      <h2 className="text-xl font-semibold flex items-center gap-2">
-        <Icon className="h-5 w-5 text-primary" aria-hidden />
+      <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight md:text-2xl">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" aria-hidden />
+        </span>
         {title}
       </h2>
-      <div className="mt-4 overflow-x-auto rounded-xl border">
-        <table className="w-full min-w-[520px] text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40 text-left">
-              <th className="px-4 py-3 font-medium">{t("volsNosyBePage.tableTime")}</th>
-              <th className="px-4 py-3 font-medium">{t("volsNosyBePage.tableFlight")}</th>
-              <th className="px-4 py-3 font-medium">{t("volsNosyBePage.tableAirline")}</th>
-              <th className="px-4 py-3 font-medium">
-                {type === "arrival" ? t("volsNosyBePage.tableFrom") : t("volsNosyBePage.tableTo")}
-              </th>
-              <th className="px-4 py-3 font-medium">{t("volsNosyBePage.tableStatus")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {flights.map((f, i) => (
-              <tr key={`${f.flightNumber}-${f.scheduledDate}-${f.scheduledTime}-${i}`} className="border-b last:border-0">
-                <td className="px-4 py-3 tabular-nums font-semibold">{f.scheduledTime}</td>
-                <td className="px-4 py-3 font-medium">{f.flightNumber}</td>
-                <td className="px-4 py-3">{f.airline}</td>
-                <td className="px-4 py-3">
-                  {f.airportCode !== "—" ? `${f.airportCode} — ${f.airportName}` : f.airportName}
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{f.status}</td>
-              </tr>
-            ))}
-            {!flights.length ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
-                  {emptyLabel}
-                </td>
-              </tr>
+      <div className="mt-4">
+        <SeoDataTable minWidth={520}>
+          <SeoTableHead>
+            <SeoTableTh>{t("volsNosyBePage.tableTime")}</SeoTableTh>
+            <SeoTableTh>{t("volsNosyBePage.tableFlight")}</SeoTableTh>
+            <SeoTableTh>{t("volsNosyBePage.tableAirline")}</SeoTableTh>
+            <SeoTableTh>{type === "arrival" ? t("volsNosyBePage.tableFrom") : t("volsNosyBePage.tableTo")}</SeoTableTh>
+            <SeoTableTh>{t("volsNosyBePage.tableStatus")}</SeoTableTh>
+          </SeoTableHead>
+          <SeoTableBody>
+            {loading && !flights.length ? (
+              <SeoTableLoadingRow colSpan={5} label={loadingLabel} />
             ) : null}
-          </tbody>
-        </table>
+            {flights.map((f, i) => (
+              <SeoTableRow key={`${f.flightNumber}-${f.scheduledDate}-${f.scheduledTime}-${i}`}>
+                <SeoTableTd className="font-semibold tabular-nums">{f.scheduledTime}</SeoTableTd>
+                <SeoTableTd className="font-medium">{f.flightNumber}</SeoTableTd>
+                <SeoTableTd>{f.airline}</SeoTableTd>
+                <SeoTableTd>
+                  {f.airportCode !== "—" ? `${f.airportCode} — ${f.airportName}` : f.airportName}
+                </SeoTableTd>
+                <SeoTableTd className="text-muted-foreground">{f.status}</SeoTableTd>
+              </SeoTableRow>
+            ))}
+            {!loading && !flights.length ? (
+              <SeoTableRow>
+                <SeoTableTd colSpan={5} className="py-8 text-center text-muted-foreground">
+                  {emptyLabel}
+                </SeoTableTd>
+              </SeoTableRow>
+            ) : null}
+          </SeoTableBody>
+        </SeoDataTable>
       </div>
     </div>
   );
@@ -95,6 +109,18 @@ export default function VolsNosyBePage() {
     });
   }, [data?.availableDates, data?.forecastDays]);
 
+  const dayPillOptions = useMemo(
+    () =>
+      dayOptions.map((ymd) => ({
+        id: ymd,
+        label: formatYmdLabel(ymd, i18n.language, {
+          today: t("volsNosyBePage.dayToday"),
+          tomorrow: t("volsNosyBePage.dayTomorrow"),
+        }),
+      })),
+    [dayOptions, i18n.language, t]
+  );
+
   const arrivalsForDay = data?.arrivals ?? [];
   const departuresForDay = data?.departures ?? [];
 
@@ -113,8 +139,20 @@ export default function VolsNosyBePage() {
     })),
   };
 
+  const formatFlightSub = (flight: NosyBeFlight | null) => {
+    if (!flight) return undefined;
+    const dateLabel =
+      flight.scheduledDate !== todayYmdNosyBe()
+        ? formatYmdLabel(flight.scheduledDate, i18n.language, {
+            today: t("volsNosyBePage.dayToday"),
+            tomorrow: t("volsNosyBePage.dayTomorrow"),
+          })
+        : null;
+    return [flight.flightNumber, flight.airportCode, dateLabel].filter(Boolean).join(" · ");
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <SeoPageShell>
       <Seo
         title={t("seo.volsNosyBe.title")}
         description={t("seo.volsNosyBe.description")}
@@ -130,177 +168,114 @@ export default function VolsNosyBePage() {
         extraStructuredData={faqSchema}
       />
 
-      <section className="relative overflow-hidden border-b">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-sky-50 via-background to-background dark:from-sky-950/20" />
-        <div className="mx-auto max-w-4xl px-4 py-10 md:py-14">
-          <p className="text-sm font-semibold text-primary">{t("volsNosyBePage.eyebrow")}</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
-            {t("volsNosyBePage.title")}
-          </h1>
-          <p className="mt-4 text-base leading-7 text-muted-foreground">
-            {t("volsNosyBePage.intro")}
-          </p>
+      <SeoPageHero
+        theme="flights"
+        eyebrow={t("volsNosyBePage.eyebrow")}
+        title={t("volsNosyBePage.title")}
+        intro={t("volsNosyBePage.intro")}
+      >
+        <Alert className="mt-8 rounded-2xl border-amber-200/80 bg-amber-50/90 text-amber-950 shadow-sm backdrop-blur-sm dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-50">
+          <Info className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden />
+          <AlertTitle>{t("volsNosyBePage.officialDisclaimerTitle")}</AlertTitle>
+          <AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
+            <p>{t("volsNosyBePage.officialDisclaimerText")}</p>
+            <a
+              href={NOSY_BE_OFFICIAL_FLIGHTS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 font-semibold text-amber-950 underline underline-offset-2 hover:text-amber-800 dark:text-amber-50 dark:hover:text-amber-200"
+            >
+              {t("volsNosyBePage.officialDisclaimerLink")}
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            </a>
+          </AlertDescription>
+        </Alert>
 
-          <Alert className="mt-6 border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-50">
-            <Info className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden />
-            <AlertTitle>{t("volsNosyBePage.officialDisclaimerTitle")}</AlertTitle>
-            <AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
-              <p>{t("volsNosyBePage.officialDisclaimerText")}</p>
-              <a
-                href={NOSY_BE_OFFICIAL_FLIGHTS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-1.5 font-semibold text-amber-950 underline underline-offset-2 hover:text-amber-800 dark:text-amber-50 dark:hover:text-amber-200"
-              >
-                {t("volsNosyBePage.officialDisclaimerLink")}
-                <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              </a>
-            </AlertDescription>
-          </Alert>
-
-          {!configured ? (
-            <Card className="mt-8 p-6 border-dashed">
-              <p className="text-sm text-muted-foreground">{t("volsNosyBePage.notConfigured")}</p>
-            </Card>
-          ) : (
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <Card className="p-5">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <PlaneLanding className="h-4 w-4" aria-hidden />
-                  {t("volsNosyBePage.nextArrival")}
-                </p>
-                <p className="mt-2 text-2xl font-bold tabular-nums">
-                  {loading && !data ? "…" : nextArrival?.scheduledTime ?? "—"}
-                </p>
-                {nextArrival ? (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {nextArrival.flightNumber} · {nextArrival.airportCode}
-                    {nextArrival.scheduledDate !== todayYmdNosyBe()
-                      ? ` · ${formatYmdLabel(nextArrival.scheduledDate, i18n.language, {
-                          today: t("volsNosyBePage.dayToday"),
-                          tomorrow: t("volsNosyBePage.dayTomorrow"),
-                        })}`
-                      : null}
-                  </p>
-                ) : null}
-              </Card>
-              <Card className="p-5">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <PlaneTakeoff className="h-4 w-4" aria-hidden />
-                  {t("volsNosyBePage.nextDeparture")}
-                </p>
-                <p className="mt-2 text-2xl font-bold tabular-nums">
-                  {loading && !data ? "…" : nextDeparture?.scheduledTime ?? "—"}
-                </p>
-                {nextDeparture ? (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {nextDeparture.flightNumber} · {nextDeparture.airportCode}
-                    {nextDeparture.scheduledDate !== todayYmdNosyBe()
-                      ? ` · ${formatYmdLabel(nextDeparture.scheduledDate, i18n.language, {
-                          today: t("volsNosyBePage.dayToday"),
-                          tomorrow: t("volsNosyBePage.dayTomorrow"),
-                        })}`
-                      : null}
-                  </p>
-                ) : null}
-              </Card>
-            </div>
-          )}
-          {error ? (
-            <p className="mt-4 text-sm text-muted-foreground">{t("volsNosyBePage.unavailable")}</p>
-          ) : null}
-        </div>
-      </section>
+        {!configured ? (
+          <div className="mt-8 rounded-2xl border border-dashed border-border/60 bg-card/50 p-6 text-sm text-muted-foreground">
+            {t("volsNosyBePage.notConfigured")}
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <SeoStatCard
+              label={t("volsNosyBePage.nextArrival")}
+              loading={loading && !data}
+              loadingLabel={t("home.dayContext.loading")}
+              icon={<PlaneLanding className="h-5 w-5 text-sky-600 dark:text-sky-400" aria-hidden />}
+              value={nextArrival?.scheduledTime ?? "—"}
+              sub={formatFlightSub(nextArrival)}
+            />
+            <SeoStatCard
+              label={t("volsNosyBePage.nextDeparture")}
+              loading={loading && !data}
+              loadingLabel={t("home.dayContext.loading")}
+              icon={<PlaneTakeoff className="h-5 w-5 text-sky-600 dark:text-sky-400" aria-hidden />}
+              value={nextDeparture?.scheduledTime ?? "—"}
+              sub={formatFlightSub(nextDeparture)}
+            />
+          </div>
+        )}
+        {error ? <p className="mt-4 text-sm text-muted-foreground">{t("volsNosyBePage.unavailable")}</p> : null}
+      </SeoPageHero>
 
       {configured ? (
-        <section className="mx-auto max-w-4xl px-4 py-10 space-y-10">
-          <div>
-            <p className="text-sm font-medium">{t("volsNosyBePage.forecastTitle")}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{t("volsNosyBePage.forecastHint")}</p>
-            <div
-              className="mt-4 flex gap-2 overflow-x-auto pb-1"
-              role="tablist"
-              aria-label={t("volsNosyBePage.forecastTitle")}
-            >
-              {dayOptions.map((ymd) => {
-                const label = formatYmdLabel(ymd, i18n.language, {
-                  today: t("volsNosyBePage.dayToday"),
-                  tomorrow: t("volsNosyBePage.dayTomorrow"),
-                });
-                const selected = ymd === selectedDate;
-                return (
-                  <button
-                    key={ymd}
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    onClick={() => setSelectedDate(ymd)}
-                    className={cn(
-                      "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                      selected
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-background hover:bg-muted"
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+        <SeoDataPanel title={t("volsNosyBePage.forecastTitle")} hint={t("volsNosyBePage.forecastHint")}>
+          <SeoDayPills
+            options={dayPillOptions}
+            value={selectedDate}
+            onChange={setSelectedDate}
+            ariaLabel={t("volsNosyBePage.forecastTitle")}
+          />
+          <p className="mt-4 text-xs text-muted-foreground">{t("volsNosyBePage.sourceNote")}</p>
+          <div className="mt-8 space-y-10">
+            <FlightTable
+              title={t("volsNosyBePage.arrivalsTitle")}
+              flights={arrivalsForDay}
+              type="arrival"
+              loading={loading}
+              loadingLabel={t("home.dayContext.loading")}
+              emptyLabel={t("volsNosyBePage.noFlights")}
+            />
+            <FlightTable
+              title={t("volsNosyBePage.departuresTitle")}
+              flights={departuresForDay}
+              type="departure"
+              loading={loading}
+              loadingLabel={t("home.dayContext.loading")}
+              emptyLabel={t("volsNosyBePage.noFlights")}
+            />
           </div>
-
-          <p className="text-xs text-muted-foreground">{t("volsNosyBePage.sourceNote")}</p>
-          <FlightTable
-            title={t("volsNosyBePage.arrivalsTitle")}
-            flights={arrivalsForDay}
-            type="arrival"
-            emptyLabel={loading ? "…" : t("volsNosyBePage.noFlights")}
-          />
-          <FlightTable
-            title={t("volsNosyBePage.departuresTitle")}
-            flights={departuresForDay}
-            type="departure"
-            emptyLabel={loading ? "…" : t("volsNosyBePage.noFlights")}
-          />
-        </section>
+          {loading && data ? (
+            <p className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              {t("home.dayContext.loading")}
+            </p>
+          ) : null}
+        </SeoDataPanel>
       ) : null}
 
-      <section className="mx-auto max-w-4xl px-4 pb-10">
-        <div className="prose prose-neutral dark:prose-invert max-w-none">
+      <SeoContentSection>
+        <div className="prose prose-neutral dark:prose-invert max-w-none prose-headings:tracking-tight">
           <h2>{t("volsNosyBePage.seoBlockTitle")}</h2>
           <p>{t("volsNosyBePage.seoBlock")}</p>
         </div>
 
-        <div className="mt-10">
-          <h2 className="text-xl font-semibold">{t("volsNosyBePage.faqTitle")}</h2>
-          <Accordion type="single" collapsible className="mt-4">
-            {faqItems.map((item, i) => (
-              <AccordionItem key={i} value={`faq-${i}`}>
-                <AccordionTrigger>{item.q}</AccordionTrigger>
-                <AccordionContent>{item.a}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
+        <SeoFaqSection title={t("volsNosyBePage.faqTitle")} items={faqItems} />
 
-        <Card className="mt-10 p-6 bg-primary/5 border-primary/20">
-          <h2 className="text-lg font-semibold">{t("volsNosyBePage.ctaTitle")}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{t("volsNosyBePage.ctaText")}</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button asChild>
-              <Link to="/">{t("volsNosyBePage.ctaRent")}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to={SEO_WEATHER_PATH}>{t("volsNosyBePage.ctaWeather")}</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to={SEO_EXCHANGE_PATH}>{t("volsNosyBePage.ctaExchange")}</Link>
-            </Button>
-          </div>
-        </Card>
-      </section>
+        <SeoCtaPanel title={t("volsNosyBePage.ctaTitle")} text={t("volsNosyBePage.ctaText")}>
+          <Button asChild className="bg-gradient-lagoon shadow-lagoon hover:opacity-90">
+            <Link to="/">{t("volsNosyBePage.ctaRent")}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to={SEO_WEATHER_PATH}>{t("volsNosyBePage.ctaWeather")}</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to={SEO_EXCHANGE_PATH}>{t("volsNosyBePage.ctaExchange")}</Link>
+          </Button>
+        </SeoCtaPanel>
+      </SeoContentSection>
 
       <Footer />
-    </div>
+    </SeoPageShell>
   );
 }

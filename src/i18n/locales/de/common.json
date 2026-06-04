@@ -130,6 +130,7 @@
       "flightsTomorrow": "Nächste Flüge morgen",
       "exchangeShort": "1 € = {{rate}} Ar",
       "exchangeLiveHint": "Tageskurs",
+      "loading": "Wird geladen",
       "exchangeLive": "1 € = {{rate}} Ar (Tageskurs)",
       "exchangeManual": "1 € = {{rate}} Ar",
       "pricesHint": "Preise in € mit Ariary-Äquivalent",
