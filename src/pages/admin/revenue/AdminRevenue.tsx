@@ -24,10 +24,10 @@ function fmtEur(n: number): string {
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
-function AdminRevenueAmount({ amountEur, className }: { amountEur: number; className?: string }) {
+function AdminRevenueAmount({ amountMga, className }: { amountMga: number; className?: string }) {
   return (
     <DualPrice
-      amountEur={amountEur}
+      amountMga={amountMga}
       variant="admin"
       className={cn("items-end", className)}
       primaryClassName="text-2xl font-bold tabular-nums"
@@ -129,25 +129,25 @@ export default function AdminRevenue() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total encaissé</CardDescription>
-            <AdminRevenueAmount amountEur={summary.total} />
+            <AdminRevenueAmount amountMga={summary.total} />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Espèces</CardDescription>
-            <AdminRevenueAmount amountEur={summary.totalCash} className="text-emerald-700 dark:text-emerald-400" />
+            <AdminRevenueAmount amountMga={summary.totalCash} className="text-emerald-700 dark:text-emerald-400" />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>CB (terminal)</CardDescription>
-            <AdminRevenueAmount amountEur={summary.totalCardTerminal} className="text-sky-700 dark:text-sky-400" />
+            <AdminRevenueAmount amountMga={summary.totalCardTerminal} className="text-sky-700 dark:text-sky-400" />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Stripe (en ligne)</CardDescription>
-            <AdminRevenueAmount amountEur={summary.totalStripe} className="text-violet-700 dark:text-violet-400" />
+            <AdminRevenueAmount amountMga={summary.totalStripe} className="text-violet-700 dark:text-violet-400" />
           </CardHeader>
         </Card>
       </div>
@@ -200,7 +200,7 @@ export default function AdminRevenue() {
                         </span>
                       </td>
                       <td className="py-2 pr-4 text-right">
-                        <DualPrice amountEur={b.total_price} variant="admin" inline className="justify-end" />
+                        <DualPrice amountMga={b.total_price} variant="admin" inline className="justify-end" />
                       </td>
                       <td className="py-2">
                         <Link to={`/admin/bookings/${b.id}`} className="text-primary text-xs hover:underline">
@@ -214,7 +214,7 @@ export default function AdminRevenue() {
                   <tr className="border-t border-border font-medium">
                     <td colSpan={4} className="pt-3 text-right pr-4">Total</td>
                     <td className="pt-3 text-right pr-4">
-                      <DualPrice amountEur={summary.total} variant="admin" inline />
+                      <DualPrice amountMga={summary.total} variant="admin" inline />
                     </td>
                     <td />
                   </tr>

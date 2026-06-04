@@ -1,8 +1,8 @@
-/** Prix fixe plateforme pour les options aéroport (€, forfait unique). */
-export const PLATFORM_AIRPORT_OPTION_PRICE = 16;
+/** Prix fixe plateforme pour les options aéroport (MGA, forfait unique — équivalent historique ~16 €). */
+export const PLATFORM_AIRPORT_OPTION_PRICE = 80_000;
 
-/** Prix fixe plateforme pour les options hôtel (€, forfait unique). */
-export const PLATFORM_HOTEL_OPTION_PRICE = 10;
+/** Prix fixe plateforme pour les options hôtel (MGA, forfait unique — équivalent historique ~10 €). */
+export const PLATFORM_HOTEL_OPTION_PRICE = 50_000;
 
 export const PLATFORM_AIRPORT_PICKUP_ID = "platform-airport-pickup";
 export const PLATFORM_AIRPORT_RETURN_ID = "platform-airport-return";

@@ -120,7 +120,7 @@ export function BookingActionsBar({
             <div>
               <div className="font-medium text-violet-900 dark:text-violet-100">Supplément prolongation</div>
               <div className="text-sm text-violet-800/80 dark:text-violet-200/80">
-                <DualPrice amountEur={extensionPending.deltaTotalTTC} variant="admin" inline />
+                <DualPrice amountMga={extensionPending.deltaTotalTTC} variant="admin" inline />
                 {" "}à encaisser
               </div>
             </div>
@@ -162,7 +162,7 @@ export function BookingActionsBar({
               Paiement
               {needsPayment ? (
                 <span className="normal-case font-bold text-foreground ml-1">
-                  — <DualPrice amountEur={totalEur} variant="admin" inline />
+                  — <DualPrice amountMga={totalEur} variant="admin" inline />
                 </span>
               ) : null}
             </div>

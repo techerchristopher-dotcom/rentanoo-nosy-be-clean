@@ -20,7 +20,7 @@ export function VehicleCardRentalPricing({
     return (
       <>
         <DualPrice
-          amountEur={dailyPrice}
+          amountMga={dailyPrice}
           variant="client"
           className="items-end"
           primaryClassName="text-2xl font-bold text-primary flex items-center gap-0.5"
@@ -35,7 +35,7 @@ export function VehicleCardRentalPricing({
   return (
     <div className="flex flex-col items-end">
       <DualPrice
-        amountEur={dailyPrice}
+        amountMga={dailyPrice}
         variant="client"
         className="items-end"
         primaryClassName="text-2xl font-bold text-primary"

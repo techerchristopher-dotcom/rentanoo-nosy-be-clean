@@ -13,7 +13,7 @@ import {
   type EurMgaExchangeRate,
 } from "@/services/adminApi";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
-import { formatExchangeRateFootnote, formatAriary, eurToAriary } from "@/utils/dualCurrency";
+import { formatExchangeRateFootnote, formatAriary, formatEur, ariaryToEur } from "@/utils/dualCurrency";
 import { cn } from "@/lib/utils";
 
 type RateMode = "manual" | "live";
@@ -79,9 +79,9 @@ export default function AdminExchangeSettings() {
 
   const previewRate = parseFloat(rateStr.replace(",", "."));
   const displayRate = mode === "live" ? (liveMeta.lastLiveRate ?? previewRate) : previewRate;
-  const exampleEur = 70;
-  const exampleAr =
-    Number.isFinite(displayRate) && displayRate > 0 ? eurToAriary(exampleEur, displayRate) : 0;
+  const exampleMga = 50_000;
+  const exampleEur =
+    Number.isFinite(displayRate) && displayRate > 0 ? ariaryToEur(exampleMga, displayRate) : 0;
 
   const footnotePreview = formatExchangeRateFootnote(
     {
@@ -265,12 +265,12 @@ export default function AdminExchangeSettings() {
 
           {Number.isFinite(displayRate) && displayRate > 0 ? (
             <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1">
-              <div className="text-muted-foreground">Aperçu (location 70 €) :</div>
+              <div className="text-muted-foreground">Aperçu (scooter 50 000 Ar / jour) :</div>
               <div>
-                Client : <strong>70,00 €</strong> · ≈ {formatAriary(exampleAr)}
+                Client : <strong>{formatEur(exampleEur)}</strong> · {formatAriary(exampleMga)}
               </div>
               <div>
-                Admin : <strong>{formatAriary(exampleAr)}</strong> · ≈ 70,00 €
+                Admin : <strong>{formatAriary(exampleMga)}</strong> · ≈ {formatEur(exampleEur)}
               </div>
             </div>
           ) : null}

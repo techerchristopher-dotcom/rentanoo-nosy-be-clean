@@ -69,7 +69,7 @@ export function BookingDetailHeader({
           <div className="text-left sm:text-right shrink-0">
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">Total locataire</div>
             <DualPrice
-              amountEur={totalEur}
+              amountMga={totalEur}
               variant="admin"
               className="items-start sm:items-end"
               primaryClassName="text-2xl sm:text-3xl font-bold tabular-nums text-foreground"

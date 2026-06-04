@@ -2135,7 +2135,7 @@ export default function ManageVehicle() {
                 {/* Prix de base */}
                 <div className="space-y-2">
                   <Label htmlFor="pricePerDay" className="flex items-center gap-2">
-                    Prix journalier de base *
+                    Prix journalier de base (Ar) *
                     {validationErrors.pricePerDay ? (
                       <AlertCircle className="h-4 w-4 text-red-500" />
                     ) : formData.pricePerDay && (
@@ -2147,9 +2147,9 @@ export default function ManageVehicle() {
                     type="number"
                     value={formData.pricePerDay}
                     onChange={(e) => handleInputChange("pricePerDay", e.target.value)}
-                    placeholder="50"
-                    min="1"
-                    step="0.01"
+                    placeholder="50000"
+                    min="1000"
+                    step="1000"
                     className={validationErrors.pricePerDay ? "border-red-500 focus:border-red-500" : ""}
                   />
                   {validationErrors.pricePerDay && (
@@ -2160,7 +2160,7 @@ export default function ManageVehicle() {
                 {/* Tarif agence (réservations passées en agence / admin) */}
                 <div className="space-y-2">
                   <Label htmlFor="pricePerDayAgency" className="flex items-center gap-2">
-                    Tarif journalier agence (€)
+                    Tarif journalier agence (Ar)
                     {validationErrors.pricePerDayAgency ? (
                       <AlertCircle className="h-4 w-4 text-red-500" />
                     ) : formData.pricePerDayAgency?.trim() ? (

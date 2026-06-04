@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { roundAriaryToThousand } from "@/utils/dualCurrency";
 import { RentalCalculation, VehicleRentalInfo } from "@/types";
 import {
   computeBaseRentalPrice,
@@ -28,8 +29,8 @@ export function calculateRentalDays(
 /**
  * Calcule le coût total de location à partir des jours facturables.
  */
-export function calculateRentalCost(pricePerDay: number, days: number): number {
-  return Math.round(Math.max(0, days) * Math.max(0, pricePerDay) * 100) / 100;
+export function calculateRentalCost(pricePerDayMga: number, days: number): number {
+  return roundAriaryToThousand(Math.max(0, days) * Math.max(0, pricePerDayMga));
 }
 
 /**

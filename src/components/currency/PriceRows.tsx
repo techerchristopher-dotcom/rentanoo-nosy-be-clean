@@ -2,16 +2,16 @@ import type { ReactNode } from "react";
 import { DualPrice } from "@/components/currency/DualPrice";
 import { cn } from "@/lib/utils";
 
-/** Ligne prix client (€ puis Ar) — alignée à droite pour les récapitulatifs. */
+/** Ligne prix client (€ variable puis Ar fixe) — alignée à droite pour les récapitulatifs. */
 export function ClientPriceRow({
   label,
-  amountEur,
+  amountMga,
   className,
   labelClassName,
   bold = false,
 }: {
   label: ReactNode;
-  amountEur: number;
+  amountMga: number;
   className?: string;
   labelClassName?: string;
   bold?: boolean;
@@ -20,7 +20,7 @@ export function ClientPriceRow({
     <div className={cn("flex justify-between items-start gap-4", className)}>
       <span className={cn("text-sm text-muted-foreground", labelClassName)}>{label}</span>
       <DualPrice
-        amountEur={amountEur}
+        amountMga={amountMga}
         variant="client"
         className="items-end text-right shrink-0"
         primaryClassName={cn("tabular-nums", bold && "font-bold text-foreground")}
@@ -30,15 +30,15 @@ export function ClientPriceRow({
   );
 }
 
-/** Ligne prix admin (Ar puis €) — alignée à droite. */
+/** Ligne prix admin (Ar fixe puis ≈ €) — alignée à droite. */
 export function AdminPriceRow({
   label,
-  amountEur,
+  amountMga,
   className,
   bold = false,
 }: {
   label: ReactNode;
-  amountEur: number;
+  amountMga: number;
   className?: string;
   bold?: boolean;
 }) {
@@ -46,7 +46,7 @@ export function AdminPriceRow({
     <div className={cn("flex justify-between items-start gap-4", className)}>
       <span className="text-muted-foreground">{label}</span>
       <DualPrice
-        amountEur={amountEur}
+        amountMga={amountMga}
         variant="admin"
         className="items-end text-right shrink-0"
         primaryClassName={cn("tabular-nums", bold && "font-bold text-base")}

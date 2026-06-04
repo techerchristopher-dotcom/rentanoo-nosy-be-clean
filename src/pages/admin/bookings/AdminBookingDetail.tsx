@@ -465,7 +465,7 @@ export default function AdminBookingDetail() {
       <BookingCollectCashDialog
         open={cashDialogOpen}
         onOpenChange={setCashDialogOpen}
-        amountEur={cashDialogMode === "extension" && extensionPending ? extensionPending.deltaTotalTTC : totalEur}
+        amountMga={cashDialogMode === "extension" && extensionPending ? extensionPending.deltaTotalTTC : totalEur}
         loading={cashDialogMode === "extension" ? extensionCollectLoading : collectLoading}
         title={cashDialogMode === "extension" ? "Encaisser le supplément en espèces" : "Encaisser en espèces"}
         onConfirmEur={() => void (cashDialogMode === "extension" ? runCollectExtensionEur() : runCollectCashEur())}

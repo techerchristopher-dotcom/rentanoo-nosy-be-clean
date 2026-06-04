@@ -17,9 +17,8 @@
  * }
  * 
  * La fonction lit la réservation depuis la DB (source de vérité) :
- * - pricing_mode 'web' (ou absent / non 'admin') : TTC = subtotal + 15 % locataire (comportement historique).
- * - pricing_mode 'admin' : pas de frais checkout — TTC = total_price du booking tel qu’en base.
- * - EUROS en DB ; centimes Stripe : Math.round(amount * 100)
+ * - Montants en DB en ariary (MGA) ; conversion EUR au checkout Stripe
+ * - pricing_mode 'web' : TTC MGA = subtotal + 15 % locataire → converti en EUR pour Stripe
  * 
  * Réponse :
  * - 200 : { "url": "https://checkout.stripe.com/..." }
@@ -314,21 +313,37 @@ Deno.serve(async (req) => {
     }
 
     // ============================================
-    // CALCUL DU MONTANT TTC (selon pricing_mode)
+    // CALCUL DU MONTANT TTC (selon pricing_mode) — montants en MGA en base
     // ============================================
     const SERVICE_FEE_PERCENT_RENTER = 0.15;
 
-    function calcServiceFeeRenter(subtotal: number): number {
-      return Math.round(subtotal * SERVICE_FEE_PERCENT_RENTER * 100) / 100;
+    function calcServiceFeeRenter(subtotalMga: number): number {
+      return Math.round(subtotalMga * SERVICE_FEE_PERCENT_RENTER);
     }
 
-    function calcRenterTotal(subtotal: number): number {
-      const serviceFee = calcServiceFeeRenter(subtotal);
-      return Math.round((subtotal + serviceFee) * 100) / 100;
+    function calcRenterTotalMga(subtotalMga: number): number {
+      return subtotalMga + calcServiceFeeRenter(subtotalMga);
+    }
+
+    async function fetchEurMgaRate(): Promise<number> {
+      const { data, error } = await supabaseAdmin
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "eur_mga_exchange")
+        .maybeSingle();
+      if (error || !data?.value) return 5000;
+      const raw = data.value as Record<string, unknown>;
+      const rate = Number(raw.rate);
+      return Number.isFinite(rate) && rate > 0 ? Math.round(rate) : 5000;
+    }
+
+    function mgaToEurForStripe(mga: number, rate: number): number {
+      if (!Number.isFinite(mga) || mga <= 0 || rate <= 0) return 0;
+      return Math.round((mga / rate) * 100) / 100;
     }
 
     const subtotal = Number(booking.subtotal || 0);
-    let amountTTC: number;
+    let amountTTCMga: number;
 
     if (isAdminPricing) {
       const totalFromDb = Number(booking.total_price ?? 0);
@@ -350,13 +365,12 @@ Deno.serve(async (req) => {
           },
         );
       }
-      amountTTC = Math.round(totalFromDb * 100) / 100;
-      console.log("💰 [create-checkout-session] Montant admin (total_price, sans frais checkout):", {
+      amountTTCMga = Math.round(totalFromDb);
+      console.log("💰 [create-checkout-session] Montant admin (total_price MGA, sans frais checkout):", {
         bookingId,
         pricing_mode: pricingModeRaw,
         total_price_DB: totalFromDb,
-        amountTTC,
-        amountTTC_cents: Math.round(amountTTC * 100),
+        amountTTCMga,
       });
     } else {
       if (!subtotal || subtotal <= 0) {
@@ -379,14 +393,13 @@ Deno.serve(async (req) => {
           },
         );
       }
-      amountTTC = calcRenterTotal(subtotal);
-      console.log("💰 [create-checkout-session] Montant web (subtotal + 15 %):", {
+      amountTTCMga = calcRenterTotalMga(subtotal);
+      console.log("💰 [create-checkout-session] Montant web (subtotal MGA + 15 %):", {
         bookingId,
         pricing_mode: pricingModeRaw ?? "web (default)",
         subtotal_DB: subtotal,
         service_fee_renter: calcServiceFeeRenter(subtotal),
-        amountTTC,
-        amountTTC_cents: Math.round(amountTTC * 100),
+        amountTTCMga,
       });
     }
 
@@ -515,8 +528,18 @@ Deno.serve(async (req) => {
     console.log("✅ [create-checkout-session] Stripe initialisé, création de la session...");
 
     // Créer la session Stripe Checkout
-    // UNITÉ : Stripe attend les montants en CENTIMES
-    const unitAmountCents = Math.round(amountTTC * 100);
+    // Montants DB en MGA → conversion EUR pour Stripe (centimes)
+    const exchangeRate = await fetchEurMgaRate();
+    const amountTTCEur = mgaToEurForStripe(amountTTCMga, exchangeRate);
+    const unitAmountCents = Math.round(amountTTCEur * 100);
+
+    console.log("💱 [create-checkout-session] Conversion MGA → EUR pour Stripe:", {
+      bookingId,
+      amountTTCMga,
+      exchangeRate,
+      amountTTCEur,
+      unitAmountCents,
+    });
     
     const sessionOptions: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",

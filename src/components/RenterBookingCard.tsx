@@ -1033,7 +1033,7 @@ export default function RenterBookingCard({
                       <span className="font-medium text-foreground">{t('bookings.card.totalLabel')}</span>
                       <span className="ml-2">
                         <DualPrice
-                          amountEur={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
+                          amountMga={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
                           variant="client"
                           primaryClassName="font-bold text-primary text-lg"
                           secondaryClassName="text-xs"
@@ -1528,7 +1528,7 @@ export default function RenterBookingCard({
                 <div className="bg-card rounded-lg border border-border/50 p-3 space-y-2">
                   <ClientPriceRow
                     label="Location véhicule"
-                    amountEur={cardRentalPricing ? cardBasePrice : 0}
+                    amountMga={cardRentalPricing ? cardBasePrice : 0}
                   />
                   <p className="text-xs text-muted-foreground text-right">
                     {formatClientInline(booking.vehicle?.dailyPrice || 0)}/jour × {cardDurationText}
@@ -1556,7 +1556,7 @@ export default function RenterBookingCard({
                             {option.name}
                           </span>
                           <DualPrice
-                            amountEur={option.totalPrice}
+                            amountMga={option.totalPrice}
                             variant="client"
                             className="items-end min-w-[80px]"
                             primaryClassName="text-base font-bold text-primary"
@@ -1567,7 +1567,7 @@ export default function RenterBookingCard({
                       <div className="pt-2 border-t border-border/50 mt-2">
                         <ClientPriceRow
                           label="Sous-total options"
-                          amountEur={getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)}
+                          amountMga={getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)}
                           bold
                         />
                       </div>
@@ -1580,15 +1580,15 @@ export default function RenterBookingCard({
 
               {/* Section Total - avec alignement parfait */}
               <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
-                <ClientPriceRow label="Sous-total" amountEur={cardRentalPricing ? cardSubtotal : 0} bold />
-                <ClientPriceRow label="Frais de service (15%)" amountEur={cardRentalPricing ? cardServiceFee : 0} />
+                <ClientPriceRow label="Sous-total" amountMga={cardRentalPricing ? cardSubtotal : 0} bold />
+                <ClientPriceRow label="Frais de service (15%)" amountMga={cardRentalPricing ? cardServiceFee : 0} />
 
                 <Separator className="border-primary/30" />
 
                 <div className="flex justify-between items-start pt-2 gap-4">
                   <span className="text-lg font-bold text-foreground">TOTAL À PAYER</span>
                   <DualPrice
-                    amountEur={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
+                    amountMga={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
                     variant="client"
                     className="items-end text-right min-w-[100px]"
                     primaryClassName="text-3xl font-bold text-primary"

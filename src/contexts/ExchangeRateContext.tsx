@@ -25,10 +25,10 @@ type ExchangeRateContextValue = {
   trend: ExchangeRateTrend | null;
   loading: boolean;
   refresh: () => Promise<void>;
-  formatClient: (eur: number) => DualPriceFormatted;
-  formatAdmin: (eur: number) => DualPriceFormatted;
-  formatClientInline: (eur: number) => string;
-  formatAdminInline: (eur: number) => string;
+  formatClient: (amountMga: number) => DualPriceFormatted;
+  formatAdmin: (amountMga: number) => DualPriceFormatted;
+  formatClientInline: (amountMga: number) => string;
+  formatAdminInline: (amountMga: number) => string;
   footnote: string;
 };
 
@@ -86,10 +86,10 @@ export function ExchangeRateProvider({ children }: { children: ReactNode }) {
       trend,
       loading,
       refresh,
-      formatClient: (eur) => formatDualPrice(eur, config, "client"),
-      formatAdmin: (eur) => formatDualPrice(eur, config, "admin"),
-      formatClientInline: (eur) => formatDualPriceInline(eur, config, "client"),
-      formatAdminInline: (eur) => formatDualPriceInline(eur, config, "admin"),
+      formatClient: (amountMga) => formatDualPrice(amountMga, config, "client"),
+      formatAdmin: (amountMga) => formatDualPrice(amountMga, config, "admin"),
+      formatClientInline: (amountMga) => formatDualPriceInline(amountMga, config, "client"),
+      formatAdminInline: (amountMga) => formatDualPriceInline(amountMga, config, "admin"),
       footnote: formatExchangeRateFootnote(config, { mode }),
     };
   }, [config, mode, trend, loading, refresh]);
@@ -106,10 +106,10 @@ export function useExchangeRate(): ExchangeRateContextValue {
       trend: null,
       loading: false,
       refresh: async () => {},
-      formatClient: (eur) => formatDualPrice(eur, FALLBACK_EXCHANGE, "client"),
-      formatAdmin: (eur) => formatDualPrice(eur, FALLBACK_EXCHANGE, "admin"),
-      formatClientInline: (eur) => formatDualPriceInline(eur, FALLBACK_EXCHANGE, "client"),
-      formatAdminInline: (eur) => formatDualPriceInline(eur, FALLBACK_EXCHANGE, "admin"),
+      formatClient: (amountMga) => formatDualPrice(amountMga, FALLBACK_EXCHANGE, "client"),
+      formatAdmin: (amountMga) => formatDualPrice(amountMga, FALLBACK_EXCHANGE, "admin"),
+      formatClientInline: (amountMga) => formatDualPriceInline(amountMga, FALLBACK_EXCHANGE, "client"),
+      formatAdminInline: (amountMga) => formatDualPriceInline(amountMga, FALLBACK_EXCHANGE, "admin"),
       footnote: formatExchangeRateFootnote(FALLBACK_EXCHANGE),
     };
   }

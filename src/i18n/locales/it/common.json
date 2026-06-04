@@ -133,7 +133,7 @@
       "loading": "Caricamento",
       "exchangeLive": "1 € = {{rate}} Ar (tasso del giorno)",
       "exchangeManual": "1 € = {{rate}} Ar",
-      "pricesHint": "Prezzi in € con equivalente in ariary",
+      "pricesHint": "Prezzi di riferimento in ariary — equivalente € al tasso del giorno",
       "weatherLinkLabel": "Vedi meteo dettagliata a Nosy Be",
       "exchangeLinkLabel": "Vedi tasso di cambio Euro Ariary Madagascar",
       "flightsLinkLabel": "Vedi orari voli aeroporto Nosy Be",

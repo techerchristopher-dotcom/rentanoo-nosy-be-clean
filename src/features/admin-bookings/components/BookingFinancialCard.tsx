@@ -9,10 +9,10 @@ type BookingFinancialCardProps = {
   isAdminPricing: boolean;
 };
 
-function AdminAmount({ amountEur, bold }: { amountEur: number; bold?: boolean }) {
+function AdminAmount({ amountMga, bold }: { amountMga: number; bold?: boolean }) {
   return (
     <DualPrice
-      amountEur={amountEur}
+      amountMga={amountMga}
       variant="admin"
       className="items-end text-right shrink-0"
       primaryClassName={bold ? "font-bold text-base tabular-nums" : "font-medium tabular-nums"}
@@ -32,7 +32,7 @@ export function BookingFinancialCard({ financials, isAdminPricing }: BookingFina
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-          <AdminPriceRow label="Prix de location" amountEur={financials.basePrice} />
+          <AdminPriceRow label="Prix de location" amountMga={financials.basePrice} />
 
           {financials.options.length > 0 ? (
             <div className="space-y-2 border-t border-border/60 pt-3">
@@ -44,13 +44,13 @@ export function BookingFinancialCard({ financials, isAdminPricing }: BookingFina
                     className="flex justify-between gap-4 pl-2 items-start"
                   >
                     <span>{option.name}</span>
-                    <AdminAmount amountEur={option.totalPrice} />
+                    <AdminAmount amountMga={option.totalPrice} />
                   </li>
                 ))}
               </ul>
               <AdminPriceRow
                 label="Total options"
-                amountEur={financials.optionsTotal}
+                amountMga={financials.optionsTotal}
                 className="border-t border-border/40 pt-2"
               />
             </div>
@@ -63,7 +63,7 @@ export function BookingFinancialCard({ financials, isAdminPricing }: BookingFina
 
           <AdminPriceRow
             label="Sous-total"
-            amountEur={financials.subtotal}
+            amountMga={financials.subtotal}
             className="border-t border-border/60 pt-3"
           />
 
@@ -74,13 +74,13 @@ export function BookingFinancialCard({ financials, isAdminPricing }: BookingFina
             {isAdminPricing ? (
               <span className="font-medium">—</span>
             ) : (
-              <AdminAmount amountEur={financials.serviceFee} />
+              <AdminAmount amountMga={financials.serviceFee} />
             )}
           </div>
 
           <AdminPriceRow
             label={<span className="font-semibold">Total TTC locataire</span>}
-            amountEur={financials.totalTTC}
+            amountMga={financials.totalTTC}
             bold
             className="border-t border-border pt-3"
           />

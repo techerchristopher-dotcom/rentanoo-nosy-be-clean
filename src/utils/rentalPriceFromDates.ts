@@ -1,7 +1,9 @@
 /**
  * Prix et jours facturables — logique calendaire du loueur.
- * Jour de départ : toujours 1 jour. Jour de retour : selon heure (9h / 12h).
+ * Montants en ariary (MGA), arrondis au millier.
  */
+
+import { roundAriaryToThousand } from "@/utils/dualCurrency";
 
 /** Combine YYYY-MM-DD (ou ISO) + HH:mm en Date locale (aligné VehicleDetails / AdminBookingNew). */
 export function combineBookingDateTime(
@@ -162,8 +164,9 @@ export function computeRentalPricing(
     startTime,
     endTime
   );
-  const basePrice =
-    Math.round(Math.max(0, billableDays) * Math.max(0, pricePerDay) * 100) / 100;
+  const basePrice = roundAriaryToThousand(
+    Math.max(0, billableDays) * Math.max(0, pricePerDay)
+  );
 
   return {
     basePrice,

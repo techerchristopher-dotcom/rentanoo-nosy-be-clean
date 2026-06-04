@@ -1,4 +1,5 @@
-/** Taux EUR → ariary (MGA) et helpers d'affichage double monnaie. */
+/** Taux EUR → ariary (MGA) et helpers d'affichage double monnaie.
+ *  Source de vérité des tarifs : ariary (MGA). L'euro affiché est dérivé du taux. */
 
 export const DEFAULT_EUR_MGA_RATE = 5000;
 
@@ -66,15 +67,32 @@ export function parseExchangeConfig(raw: unknown): EurMgaExchangeConfig {
   return toPublicExchangeConfig(parseExchangeSettings(raw));
 }
 
-/** Ariary arrondi au millier (usage caisse). */
-export function eurToAriary(eur: number, rate: number): number {
-  if (!Number.isFinite(eur) || eur <= 0) return 0;
-  return Math.round((eur * rate) / 1000) * 1000;
+/** Ariary arrondi au millier (prix de référence en base). */
+export function roundAriaryToThousand(mga: number): number {
+  if (!Number.isFinite(mga) || mga <= 0) return 0;
+  return Math.round(mga / 1000) * 1000;
 }
 
+/** Conversion historique EUR → MGA (migration one-shot). */
+export function eurToAriary(eur: number, rate: number): number {
+  if (!Number.isFinite(eur) || eur <= 0) return 0;
+  return roundAriaryToThousand(eur * rate);
+}
+
+/** € affichés ou Stripe — 2 décimales. */
+export function ariaryToEur(mga: number, rate: number): number {
+  if (!Number.isFinite(mga) || mga <= 0 || rate <= 0) return 0;
+  return Math.round((mga / rate) * 100) / 100;
+}
+
+/** @deprecated alias */
 export function ariaryToEurLabel(ar: number, rate: number): number {
-  if (!Number.isFinite(ar) || ar <= 0 || rate <= 0) return 0;
-  return Math.round((ar / rate) * 100) / 100;
+  return ariaryToEur(ar, rate);
+}
+
+/** Montant Stripe Checkout (centimes) depuis un total MGA. */
+export function ariaryToStripeCents(mga: number, rate: number): number {
+  return Math.round(ariaryToEur(mga, rate) * 100);
 }
 
 export function formatEur(amount: number): string {
@@ -106,13 +124,18 @@ export type DualPriceFormatted = {
   eur: number;
 };
 
+/**
+ * Formate un montant dont la source de vérité est l'ariary (MGA).
+ * Client : € variable (principal) + Ar fixe (secondaire).
+ * Admin : Ar fixe (principal) + ≈ € (secondaire).
+ */
 export function formatDualPrice(
-  eur: number,
+  amountMga: number,
   config: EurMgaExchangeConfig,
   variant: "client" | "admin"
 ): DualPriceFormatted {
-  const eurAmount = Number.isFinite(eur) ? eur : 0;
-  const ariary = eurToAriary(eurAmount, config.rate);
+  const ariary = roundAriaryToThousand(Number.isFinite(amountMga) ? amountMga : 0);
+  const eurAmount = ariaryToEur(ariary, config.rate);
   const eurStr = formatEur(eurAmount);
   const arStr = formatAriary(ariary);
   const footnote = formatExchangeRateFootnote(config);
@@ -120,7 +143,7 @@ export function formatDualPrice(
   if (variant === "client") {
     return {
       primary: eurStr,
-      secondary: `≈ ${arStr}`,
+      secondary: arStr,
       footnote,
       ariary,
       eur: eurAmount,
@@ -136,12 +159,22 @@ export function formatDualPrice(
   };
 }
 
-/** Ligne compacte pour listes admin : « 350 000 Ar (≈ 70,00 €) » */
+/** Ligne compacte : client « 10,24 € (50 000 Ar) » · admin « 50 000 Ar (≈ 10,24 €) » */
 export function formatDualPriceInline(
-  eur: number,
+  amountMga: number,
   config: EurMgaExchangeConfig,
   variant: "client" | "admin"
 ): string {
-  const { primary, secondary } = formatDualPrice(eur, config, variant);
+  const { primary, secondary } = formatDualPrice(amountMga, config, variant);
   return `${primary} (${secondary})`;
+}
+
+/** Frais de service 15 % sur un montant MGA (entier). */
+export function calcServiceFeeMga(subtotalMga: number, percent = 0.15): number {
+  return Math.round(Math.max(0, subtotalMga) * percent);
+}
+
+/** Total locataire TTC en MGA (subtotal + frais). */
+export function calcRenterTotalMga(subtotalMga: number, percent = 0.15): number {
+  return Math.max(0, subtotalMga) + calcServiceFeeMga(subtotalMga, percent);
 }

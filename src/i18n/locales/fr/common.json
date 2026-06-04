@@ -350,7 +350,7 @@
       "loading": "Chargement en cours",
       "exchangeLive": "1 € = {{rate}} Ar (taux du jour)",
       "exchangeManual": "1 € = {{rate}} Ar",
-      "pricesHint": "Prix affichés en € avec équivalent ariary",
+      "pricesHint": "Tarifs de référence en ariary — équivalent € selon le taux du jour",
       "weatherLinkLabel": "Voir la météo détaillée à Nosy Be",
       "exchangeLinkLabel": "Voir le taux de change Euro Ariary Madagascar",
       "flightsLinkLabel": "Voir les horaires de vols à l'aéroport de Nosy Be",

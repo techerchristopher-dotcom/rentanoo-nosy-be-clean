@@ -2,7 +2,8 @@ import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { cn } from "@/lib/utils";
 
 type DualPriceProps = {
-  amountEur: number;
+  /** Montant de référence en ariary (MGA). */
+  amountMga: number;
   variant: "client" | "admin";
   className?: string;
   primaryClassName?: string;
@@ -12,7 +13,7 @@ type DualPriceProps = {
 };
 
 export function DualPrice({
-  amountEur,
+  amountMga,
   variant,
   className,
   primaryClassName,
@@ -21,12 +22,13 @@ export function DualPrice({
   inline = false,
 }: DualPriceProps) {
   const { formatClient, formatAdmin, footnote } = useExchangeRate();
-  const formatted = variant === "admin" ? formatAdmin(amountEur) : formatClient(amountEur);
+  const formatted = variant === "admin" ? formatAdmin(amountMga) : formatClient(amountMga);
 
   if (inline) {
     return (
       <span className={className}>
-        {formatted.primary} <span className={cn("text-muted-foreground", secondaryClassName)}>({formatted.secondary})</span>
+        {formatted.primary}{" "}
+        <span className={cn("text-muted-foreground", secondaryClassName)}>({formatted.secondary})</span>
       </span>
     );
   }

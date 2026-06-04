@@ -157,11 +157,11 @@ export function BookingExtendModal({
                 </div>
                 <div className="flex justify-between gap-2 items-start">
                   <span className="text-muted-foreground">Supplément</span>
-                  <DualPrice amountEur={preview.deltaTotalTTC} variant="admin" primaryClassName="font-semibold text-primary" />
+                  <DualPrice amountMga={preview.deltaTotalTTC} variant="admin" primaryClassName="font-semibold text-primary" />
                 </div>
                 <div className="flex justify-between gap-2 items-start border-t border-border/60 pt-2">
                   <span className="text-muted-foreground">Nouveau total TTC</span>
-                  <DualPrice amountEur={preview.newTotalTTC} variant="admin" primaryClassName="font-bold" />
+                  <DualPrice amountMga={preview.newTotalTTC} variant="admin" primaryClassName="font-bold" />
                 </div>
               </>
             ) : (

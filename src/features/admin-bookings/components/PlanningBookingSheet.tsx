@@ -58,7 +58,7 @@ export function PlanningBookingSheet({ open, onOpenChange, booking, vehicle }: P
           {totalEur > 0 ? (
             <div>
               <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Total locataire</div>
-              <DualPrice amountEur={totalEur} variant="admin" primaryClassName="text-lg font-bold" />
+              <DualPrice amountMga={totalEur} variant="admin" primaryClassName="text-lg font-bold" />
               <p className="text-[10px] text-muted-foreground mt-1">{footnote}</p>
             </div>
           ) : null}

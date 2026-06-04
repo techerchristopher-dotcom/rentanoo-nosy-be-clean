@@ -844,7 +844,7 @@ export default function VehicleDetails() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <DualPrice
-                amountEur={dailyRate}
+                amountMga={dailyRate}
                 variant="client"
                 primaryClassName="text-2xl font-bold text-primary"
                 secondaryClassName="text-sm"
@@ -860,7 +860,7 @@ export default function VehicleDetails() {
                   Tarif de base* :
                 </p>
                 <DualPrice
-                  amountEur={vehicleRentalInfo.totalCost}
+                  amountMga={vehicleRentalInfo.totalCost}
                   variant="client"
                   primaryClassName="text-3xl font-bold text-primary"
                   secondaryClassName="text-sm"
@@ -1525,7 +1525,7 @@ export default function VehicleDetails() {
               {vehicleRentalInfo ? (
                 <>
                   <DualPrice
-                    amountEur={vehicleRentalInfo.totalCost}
+                    amountMga={vehicleRentalInfo.totalCost}
                     variant="client"
                     primaryClassName="text-2xl font-bold text-primary"
                     secondaryClassName="text-xs"
@@ -1537,7 +1537,7 @@ export default function VehicleDetails() {
               ) : (
                 <div className="flex flex-col">
                   <DualPrice
-                    amountEur={dailyRate}
+                    amountMga={dailyRate}
                     variant="client"
                     primaryClassName="text-xl font-bold text-primary"
                     secondaryClassName="text-xs"

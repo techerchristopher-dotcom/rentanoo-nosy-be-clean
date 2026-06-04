@@ -288,7 +288,7 @@ export function BookingConfirmationModal({
             <div className="bg-card rounded-lg border border-border/50 p-3 space-y-2">
               <ClientPriceRow
                 label={t("booking.vehicleRental")}
-                amountEur={rentalInfo.basePrice}
+                amountMga={rentalInfo.basePrice}
                 labelClassName="font-medium"
               />
               <p className="text-xs text-muted-foreground pl-1">
@@ -327,7 +327,7 @@ export function BookingConfirmationModal({
                         </span>
                       </div>
                       <DualPrice
-                        amountEur={option.totalPrice}
+                        amountMga={option.totalPrice}
                         variant="client"
                         className="items-end text-right min-w-[80px]"
                         primaryClassName="text-base font-bold text-primary"
@@ -336,7 +336,7 @@ export function BookingConfirmationModal({
                     </div>
                   ))}
                   <div className="pt-2 border-t border-border/50 mt-2">
-                    <ClientPriceRow label={t("booking.optionsSubtotal")} amountEur={optionsTotal} bold />
+                    <ClientPriceRow label={t("booking.optionsSubtotal")} amountMga={optionsTotal} bold />
                   </div>
                 </div>
               </div>
@@ -347,15 +347,15 @@ export function BookingConfirmationModal({
 
           {/* Section Total */}
           <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
-            <ClientPriceRow label={t("booking.subtotal")} amountEur={subtotal} bold />
-            <ClientPriceRow label={t("booking.serviceFee", { percent: 15 })} amountEur={serviceFee} />
+            <ClientPriceRow label={t("booking.subtotal")} amountMga={subtotal} bold />
+            <ClientPriceRow label={t("booking.serviceFee", { percent: 15 })} amountMga={serviceFee} />
 
             <Separator className="border-primary/30" />
 
             <div className="flex justify-between items-start pt-2 gap-4">
               <span className="text-base font-bold text-foreground">{t("booking.totalToPay")}</span>
               <DualPrice
-                amountEur={totalAmount}
+                amountMga={totalAmount}
                 variant="client"
                 className="items-end text-right"
                 primaryClassName="text-3xl font-bold text-primary"
