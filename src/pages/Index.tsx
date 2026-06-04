@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
 import { FEATURES } from "@/config/features";
 import { isMoto } from "@/utils/vehicleType";
+import { parseEngineCapacity } from "@/utils/engineCapacity";
 import { Seo } from "@/components/seo/Seo";
 import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
 
@@ -33,9 +34,8 @@ const Index = () => {
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState("06:30");
   const [endTime, setEndTime] = useState("06:00");
-  const [selectedFuelTypes, setSelectedFuelTypes] = useState<string[]>([]);
-  const [selectedTransmissions, setSelectedTransmissions] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<string[]>([]);
+  const [selectedEngineCapacities, setSelectedEngineCapacities] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
   const shouldScrollToResultsRef = useRef(false);
 
@@ -173,9 +173,8 @@ const Index = () => {
       setEndDate(savedCriteria.endDate ? new Date(savedCriteria.endDate) : undefined);
       setStartTime(savedCriteria.startTime);
       setEndTime(savedCriteria.endTime);
-      setSelectedFuelTypes(savedCriteria.selectedFuelTypes);
-      setSelectedTransmissions(savedCriteria.selectedTransmissions);
-      setSelectedCategories(savedCriteria.selectedCategories);
+      setSelectedVehicleTypes(savedCriteria.selectedVehicleTypes ?? []);
+      setSelectedEngineCapacities(savedCriteria.selectedEngineCapacities ?? []);
       
       // 🔧 NOUVEAU : Relancer automatiquement la recherche après restauration
       // Utiliser les critères sauvegardés directement au lieu des états React
@@ -186,9 +185,8 @@ const Index = () => {
         const hasValidCriteria = savedCriteria.searchText?.trim() || 
                                  savedCriteria.startDate || 
                                  savedCriteria.endDate ||
-                                 savedCriteria.selectedFuelTypes?.length > 0 ||
-                                 savedCriteria.selectedTransmissions?.length > 0 ||
-                                 savedCriteria.selectedCategories?.length > 0;
+                                 savedCriteria.selectedVehicleTypes?.length > 0 ||
+                                 savedCriteria.selectedEngineCapacities?.length > 0;
         
         if (hasValidCriteria) {
           console.log('✅ [localStorage] Critères valides détectés, relance de la recherche');
@@ -216,11 +214,11 @@ const Index = () => {
     try {
       setSearching(true);
       
-      const searchFilters: any = {
-        fuelTypes: criteria.selectedFuelTypes || [],
-        transmissions: criteria.selectedTransmissions || [],
-        categories: criteria.selectedCategories || []
-      };
+      const searchFilters: {
+        location?: string;
+        startDate?: string;
+        endDate?: string;
+      } = {};
 
       // MVP: pickup disabled → do not pass location filter when feature is off
       if (FEATURES.pickupLocationEnabled && criteria.searchText?.trim()) {
@@ -386,9 +384,8 @@ const Index = () => {
     setEndDate(undefined);
     setStartTime("06:30");
     setEndTime("06:00");
-    setSelectedFuelTypes([]);
-    setSelectedTransmissions([]);
-    setSelectedCategories([]);
+    setSelectedVehicleTypes([]);
+    setSelectedEngineCapacities([]);
     setFilteredVehicles(vehicles);
     
     console.log("🔄 [RESET] États réinitialisés");
@@ -429,33 +426,23 @@ const Index = () => {
 
   // Appliquer les filtres
   useEffect(() => {
-    console.log('Filtrage - véhicules:', vehicles.length, 'selectedFuelTypes:', selectedFuelTypes, 'selectedTransmissions:', selectedTransmissions, 'selectedCategories:', selectedCategories);
     let filtered = [...vehicles];
 
-    // Filtre carburant
-    if (selectedFuelTypes.length > 0) {
-      filtered = filtered.filter(v => 
-        v.fuel_type && selectedFuelTypes.includes(v.fuel_type)
+    if (selectedVehicleTypes.length > 0) {
+      filtered = filtered.filter(
+        (v) => v.vehicle_type && selectedVehicleTypes.includes(v.vehicle_type)
       );
     }
 
-    // Filtre transmission
-    if (selectedTransmissions.length > 0) {
-      filtered = filtered.filter(v => 
-        v.transmission && selectedTransmissions.includes(v.transmission)
-      );
+    if (selectedEngineCapacities.length > 0) {
+      filtered = filtered.filter((v) => {
+        const cc = parseEngineCapacity(v.engine_capacity);
+        return cc != null && selectedEngineCapacities.includes(String(cc));
+      });
     }
 
-    // Filtre catégorie
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter(v => 
-        v.vehicle_category && selectedCategories.includes(v.vehicle_category)
-      );
-    }
-
-    console.log('Véhicules filtrés:', filtered.length);
     setFilteredVehicles(filtered);
-  }, [vehicles, selectedFuelTypes, selectedTransmissions, selectedCategories]);
+  }, [vehicles, selectedVehicleTypes, selectedEngineCapacities]);
 
   // Calcul automatique de la location quand les dates/heures changent
   useEffect(() => {
@@ -465,21 +452,20 @@ const Index = () => {
   // Sauvegarder automatiquement les critères de recherche à chaque changement
   useEffect(() => {
     // Ne sauvegarder que si au moins un critère est défini
-    if (searchText || startDate || endDate || selectedFuelTypes.length > 0 || selectedTransmissions.length > 0 || selectedCategories.length > 0) {
+    if (searchText || startDate || endDate || selectedVehicleTypes.length > 0 || selectedEngineCapacities.length > 0) {
       saveSearchCriteria({
         searchText,
         startDate: startDate?.toISOString() || null,
         endDate: endDate?.toISOString() || null,
         startTime,
         endTime,
-        selectedFuelTypes,
-        selectedTransmissions,
-        selectedCategories,
+        selectedVehicleTypes,
+        selectedEngineCapacities,
         // Note: Les services seront ajoutés plus tard via un système de synchronisation
         selectedServices: undefined // Pour l'instant, pas de services dans la page d'accueil
       });
     }
-  }, [searchText, startDate, endDate, startTime, endTime, selectedFuelTypes, selectedTransmissions, selectedCategories]);
+  }, [searchText, startDate, endDate, startTime, endTime, selectedVehicleTypes, selectedEngineCapacities]);
 
   const handleVehicleClick = (vehicle: SupabaseVehicle) => {
     // Utiliser la license générée temporairement pour la navigation
@@ -584,12 +570,10 @@ const Index = () => {
               filteredVehicles={filteredVehicles}
               loading={loading}
               vehicles={vehicles}
-              selectedFuelTypes={selectedFuelTypes}
-              setSelectedFuelTypes={setSelectedFuelTypes}
-              selectedTransmissions={selectedTransmissions}
-              setSelectedTransmissions={setSelectedTransmissions}
-              selectedCategories={selectedCategories}
-              setSelectedCategories={setSelectedCategories}
+              selectedVehicleTypes={selectedVehicleTypes}
+              setSelectedVehicleTypes={setSelectedVehicleTypes}
+              selectedEngineCapacities={selectedEngineCapacities}
+              setSelectedEngineCapacities={setSelectedEngineCapacities}
               rentalCalculation={rentalCalculation}
               getVehicleRentalInfo={getVehicleRentalInfo}
               onVehicleClick={handleVehicleClick}

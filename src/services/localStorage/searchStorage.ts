@@ -24,9 +24,8 @@ export interface SearchCriteria {
   endTime: string;
   
   // Filtres
-  selectedFuelTypes: string[];
-  selectedTransmissions: string[];
-  selectedCategories: string[];
+  selectedVehicleTypes: string[];
+  selectedEngineCapacities: string[];
   
   // Services supplémentaires sélectionnés
   selectedServices?: {

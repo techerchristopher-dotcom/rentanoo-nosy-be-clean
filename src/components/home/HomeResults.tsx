@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,18 +16,17 @@ import { Vehicle, VehicleRentalInfo } from "@/types";
 import { Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { mapToCarVehicle, mapToMotoVehicle } from "@/mappers/vehicleMappers";
 import { isMoto } from "@/utils/vehicleType";
+import { getDistinctEngineCapacities } from "@/utils/engineCapacity";
 import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
 
 export interface HomeResultsProps {
   filteredVehicles: SupabaseVehicle[];
   loading: boolean;
   vehicles: SupabaseVehicle[];
-  selectedFuelTypes: string[];
-  setSelectedFuelTypes: (v: string[]) => void;
-  selectedTransmissions: string[];
-  setSelectedTransmissions: (v: string[]) => void;
-  selectedCategories: string[];
-  setSelectedCategories: (v: string[]) => void;
+  selectedVehicleTypes: string[];
+  setSelectedVehicleTypes: (v: string[]) => void;
+  selectedEngineCapacities: string[];
+  setSelectedEngineCapacities: (v: string[]) => void;
   rentalCalculation: { isCalculated: boolean } | null;
   getVehicleRentalInfo: (vehicleId: string, pricePerDay: number) => VehicleRentalInfo;
   onVehicleClick: (vehicle: SupabaseVehicle) => void;
@@ -38,18 +38,29 @@ export function HomeResults({
   filteredVehicles,
   loading,
   vehicles,
-  selectedFuelTypes,
-  setSelectedFuelTypes,
-  selectedTransmissions,
-  setSelectedTransmissions,
-  selectedCategories,
-  setSelectedCategories,
+  selectedVehicleTypes,
+  setSelectedVehicleTypes,
+  selectedEngineCapacities,
+  setSelectedEngineCapacities,
   rentalCalculation,
   getVehicleRentalInfo,
   onVehicleClick,
   deferImages = false,
 }: HomeResultsProps) {
   const { t } = useTranslation("common");
+
+  const engineCapacityOptions = useMemo(
+    () => getDistinctEngineCapacities(vehicles),
+    [vehicles]
+  );
+
+  const hasActiveFilters =
+    selectedVehicleTypes.length > 0 || selectedEngineCapacities.length > 0;
+
+  const resetFilters = () => {
+    setSelectedVehicleTypes([]);
+    setSelectedEngineCapacities([]);
+  };
 
   return (
     <section id="search-results" className="py-12 scroll-mt-4">
@@ -65,73 +76,40 @@ export function HomeResults({
             </div>
 
             <Select
-              value={selectedFuelTypes[0] || ""}
-              onValueChange={(value) => setSelectedFuelTypes(value ? [value] : [])}
+              value={selectedVehicleTypes[0] || ""}
+              onValueChange={(value) =>
+                setSelectedVehicleTypes(value ? [value] : [])
+              }
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Carburant" />
+                <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="gasoline">{t("common.essence")}</SelectItem>
-                <SelectItem value="diesel">{t("common.diesel")}</SelectItem>
-                <SelectItem value="electric">{t("common.lectrique")}</SelectItem>
-                <SelectItem value="hybrid">{t("common.hybride")}</SelectItem>
+                <SelectItem value="scooter">Scooter</SelectItem>
+                <SelectItem value="moto">Moto</SelectItem>
               </SelectContent>
             </Select>
 
             <Select
-              value={selectedTransmissions[0] || ""}
+              value={selectedEngineCapacities[0] || ""}
               onValueChange={(value) =>
-                setSelectedTransmissions(value ? [value] : [])
+                setSelectedEngineCapacities(value ? [value] : [])
               }
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Transmission" />
+                <SelectValue placeholder="Cylindrée" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="manual">{t("common.manuelle")}</SelectItem>
-                <SelectItem value="automatic">{t("common.automatique")}</SelectItem>
+                {engineCapacityOptions.map((cc) => (
+                  <SelectItem key={cc} value={String(cc)}>
+                    {cc} cc
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            <Select
-              value={selectedCategories[0] || ""}
-              onValueChange={(value) =>
-                setSelectedCategories(value ? [value] : [])
-              }
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Berline">{t("common.berline")}</SelectItem>
-                <SelectItem value="Break (SW)">{t("common.break_sw")}</SelectItem>
-                <SelectItem value="Cabriolet">{t("common.cabriolet")}</SelectItem>
-                <SelectItem value="Citadine">{t("common.citadine")}</SelectItem>
-                <SelectItem value="Coupé">{t("common.coup")}</SelectItem>
-                <SelectItem value="Coupé 4 portes / GT">Coupé 4 portes / GT</SelectItem>
-                <SelectItem value="Crossover">{t("common.crossover")}</SelectItem>
-                <SelectItem value="Minibus">{t("common.minibus")}</SelectItem>
-                <SelectItem value="Monospace">{t("common.monospace")}</SelectItem>
-                <SelectItem value="Pick-up">{t("common.pickup")}</SelectItem>
-                <SelectItem value="Roadster">{t("common.roadster")}</SelectItem>
-                <SelectItem value="SUV">{t("common.suv")}</SelectItem>
-                <SelectItem value="Supercar / Hypercar">Supercar / Hypercar</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {(selectedFuelTypes.length > 0 ||
-              selectedTransmissions.length > 0 ||
-              selectedCategories.length > 0) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedFuelTypes([]);
-                  setSelectedTransmissions([]);
-                  setSelectedCategories([]);
-                }}
-              >
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
                 {t("common.rinitialiser")}
               </Button>
             )}
@@ -225,13 +203,7 @@ export function HomeResults({
                     )}
               </p>
               {filteredVehicles.length === 0 && vehicles.length > 0 ? (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedFuelTypes([]);
-                    setSelectedTransmissions([]);
-                  }}
-                >
+                <Button variant="outline" onClick={resetFilters}>
                   {t("common.rinitialiser_les_filtres")}
                 </Button>
               ) : (

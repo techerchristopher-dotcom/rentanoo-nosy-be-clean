@@ -127,12 +127,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rentanoo.com/moto/4B0802DA</loc>
-    <lastmod>2026-05-31</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rentanoo.com/moto/DCCF9CC1</loc>
     <lastmod>2026-05-06</lastmod>
     <changefreq>weekly</changefreq>
@@ -165,6 +159,12 @@
   <url>
     <loc>https://rentanoo.com/moto/8E704000</loc>
     <lastmod>2026-05-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/moto/4B0802DA</loc>
+    <lastmod>2026-06-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
