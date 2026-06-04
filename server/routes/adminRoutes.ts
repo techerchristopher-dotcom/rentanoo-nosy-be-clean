@@ -256,6 +256,33 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     });
   });
 
+  // GET /api/public/booking-transport-options — forfaits aéroport/hôtel (MGA)
+  app.get("/api/public/booking-transport-options", async (_req: Request, res: Response) => {
+    const { data, error } = await supabaseAdmin
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "booking_transport_options")
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ ok: false, message: error.message });
+    }
+
+    const raw = (data?.value ?? {}) as Record<string, unknown>;
+    const airportFlatMga = Number(raw.airport_flat_mga);
+    const hotelFlatMga = Number(raw.hotel_flat_mga);
+
+    if (!Number.isFinite(airportFlatMga) || !Number.isFinite(hotelFlatMga)) {
+      return res.status(404).json({ ok: false, message: "Options transport non configurées" });
+    }
+
+    return res.json({
+      ok: true,
+      airportFlatMga: Math.round(airportFlatMga),
+      hotelFlatMga: Math.round(hotelFlatMga),
+    });
+  });
+
   // GET /api/public/weather-nosy-be — météo actuelle Nosy Be (Open-Meteo)
   app.get("/api/public/weather-nosy-be", async (req: Request, res: Response) => {
     try {

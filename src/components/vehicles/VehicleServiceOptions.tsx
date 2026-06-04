@@ -14,7 +14,6 @@ import {
 } from "@/services/localStorage/bookingStorage";
 import {
   LEGACY_AIRPORT_OPTION_ID_MAP,
-  PLATFORM_TRANSPORT_OPTIONS,
   isPlatformPickupOption,
   isPlatformReturnOption,
   resolvePickupExclusion,
@@ -22,6 +21,8 @@ import {
 } from "@/constants/platformBookingOptions";
 import { requiresHotelName } from "@/utils/bookingLocations";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { usePlatformTransportOptions } from "@/hooks/usePlatformTransportOptions";
+import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 
 interface VehicleServiceOptionsProps {
   vehicle: Vehicle;
@@ -47,7 +48,11 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   const [hotelName, setHotelName] = useState("");
   const hydratedRef = useRef(false);
   const { formatClient } = useExchangeRate();
-  const formatEur = (amountMga: number) => formatClient(amountMga).primary;
+  const { options: platformTransportOptions } = usePlatformTransportOptions();
+  const formatDualLabel = (amountMga: number) => {
+    const { primary, secondary } = formatClient(amountMga);
+    return `${primary} (${secondary})`;
+  };
   
   // Initialiser depuis le brouillon avant toute écriture localStorage
   useEffect(() => {
@@ -69,8 +74,8 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   const buildAvailableServices = (): ServiceOption[] => {
     const services: ServiceOption[] = [];
     
-    // Options plateforme transport (aéroport + hôtel, tous véhicules)
-    for (const opt of PLATFORM_TRANSPORT_OPTIONS) {
+    // Options plateforme transport (aéroport + hôtel, prix depuis Supabase)
+    for (const opt of platformTransportOptions) {
       const isHotel = opt.id.includes("hotel");
       services.push({
         id: opt.id,
@@ -206,13 +211,16 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
     
     console.log('📊 [VehicleServiceOptions] Services construits:', {
       totalServices: services.length,
-      servicesList: services.map(s => `${s.name} (${s.isFree ? 'Gratuit' : formatEur(s.totalPrice)})`)
+      servicesList: services.map(s => `${s.name} (${s.isFree ? 'Gratuit' : formatDualLabel(s.totalPrice)})`)
     });
 
     return services;
   };
 
-  const availableServices = useMemo(() => buildAvailableServices(), [vehicle, rentalDays]);
+  const availableServices = useMemo(
+    () => buildAvailableServices(),
+    [vehicle, rentalDays, platformTransportOptions]
+  );
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // GÉRER LA SÉLECTION/DÉSÉLECTION D'UN SERVICE
@@ -324,33 +332,31 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
                 
                 {/* Type de tarification */}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {service.type === 'per_day' ? (
-                    `${formatEur(service.pricePerDay)}/jour × ${rentalDays} ${rentalDays === 1 ? 'jour' : 'jours'}`
+                  {service.type === "per_day" ? (
+                    <>
+                      {formatDualLabel(service.pricePerDay)}/jour × {rentalDays}{" "}
+                      {rentalDays === 1 ? "jour" : "jours"}
+                    </>
                   ) : (
-                    'Forfait unique'
+                    "Forfait unique"
                   )}
-                                </p>
+                </p>
                               </div>
               
               {/* Prix */}
-              <div className="text-right">
+              <div className="shrink-0 text-right">
                 {service.isFree ? (
                   <Badge variant="secondary" className="bg-success/10 text-success">
-                                  Gratuit
-                                </Badge>
-                              ) : (
-                  <>
-                    <p className="font-bold text-primary text-lg tabular-nums">
-                      +{formatEur(service.totalPrice)}
-                    </p>
-                    {service.type === 'per_day' && (
-                      <p className="text-xs text-muted-foreground tabular-nums">
-                        {formatEur(service.pricePerDay)}/jour
-                      </p>
-                    )}
-                  </>
-                      )}
-                    </div>
+                    Gratuit
+                  </Badge>
+                ) : (
+                  <ClientMgaPrice
+                    amountMga={service.totalPrice}
+                    prefix="+"
+                    primaryClassName="font-bold tabular-nums leading-none text-primary text-lg"
+                  />
+                )}
+              </div>
                 </div>
               );
             })}
@@ -372,13 +378,13 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
           <div className="mt-4 pt-4 border-t border-muted">
             <div className="flex justify-between items-center">
               <span className="font-medium">Total options :</span>
-              <span className="font-bold text-primary text-xl tabular-nums">
-                +{formatEur(
-                  availableServices
-                    .filter(s => selectedServices.includes(s.id))
-                    .reduce((sum, s) => sum + s.totalPrice, 0)
-                )}
-              </span>
+              <ClientMgaPrice
+                amountMga={availableServices
+                  .filter((s) => selectedServices.includes(s.id))
+                  .reduce((sum, s) => sum + s.totalPrice, 0)}
+                prefix="+"
+                primaryClassName="font-bold tabular-nums leading-none text-primary text-xl"
+              />
             </div>
           </div>
         )}

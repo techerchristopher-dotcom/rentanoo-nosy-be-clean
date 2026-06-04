@@ -8,11 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Plane, Building2 } from "lucide-react";
 import {
-  PLATFORM_TRANSPORT_OPTIONS,
-  PLATFORM_AIRPORT_PICKUP_ID,
-  PLATFORM_AIRPORT_RETURN_ID,
-  PLATFORM_HOTEL_PICKUP_ID,
-  PLATFORM_HOTEL_RETURN_ID,
   isPlatformPickupOption,
   isPlatformReturnOption,
   resolvePickupExclusion,
@@ -20,8 +15,9 @@ import {
 } from "@/constants/platformBookingOptions";
 import { applyComplementaryServicesToDraft } from "@/services/localStorage/bookingStorage";
 import { requiresHotelName } from "@/utils/bookingLocations";
-import { formatCurrency } from "@/utils/currency";
 import { useToast } from "@/hooks/use-toast";
+import { usePlatformTransportOptions } from "@/hooks/usePlatformTransportOptions";
+import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 
 interface ComplementaryServicesModalProps {
   isOpen: boolean;
@@ -36,6 +32,7 @@ export function ComplementaryServicesModal({
 }: ComplementaryServicesModalProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { options: platformTransportOptions } = usePlatformTransportOptions();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [hotelName, setHotelName] = useState("");
 
@@ -47,11 +44,10 @@ export function ComplementaryServicesModal({
 
   const optionsTotal = useMemo(
     () =>
-      PLATFORM_TRANSPORT_OPTIONS.filter((o) => selectedIds.includes(o.id)).reduce(
-        (sum, o) => sum + o.totalPrice,
-        0
-      ),
-    [selectedIds]
+      platformTransportOptions
+        .filter((o) => selectedIds.includes(o.id))
+        .reduce((sum, o) => sum + o.totalPrice, 0),
+    [selectedIds, platformTransportOptions]
   );
 
   const showHotelField = requiresHotelName(selectedIds);
@@ -84,7 +80,7 @@ export function ComplementaryServicesModal({
 
     applyComplementaryServicesToDraft({
       selectedPlatformIds: selectedIds,
-      platformOptionDefs: PLATFORM_TRANSPORT_OPTIONS.map((o) => ({
+      platformOptionDefs: platformTransportOptions.map((o) => ({
         id: o.id,
         name: o.name,
         totalPrice: o.totalPrice,
@@ -98,7 +94,7 @@ export function ComplementaryServicesModal({
   const handleDecline = () => {
     applyComplementaryServicesToDraft({
       selectedPlatformIds: [],
-      platformOptionDefs: PLATFORM_TRANSPORT_OPTIONS.map((o) => ({
+      platformOptionDefs: platformTransportOptions.map((o) => ({
         id: o.id,
         name: o.name,
         totalPrice: o.totalPrice,
@@ -125,7 +121,7 @@ export function ComplementaryServicesModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-2 sm:px-6">
           <div className="space-y-3">
-            {PLATFORM_TRANSPORT_OPTIONS.map((opt) => {
+            {platformTransportOptions.map((opt) => {
               const Icon = optionIcon(opt.id);
               const checked = selectedIds.includes(opt.id);
               return (
@@ -135,14 +131,14 @@ export function ComplementaryServicesModal({
                     checked={checked}
                     onCheckedChange={() => toggleOption(opt.id)}
                   />
-                  <div className="flex-1 space-y-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <Label htmlFor={`upsell-${opt.id}`} className="flex cursor-pointer items-center gap-2 font-medium">
-                      <Icon className="h-4 w-4 text-primary" />
-                      {opt.name}
-                      <span className="text-primary">+{formatCurrency(opt.totalPrice)}</span>
+                      <Icon className="h-4 w-4 shrink-0 text-primary" />
+                      <span className="min-w-0 flex-1">{opt.name}</span>
                     </Label>
                     <p className="text-xs text-muted-foreground">{opt.description}</p>
                   </div>
+                  <ClientMgaPrice amountMga={opt.totalPrice} prefix="+" />
                 </div>
               );
             })}
@@ -162,9 +158,9 @@ export function ComplementaryServicesModal({
             {optionsTotal > 0 && (
               <>
                 <Separator />
-                <div className="flex justify-between text-sm">
+                <div className="flex items-end justify-between gap-3 text-sm">
                   <span>{t("booking.complementaryServices.optionsTotal")}</span>
-                  <strong>{formatCurrency(optionsTotal)}</strong>
+                  <ClientMgaPrice amountMga={optionsTotal} prefix="+" primaryClassName="font-bold tabular-nums leading-none text-primary text-base" />
                 </div>
               </>
             )}
