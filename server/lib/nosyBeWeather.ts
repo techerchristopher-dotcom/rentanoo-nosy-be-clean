@@ -3,7 +3,7 @@
 const NOSY_BE_LAT = -13.3128;
 const NOSY_BE_LON = 48.2578;
 const OPEN_METEO_CURRENT_URL = `https://api.open-meteo.com/v1/forecast?latitude=${NOSY_BE_LAT}&longitude=${NOSY_BE_LON}&current=temperature_2m,weather_code&timezone=Indian%2FAntananarivo`;
-const OPEN_METEO_EXTENDED_URL = `https://api.open-meteo.com/v1/forecast?latitude=${NOSY_BE_LAT}&longitude=${NOSY_BE_LON}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=Indian%2FAntananarivo`;
+const OPEN_METEO_EXTENDED_URL = `https://api.open-meteo.com/v1/forecast?latitude=${NOSY_BE_LAT}&longitude=${NOSY_BE_LON}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&forecast_days=7&timezone=Indian%2FAntananarivo`;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 
 export type NosyBeWeatherSnapshot = {
@@ -17,6 +17,8 @@ export type NosyBeForecastDay = {
   tempMaxC: number;
   tempMinC: number;
   weatherCode: number;
+  precipitationMm: number;
+  precipitationProbMax: number;
 };
 
 export type NosyBeWeatherExtended = NosyBeWeatherSnapshot & {
@@ -79,6 +81,8 @@ export async function getNosyBeWeatherExtended(): Promise<NosyBeWeatherExtended>
       weather_code?: number[];
       temperature_2m_max?: number[];
       temperature_2m_min?: number[];
+      precipitation_sum?: number[];
+      precipitation_probability_max?: number[];
     };
   };
 
@@ -94,6 +98,8 @@ export async function getNosyBeWeatherExtended(): Promise<NosyBeWeatherExtended>
     tempMaxC: Math.round(Number(json.daily?.temperature_2m_max?.[i] ?? 0)),
     tempMinC: Math.round(Number(json.daily?.temperature_2m_min?.[i] ?? 0)),
     weatherCode: Number(json.daily?.weather_code?.[i] ?? 0),
+    precipitationMm: Math.round(Number(json.daily?.precipitation_sum?.[i] ?? 0) * 10) / 10,
+    precipitationProbMax: Math.round(Number(json.daily?.precipitation_probability_max?.[i] ?? 0)),
   }));
 
   const data: NosyBeWeatherExtended = {

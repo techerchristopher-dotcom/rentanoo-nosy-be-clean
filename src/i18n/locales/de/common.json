@@ -135,6 +135,7 @@
       "weather": {
         "clear": "Sonnig",
         "cloudy": "Bewölkt",
+        "drizzle": "Leichter Nieselregen",
         "fog": "Nebel",
         "rain": "Regen",
         "storm": "Gewitter",
@@ -1172,6 +1173,7 @@
     "localTime": "Ortszeit",
     "timezone": "Zeitzone Indian/Antananarivo (UTC+3)",
     "forecastTitle": "7-Tage-Wettervorhersage Nosy Be",
+    "sourceNote": "Quelle: Open-Meteo-Numerikmodelle. Kann von Météo Madagascar oder La Chaîne Météo abweichen.",
     "tableDay": "Tag",
     "tableCondition": "Bedingungen",
     "tableTemp": "Min / Max",

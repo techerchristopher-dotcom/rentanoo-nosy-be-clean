@@ -6,6 +6,8 @@ export type NosyBeForecastDay = {
   tempMaxC: number;
   tempMinC: number;
   weatherCode: number;
+  precipitationMm: number;
+  precipitationProbMax: number;
 };
 
 export type NosyBeWeatherExtended = NosyBeWeather & {
@@ -31,7 +33,16 @@ export function useNosyBeWeatherExtended() {
         tempC: json.tempC,
         weatherCode: json.weatherCode,
         fetchedAt: json.fetchedAt ?? new Date().toISOString(),
-        forecast: Array.isArray(json.forecast) ? json.forecast : [],
+        forecast: Array.isArray(json.forecast)
+          ? json.forecast.map((d) => ({
+              date: d.date,
+              tempMaxC: d.tempMaxC,
+              tempMinC: d.tempMinC,
+              weatherCode: d.weatherCode,
+              precipitationMm: Number(d.precipitationMm ?? 0),
+              precipitationProbMax: Number(d.precipitationProbMax ?? 0),
+            }))
+          : [],
       });
     } catch {
       setError(true);

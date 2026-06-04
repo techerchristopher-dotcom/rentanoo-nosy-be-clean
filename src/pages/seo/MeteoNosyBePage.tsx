@@ -21,7 +21,7 @@ import { Seo } from "@/components/seo/Seo";
 import { useNosyBeLocalTime } from "@/hooks/useNosyBeLocalTime";
 import { useNosyBeWeatherExtended } from "@/hooks/useNosyBeWeatherExtended";
 import { SEO_EXCHANGE_PATH, SEO_WEATHER_URL } from "@/config/seoRoutes";
-import { weatherCodeCategory, type WeatherCategory } from "@/utils/weatherCodes";
+import { weatherCodeCategory, resolveWeatherCategory, type WeatherCategory } from "@/utils/weatherCodes";
 import { cn } from "@/lib/utils";
 
 function WeatherIcon({ category, className }: { category: WeatherCategory; className?: string }) {
@@ -31,6 +31,8 @@ function WeatherIcon({ category, className }: { category: WeatherCategory; class
       return <Sun {...props} />;
     case "fog":
       return <CloudFog {...props} />;
+    case "drizzle":
+      return <CloudRain {...props} />;
     case "rain":
       return <CloudRain {...props} />;
     case "storm":
@@ -129,6 +131,7 @@ export default function MeteoNosyBePage() {
 
       <section className="mx-auto max-w-4xl px-4 py-10">
         <h2 className="text-xl font-semibold">{t("meteoNosyBePage.forecastTitle")}</h2>
+        <p className="mt-2 text-xs text-muted-foreground">{t("meteoNosyBePage.sourceNote")}</p>
         <div className="mt-4 overflow-x-auto rounded-xl border">
           <table className="w-full min-w-[480px] text-sm">
             <thead>
@@ -140,7 +143,11 @@ export default function MeteoNosyBePage() {
             </thead>
             <tbody>
               {(weather?.forecast ?? []).map((day) => {
-                const cat = weatherCodeCategory(day.weatherCode);
+                const cat = resolveWeatherCategory({
+                  weatherCode: day.weatherCode,
+                  precipitationMm: day.precipitationMm,
+                  precipitationProbMax: day.precipitationProbMax,
+                });
                 return (
                   <tr key={day.date} className="border-b last:border-0">
                     <td className="px-4 py-3 capitalize">{formatForecastDate(day.date, locale)}</td>

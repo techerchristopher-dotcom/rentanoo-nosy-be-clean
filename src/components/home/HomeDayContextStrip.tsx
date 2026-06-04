@@ -32,6 +32,8 @@ function WeatherIcon({ category, className }: { category: WeatherCategory; class
       return <Sun {...props} />;
     case "fog":
       return <CloudFog {...props} />;
+    case "drizzle":
+      return <CloudRain {...props} />;
     case "rain":
       return <CloudRain {...props} />;
     case "storm":
