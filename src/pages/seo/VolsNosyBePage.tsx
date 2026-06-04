@@ -78,8 +78,8 @@ function FlightTable({
 
 export default function VolsNosyBePage() {
   const { t, i18n } = useTranslation("common");
-  const { data, loading, error, configured } = useNosyBeFlights();
   const [selectedDate, setSelectedDate] = useState(todayYmdNosyBe);
+  const { data, loading, error, configured } = useNosyBeFlights(selectedDate);
 
   const dayOptions = useMemo(() => {
     if (data?.availableDates?.length) return data.availableDates;
@@ -91,15 +91,8 @@ export default function VolsNosyBePage() {
     });
   }, [data?.availableDates, data?.forecastDays]);
 
-  const arrivalsForDay = useMemo(
-    () => (data?.arrivals ?? []).filter((f) => f.scheduledDate === selectedDate),
-    [data?.arrivals, selectedDate]
-  );
-
-  const departuresForDay = useMemo(
-    () => (data?.departures ?? []).filter((f) => f.scheduledDate === selectedDate),
-    [data?.departures, selectedDate]
-  );
+  const arrivalsForDay = data?.arrivals ?? [];
+  const departuresForDay = data?.departures ?? [];
 
   const faqItems = t("volsNosyBePage.faq.items", { returnObjects: true }) as Array<{
     q: string;

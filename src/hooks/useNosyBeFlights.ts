@@ -17,6 +17,7 @@ export type NosyBeFlightsData = {
   airportName: string;
   forecastDays: number;
   availableDates: string[];
+  selectedDate: string | null;
   arrivals: NosyBeFlight[];
   departures: NosyBeFlight[];
   nextArrival: NosyBeFlight | null;
@@ -25,7 +26,7 @@ export type NosyBeFlightsData = {
   nextRefreshHint: string | null;
 };
 
-export function useNosyBeFlights() {
+export function useNosyBeFlights(date?: string) {
   const [data, setData] = useState<NosyBeFlightsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -35,7 +36,8 @@ export function useNosyBeFlights() {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch("/api/public/flights-nosy-be");
+      const qs = date ? `?date=${encodeURIComponent(date)}` : "";
+      const res = await fetch(`/api/public/flights-nosy-be${qs}`);
       const json = (await res.json()) as {
         ok?: boolean;
         configured?: boolean;
@@ -44,6 +46,7 @@ export function useNosyBeFlights() {
         airportName?: string;
         forecastDays?: number;
         availableDates?: string[];
+        selectedDate?: string | null;
         arrivals?: NosyBeFlight[];
         departures?: NosyBeFlight[];
         nextArrival?: NosyBeFlight | null;
@@ -63,6 +66,7 @@ export function useNosyBeFlights() {
         airportName: json.airportName ?? "Nosy Be",
         forecastDays: json.forecastDays ?? 7,
         availableDates: json.availableDates ?? [],
+        selectedDate: json.selectedDate ?? date ?? null,
         arrivals: json.arrivals ?? [],
         departures: json.departures ?? [],
         nextArrival: json.nextArrival ?? null,
@@ -76,7 +80,7 @@ export function useNosyBeFlights() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     void refresh();

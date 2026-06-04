@@ -1276,7 +1276,7 @@
     "nextArrival": "Prochaine arrivée",
     "nextDeparture": "Prochain départ",
     "forecastTitle": "Choisir un jour",
-    "forecastHint": "Programme sur 7 jours à partir d'aujourd'hui (heure Nosy Be). Données actualisées 2 fois par jour.",
+    "forecastHint": "Programme sur 7 jours à partir d'aujourd'hui (heure Nosy Be). Chaque jour est chargé à la demande, données actualisées 2 fois par jour.",
     "dayToday": "Aujourd'hui",
     "dayTomorrow": "Demain",
     "arrivalsTitle": "Arrivées",

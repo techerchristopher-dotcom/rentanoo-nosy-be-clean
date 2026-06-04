@@ -277,13 +277,15 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
   });
 
   // GET /api/public/flights-nosy-be — horaires vols Fascène (AeroDataBox)
-  app.get("/api/public/flights-nosy-be", async (_req: Request, res: Response) => {
+  // ?date=YYYY-MM-DD pour le programme d'un jour (max 7 jours)
+  app.get("/api/public/flights-nosy-be", async (req: Request, res: Response) => {
     try {
       const { getNosyBeFlights, isNosyBeFlightsConfigured } = await import("../lib/nosyBeFlights");
       if (!isNosyBeFlightsConfigured()) {
         return res.json({ ok: false, configured: false });
       }
-      const flights = await getNosyBeFlights();
+      const date = typeof req.query.date === "string" ? req.query.date : undefined;
+      const flights = await getNosyBeFlights(date);
       return res.json({ ok: true, configured: true, ...flights });
     } catch (e: unknown) {
       return res.status(502).json({
