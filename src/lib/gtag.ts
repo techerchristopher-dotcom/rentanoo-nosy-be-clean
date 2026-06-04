@@ -1,93 +1,31 @@
 /**
- * Google Tag (gtag.js) - Tag principal GT-TXZW7HG8 + GA4 + Ads
- *
- * Mode "best effort" : ne jamais empêcher l'app de démarrer.
- * L'échec du chargement d'un script externe n'est jamais une erreur applicative.
+ * Google Tag — complète le snippet GA4 dans index.html (Ads + conteneur GT).
+ * GA4 G-WVKC4DHFL3 est configuré dans index.html pour garantir les hits /g/collect.
  */
 
 const GOOGLE_TAG_ID = "GT-TXZW7HG8";
-const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
+export const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
 const GOOGLE_ADS_ID = "AW-17959989720";
-
-/** Charge gtag.js avec l’ID GA4 (un seul script suffit pour plusieurs configs). */
-const GTAG_SCRIPT_URL = `https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`;
 
 function isGtagAvailable(): boolean {
   return typeof window !== "undefined" && typeof window.gtag === "function";
 }
 
 /**
- * Charge le script gtag. Promise toujours resolve (jamais reject).
- * onload => resolve(true), onerror => console.warn + resolve(false).
- */
-function loadGtagScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    try {
-      const s = document.createElement("script");
-      s.async = true;
-      s.src = GTAG_SCRIPT_URL;
-      s.onload = () => {
-        try {
-          resolve(true);
-        } catch {
-          resolve(false);
-        }
-      };
-      s.onerror = () => {
-        console.warn("[gtag] Script load failed (app continues):", GTAG_SCRIPT_URL);
-        resolve(false);
-      };
-      document.head.appendChild(s);
-    } catch (e) {
-      console.warn("[gtag] Script injection failed (app continues):", e);
-      resolve(false);
-    }
-  });
-}
-
-/**
- * Initialise dataLayer, gtag stub, charge le script en arrière-plan.
- * Ne throw jamais. Ne bloque jamais l'app sur le résultat du loader.
+ * Complète la config gtag (GA4 déjà initialisé dans index.html).
  */
 export function initGtag(): void {
+  if (!isGtagAvailable()) return;
   try {
-    window.dataLayer = window.dataLayer || [];
-    const gtagFn = (...args: unknown[]) => {
-      try {
-        window.dataLayer!.push(args);
-      } catch {
-        // no-op
-      }
-    };
-    window.gtag = gtagFn;
-
-    gtagFn("js", new Date());
-
-    // GA4 — obligatoire pour envoyer des hits vers G-WVKC4DHFL3 (/g/collect)
-    gtagFn("config", GA4_MEASUREMENT_ID, { send_page_view: true });
-
-    // Google Tag container + Ads (conversions)
-    gtagFn("config", GOOGLE_TAG_ID);
-    gtagFn("config", GOOGLE_ADS_ID);
-
-    // Chargement différé, sans await : l'app démarre immédiatement
-    const schedule = () => {
-      loadGtagScript(); // fire-and-forget, résultat ignoré
-    };
-    if ("requestIdleCallback" in window) {
-      (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout?: number }) => void })
-        .requestIdleCallback(schedule, { timeout: 500 });
-    } else {
-      setTimeout(schedule, 0);
-    }
+    window.gtag!("config", GOOGLE_TAG_ID);
+    window.gtag!("config", GOOGLE_ADS_ID);
   } catch (e) {
-    console.warn("[gtag] Init failed (app continues):", e);
+    console.warn("[gtag] Ads/GT config failed (app continues):", e);
   }
 }
 
 /**
  * Envoie un page_view à chaque changement de route (SPA).
- * send_to GA4 pour forcer /g/collect.
  */
 export function sendPageView(path: string, title?: string): void {
   if (!isGtagAvailable()) return;
@@ -144,10 +82,6 @@ interface DepositConversionParams {
 const STORAGE_KEY_PURCHASE = "gtag_purchase_sent";
 const STORAGE_KEY_DEPOSIT = "gtag_deposit_sent";
 
-/**
- * Envoie une conversion "purchase" (location payée).
- * Utilise transaction_id pour déduplication Google Ads.
- */
 export function sendPurchaseConversion(params: PurchaseConversionParams): void {
   if (!isGtagAvailable()) return;
 
@@ -166,18 +100,11 @@ export function sendPurchaseConversion(params: PurchaseConversionParams): void {
       currency: params.currency,
       transaction_id: params.transaction_id,
     });
-    if (import.meta.env.DEV) {
-      console.log("[gtag] purchase conversion sent:", { ...params, send_to: `${GOOGLE_ADS_ID}/${label}` });
-    }
   } catch {
     // no-op
   }
 }
 
-/**
- * Envoie une conversion "deposit" (caution activée).
- * À appeler après succès de l'attachement de la carte pour la caution.
- */
 export function sendDepositConversion(params: DepositConversionParams): void {
   if (!isGtagAvailable()) return;
 
@@ -196,17 +123,11 @@ export function sendDepositConversion(params: DepositConversionParams): void {
       currency: params.currency,
       transaction_id: params.transaction_id,
     });
-    if (import.meta.env.DEV) {
-      console.log("[gtag] deposit conversion sent:", { ...params, send_to: `${GOOGLE_ADS_ID}/${label}` });
-    }
   } catch {
     // no-op
   }
 }
 
-/**
- * Vérifie si une conversion a déjà été envoyée pour ce transaction_id (anti-double).
- */
 export function hasPurchaseConversionBeenSent(transactionId: string): boolean {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY_PURCHASE);
@@ -229,15 +150,11 @@ export function hasDepositConversionBeenSent(transactionId: string): boolean {
   }
 }
 
-/**
- * Marque une conversion comme envoyée (à appeler après sendPurchaseConversion).
- */
 export function markPurchaseConversionSent(transactionId: string): void {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY_PURCHASE);
     const set = new Set<string>(stored ? JSON.parse(stored) : []);
     set.add(transactionId);
-    // Garder uniquement les 50 derniers pour éviter croissance infinie
     const arr = [...set];
     if (arr.length > 50) {
       sessionStorage.setItem(STORAGE_KEY_PURCHASE, JSON.stringify(arr.slice(-50)));
