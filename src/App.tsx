@@ -8,7 +8,7 @@ import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { WhatsAppContactProvider } from "@/contexts/WhatsAppContactContext";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
-import { sendPageView } from "@/lib/gtag";
+import { trackPageViewEvent } from "@/lib/whatsappAnalytics";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navbar } from "@/components/layout/navbar";
@@ -88,6 +88,7 @@ const SupplierForm = lazy(() => import("./pages/admin/suppliers/SupplierForm"));
 const MaintenancePage = lazy(() => import("./pages/admin/maintenance/MaintenancePage"));
 const AdminExchangeSettings = lazy(() => import("./pages/admin/settings/AdminExchangeSettings"));
 const AdminWhatsAppSettings = lazy(() => import("./pages/admin/settings/AdminWhatsAppSettings"));
+const AdminSiteAnalytics = lazy(() => import("./pages/admin/analytics/AdminSiteAnalytics"));
 const Checking = lazy(() => import("./pages/Checking"));
 const CheckinReturnPage = lazy(() => import("./pages/checkin-return/[bookingId]"));
 const DictionaryIndex = lazy(() => import("./pages/dictionary/DictionaryIndex"));
@@ -109,7 +110,7 @@ function RouteChangeTracker() {
       isInitial.current = false;
       return;
     }
-    sendPageView(location.pathname + location.search, document.title);
+    trackPageViewEvent(location.pathname + location.search, document.title);
   }, [location.pathname, location.search]);
   return null;
 }
@@ -450,6 +451,14 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <ReportsDashboard />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="analytics/site"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminSiteAnalytics />
                   </Suspense>
                 }
               />

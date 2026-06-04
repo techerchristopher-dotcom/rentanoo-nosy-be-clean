@@ -657,3 +657,67 @@ export async function adminUploadWhatsAppPhoto(file: File): Promise<WhatsAppCont
 
   return mapWhatsAppContactResponse(json);
 }
+
+export type SiteAnalyticsSummary = {
+  days: number;
+  totals: {
+    whatsapp_fab_click: number;
+    whatsapp_bubble_shown: number;
+    whatsapp_fab_drag: number;
+    page_view: number;
+  };
+  conversionRate: number | null;
+  bubbleTriggers: Array<{ trigger: string; count: number }>;
+  topClickPages: Array<{ pagePath: string; count: number }>;
+  daily: Array<{ date: string; clicks: number; bubbles: number }>;
+  firstEventAt: string | null;
+  lastEventAt: string | null;
+};
+
+export async function adminGetSiteAnalytics(days = 30): Promise<SiteAnalyticsSummary> {
+  const data = await adminFetch<SiteAnalyticsSummary & { ok: boolean }>(
+    `/api/admin/analytics/site?days=${days}`
+  );
+  return {
+    days: data.days,
+    totals: data.totals,
+    conversionRate: data.conversionRate,
+    bubbleTriggers: data.bubbleTriggers,
+    topClickPages: data.topClickPages,
+    daily: data.daily,
+    firstEventAt: data.firstEventAt,
+    lastEventAt: data.lastEventAt,
+  };
+}
+
+export type Ga4Report = {
+  configured: boolean;
+  days: number;
+  overview: {
+    activeUsers: number;
+    sessions: number;
+    pageViews: number;
+    avgSessionDurationSec: number;
+  } | null;
+  topPages: Array<{ pagePath: string; pageViews: number; activeUsers: number }>;
+  trafficSources: Array<{ source: string; medium: string; sessions: number }>;
+  countries: Array<{ country: string; activeUsers: number }>;
+  devices: Array<{ device: string; activeUsers: number }>;
+  daily: Array<{ date: string; activeUsers: number; sessions: number }>;
+  setupHint?: string;
+};
+
+export async function adminGetGa4Analytics(days = 30): Promise<Ga4Report> {
+  const data = await adminFetch<Ga4Report & { ok: boolean }>(`/api/admin/analytics/ga4?days=${days}`);
+  return {
+    configured: data.configured,
+    days: data.days,
+    overview: data.overview,
+    topPages: data.topPages,
+    trafficSources: data.trafficSources,
+    countries: data.countries,
+    devices: data.devices,
+    daily: data.daily,
+    setupHint: data.setupHint,
+  };
+}

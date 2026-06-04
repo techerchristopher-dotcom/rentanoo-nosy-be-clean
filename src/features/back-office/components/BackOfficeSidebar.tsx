@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
+  BarChart3,
   Bike,
   Calendar,
   ClipboardList,
@@ -61,7 +62,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Rapports",
-    items: [{ to: "/admin/reports", label: "Indicateurs", icon: LayoutDashboard }],
+    items: [
+      { to: "/admin/reports", label: "Indicateurs atelier", icon: LayoutDashboard },
+      { to: "/admin/analytics/site", label: "Statistiques site", icon: BarChart3 },
+    ],
   },
 ];
 

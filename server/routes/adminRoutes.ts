@@ -39,6 +39,12 @@ import {
   uploadWhatsAppProfilePhoto,
   whatsAppContactToPublicJson,
 } from "../lib/whatsappContactService";
+import {
+  getSiteAnalyticsSummary,
+  insertSiteAnalyticsEvent,
+  isAllowedSiteAnalyticsEvent,
+} from "../lib/siteAnalyticsService";
+import { fetchGa4Report } from "../lib/ga4DataService";
 import { formatWhatsAppPhoneDisplay } from "@/utils/whatsappContact";
 import {
   sanitizeAndRecalculateBookingOptions,
@@ -305,6 +311,30 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
   });
 
+  // POST /api/public/analytics/event — collecte best-effort (widget WhatsApp, page views)
+  app.post("/api/public/analytics/event", async (req: Request, res: Response) => {
+    const eventName = typeof req.body?.eventName === "string" ? req.body.eventName.trim() : "";
+    if (!isAllowedSiteAnalyticsEvent(eventName)) {
+      return res.status(400).json({ ok: false, message: "Événement non autorisé." });
+    }
+
+    const pagePath = typeof req.body?.pagePath === "string" ? req.body.pagePath.trim() : null;
+    const metadata =
+      req.body?.metadata && typeof req.body.metadata === "object" && !Array.isArray(req.body.metadata)
+        ? (req.body.metadata as Record<string, string | number | boolean>)
+        : {};
+
+    try {
+      await insertSiteAnalyticsEvent(supabaseAdmin, { eventName, pagePath, metadata });
+      return res.json({ ok: true });
+    } catch (e: unknown) {
+      return res.status(500).json({
+        ok: false,
+        message: e instanceof Error ? e.message : "Erreur enregistrement",
+      });
+    }
+  });
+
   // GET /api/public/weather-nosy-be — météo actuelle Nosy Be (Open-Meteo)
   app.get("/api/public/weather-nosy-be", async (req: Request, res: Response) => {
     try {
@@ -512,6 +542,44 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
   );
 
   startExchangeRateScheduler(supabaseAdmin);
+
+  // GET /api/admin/analytics/site — stats widget WhatsApp + pages
+  app.get("/api/admin/analytics/site", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const daysRaw = typeof req.query?.days === "string" ? parseInt(req.query.days, 10) : 30;
+    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(daysRaw, 90) : 30;
+
+    try {
+      const summary = await getSiteAnalyticsSummary(supabaseAdmin, days);
+      return res.json({ ok: true, ...summary });
+    } catch (e: unknown) {
+      return res.status(500).json({
+        ok: false,
+        message: e instanceof Error ? e.message : "Statistiques indisponibles",
+      });
+    }
+  });
+
+  // GET /api/admin/analytics/ga4 — rapports Google Analytics (Data API)
+  app.get("/api/admin/analytics/ga4", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const daysRaw = typeof req.query?.days === "string" ? parseInt(req.query.days, 10) : 30;
+    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(daysRaw, 90) : 30;
+
+    try {
+      const report = await fetchGa4Report(days);
+      return res.json({ ok: true, ...report });
+    } catch (e: unknown) {
+      return res.status(502).json({
+        ok: false,
+        message: e instanceof Error ? e.message : "Google Analytics indisponible",
+      });
+    }
+  });
 
   // ============================================================================
   // Admin planning (Phase 1 backend) — source de vérité pour futur Gantt admin
