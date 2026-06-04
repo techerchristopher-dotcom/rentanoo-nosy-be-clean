@@ -1,8 +1,10 @@
 /**
- * Analytics — GA4 uniquement via le snippet dans index.html.
- * Pas de Google Tag Manager / conteneur GT : une seule source de vérité G-WVKC4DHFL3.
+ * Analytics — gtag chargé via GT-TXZW7HG8 dans index.html.
+ * GA4 measurement ID G-WVKC4DHFL3 ne peut pas charger gtag/js en direct (404 Google).
+ * Le conteneur GT route vers GA4 + Google Ads.
  */
 
+export const GOOGLE_TAG_ID = "GT-TXZW7HG8";
 export const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
 
 const GOOGLE_ADS_ID = "AW-17959989720";
@@ -18,7 +20,7 @@ function isGtagAvailable(): boolean {
   return typeof window !== "undefined" && typeof window.gtag === "function";
 }
 
-/** Étape 2 (SPA) : page_view manuel à chaque changement de route. La 1re page est envoyée par gtag('config') dans index.html. */
+/** SPA : page_view manuel à chaque changement de route. La 1re page est envoyée par gtag('config', 'GT-…') dans index.html. */
 export function trackGa4PageView(pagePath: string, pageTitle?: string): void {
   if (!isGtagAvailable()) return;
   try {
