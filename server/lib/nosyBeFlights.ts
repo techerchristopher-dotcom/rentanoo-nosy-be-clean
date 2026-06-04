@@ -1,26 +1,11 @@
 /** Vols aéroport Nosy Be Fascène (IATA: NOS) via AeroDataBox / RapidAPI. */
 
 const NOSY_BE_IATA = "NOS";
-const NOSY_BE_ICAO = "FMNN";
 const AERODATABOX_HOST = "aerodatabox.p.rapidapi.com";
 /** Créneaux horaires (max 12 h chacun) pour couvrir la journée complète. */
 const DAY_TIME_WINDOWS = [
-  ["T00:00", "T05:59"],
-  ["T06:00", "T11:59"],
-  ["T12:00", "T17:59"],
-  ["T18:00", "T23:59"],
-] as const;
-
-/** Vols Madagascar (MD + MDR) — souvent absents du FIDS agrégé. */
-const NOS_SUPPLEMENTAL_FLIGHT_NUMBERS = [
-  "MD322",
-  "MD323",
-  "MD326",
-  "MD327",
-  "MDR322",
-  "MDR323",
-  "MDR326",
-  "MDR327",
+  ["T00:00", "T11:59"],
+  ["T12:00", "T23:59"],
 ] as const;
 
 /** AeroDataBox : fenêtre max 12 h par requête. */
@@ -94,13 +79,11 @@ function buildAvailableDates(): string[] {
   return Array.from({ length: FLIGHTS_FORECAST_DAYS }, (_, i) => addDaysYmd(today, i));
 }
 
-function isNosyBeAirport(airport: Record<string, unknown>): boolean {
-  const iata = pickString(airport.iata);
-  const icao = pickString(airport.icao);
-  return iata === NOSY_BE_IATA || icao === NOSY_BE_ICAO;
-}
-
-function parseScheduled(record: Record<string, unknown>, leg: "arrival" | "departure"): {
+function parseScheduled(
+  record: Record<string, unknown>,
+  leg: "arrival" | "departure",
+  options?: { preferScheduled?: boolean }
+): {
   scheduledDate: string;
   scheduledLocal: string;
   scheduledTime: string;
@@ -109,7 +92,9 @@ function parseScheduled(record: Record<string, unknown>, leg: "arrival" | "depar
   const scheduled = legObj.scheduledTime as Record<string, unknown> | undefined;
   const revised = legObj.revisedTime as Record<string, unknown> | undefined;
   const predicted = legObj.predictedTime as Record<string, unknown> | undefined;
-  const local = pickString(revised?.local, predicted?.local, scheduled?.local, legObj.scheduledTimeLocal, legObj.scheduled);
+  const local = options?.preferScheduled
+    ? pickString(scheduled?.local, legObj.scheduledTimeLocal, legObj.scheduled, revised?.local, predicted?.local)
+    : pickString(revised?.local, predicted?.local, scheduled?.local, legObj.scheduledTimeLocal, legObj.scheduled);
   const { date, time } = local ? extractLocalParts(local) : { date: "—", time: "—" };
   return { scheduledDate: date, scheduledLocal: local || "—", scheduledTime: time };
 }
@@ -130,18 +115,20 @@ function parseCounterpart(
 function normalizeStatus(raw: string): string {
   const s = raw.trim();
   if (!s || s.toLowerCase() === "unknown") return "Scheduled";
+  if (s.toLowerCase() === "expected") return "Scheduled";
   return s;
 }
 
-function parseFlight(record: unknown, type: "arrival" | "departure"): NosyBeFlight | null {
+/** Parse un vol FIDS (endpoint aéroport — pas de filtre NOS, déjà scoping). */
+function parseFidsFlight(
+  record: unknown,
+  type: "arrival" | "departure",
+  options?: { preferScheduled?: boolean }
+): NosyBeFlight | null {
   if (!record || typeof record !== "object") return null;
   const r = record as Record<string, unknown>;
-  const legObj = (r[type] ?? {}) as Record<string, unknown>;
-  const airport = (legObj.airport ?? {}) as Record<string, unknown>;
-  if (!isNosyBeAirport(airport)) return null;
-
   const airline = (r.airline ?? {}) as Record<string, unknown>;
-  const { scheduledDate, scheduledLocal, scheduledTime } = parseScheduled(r, type);
+  const { scheduledDate, scheduledLocal, scheduledTime } = parseScheduled(r, type, options);
   const { airportCode, airportName } = parseCounterpart(r, type);
 
   const flightNumber = pickString(r.number, r.callSign, r.flightNumber);
@@ -299,68 +286,24 @@ async function fetchAbsoluteWindow(fromLocal: string, toLocal: string) {
   return fetchAeroDataBox(path);
 }
 
-function parseFidsResponse(json: Record<string, unknown>): { arrivals: NosyBeFlight[]; departures: NosyBeFlight[] } {
+function parseFidsResponse(
+  json: Record<string, unknown>,
+  options?: { preferScheduled?: boolean }
+): { arrivals: NosyBeFlight[]; departures: NosyBeFlight[] } {
   const arrivalsRaw = (json.arrivals ?? []) as unknown[];
   const departuresRaw = (json.departures ?? []) as unknown[];
   return {
     arrivals: dedupeFlights(
-      arrivalsRaw.map((r) => parseFlight(r, "arrival")).filter((f): f is NosyBeFlight => f != null)
+      arrivalsRaw
+        .map((r) => parseFidsFlight(r, "arrival", options))
+        .filter((f): f is NosyBeFlight => f != null)
     ),
     departures: dedupeFlights(
-      departuresRaw.map((r) => parseFlight(r, "departure")).filter((f): f is NosyBeFlight => f != null)
+      departuresRaw
+        .map((r) => parseFidsFlight(r, "departure", options))
+        .filter((f): f is NosyBeFlight => f != null)
     ),
   };
-}
-
-function parseFlightContractsAtNos(records: unknown[], targetDate: string): NosyBeFlight[] {
-  const out: NosyBeFlight[] = [];
-  for (const record of records) {
-    for (const type of ["arrival", "departure"] as const) {
-      const flight = parseFlight(record, type);
-      if (flight && flight.scheduledDate === targetDate) {
-        out.push(flight);
-      }
-    }
-  }
-  return dedupeFlights(out);
-}
-
-async function fetchFlightsByNumber(flightNumber: string, date: string): Promise<NosyBeFlight[]> {
-  const compact = flightNumber.replace(/\s+/g, "");
-  const path = `/flights/Number/${encodeURIComponent(compact)}/${date}?dateLocalRole=Both`;
-  try {
-    const data = await fetchAeroDataBoxRaw(path);
-    if (Array.isArray(data)) {
-      return parseFlightContractsAtNos(data, date);
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-async function supplementDaySchedule(
-  date: string,
-  arrivals: NosyBeFlight[],
-  departures: NosyBeFlight[]
-): Promise<{ arrivals: NosyBeFlight[]; departures: NosyBeFlight[] }> {
-  let mergedArrivals = arrivals;
-  let mergedDepartures = departures;
-
-  for (const flightNumber of NOS_SUPPLEMENTAL_FLIGHT_NUMBERS) {
-    const extras = await fetchFlightsByNumber(flightNumber, date);
-    if (!extras.length) continue;
-    mergedArrivals = dedupeFlights([
-      ...mergedArrivals,
-      ...extras.filter((f) => f.type === "arrival"),
-    ]);
-    mergedDepartures = dedupeFlights([
-      ...mergedDepartures,
-      ...extras.filter((f) => f.type === "departure"),
-    ]);
-  }
-
-  return { arrivals: mergedArrivals, departures: mergedDepartures };
 }
 
 async function getLiveNextFlights(): Promise<{
@@ -393,14 +336,17 @@ async function fetchDaySchedule(date: string): Promise<{ arrivals: NosyBeFlight[
 
   for (const [fromSuffix, toSuffix] of DAY_TIME_WINDOWS) {
     const json = await fetchAbsoluteWindow(`${date}${fromSuffix}`, `${date}${toSuffix}`);
-    const parsed = parseFidsResponse(json);
+    const parsed = parseFidsResponse(json, { preferScheduled: true });
     arrivals = dedupeFlights([...arrivals, ...parsed.arrivals]);
     departures = dedupeFlights([...departures, ...parsed.departures]);
   }
 
-  const supplemented = await supplementDaySchedule(date, arrivals, departures);
-  arrivals = supplemented.arrivals.filter((f) => f.scheduledDate === date);
-  departures = supplemented.departures.filter((f) => f.scheduledDate === date);
+  arrivals = arrivals.filter((f) => f.scheduledDate === date);
+  departures = departures.filter((f) => f.scheduledDate === date);
+
+  const minExpected = 2;
+  const total = arrivals.length + departures.length;
+  const cacheTtl = total >= minExpected ? FLIGHTS_CACHE_TTL_MS : 30 * 60 * 1000;
 
   const today = todayYmdNosyBe();
   const nowMin = nowMinutesNosyBe();
@@ -412,7 +358,7 @@ async function fetchDaySchedule(date: string): Promise<{ arrivals: NosyBeFlight[
     pickNextOnDate(departures, date, nowMin)
   );
 
-  dayCache.set(date, { data: snapshot, expiresAt: Date.now() + FLIGHTS_CACHE_TTL_MS });
+  dayCache.set(date, { data: snapshot, expiresAt: Date.now() + cacheTtl });
   return { arrivals, departures };
 }
 
@@ -455,7 +401,6 @@ export async function getNosyBeFlights(date?: string): Promise<NosyBeFlightsSnap
     }
     const { arrivals, departures } = await fetchDaySchedule(normalizedDate);
     const liveNext = await getLiveNextFlights();
-    const today = todayYmdNosyBe();
     const snapshot = buildSnapshot(
       arrivals,
       departures,
@@ -463,7 +408,11 @@ export async function getNosyBeFlights(date?: string): Promise<NosyBeFlightsSnap
       liveNext.nextArrival,
       liveNext.nextDeparture
     );
-    dayCache.set(normalizedDate, { data: snapshot, expiresAt: Date.now() + FLIGHTS_CACHE_TTL_MS });
+    const prevEntry = dayCache.get(normalizedDate);
+    dayCache.set(normalizedDate, {
+      data: snapshot,
+      expiresAt: prevEntry?.expiresAt ?? Date.now() + FLIGHTS_CACHE_TTL_MS,
+    });
     return snapshot;
   }
 
