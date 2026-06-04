@@ -14,6 +14,7 @@ import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpi
 import { FEATURES } from "@/config/features";
 import { isMoto } from "@/utils/vehicleType";
 import { Seo } from "@/components/seo/Seo";
+import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
 
 
 const Index = () => {
@@ -538,6 +539,8 @@ const Index = () => {
                 "RENTANOO, la première plateforme de location de scooters 100 % en ligne"
               )}
             </p>
+
+            <HomeDayContextStrip variant="hero" />
             
             {/* 🎨 Nouvelle SearchBar style Airbnb */}
             <SearchBarAirbnb

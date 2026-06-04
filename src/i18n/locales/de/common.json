@@ -118,6 +118,22 @@
   "home": {
     "heroTitle": "Mieten Sie Ihren Roller in Nosy Be mit nur wenigen Klicks",
     "heroSubtitle": "RENTANOO, die erste 100 % online Scooter-Vermietungsplattform",
+    "dayContext": {
+      "ariaLabel": "Wetter und Wechselkurs heute in Nosy Be",
+      "title": "Nosy Be heute",
+      "exchangeLive": "1 € = {{rate}} Ar (Tageskurs)",
+      "exchangeManual": "1 € = {{rate}} Ar",
+      "pricesHint": "Preise in € mit Ariary-Äquivalent",
+      "weatherUnavailable": "Wetter nicht verfügbar",
+      "weather": {
+        "clear": "Sonnig",
+        "cloudy": "Bewölkt",
+        "fog": "Nebel",
+        "rain": "Regen",
+        "storm": "Gewitter",
+        "snow": "Schnee"
+      }
+    },
     "seoBlockTitle": "Rollervermietung in Nosy Be: einfach, schnell, sicher",
     "seoBlock": "Rentanoo hilft Ihnen, eine Rollervermietung in Nosy Be in wenigen Klicks zu buchen, sobald Sie in Madagaskar ankommen. Wählen Sie Ihre Daten, vergleichen Sie die verfügbaren Modelle und bestätigen Sie online. Wir bieten die Lieferung zum Flughafen Nosy Be (Fascène) oder direkt zu Ihrem Hotel an, damit Sie vom ersten Tag an Zeit sparen. Helm wird gestellt, Einweisungstipps inklusive; die Versicherung ist je nach gewähltem Angebot enthalten – alles für eine sorgenfreie Fahrt während Ihres Aufenthalts. Ob Sie ein Wochenende oder mehrere Wochen bleiben: Sie nutzen eine praktische Lösung, um Strände, Dörfer und die Highlights der Insel zu erkunden. Buchen Sie in der Hauptsaison früh, um die Verfügbarkeit Ihres Rollers zu sichern.",
     "toasts": {

@@ -15,6 +15,7 @@ import { Vehicle, VehicleRentalInfo } from "@/types";
 import { Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { mapToCarVehicle, mapToMotoVehicle } from "@/mappers/vehicleMappers";
 import { isMoto } from "@/utils/vehicleType";
+import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
 
 export interface HomeResultsProps {
   filteredVehicles: SupabaseVehicle[];
@@ -53,6 +54,8 @@ export function HomeResults({
   return (
     <section id="search-results" className="py-12 scroll-mt-4">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <HomeDayContextStrip variant="results" />
+
         {/* Filters */}
         <div className="mb-8">
           <div className="flex flex-wrap gap-4 items-center">

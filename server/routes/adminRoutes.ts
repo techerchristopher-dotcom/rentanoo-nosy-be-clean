@@ -253,6 +253,20 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     });
   });
 
+  // GET /api/public/weather-nosy-be — météo actuelle Nosy Be (Open-Meteo)
+  app.get("/api/public/weather-nosy-be", async (_req: Request, res: Response) => {
+    try {
+      const { getNosyBeWeather } = await import("../lib/nosyBeWeather");
+      const weather = await getNosyBeWeather();
+      return res.json({ ok: true, ...weather });
+    } catch (e: unknown) {
+      return res.status(502).json({
+        ok: false,
+        message: e instanceof Error ? e.message : "Météo indisponible",
+      });
+    }
+  });
+
   // GET /api/admin/settings/exchange-rate
   app.get("/api/admin/settings/exchange-rate", async (req: Request, res: Response) => {
     const gate = await requireAdmin(req, supabaseAdmin);

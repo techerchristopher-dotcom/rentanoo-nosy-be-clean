@@ -335,6 +335,22 @@
   "home": {
     "heroTitle": "Louez votre scooter à Nosy Be en quelques clics",
     "heroSubtitle": "RENTANOO, la première plateforme de location de scooters 100 % en ligne",
+    "dayContext": {
+      "ariaLabel": "Météo et taux de change du jour à Nosy Be",
+      "title": "Nosy Be aujourd'hui",
+      "exchangeLive": "1 € = {{rate}} Ar (taux du jour)",
+      "exchangeManual": "1 € = {{rate}} Ar",
+      "pricesHint": "Prix affichés en € avec équivalent ariary",
+      "weatherUnavailable": "Météo indisponible",
+      "weather": {
+        "clear": "Ensoleillé",
+        "cloudy": "Nuageux",
+        "fog": "Brume",
+        "rain": "Pluie",
+        "storm": "Orages",
+        "snow": "Neige"
+      }
+    },
     "seoBlockTitle": "Location scooter à Nosy Be : simple, rapide, sécurisé",
     "seoBlock": "Rentanoo vous aide à réserver une location scooter Nosy Be en quelques clics, dès votre arrivée à Madagascar. Choisissez vos dates, comparez les modèles disponibles et confirmez en ligne. Nous proposons la livraison à l'aéroport de Nosy Be (Fascène) ou directement à votre hôtel pour gagner du temps dès le premier jour. Vous récupérez votre scooter rapidement, avec un état des lieux clair et des conseils pour circuler en toute sécurité sur l'île. Casque fourni, conseils de prise en main et assurance incluse selon l'offre sélectionnée : tout est pensé pour rouler sereinement pendant votre séjour. Que vous restiez un week-end ou plusieurs semaines, vous profitez d'une solution pratique pour explorer les plages, villages et spots incontournables de l'île. Réservez tôt en haute saison pour garantir la disponibilité de votre scooter.",
     "toasts": {
