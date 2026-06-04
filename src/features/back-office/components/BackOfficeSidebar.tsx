@@ -52,6 +52,10 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: "Paramètres",
+    items: [{ to: "/admin/settings/exchange", label: "Taux EUR / Ar", icon: Settings2 }],
+  },
+  {
     title: "Rapports",
     items: [{ to: "/admin/reports", label: "Indicateurs", icon: LayoutDashboard }],
   },

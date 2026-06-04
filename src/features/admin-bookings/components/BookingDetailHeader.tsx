@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, CalendarRange } from "lucide-react";
 import { BookingStatusBadge } from "./BookingStatusBadge";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { formatBookingRef, formatDateFr, formatRentalDuration } from "../utils/bookingDisplay";
 
 type BookingDetailHeaderProps = {
@@ -13,7 +15,7 @@ type BookingDetailHeaderProps = {
   endTime?: string | null;
   pickupLocation?: string | null;
   returnLocation?: string | null;
-  totalFormatted: string;
+  totalEur: number;
 };
 
 export function BookingDetailHeader({
@@ -26,9 +28,10 @@ export function BookingDetailHeader({
   endTime,
   pickupLocation,
   returnLocation,
-  totalFormatted,
+  totalEur,
 }: BookingDetailHeaderProps) {
   const duration = formatRentalDuration(startDate, endDate, startTime, endTime);
+  const { footnote } = useExchangeRate();
 
   return (
     <div className="space-y-4">
@@ -65,7 +68,14 @@ export function BookingDetailHeader({
           </div>
           <div className="text-left sm:text-right shrink-0">
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">Total locataire</div>
-            <div className="text-2xl sm:text-3xl font-bold tabular-nums text-foreground">{totalFormatted}</div>
+            <DualPrice
+              amountEur={totalEur}
+              variant="admin"
+              className="items-start sm:items-end"
+              primaryClassName="text-2xl sm:text-3xl font-bold tabular-nums text-foreground"
+              secondaryClassName="text-sm"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1 max-w-[220px] sm:ml-auto">{footnote}</p>
           </div>
         </div>
 

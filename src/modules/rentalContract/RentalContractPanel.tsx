@@ -11,6 +11,7 @@ import { getRentalContractPayload, type RentalContractPayload } from "./rentalCo
 import { generateAndStoreRentalContractPdf } from "@/services/rentalContractPdfService";
 import { RENTAL_CONTRACT_TEMPLATE_VERSION } from "./constants";
 import { supabase } from "@/integrations/supabase/client";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 interface RentalContractPanelProps {
   bookingId: string;
@@ -272,8 +273,7 @@ export function RentalContractPanel({
 
 /** Aperçu lecture (cohérent avec le PDF, sans HTML juridique complet dans le scroll). */
 function ContractReadOnlySummary({ payload: p }: { payload: RentalContractPayload }) {
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
+  const { formatClientInline, footnote } = useExchangeRate();
   const d = (s: string) =>
     new Date(s + "T12:00:00").toLocaleDateString("fr-FR", {
       day: "2-digit",
@@ -304,9 +304,13 @@ function ContractReadOnlySummary({ payload: p }: { payload: RentalContractPayloa
       <p>Lieu : {p.pickupLocation?.trim() || "Selon accord"}</p>
       <p className="font-semibold text-primary pt-2">Montants</p>
       <p>
-        Total : <strong>{fmt(p.totalPrice)}</strong> (sous-total {fmt(p.subtotal)}, options {fmt(p.optionsTotal)}
-        , frais {fmt(p.serviceFee)})
+        Total : <strong>{formatClientInline(p.totalPrice)}</strong>
       </p>
+      <p className="text-sm text-muted-foreground">
+        Sous-total {formatClientInline(p.subtotal)} · options {formatClientInline(p.optionsTotal)} · frais{" "}
+        {formatClientInline(p.serviceFee)}
+      </p>
+      <p className="text-xs text-muted-foreground">{footnote}</p>
       <p className="text-xs text-muted-foreground pt-2">
         Le PDF final reprend ces éléments et les dispositions générales du modèle. Signez ci-dessous pour
         confirmer.

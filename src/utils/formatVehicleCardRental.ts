@@ -15,7 +15,8 @@ export interface VehicleCardRentalPricingLabels {
  */
 export function getVehicleCardRentalPricing(
   t: TFunction,
-  rentalInfo: VehicleRentalInfo
+  rentalInfo: VehicleRentalInfo,
+  formatAmount: (eur: number) => string = (n) => formatCurrency(n)
 ): VehicleCardRentalPricingLabels {
   const duration = formatBillableDays(t, rentalInfo.days);
   const perDayShort = t("pricing.perDayShort", "jour");
@@ -23,11 +24,11 @@ export function getVehicleCardRentalPricing(
   return {
     perDayLabel: t("par_jour", "par jour"),
     detailLine: duration
-      ? `${formatCurrency(rentalInfo.pricePerDay)}/${perDayShort} × ${duration}`
+      ? `${formatAmount(rentalInfo.pricePerDay)}/${perDayShort} × ${duration}`
       : null,
     totalLine: t("pricing.totalExcludingOptions", {
-      total: formatCurrency(rentalInfo.totalCost),
-      defaultValue: `soit ${formatCurrency(rentalInfo.totalCost)} (hors options supplémentaires)`,
+      total: formatAmount(rentalInfo.totalCost),
+      defaultValue: `soit ${formatAmount(rentalInfo.totalCost)} (hors options supplémentaires)`,
     }),
   };
 }

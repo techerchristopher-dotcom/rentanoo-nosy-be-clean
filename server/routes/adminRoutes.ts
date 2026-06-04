@@ -19,6 +19,7 @@ import {
   wrapSelectedOptionsWithExtension,
   type ExtensionPending,
 } from "@/features/admin-bookings/utils/extensionMeta";
+import { FALLBACK_EXCHANGE, parseExchangeConfig } from "@/utils/dualCurrency";
 import {
   sanitizeAndRecalculateBookingOptions,
   type RawBookingOptionInput,
@@ -217,6 +218,58 @@ function formatStripeErrorForAdmin(code: string | undefined, message: string): s
 }
 
 export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient) {
+  const EXCHANGE_KEY = "eur_mga_exchange";
+
+  async function loadExchangeConfig() {
+    const { data, error } = await supabaseAdmin
+      .from("platform_settings")
+      .select("value")
+      .eq("key", EXCHANGE_KEY)
+      .maybeSingle();
+    if (error || !data?.value) return { ...FALLBACK_EXCHANGE };
+    return parseExchangeConfig(data.value);
+  }
+
+  // GET /api/public/exchange-rate — lecture taux EUR/MGA (client + admin)
+  app.get("/api/public/exchange-rate", async (_req: Request, res: Response) => {
+    const config = await loadExchangeConfig();
+    return res.json({ ok: true, rate: config.rate, effectiveFrom: config.effectiveFrom });
+  });
+
+  // GET /api/admin/settings/exchange-rate
+  app.get("/api/admin/settings/exchange-rate", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+    const config = await loadExchangeConfig();
+    return res.json({ ok: true, ...config });
+  });
+
+  // PATCH /api/admin/settings/exchange-rate
+  app.patch("/api/admin/settings/exchange-rate", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const rateRaw = req.body?.rate;
+    const rate = typeof rateRaw === "number" ? rateRaw : parseFloat(String(rateRaw ?? ""));
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return res.status(400).json({ ok: false, message: "Taux invalide (nombre strictement positif requis)." });
+    }
+
+    let effectiveFrom =
+      typeof req.body?.effectiveFrom === "string" ? req.body.effectiveFrom.trim() : "";
+    if (!effectiveFrom || !isValidYmd(effectiveFrom)) {
+      effectiveFrom = new Date().toISOString().slice(0, 10);
+    }
+
+    const value = { rate: Math.round(rate), effectiveFrom };
+    const { error } = await supabaseAdmin.from("platform_settings").upsert(
+      { key: EXCHANGE_KEY, value, updated_at: nowIso() },
+      { onConflict: "key" }
+    );
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+    return res.json({ ok: true, ...value });
+  });
+
   // ============================================================================
   // Admin planning (Phase 1 backend) — source de vérité pour futur Gantt admin
   // ============================================================================
@@ -322,13 +375,14 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       pricing_mode: string | null;
       reference_number: number | null;
       pickup_location: string | null;
+      total_price: number | null;
     };
 
     const cancelLike = '("cancelled","declined","rejected","terminated")';
 
     let bq = supabaseAdmin
       .from("bookings")
-      .select("id, vehicle_id, user_id, start_date, end_date, start_time, end_time, status, pricing_mode, reference_number, pickup_location")
+      .select("id, vehicle_id, user_id, start_date, end_date, start_time, end_time, status, pricing_mode, reference_number, pickup_location, total_price")
       .lte("start_date", end)
       .gte("end_date", start)
       .not("status", "in", cancelLike);
@@ -2413,6 +2467,11 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const paidAtRaw = req.body?.paidAt;
     const rawOpm = req.body?.offlinePaymentMethod;
     const offlinePaymentMethod = rawOpm === "cash" || rawOpm === "card_terminal" ? rawOpm : undefined;
+    const paidCurrency = req.body?.paidCurrency === "MGA" ? "MGA" : "EUR";
+    const paidAmountMga =
+      paidCurrency === "MGA" && req.body?.paidAmountMga != null
+        ? Number(req.body.paidAmountMga)
+        : null;
 
     let paidAt: string;
     if (typeof paidAtRaw === "string" && paidAtRaw.trim()) {
@@ -2440,7 +2499,11 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
     const prevPaid = Number(booking.amount_total_paid ?? 0) || 0;
     const newPaid = Math.round((prevPaid + pending.deltaTotalTTC) * 100) / 100;
-    const noteLine = `[Supplément prolongation encaissé ${paidAt.slice(0, 10)}] ${pending.deltaTotalTTC.toFixed(2)} €`;
+    const mgaNote =
+      paidCurrency === "MGA" && paidAmountMga != null && Number.isFinite(paidAmountMga) && paidAmountMga > 0
+        ? ` — ${Math.round(paidAmountMga).toLocaleString("fr-FR")} Ar encaissés`
+        : "";
+    const noteLine = `[Supplément prolongation encaissé ${paidAt.slice(0, 10)}] ${pending.deltaTotalTTC.toFixed(2)} €${mgaNote}`;
 
     const updateFields: Record<string, unknown> = {
       amount_total_paid: newPaid,
@@ -2557,6 +2620,11 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const paidAtRaw = req.body?.paidAt;
     const rawOpm = req.body?.offlinePaymentMethod;
     const offlinePaymentMethod = rawOpm === "cash" || rawOpm === "card_terminal" ? rawOpm : undefined;
+    const paidCurrency = req.body?.paidCurrency === "MGA" ? "MGA" : "EUR";
+    const paidAmountMga =
+      paidCurrency === "MGA" && req.body?.paidAmountMga != null
+        ? Number(req.body.paidAmountMga)
+        : null;
 
     let paidAt: string;
     if (typeof paidAtRaw === "string" && paidAtRaw.trim()) {
@@ -2568,7 +2636,7 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
 
     const { data: booking, error: fetchErr } = await supabaseAdmin
       .from("bookings")
-      .select("id, status, pricing_mode")
+      .select("id, status, pricing_mode, admin_notes")
       .eq("id", bookingId)
       .maybeSingle();
 
@@ -2585,6 +2653,11 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       updated_at: new Date().toISOString(),
     };
     if (offlinePaymentMethod !== undefined) updatePayload.offline_payment_method = offlinePaymentMethod;
+
+    if (paidCurrency === "MGA" && paidAmountMga != null && Number.isFinite(paidAmountMga) && paidAmountMga > 0) {
+      const noteLine = `[Encaissement ${paidAt.slice(0, 10)}] ${Math.round(paidAmountMga).toLocaleString("fr-FR")} Ar (espèces)`;
+      updatePayload.admin_notes = [booking.admin_notes?.trim(), noteLine].filter(Boolean).join("\n");
+    }
 
     const { error: updErr } = await supabaseAdmin
       .from("bookings")

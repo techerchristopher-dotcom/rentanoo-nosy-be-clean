@@ -37,7 +37,10 @@ import { BookingActionsBar } from "@/features/admin-bookings/components/BookingA
 import { BookingFinancialCard } from "@/features/admin-bookings/components/BookingFinancialCard";
 import { BookingDepositCard } from "@/features/admin-bookings/components/BookingDepositCard";
 import { BookingExtendModal } from "@/features/admin-bookings/components/BookingExtendModal";
+import { BookingCollectCashDialog } from "@/features/admin-bookings/components/BookingCollectCashDialog";
 import { computeBookingFinancials } from "@/features/admin-bookings/utils/bookingFinancials";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { formatAriary } from "@/utils/dualCurrency";
 import { getExtensionPending } from "@/features/admin-bookings/utils/extensionMeta";
 import { formatPaymentSummary, todayCollectIso } from "@/features/admin-bookings/utils/paymentFlow";
 
@@ -70,6 +73,11 @@ export default function AdminBookingDetail() {
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [extendLoading, setExtendLoading] = useState(false);
   const [extensionPayLoading, setExtensionPayLoading] = useState(false);
+
+  const [cashDialogOpen, setCashDialogOpen] = useState(false);
+  const [cashDialogMode, setCashDialogMode] = useState<"booking" | "extension">("booking");
+
+  const { formatAdminInline } = useExchangeRate();
 
   const refreshPayload = useCallback(async () => {
     if (!bookingId) return;
@@ -165,7 +173,7 @@ export default function AdminBookingDetail() {
     [b.selected_options]
   );
 
-  const total = formatMoney(bookingFinancials.totalTTC);
+  const totalEur = bookingFinancials.totalTTC;
 
   const needsPayment = isAdminPricing
     ? status === "pending" || status === "pending_payment" || status === "accepted"
@@ -214,16 +222,18 @@ export default function AdminBookingDetail() {
     };
   }, [bookingId, b, v]);
 
-  const runCollectCash = async () => {
+  const runCollectCashEur = async () => {
     if (!bookingId) return;
     setCollectLoading(true);
     try {
       await adminCollectPayment(bookingId, {
         paidAt: todayCollectIso(),
         offlinePaymentMethod: "cash",
+        paidCurrency: "EUR",
       });
       await refreshPayload();
-      toast({ title: "Encaissement enregistré", description: "Réservation confirmée en espèces." });
+      setCashDialogOpen(false);
+      toast({ title: "Encaissement enregistré", description: "Réservation confirmée en espèces (€)." });
     } catch (e: unknown) {
       toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
     } finally {
@@ -231,21 +241,71 @@ export default function AdminBookingDetail() {
     }
   };
 
-  const runCollectExtension = async () => {
+  const runCollectCashAriary = async (amountMga: number) => {
+    if (!bookingId) return;
+    setCollectLoading(true);
+    try {
+      await adminCollectPayment(bookingId, {
+        paidAt: todayCollectIso(),
+        offlinePaymentMethod: "cash",
+        paidCurrency: "MGA",
+        paidAmountMga: amountMga,
+      });
+      await refreshPayload();
+      setCashDialogOpen(false);
+      toast({
+        title: "Encaissement enregistré",
+        description: `Réservation confirmée — ${formatAriary(amountMga)} encaissés.`,
+      });
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
+    } finally {
+      setCollectLoading(false);
+    }
+  };
+
+  const runCollectExtensionEur = async () => {
     if (!bookingId || !extensionPending) return;
     setExtensionCollectLoading(true);
     try {
       await adminCollectExtensionPayment(bookingId, {
         paidAt: todayCollectIso(),
         offlinePaymentMethod: "cash",
+        paidCurrency: "EUR",
       });
       await refreshPayload();
-      toast({ title: "Supplément encaissé", description: `${formatMoney(extensionPending.deltaTotalTTC)} enregistré.` });
+      setCashDialogOpen(false);
+      toast({ title: "Supplément encaissé", description: `${formatAdminInline(extensionPending.deltaTotalTTC)} enregistré.` });
     } catch (e: unknown) {
       toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
     } finally {
       setExtensionCollectLoading(false);
     }
+  };
+
+  const runCollectExtensionAriary = async (amountMga: number) => {
+    if (!bookingId || !extensionPending) return;
+    setExtensionCollectLoading(true);
+    try {
+      await adminCollectExtensionPayment(bookingId, {
+        paidAt: todayCollectIso(),
+        offlinePaymentMethod: "cash",
+        paidCurrency: "MGA",
+        paidAmountMga: amountMga,
+      });
+      await refreshPayload();
+      setCashDialogOpen(false);
+      toast({ title: "Supplément encaissé", description: `${formatAriary(amountMga)} enregistrés.` });
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
+    } finally {
+      setExtensionCollectLoading(false);
+    }
+  };
+
+  const openCashDialog = (mode: "booking" | "extension") => {
+    setCashDialogMode(mode);
+    setCashDialogOpen(true);
   };
 
   const runPayExtensionStripe = async () => {
@@ -275,7 +335,7 @@ export default function AdminBookingDetail() {
       setExtendModalOpen(false);
       toast({
         title: "Location prolongée",
-        description: `Supplément : ${formatMoney(result.delta.totalTTC)}`,
+        description: `Supplément : ${formatAdminInline(result.delta.totalTTC)}`,
       });
     } catch (e: unknown) {
       toast({ title: "Prolongation impossible", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
@@ -399,7 +459,19 @@ export default function AdminBookingDetail() {
         endTime={b.end_time as string | null}
         pickupLocation={b.pickup_location as string | null}
         returnLocation={b.return_location as string | null}
-        totalFormatted={total}
+        totalEur={totalEur}
+      />
+
+      <BookingCollectCashDialog
+        open={cashDialogOpen}
+        onOpenChange={setCashDialogOpen}
+        amountEur={cashDialogMode === "extension" && extensionPending ? extensionPending.deltaTotalTTC : totalEur}
+        loading={cashDialogMode === "extension" ? extensionCollectLoading : collectLoading}
+        title={cashDialogMode === "extension" ? "Encaisser le supplément en espèces" : "Encaisser en espèces"}
+        onConfirmEur={() => void (cashDialogMode === "extension" ? runCollectExtensionEur() : runCollectCashEur())}
+        onConfirmAriary={(amountMga) =>
+          void (cashDialogMode === "extension" ? runCollectExtensionAriary(amountMga) : runCollectCashAriary(amountMga))
+        }
       />
 
       <BookingClientVehicleCards
@@ -415,7 +487,7 @@ export default function AdminBookingDetail() {
         isAdminPricing={isAdminPricing}
         needsPayment={needsPayment}
         paymentSummary={paymentSummary}
-        totalFormatted={total}
+        totalEur={totalEur}
         payLoading={payLoading}
         collectLoading={collectLoading}
         canTakeDeposit={canTakeDeposit}
@@ -426,11 +498,11 @@ export default function AdminBookingDetail() {
         isWebPricing={isWebPricing}
         extensionPayLoading={extensionPayLoading}
         extensionCollectLoading={extensionCollectLoading}
-        onCollectCash={() => void runCollectCash()}
+        onCollectCash={() => openCashDialog("booking")}
         onPayCard={() => void runPayCard()}
         onTakeDeposit={() => setDepositOpen(true)}
         onExtend={() => setExtendModalOpen(true)}
-        onCollectExtensionCash={() => void runCollectExtension()}
+        onCollectExtensionCash={() => openCashDialog("extension")}
         onPayExtensionStripe={() => void runPayExtensionStripe()}
         onCancel={() => void runCancelBooking()}
       />

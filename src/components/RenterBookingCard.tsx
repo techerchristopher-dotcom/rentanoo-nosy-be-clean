@@ -58,6 +58,9 @@ import jsPDF from 'jspdf'
 import { Download } from 'lucide-react'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
 import { formatCurrency } from '@/utils/currency'
+import { DualPrice } from '@/components/currency/DualPrice'
+import { ClientPriceRow } from '@/components/currency/PriceRows'
+import { useExchangeRate } from '@/contexts/ExchangeRateContext'
 import { calcServiceFeeRenter, calcRenterTotal } from '@/utils/serviceFees'
 import { getBookingRentalPricing } from '@/utils/rentalPriceFromDates'
 import { formatBillableDays } from '@/utils/formatDuration'
@@ -131,8 +134,8 @@ export default function RenterBookingCard({
   const formatMoney = (amount: number, currency: string = "EUR") => {
     return formatCurrency(amount, currencyLocale, currency)
   }
-  
-  // DEV-only: Log locale utilisée pour le formatage des dates et monnaie
+
+  const { formatClientInline, footnote } = useExchangeRate()
   useEffect(() => {
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
@@ -1028,8 +1031,13 @@ export default function RenterBookingCard({
                     <div className="flex items-center text-sm">
                       <Euro className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
                       <span className="font-medium text-foreground">{t('bookings.card.totalLabel')}</span>
-                      <span className="ml-2 font-bold text-primary text-lg">
-                        {formatMoney(cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0))}
+                      <span className="ml-2">
+                        <DualPrice
+                          amountEur={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
+                          variant="client"
+                          primaryClassName="font-bold text-primary text-lg"
+                          secondaryClassName="text-xs"
+                        />
                       </span>
                       <TooltipProvider>
                         <Tooltip>
@@ -1045,26 +1053,27 @@ export default function RenterBookingCard({
                                 <>
                                   <div className="flex justify-between">
                                     <span>Location ({cardDurationText})</span>
-                                    <span className="font-semibold">{formatMoney(cardBasePrice)}</span>
+                                    <span className="font-semibold">{formatClientInline(cardBasePrice)}</span>
                                   </div>
                                   {cardOptionsTotal > 0 && (
                                     <div className="flex justify-between">
                                       <span>Options supplémentaires</span>
-                                      <span className="font-semibold">+{formatMoney(cardOptionsTotal)}</span>
+                                      <span className="font-semibold">+{formatClientInline(cardOptionsTotal)}</span>
                                     </div>
                                   )}
                                   <div className="flex justify-between border-t pt-1">
                                     <span>Sous-total</span>
-                                    <span className="font-semibold">{formatMoney(cardSubtotal)}</span>
+                                    <span className="font-semibold">{formatClientInline(cardSubtotal)}</span>
                                   </div>
                                   <div className="flex justify-between text-muted-foreground">
                                     <span>Frais de service (15%)</span>
-                                    <span>+{formatMoney(cardServiceFee)}</span>
+                                    <span>+{formatClientInline(cardServiceFee)}</span>
                                   </div>
                                   <div className="flex justify-between font-bold border-t pt-1">
                                     <span>TOTAL</span>
-                                    <span>{formatMoney(cardTotalAmount)}</span>
+                                    <span>{formatClientInline(cardTotalAmount)}</span>
                                   </div>
+                                  <p className="text-[10px] text-muted-foreground pt-1">{footnote}</p>
                                 </>
                               ) : null}
                             </div>
@@ -1090,7 +1099,7 @@ export default function RenterBookingCard({
                         return (
                           <div className="flex items-center text-sm">
                             <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
-                            <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {formatMoney(snapshot)}</span>
+                            <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {formatClientInline(snapshot)}</span>
                           </div>
                         );
                       }
@@ -1517,16 +1526,12 @@ export default function RenterBookingCard({
                 </div>
 
                 <div className="bg-card rounded-lg border border-border/50 p-3 space-y-2">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-muted-foreground font-medium">
-                      Location véhicule
-                    </span>
-                    <span className="text-base font-bold text-primary">
-                      {formatMoney(cardRentalPricing ? cardBasePrice : 0)}
-                    </span>
-                  </div>
+                  <ClientPriceRow
+                    label="Location véhicule"
+                    amountEur={cardRentalPricing ? cardBasePrice : 0}
+                  />
                   <p className="text-xs text-muted-foreground text-right">
-                    {formatMoney(booking.vehicle?.dailyPrice || 0)}/jour × {cardDurationText}
+                    {formatClientInline(booking.vehicle?.dailyPrice || 0)}/jour × {cardDurationText}
                   </p>
                 </div>
               </div>
@@ -1550,17 +1555,21 @@ export default function RenterBookingCard({
                           <span className="text-sm text-foreground font-medium">
                             {option.name}
                           </span>
-                          <span className="text-base font-bold text-primary min-w-[60px] text-right">
-                            + {formatMoney(option.totalPrice)}
-                          </span>
+                          <DualPrice
+                            amountEur={option.totalPrice}
+                            variant="client"
+                            className="items-end min-w-[80px]"
+                            primaryClassName="text-base font-bold text-primary"
+                            secondaryClassName="text-xs"
+                          />
                         </div>
                       ))}
                       <div className="pt-2 border-t border-border/50 mt-2">
-                        <div className="flex justify-between items-center">
-                          {/* TODO(i18n): bookings.details.optionsSubtotal */}
-                          <span className="text-sm text-muted-foreground font-medium">Sous-total options</span>
-                          <span className="text-base font-bold text-foreground">{formatMoney(getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0))}</span>
-                        </div>
+                        <ClientPriceRow
+                          label="Sous-total options"
+                          amountEur={getServicesFromOptions(booking.selectedOptions).reduce((sum, opt) => sum + opt.totalPrice, 0)}
+                          bold
+                        />
                       </div>
                     </div>
                   </div>
@@ -1571,30 +1580,22 @@ export default function RenterBookingCard({
 
               {/* Section Total - avec alignement parfait */}
               <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground font-medium">Sous-total</span>
-                  <span className="text-base font-bold text-foreground min-w-[100px] text-right">{formatMoney(cardRentalPricing ? cardSubtotal : 0)}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  {/* TODO(i18n): bookings.details.serviceFee */}
-                  <span className="text-sm text-muted-foreground font-medium">
-                    Frais de service (15%)
-                  </span>
-                  <span className="text-base font-bold text-muted-foreground min-w-[100px] text-right">
-                    + {formatMoney(cardRentalPricing ? cardServiceFee : 0)}
-                  </span>
-                </div>
+                <ClientPriceRow label="Sous-total" amountEur={cardRentalPricing ? cardSubtotal : 0} bold />
+                <ClientPriceRow label="Frais de service (15%)" amountEur={cardRentalPricing ? cardServiceFee : 0} />
 
                 <Separator className="border-primary/30" />
 
-                <div className="flex justify-between items-center pt-2">
-                  {/* TODO(i18n): bookings.details.totalToPay */}
+                <div className="flex justify-between items-start pt-2 gap-4">
                   <span className="text-lg font-bold text-foreground">TOTAL À PAYER</span>
-                  <span className="text-3xl font-bold text-primary min-w-[100px] text-right">
-                    {formatMoney(cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0))}
-                  </span>
+                  <DualPrice
+                    amountEur={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
+                    variant="client"
+                    className="items-end text-right min-w-[100px]"
+                    primaryClassName="text-3xl font-bold text-primary"
+                    secondaryClassName="text-sm"
+                  />
                 </div>
+                <p className="text-[10px] text-muted-foreground text-right">{footnote}</p>
               </div>
             </div>
           </div>

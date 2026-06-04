@@ -34,6 +34,7 @@ export type PlanningBooking = {
   pricing_mode: string | null;
   reference_number: number | null;
   pickup_location: string | null;
+  total_price: number | null;
   renter: PlanningRenter | null;
 };
 

@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { BookingStatusBadge } from "@/features/admin-bookings/components/BookingStatusBadge";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { formatBookingRef, formatDateFr } from "@/features/admin-bookings/utils/bookingDisplay";
 import type { PlanningBooking, PlanningVehicle } from "@/services/adminPlanningApi";
 
@@ -26,7 +28,10 @@ function renterName(renter: PlanningBooking["renter"]): string {
 }
 
 export function PlanningBookingSheet({ open, onOpenChange, booking, vehicle }: PlanningBookingSheetProps) {
+  const { footnote } = useExchangeRate();
   if (!booking) return null;
+
+  const totalEur = Number(booking.total_price ?? 0) || 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -49,6 +54,14 @@ export function PlanningBookingSheet({ open, onOpenChange, booking, vehicle }: P
               <div className="text-muted-foreground">Prise : {booking.pickup_location}</div>
             ) : null}
           </div>
+
+          {totalEur > 0 ? (
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Total locataire</div>
+              <DualPrice amountEur={totalEur} variant="admin" primaryClassName="text-lg font-bold" />
+              <p className="text-[10px] text-muted-foreground mt-1">{footnote}</p>
+            </div>
+          ) : null}
 
           <div>
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Locataire</div>

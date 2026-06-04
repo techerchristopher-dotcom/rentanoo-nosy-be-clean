@@ -1,7 +1,8 @@
-import { Euro } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { VehicleRentalInfo } from "@/types";
 import { getVehicleCardRentalPricing } from "@/utils/formatVehicleCardRental";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 interface VehicleCardRentalPricingProps {
   dailyPrice: number;
@@ -13,27 +14,32 @@ export function VehicleCardRentalPricing({
   rentalInfo,
 }: VehicleCardRentalPricingProps) {
   const { t } = useTranslation();
+  const { footnote, formatClientInline } = useExchangeRate();
 
   if (!rentalInfo) {
     return (
       <>
-        <div className="flex items-center text-2xl font-bold text-primary">
-          <Euro className="h-5 w-5" />
-          {dailyPrice}
-        </div>
+        <DualPrice
+          amountEur={dailyPrice}
+          variant="client"
+          className="items-end"
+          primaryClassName="text-2xl font-bold text-primary flex items-center gap-0.5"
+        />
         <div className="text-xs text-muted-foreground">{t("par_jour", "par jour")}</div>
       </>
     );
   }
 
-  const { perDayLabel, detailLine, totalLine } = getVehicleCardRentalPricing(t, rentalInfo);
+  const { perDayLabel, detailLine, totalLine } = getVehicleCardRentalPricing(t, rentalInfo, formatClientInline);
 
   return (
     <div className="flex flex-col items-end">
-      <div className="flex items-center text-2xl font-bold text-primary">
-        <Euro className="h-5 w-5" />
-        {dailyPrice}
-      </div>
+      <DualPrice
+        amountEur={dailyPrice}
+        variant="client"
+        className="items-end"
+        primaryClassName="text-2xl font-bold text-primary"
+      />
       <div className="text-xs text-muted-foreground">{perDayLabel}</div>
       {detailLine && (
         <div className="text-sm text-muted-foreground mt-1">{detailLine}</div>
@@ -41,6 +47,7 @@ export function VehicleCardRentalPricing({
       {totalLine && (
         <div className="text-sm text-muted-foreground mt-0.5">{totalLine}</div>
       )}
+      <div className="text-[10px] text-muted-foreground/80 mt-1 text-right max-w-[200px]">{footnote}</div>
     </div>
   );
 }

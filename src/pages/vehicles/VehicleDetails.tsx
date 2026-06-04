@@ -45,6 +45,8 @@ import { createVehicleRentalInfo } from "@/lib/utils";
 import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
 import { formatCurrency } from "@/utils/currency";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { createBookingDraft, getBookingDraft, clearBookingDraft, saveBookingDraft, finalizeBookingDraftForCheckout } from "@/services/localStorage/bookingStorage";
 import { shouldShowComplementaryServicesModal } from "@/utils/bookingUpsell";
 import { requiresHotelName } from "@/utils/bookingLocations";
@@ -103,6 +105,7 @@ export default function VehicleDetails() {
   const location = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation("common");
+  const { footnote, formatClientInline } = useExchangeRate();
 
   const fuelLabels = {
     gasoline: t("vehicle.fuel.gasoline"),
@@ -840,8 +843,13 @@ export default function VehicleDetails() {
         <div className="space-y-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl font-bold text-primary">{dailyRate}€</span>
-              <span className="text-sm text-muted-foreground line-through">{originalRate}€</span>
+              <DualPrice
+                amountEur={dailyRate}
+                variant="client"
+                primaryClassName="text-2xl font-bold text-primary"
+                secondaryClassName="text-sm"
+              />
+              <span className="text-sm text-muted-foreground line-through">{formatClientInline(originalRate)}</span>
             </div>
             <p className="text-muted-foreground">par jour</p>
             
@@ -851,17 +859,19 @@ export default function VehicleDetails() {
                 <p className="text-sm text-muted-foreground mb-1">
                   Tarif de base* :
                 </p>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-3xl font-bold text-primary">
-                    {formatCurrency(vehicleRentalInfo.totalCost)}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
+                <DualPrice
+                  amountEur={vehicleRentalInfo.totalCost}
+                  variant="client"
+                  primaryClassName="text-3xl font-bold text-primary"
+                  secondaryClassName="text-sm"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
                   {formatLegacyFormattedPrice(t, vehicleRentalInfo)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   * Hors options et frais de service
                 </p>
+                <p className="text-[10px] text-muted-foreground mt-1">{footnote}</p>
               </div>
             )}
           </div>
@@ -1514,18 +1524,25 @@ export default function VehicleDetails() {
             <div className="flex flex-col">
               {vehicleRentalInfo ? (
                 <>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-primary">{vehicleRentalInfo.totalCost}€*</span>
-                    <span className="text-xs text-muted-foreground">({vehicleRentalInfo.formattedPrice.match(/\((.*?)\)/)?.[1]})</span>
-                  </div>
+                  <DualPrice
+                    amountEur={vehicleRentalInfo.totalCost}
+                    variant="client"
+                    primaryClassName="text-2xl font-bold text-primary"
+                    secondaryClassName="text-xs"
+                  />
                   <div className="text-xs text-muted-foreground">
-                    {dailyRate}€/jour • Hors options
+                    {formatClientInline(dailyRate)}/jour • Hors options
                   </div>
                 </>
               ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-primary">{dailyRate}€</span>
-                  <span className="text-sm text-muted-foreground line-through">{originalRate}€</span>
+                <div className="flex flex-col">
+                  <DualPrice
+                    amountEur={dailyRate}
+                    variant="client"
+                    primaryClassName="text-xl font-bold text-primary"
+                    secondaryClassName="text-xs"
+                    inline
+                  />
                   <span className="text-sm text-muted-foreground">par jour</span>
                 </div>
               )}

@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatMoney } from "@/features/back-office/components/MoneyInput";
+import { DualPrice } from "@/components/currency/DualPrice";
 import { adminPreviewExtendBooking } from "@/services/adminApi";
 
 type BookingExtendModalProps = {
@@ -155,13 +155,13 @@ export function BookingExtendModal({
                   <span className="text-muted-foreground">Jours ajoutés</span>
                   <span className="font-medium">{durationLabel}</span>
                 </div>
-                <div className="flex justify-between gap-2">
+                <div className="flex justify-between gap-2 items-start">
                   <span className="text-muted-foreground">Supplément</span>
-                  <span className="font-semibold text-primary">{formatMoney(preview.deltaTotalTTC)}</span>
+                  <DualPrice amountEur={preview.deltaTotalTTC} variant="admin" primaryClassName="font-semibold text-primary" />
                 </div>
-                <div className="flex justify-between gap-2 border-t border-border/60 pt-2">
+                <div className="flex justify-between gap-2 items-start border-t border-border/60 pt-2">
                   <span className="text-muted-foreground">Nouveau total TTC</span>
-                  <span className="font-bold">{formatMoney(preview.newTotalTTC)}</span>
+                  <DualPrice amountEur={preview.newTotalTTC} variant="admin" primaryClassName="font-bold" />
                 </div>
               </>
             ) : (

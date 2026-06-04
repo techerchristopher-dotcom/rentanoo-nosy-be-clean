@@ -11,6 +11,8 @@ import {
   type AdminRevenueBooking,
   type AdminRevenueSummary,
 } from "@/services/adminApi";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { cn } from "@/lib/utils";
 
 function todayYmd(): string {
@@ -20,6 +22,18 @@ function todayYmd(): string {
 
 function fmtEur(n: number): string {
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+}
+
+function AdminRevenueAmount({ amountEur, className }: { amountEur: number; className?: string }) {
+  return (
+    <DualPrice
+      amountEur={amountEur}
+      variant="admin"
+      className={cn("items-end", className)}
+      primaryClassName="text-2xl font-bold tabular-nums"
+      secondaryClassName="text-xs font-normal"
+    />
+  );
 }
 
 function fmtDate(iso: string): string {
@@ -35,6 +49,7 @@ function paymentLabel(b: AdminRevenueBooking): string {
 
 export default function AdminRevenue() {
   const { toast } = useToast();
+  const { footnote } = useExchangeRate();
   const today = todayYmd();
 
   const [dateFrom, setDateFrom] = useState(today);
@@ -114,28 +129,29 @@ export default function AdminRevenue() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total encaissé</CardDescription>
-            <CardTitle className="text-2xl">{fmtEur(summary.total)}</CardTitle>
+            <AdminRevenueAmount amountEur={summary.total} />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Espèces</CardDescription>
-            <CardTitle className="text-2xl text-emerald-700 dark:text-emerald-400">{fmtEur(summary.totalCash)}</CardTitle>
+            <AdminRevenueAmount amountEur={summary.totalCash} className="text-emerald-700 dark:text-emerald-400" />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>CB (terminal)</CardDescription>
-            <CardTitle className="text-2xl text-sky-700 dark:text-sky-400">{fmtEur(summary.totalCardTerminal)}</CardTitle>
+            <AdminRevenueAmount amountEur={summary.totalCardTerminal} className="text-sky-700 dark:text-sky-400" />
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Stripe (en ligne)</CardDescription>
-            <CardTitle className="text-2xl text-violet-700 dark:text-violet-400">{fmtEur(summary.totalStripe)}</CardTitle>
+            <AdminRevenueAmount amountEur={summary.totalStripe} className="text-violet-700 dark:text-violet-400" />
           </CardHeader>
         </Card>
       </div>
+      <p className="text-xs text-muted-foreground">{footnote}</p>
 
       <Card>
         <CardHeader>
@@ -183,7 +199,9 @@ export default function AdminRevenue() {
                           {paymentLabel(b)}
                         </span>
                       </td>
-                      <td className="py-2 pr-4 text-right font-medium">{fmtEur(b.total_price)}</td>
+                      <td className="py-2 pr-4 text-right">
+                        <DualPrice amountEur={b.total_price} variant="admin" inline className="justify-end" />
+                      </td>
                       <td className="py-2">
                         <Link to={`/admin/bookings/${b.id}`} className="text-primary text-xs hover:underline">
                           Voir
@@ -195,7 +213,9 @@ export default function AdminRevenue() {
                 <tfoot>
                   <tr className="border-t border-border font-medium">
                     <td colSpan={4} className="pt-3 text-right pr-4">Total</td>
-                    <td className="pt-3 text-right pr-4">{fmtEur(summary.total)}</td>
+                    <td className="pt-3 text-right pr-4">
+                      <DualPrice amountEur={summary.total} variant="admin" inline />
+                    </td>
                     <td />
                   </tr>
                 </tfoot>

@@ -15,6 +15,9 @@ import { formatBillableDays } from "@/utils/formatDuration";
 import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatCurrency } from "@/utils/currency";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { ClientPriceRow } from "@/components/currency/PriceRows";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 interface BookingConfirmationModalProps {
   isOpen: boolean;
@@ -53,6 +56,7 @@ export function BookingConfirmationModal({
   selectedOptions = []
 }: BookingConfirmationModalProps) {
   const { t, i18n } = useTranslation();
+  const { footnote, formatClientInline } = useExchangeRate();
   
   // Locale du calendrier / formatage des dates en fonction de la langue active
   const currentLang = i18n.language || "fr";
@@ -282,16 +286,13 @@ export function BookingConfirmationModal({
             </div>
 
             <div className="bg-card rounded-lg border border-border/50 p-3 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground font-medium">
-                  {t("booking.vehicleRental")}
-                </span>
-                <span className="text-base font-bold text-primary">
-                  {formatCurrency(rentalInfo.basePrice, currencyLocale)}
-                </span>
-              </div>
+              <ClientPriceRow
+                label={t("booking.vehicleRental")}
+                amountEur={rentalInfo.basePrice}
+                labelClassName="font-medium"
+              />
               <p className="text-xs text-muted-foreground pl-1">
-                {formatCurrency(rentalInfo.pricePerDay, currencyLocale)}/{t("par_jour")} × {durationText || ""}
+                {formatClientInline(rentalInfo.pricePerDay)}/{t("par_jour")} × {durationText || ""}
               </p>
             </div>
           </div>
@@ -325,18 +326,17 @@ export function BookingConfirmationModal({
                           {option.name}
                         </span>
                       </div>
-                      <span className="text-base font-bold text-primary min-w-[60px] text-right">
-                        + {formatCurrency(option.totalPrice, currencyLocale)}
-                      </span>
+                      <DualPrice
+                        amountEur={option.totalPrice}
+                        variant="client"
+                        className="items-end text-right min-w-[80px]"
+                        primaryClassName="text-base font-bold text-primary"
+                        secondaryClassName="text-xs"
+                      />
                     </div>
                   ))}
                   <div className="pt-2 border-t border-border/50 mt-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground font-medium">
-                        {t("booking.optionsSubtotal")}
-                      </span>
-                      <span className="text-base font-bold text-foreground">{formatCurrency(optionsTotal, currencyLocale)}</span>
-                    </div>
+                    <ClientPriceRow label={t("booking.optionsSubtotal")} amountEur={optionsTotal} bold />
                   </div>
                 </div>
               </div>
@@ -347,30 +347,22 @@ export function BookingConfirmationModal({
 
           {/* Section Total */}
           <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground font-medium">
-                {t("booking.subtotal")}
-              </span>
-              <span className="text-base font-bold text-foreground min-w-[80px] text-right">{formatCurrency(subtotal, currencyLocale)}</span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground font-medium">
-                {t("booking.serviceFee", { percent: 15 })}
-              </span>
-              <span className="text-base font-bold text-muted-foreground min-w-[80px] text-right">+ {formatCurrency(serviceFee, currencyLocale)}</span>
-            </div>
+            <ClientPriceRow label={t("booking.subtotal")} amountEur={subtotal} bold />
+            <ClientPriceRow label={t("booking.serviceFee", { percent: 15 })} amountEur={serviceFee} />
 
             <Separator className="border-primary/30" />
 
-            <div className="flex justify-between items-baseline pt-2">
-              <span className="text-base font-bold text-foreground">
-                {t("booking.totalToPay")}
-              </span>
-              <span className="text-3xl font-bold text-primary">
-                {formatCurrency(totalAmount, currencyLocale)}
-              </span>
+            <div className="flex justify-between items-start pt-2 gap-4">
+              <span className="text-base font-bold text-foreground">{t("booking.totalToPay")}</span>
+              <DualPrice
+                amountEur={totalAmount}
+                variant="client"
+                className="items-end text-right"
+                primaryClassName="text-3xl font-bold text-primary"
+                secondaryClassName="text-sm"
+              />
             </div>
+            <p className="text-[10px] text-muted-foreground text-right">{footnote}</p>
           </div>
           </div>
           </div>

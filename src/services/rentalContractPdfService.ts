@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildRentalContractDocumentHtml } from "@/modules/rentalContract/contractTemplateHtml";
 import type { RentalContractPayload } from "@/modules/rentalContract/rentalContractPayload";
 import { RENTAL_CONTRACT_TEMPLATE_VERSION } from "@/modules/rentalContract/constants";
+import { parseExchangeConfig, FALLBACK_EXCHANGE } from "@/utils/dualCurrency";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -131,10 +132,21 @@ export async function generateAndStoreRentalContractPdf(params: {
   const signedAt = new Date();
   const signedAtLabel = format(signedAt, "dd/MM/yyyy 'à' HH:mm", { locale: fr });
 
+  let exchange = FALLBACK_EXCHANGE;
+  try {
+    const res = await fetch("/api/public/exchange-rate");
+    if (res.ok) {
+      exchange = parseExchangeConfig(await res.json());
+    }
+  } catch {
+    /* fallback */
+  }
+
   const html = buildRentalContractDocumentHtml(payload, {
     renterSignatureDataUrl,
     ownerSignatureDataUrl,
     signedAtLabel,
+    exchange,
   });
 
   const { blob, error: blobError } = await generatePdfBlobFromHtml(html);

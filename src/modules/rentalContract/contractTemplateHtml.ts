@@ -1,5 +1,10 @@
 import type { RentalContractPayload } from "./rentalContractPayload";
 import { RENTAL_CONTRACT_TEMPLATE_VERSION } from "./constants";
+import {
+  FALLBACK_EXCHANGE,
+  formatDualPrice,
+  type EurMgaExchangeConfig,
+} from "@/utils/dualCurrency";
 
 function escapeHtml(s: string): string {
   return s
@@ -49,9 +54,11 @@ export function buildRentalContractDocumentHtml(
     renterSignatureDataUrl: string;
     ownerSignatureDataUrl: string;
     signedAtLabel: string;
+    exchange?: EurMgaExchangeConfig;
   }
 ): string {
   const p = payload;
+  const exchange = opts.exchange ?? FALLBACK_EXCHANGE;
   const ref = p.referenceNumber != null ? String(p.referenceNumber) : p.bookingId.slice(0, 8);
 
   const bookingReference = escapeHtml(ref);
@@ -78,14 +85,17 @@ export function buildRentalContractDocumentHtml(
   );
   const endDatetimeSafe = escapeHtml(`${formatDateFR(p.endDate)} à ${p.endTime || "—"}`);
 
-  const bookingTotalPrice = escapeHtml(formatMoneyEUR(p.totalPrice));
+  const totalDual = formatDualPrice(p.totalPrice, exchange, "client");
+  const bookingTotalPrice = escapeHtml(`${totalDual.primary} (${totalDual.secondary})`);
+  const exchangeFootnote = escapeHtml(totalDual.footnote);
   const currency = escapeHtml(p.currencyCode);
   const depositCap = Math.max(
     Number(p.vehicle.depositAmount ?? 0),
     Number(p.depositAmountSnapshot ?? 0),
     0
   );
-  const vehicleDepositAmount = escapeHtml(formatMoneyEUR(depositCap));
+  const depositDual = formatDualPrice(depositCap, exchange, "client");
+  const vehicleDepositAmount = escapeHtml(`${depositDual.primary} (${depositDual.secondary})`);
   const sinisterDeclarationDelay = String(p.sinisterDeclarationHours);
 
   const ver = escapeHtml(RENTAL_CONTRACT_TEMPLATE_VERSION);
@@ -161,11 +171,12 @@ export function buildRentalContractDocumentHtml(
     <p style="margin:0 0 12px 0;text-align:justify;">Le Locataire demeure responsable du véhicule jusqu’à sa restitution effective.</p>
     <hr style="border:none;border-top:1px solid #333;margin:10px 0;" />
     <p style="font-weight:bold;margin:0 0 6px 0;font-size:10pt;">ARTICLE 5 — CONDITIONS FINANCIÈRES ET GARANTIE</p>
-    <p style="margin:0 0 6px 0;text-align:justify;">Le prix total de la location est fixé à :<br/><strong>${bookingTotalPrice} ${currency}</strong></p>
+    <p style="margin:0 0 6px 0;text-align:justify;">Le prix total de la location est fixé à :<br/><strong>${bookingTotalPrice}</strong></p>
+    <p style="margin:0 0 6px 0;font-size:8pt;color:#555;text-align:justify;">${exchangeFootnote}</p>
     <p style="margin:0 0 6px 0;text-align:justify;">Le paiement est effectué par carte bancaire via un prestataire de paiement sécurisé.</p>
     <p style="margin:0 0 6px 0;text-align:justify;">Afin de garantir l’exécution du contrat, une empreinte bancaire peut être réalisée pour un montant symbolique (0 € ou 1 €), permettant de vérifier le moyen de paiement.</p>
     <p style="margin:0 0 6px 0;text-align:justify;">Le Locataire autorise expressément le Loueur à procéder à un ou plusieurs prélèvements en cas de dommage, de manquement contractuel ou de frais supplémentaires.</p>
-    <p style="margin:0 0 6px 0;text-align:justify;">Le montant maximum pouvant être prélevé est fixé à :<br/><strong>${vehicleDepositAmount} ${currency}</strong></p>
+    <p style="margin:0 0 6px 0;text-align:justify;">Le montant maximum pouvant être prélevé est fixé à :<br/><strong>${vehicleDepositAmount}</strong></p>
     <p style="margin:0 0 6px 0;text-align:justify;">Ce montant constitue le plafond de responsabilité financière du Locataire.</p>
     <p style="margin:0 0 6px 0;text-align:justify;">Aucun montant ne sera prélevé en l’absence de dommage ou de manquement.</p>
   `;

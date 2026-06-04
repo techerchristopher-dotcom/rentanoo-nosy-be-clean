@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { formatMoney } from "@/features/back-office/components/MoneyInput";
+import { DualPrice } from "@/components/currency/DualPrice";
 import { cn } from "@/lib/utils";
 import type { ExtensionPending } from "../utils/extensionMeta";
 
@@ -17,7 +17,7 @@ type BookingActionsBarProps = {
   isAdminPricing: boolean;
   needsPayment: boolean;
   paymentSummary: string | null;
-  totalFormatted: string;
+  totalEur: number;
   payLoading: boolean;
   collectLoading: boolean;
   canTakeDeposit: boolean;
@@ -87,7 +87,7 @@ export function BookingActionsBar({
   isAdminPricing,
   needsPayment,
   paymentSummary,
-  totalFormatted,
+  totalEur,
   payLoading,
   collectLoading,
   canTakeDeposit,
@@ -120,7 +120,8 @@ export function BookingActionsBar({
             <div>
               <div className="font-medium text-violet-900 dark:text-violet-100">Supplément prolongation</div>
               <div className="text-sm text-violet-800/80 dark:text-violet-200/80">
-                {formatMoney(extensionPending.deltaTotalTTC)} à encaisser
+                <DualPrice amountEur={extensionPending.deltaTotalTTC} variant="admin" inline />
+                {" "}à encaisser
               </div>
             </div>
             {isWebPricing ? (
@@ -160,7 +161,9 @@ export function BookingActionsBar({
               <Wallet className="h-3.5 w-3.5" />
               Paiement
               {needsPayment ? (
-                <span className="normal-case font-bold text-foreground ml-1">— {totalFormatted}</span>
+                <span className="normal-case font-bold text-foreground ml-1">
+                  — <DualPrice amountEur={totalEur} variant="admin" inline />
+                </span>
               ) : null}
             </div>
 

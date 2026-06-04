@@ -381,7 +381,12 @@ export async function adminUpdateOfflinePaymentMethod(
 
 export async function adminCollectPayment(
   bookingId: string,
-  payload: { paidAt: string; offlinePaymentMethod?: "cash" | "card_terminal" }
+  payload: {
+    paidAt: string;
+    offlinePaymentMethod?: "cash" | "card_terminal";
+    paidCurrency?: "EUR" | "MGA";
+    paidAmountMga?: number;
+  }
 ): Promise<{ paidAt: string; status: string }> {
   const data = await adminFetch<{ ok: boolean; paidAt: string; status: string }>(
     `/api/admin/bookings/${encodeURIComponent(bookingId)}/collect`,
@@ -430,7 +435,12 @@ export async function adminExtendBooking(
 
 export async function adminCollectExtensionPayment(
   bookingId: string,
-  payload: { paidAt: string; offlinePaymentMethod?: "cash" | "card_terminal" }
+  payload: {
+    paidAt: string;
+    offlinePaymentMethod?: "cash" | "card_terminal";
+    paidCurrency?: "EUR" | "MGA";
+    paidAmountMga?: number;
+  }
 ): Promise<{ amountCollected: number; amountTotalPaid: number }> {
   const data = await adminFetch<{
     ok: boolean;
@@ -489,4 +499,27 @@ export async function adminGetRevenue(params: {
     summary: AdminRevenueSummary;
   }>(`/api/admin/revenue?${sp.toString()}`);
   return { bookings: data.bookings ?? [], summary: data.summary };
+}
+
+export type EurMgaExchangeRate = {
+  rate: number;
+  effectiveFrom: string;
+};
+
+export async function adminGetExchangeRate(): Promise<EurMgaExchangeRate> {
+  const data = await adminFetch<{ ok: boolean; rate: number; effectiveFrom: string }>(
+    "/api/admin/settings/exchange-rate"
+  );
+  return { rate: data.rate, effectiveFrom: data.effectiveFrom };
+}
+
+export async function adminUpdateExchangeRate(payload: {
+  rate: number;
+  effectiveFrom?: string;
+}): Promise<EurMgaExchangeRate> {
+  const data = await adminFetch<{ ok: boolean; rate: number; effectiveFrom: string }>(
+    "/api/admin/settings/exchange-rate",
+    { method: "PATCH", body: JSON.stringify(payload) }
+  );
+  return { rate: data.rate, effectiveFrom: data.effectiveFrom };
 }
