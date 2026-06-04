@@ -29,6 +29,7 @@ const STATIC_URLS = [
   { loc: "/sinistre-caution", changefreq: "monthly", priority: "0.6" },
   { loc: "/meteo-nosy-be", changefreq: "daily", priority: "0.9" },
   { loc: "/taux-change-euro-ariary-madagascar", changefreq: "daily", priority: "0.9" },
+  { loc: "/vols-aeroport-nosy-be", changefreq: "hourly", priority: "0.9" },
 ];
 
 function isMoto(v) {

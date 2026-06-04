@@ -276,6 +276,24 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
   });
 
+  // GET /api/public/flights-nosy-be — horaires vols Fascène (AeroDataBox)
+  app.get("/api/public/flights-nosy-be", async (_req: Request, res: Response) => {
+    try {
+      const { getNosyBeFlights, isNosyBeFlightsConfigured } = await import("../lib/nosyBeFlights");
+      if (!isNosyBeFlightsConfigured()) {
+        return res.json({ ok: false, configured: false });
+      }
+      const flights = await getNosyBeFlights();
+      return res.json({ ok: true, configured: true, ...flights });
+    } catch (e: unknown) {
+      return res.status(502).json({
+        ok: false,
+        configured: true,
+        message: e instanceof Error ? e.message : "Vols indisponibles",
+      });
+    }
+  });
+
   // GET /api/public/exchange-rate/history — historique EUR/MGA (SEO)
   app.get("/api/public/exchange-rate/history", async (_req: Request, res: Response) => {
     try {

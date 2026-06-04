@@ -126,6 +126,7 @@
       "pricesHint": "Preise in € mit Ariary-Äquivalent",
       "weatherLinkLabel": "Detaillierte Wettervorhersage Nosy Be ansehen",
       "exchangeLinkLabel": "Euro-Ariary-Wechselkurs Madagaskar ansehen",
+      "flightsLinkLabel": "Flugzeiten Flughafen Nosy Be ansehen",
       "weatherUnavailable": "Wetter nicht verfügbar",
       "rateTrend": {
         "up": "Kurs gestiegen gegenüber gestern",
@@ -1060,6 +1061,10 @@
       "title": "Euro Ariary Wechselkurs Madagaskar heute | Rentanoo",
       "description": "Live EUR/MGA-Kurs für Madagaskar: Tageskurs, 14-Tage-Verlauf und Ariary-Äquivalent für Nosy Be."
     },
+    "volsNosyBe": {
+      "title": "Flüge Nosy Be heute – Ankünfte & Abflüge Fascène | Rentanoo",
+      "description": "Flugplan Flughafen Nosy Be Fascène (NOS): Ankünfte und Abflüge des Tages."
+    },
     "notFound": {
       "title": "Seite nicht gefunden – Rentanoo",
       "description": "Diese Seite existiert nicht. Kehren Sie zur Startseite zurück, um in Nosy Be einen Roller bei Rentanoo zu mieten."
@@ -1217,5 +1222,43 @@
     "ctaText": "Modelle vergleichen und online bestätigen — Lieferung Flughafen Fascène oder Hotel.",
     "ctaRent": "Roller ansehen",
     "ctaWeather": "Wetter Nosy Be"
+  },
+  "volsNosyBePage": {
+    "eyebrow": "Flughafen Fascène · NOS",
+    "title": "Flüge Nosy Be — Ankünfte & Abflüge",
+    "intro": "Flugzeiten am Flughafen Nosy Be Fascène: nächste Ankünfte und Abflüge, 7-Tage-Programm.",
+    "nextArrival": "Nächste Ankunft",
+    "nextDeparture": "Nächster Abflug",
+    "forecastTitle": "Tag wählen",
+    "forecastHint": "7-Tage-Programm ab heute (Nosy-Be-Zeit). Daten 2× täglich aktualisiert.",
+    "dayToday": "Heute",
+    "dayTomorrow": "Morgen",
+    "arrivalsTitle": "Ankünfte",
+    "departuresTitle": "Abflüge",
+    "tableTime": "Zeit",
+    "tableFlight": "Flug",
+    "tableAirline": "Airline",
+    "tableFrom": "Von",
+    "tableTo": "Nach",
+    "tableStatus": "Status",
+    "noFlights": "Keine Flüge im angezeigten Zeitraum",
+    "unavailable": "Flugdaten vorübergehend nicht verfügbar",
+    "notConfigured": "Flugzeiten werden angezeigt, sobald AeroDataBox aktiviert ist.",
+    "sourceNote": "Quelle: AeroDataBox. Indikative Zeiten, 2× täglich aktualisiert — bei der Airline bestätigen.",
+    "seoBlockTitle": "Flughafen Nosy Be Fascène (NOS)",
+    "seoBlock": "Rentanoo liefert Ihren Roller direkt am Flughafen Fascène — online buchen und Zeit sparen.",
+    "faqTitle": "FAQ — Flüge Nosy Be",
+    "faq": {
+      "items": [
+        { "q": "IATA-Code Nosy Be?", "a": "NOS (Fascène)." },
+        { "q": "Roller am Flughafen?", "a": "Ja, mit Rentanoo online buchbar." },
+        { "q": "Zeiten garantiert?", "a": "Indikativ — Airline zur Bestätigung kontaktieren." }
+      ]
+    },
+    "ctaTitle": "Sorgenfrei in Nosy Be landen",
+    "ctaText": "Scooter mit Flughafen-Lieferung buchen.",
+    "ctaRent": "Roller mieten",
+    "ctaWeather": "Wetter Nosy Be",
+    "ctaExchange": "Euro / Ariary Kurs"
   }
 }

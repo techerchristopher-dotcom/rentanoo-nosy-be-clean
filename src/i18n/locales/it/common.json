@@ -126,6 +126,7 @@
       "pricesHint": "Prezzi in € con equivalente in ariary",
       "weatherLinkLabel": "Vedi meteo dettagliata a Nosy Be",
       "exchangeLinkLabel": "Vedi tasso di cambio Euro Ariary Madagascar",
+      "flightsLinkLabel": "Vedi orari voli aeroporto Nosy Be",
       "weatherUnavailable": "Meteo non disponibile",
       "rateTrend": {
         "up": "Tasso in aumento rispetto a ieri",
@@ -1059,6 +1060,10 @@
       "title": "Cambio Euro Ariary Madagascar oggi | Rentanoo",
       "description": "Cambio EUR/MGA in diretta per il Madagascar: tasso del giorno, andamento 14 giorni e equivalente in ariary a Nosy Be."
     },
+    "volsNosyBe": {
+      "title": "Voli Nosy Be oggi – Arrivi e partenze Fascène | Rentanoo",
+      "description": "Orari voli aeroporto Nosy Be Fascène (NOS): arrivi e partenze del giorno."
+    },
     "notFound": {
       "title": "Pagina non trovata – Rentanoo",
       "description": "Questa pagina non esiste. Torna alla home per noleggiare uno scooter a Nosy Be con Rentanoo."
@@ -1216,5 +1221,43 @@
     "ctaText": "Confronta i modelli e conferma online — consegna aeroporto Fascène o hotel a Nosy Be.",
     "ctaRent": "Vedi gli scooter",
     "ctaWeather": "Meteo Nosy Be"
+  },
+  "volsNosyBePage": {
+    "eyebrow": "Aeroporto Fascène · NOS",
+    "title": "Voli Nosy Be — arrivi e partenze",
+    "intro": "Orari voli all'aeroporto Fascène: prossimi arrivi e partenze, programma su 7 giorni.",
+    "nextArrival": "Prossimo arrivo",
+    "nextDeparture": "Prossima partenza",
+    "forecastTitle": "Scegli un giorno",
+    "forecastHint": "Programma su 7 giorni da oggi (ora Nosy Be). Dati aggiornati 2 volte al giorno.",
+    "dayToday": "Oggi",
+    "dayTomorrow": "Domani",
+    "arrivalsTitle": "Arrivi",
+    "departuresTitle": "Partenze",
+    "tableTime": "Ora",
+    "tableFlight": "Volo",
+    "tableAirline": "Compagnia",
+    "tableFrom": "Provenienza",
+    "tableTo": "Destinazione",
+    "tableStatus": "Stato",
+    "noFlights": "Nessun volo nella finestra visualizzata",
+    "unavailable": "Orari voli temporaneamente non disponibili",
+    "notConfigured": "Gli orari voli saranno mostrati dopo l'attivazione di AeroDataBox.",
+    "sourceNote": "Fonte: AeroDataBox. Orari indicativi, aggiornati 2 volte al giorno — confermare con la compagnia aerea.",
+    "seoBlockTitle": "Aeroporto Nosy Be Fascène (NOS)",
+    "seoBlock": "Rentanoo consegna il tuo scooter direttamente in aeroporto — prenota online.",
+    "faqTitle": "FAQ — Voli Nosy Be",
+    "faq": {
+      "items": [
+        { "q": "Codice IATA Nosy Be?", "a": "NOS (Fascène)." },
+        { "q": "Scooter in aeroporto?", "a": "Sì, con Rentanoo prenotabile online." },
+        { "q": "Orari garantiti?", "a": "Indicativi — confermare con la compagnia." }
+      ]
+    },
+    "ctaTitle": "Atterra sereno a Nosy Be",
+    "ctaText": "Prenota lo scooter con consegna in aeroporto.",
+    "ctaRent": "Noleggia uno scooter",
+    "ctaWeather": "Meteo Nosy Be",
+    "ctaExchange": "Cambio Euro / Ariary"
   }
 }

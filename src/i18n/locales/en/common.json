@@ -343,6 +343,7 @@
       "pricesHint": "Prices shown in € with ariary equivalent",
       "weatherLinkLabel": "View detailed weather in Nosy Be",
       "exchangeLinkLabel": "View Euro to Ariary exchange rate in Madagascar",
+      "flightsLinkLabel": "View flight schedules at Nosy Be airport",
       "weatherUnavailable": "Weather unavailable",
       "rateTrend": {
         "up": "Rate up compared to yesterday",
@@ -1085,6 +1086,10 @@
       "title": "Euro to Ariary exchange rate Madagascar today | Rentanoo",
       "description": "Live EUR/MGA rate for Madagascar: today's rate, 14-day trend and ariary equivalent for your expenses in Nosy Be."
     },
+    "volsNosyBe": {
+      "title": "Nosy Be flights today – Fascène arrivals & departures | Rentanoo",
+      "description": "Flight schedules at Nosy Be Fascène airport (NOS): today's arrivals and departures, airlines and live status."
+    },
     "notFound": {
       "title": "Page not found – Rentanoo",
       "description": "This page does not exist. Return to the homepage to rent a scooter in Nosy Be with Rentanoo."
@@ -1260,5 +1265,43 @@
     "ctaText": "Compare available models and confirm online — delivery to Fascène airport or your hotel in Nosy Be.",
     "ctaRent": "Browse scooters",
     "ctaWeather": "Nosy Be weather"
+  },
+  "volsNosyBePage": {
+    "eyebrow": "Fascène Airport · NOS",
+    "title": "Nosy Be flights — arrivals & departures",
+    "intro": "Check flight schedules at Nosy Be Fascène airport: upcoming arrivals and departures, 7-day programme, airlines and status. Perfect to sync your scooter rental with your flight.",
+    "nextArrival": "Next arrival",
+    "nextDeparture": "Next departure",
+    "forecastTitle": "Pick a day",
+    "forecastHint": "7-day schedule from today (Nosy Be time). Data refreshed twice daily.",
+    "dayToday": "Today",
+    "dayTomorrow": "Tomorrow",
+    "arrivalsTitle": "Arrivals",
+    "departuresTitle": "Departures",
+    "tableTime": "Time",
+    "tableFlight": "Flight",
+    "tableAirline": "Airline",
+    "tableFrom": "From",
+    "tableTo": "To",
+    "tableStatus": "Status",
+    "noFlights": "No flights in the displayed window",
+    "unavailable": "Flight schedules temporarily unavailable",
+    "notConfigured": "Flight schedules will appear once the data source (AeroDataBox) is activated.",
+    "sourceNote": "Source: AeroDataBox. Indicative times refreshed twice daily — confirm with your airline before travel.",
+    "seoBlockTitle": "Nosy Be Fascène Airport (NOS)",
+    "seoBlock": "Fascène airport serves Nosy Be with connections mainly from Antananarivo (TNR) and seasonal international flights. Rentanoo delivers your scooter directly at the airport on landing — book online and save time on arrival.",
+    "faqTitle": "FAQ — Nosy Be flights",
+    "faq": {
+      "items": [
+        { "q": "What is Nosy Be airport IATA code?", "a": "NOS (Fascène). Main airport on Nosy Be island, about 20 minutes from Hell-Ville." },
+        { "q": "Can I pick up my scooter at the airport?", "a": "Yes. Rentanoo offers airport pickup at Fascène when booking online." },
+        { "q": "Are displayed times guaranteed?", "a": "These are indicative schedules from aviation data sources. Confirm with your airline if in doubt." }
+      ]
+    },
+    "ctaTitle": "Land in Nosy Be with peace of mind",
+    "ctaText": "Book your scooter with airport delivery — helmet included, 100% online booking.",
+    "ctaRent": "Rent a scooter",
+    "ctaWeather": "Nosy Be weather",
+    "ctaExchange": "Euro / Ariary rate"
   }
 }

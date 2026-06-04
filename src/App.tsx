@@ -31,6 +31,7 @@ const SinistreCaution = lazy(() => import("./pages/sinistre-caution/SinistreCaut
 const Contact = lazy(() => import("./pages/Contact"));
 const MeteoNosyBePage = lazy(() => import("./pages/seo/MeteoNosyBePage"));
 const TauxChangeMadagascarPage = lazy(() => import("./pages/seo/TauxChangeMadagascarPage"));
+const VolsNosyBePage = lazy(() => import("./pages/seo/VolsNosyBePage"));
 
 // Autres routes lourdes (déjà lazy)
 const VehicleDetails = lazy(() => import("./pages/vehicles/VehicleDetails"));
@@ -152,6 +153,7 @@ const App = () => (
             <Route path="/sinistre-caution" element={<Suspense fallback={<PageLoader />}><SinistreCaution /></Suspense>} />
             <Route path="/meteo-nosy-be" element={<Suspense fallback={<PageLoader />}><MeteoNosyBePage /></Suspense>} />
             <Route path="/taux-change-euro-ariary-madagascar" element={<Suspense fallback={<PageLoader />}><TauxChangeMadagascarPage /></Suspense>} />
+            <Route path="/vols-aeroport-nosy-be" element={<Suspense fallback={<PageLoader />}><VolsNosyBePage /></Suspense>} />
             <Route path="/contact" element={<Suspense fallback={<PageLoader />}><Contact /></Suspense>} />
             
             {/* Routes non critiques (lazy-loaded) */}

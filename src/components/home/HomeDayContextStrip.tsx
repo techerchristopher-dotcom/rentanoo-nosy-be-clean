@@ -5,6 +5,8 @@ import {
   CloudRain,
   CloudSun,
   Equal,
+  PlaneLanding,
+  PlaneTakeoff,
   Sun,
   TrendingDown,
   TrendingUp,
@@ -15,9 +17,10 @@ import { useTranslation } from "react-i18next";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { useNosyBeLocalTime } from "@/hooks/useNosyBeLocalTime";
 import { useNosyBeWeather } from "@/hooks/useNosyBeWeather";
+import { useNosyBeFlights } from "@/hooks/useNosyBeFlights";
 import type { ExchangeRateTrend } from "@/utils/dualCurrency";
 import { weatherCodeCategory, type WeatherCategory } from "@/utils/weatherCodes";
-import { SEO_EXCHANGE_PATH, SEO_WEATHER_PATH } from "@/config/seoRoutes";
+import { SEO_EXCHANGE_PATH, SEO_FLIGHTS_PATH, SEO_WEATHER_PATH } from "@/config/seoRoutes";
 import { cn } from "@/lib/utils";
 
 type HomeDayContextStripProps = {
@@ -72,6 +75,7 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
   const { t } = useTranslation("common");
   const { config, mode, trend, loading: rateLoading } = useExchangeRate();
   const { weather, loading: weatherLoading, error: weatherError } = useNosyBeWeather();
+  const { data: flights, loading: flightsLoading, configured: flightsConfigured } = useNosyBeFlights();
   const localTime = useNosyBeLocalTime();
 
   const isHero = variant === "hero";
@@ -93,7 +97,7 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-4xl",
+        "mx-auto w-full max-w-5xl",
         isHero ? "mb-8" : "mb-6",
         className
       )}
@@ -136,6 +140,35 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
           </span>
           <span className={cn(isHero ? "text-white/85" : "text-muted-foreground")}>{weatherLabel}</span>
         </Link>
+
+        {flightsConfigured ? (
+          <>
+            <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
+            <Link
+              to={SEO_FLIGHTS_PATH}
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 transition-colors text-xs sm:text-sm",
+                isHero ? "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50" : "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                flightsLoading && "opacity-60"
+              )}
+              aria-label={t("home.dayContext.flightsLinkLabel")}
+            >
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <PlaneLanding className={cn("h-3.5 w-3.5 shrink-0", isHero ? "text-sky-200" : "text-primary")} aria-hidden />
+                <span className={cn("font-semibold", isHero ? "text-white/90" : "text-foreground")}>
+                  {flightsLoading && !flights ? "…" : flights?.nextArrival?.scheduledTime ?? "—"}
+                </span>
+              </span>
+              <span className={cn(isHero ? "text-white/50" : "text-muted-foreground")}>·</span>
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <PlaneTakeoff className={cn("h-3.5 w-3.5 shrink-0", isHero ? "text-sky-200" : "text-primary")} aria-hidden />
+                <span className={cn("font-semibold", isHero ? "text-white/90" : "text-foreground")}>
+                  {flightsLoading && !flights ? "…" : flights?.nextDeparture?.scheduledTime ?? "—"}
+                </span>
+              </span>
+            </Link>
+          </>
+        ) : null}
 
         <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
 
