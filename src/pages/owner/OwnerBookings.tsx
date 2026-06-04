@@ -20,6 +20,7 @@ import {
 import { computeBillableRentalDays } from "@/utils/rentalPriceFromDates";
 import { BookingsService } from "@/services";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
+import { ProfileService } from "@/services/supabase/profile";
 import { ConversationsService } from "@/services/supabase/conversations";
 import { MessagesService } from "@/services/supabase/messages";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
