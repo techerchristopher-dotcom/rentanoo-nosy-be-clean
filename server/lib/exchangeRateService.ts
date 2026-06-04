@@ -17,18 +17,19 @@ export type FrankfurterEurMgaQuote = {
 export type ExchangeRateTrend = "up" | "down" | "stable";
 
 export async function fetchFrankfurterEurMgaOnDate(date: string): Promise<FrankfurterEurMgaQuote | null> {
-  const url = `https://api.frankfurter.dev/v2/rate/EUR/MGA/${date}`;
+  const url = `https://api.frankfurter.dev/v2/rates?date=${date}&base=EUR&quotes=MGA`;
   const res = await fetch(url, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(12_000),
   });
   if (!res.ok) return null;
-  const json = (await res.json()) as { rate?: number; date?: string };
-  const rate = Number(json.rate);
+  const json = (await res.json()) as Array<{ rate?: number; date?: string }>;
+  const row = Array.isArray(json) ? json[0] : null;
+  const rate = Number(row?.rate);
   if (!Number.isFinite(rate) || rate <= 0) return null;
   return {
     rate: Math.round(rate),
-    date: typeof json.date === "string" ? json.date : date,
+    date: typeof row?.date === "string" ? row.date : date,
   };
 }
 
@@ -151,7 +152,7 @@ function computeTrend(current: number, previous: number | null): ExchangeRateTre
   if (previous == null) return null;
   if (current > previous) return "up";
   if (current < previous) return "down";
-  return "stable";
+  return null;
 }
 
 /** Tendance vs veille Frankfurter (live uniquement). */
