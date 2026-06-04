@@ -102,7 +102,7 @@
       "half_day_suffix": "e mezzo"
     },
     "pricing": {
-      "total_for_duration": "totale {{total}}€ ({{duration}})",
+      "total_for_duration": "totale {{total}} ({{duration}})",
       "perDayShort": "giorno",
       "totalExcludingOptions": "ossia {{total}} (escluse opzioni aggiuntive)",
       "cardTotalSummary": "{{duration}} · {{total}} totale"
@@ -744,7 +744,7 @@
       "notSpecified": "Non specificata",
       "rentalDates": "Date di noleggio",
       "baseRate": "Tariffa base",
-      "pricePerDayFormat": "{{price}}€/giorno × {{duration}}",
+      "pricePerDayFormat": "{{price}}/giorno × {{duration}}",
       "downloadPdf": "Scarica PDF",
       "close": "Chiudi"
     }
@@ -954,7 +954,7 @@
       "pickupLocation": "Ritiro: {{pickupLocation}}",
       "returnLocation": "Restituzione: {{returnLocation}}",
       "additionalOptions": "Opzioni aggiuntive:",
-      "optionsTotal": "Inclusi {{optionsTotal}}€ di opzioni",
+      "optionsTotal": "Inclusi {{optionsTotal}} di opzioni",
       "confirmAvailability": {
         "renter": "Puoi confermare la disponibilità? Grazie!",
         "owner": "Conferma la tua disponibilità!"

@@ -11,6 +11,7 @@ import { ProfileService } from '@/services/supabase/profile';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle, User } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { ClientMgaPrice } from '@/components/currency/ClientMgaPrice';
 
 const MessageToOwners = () => {
   const navigate = useNavigate();
@@ -378,9 +379,15 @@ const MessageToOwners = () => {
                           <p className="text-muted-foreground">
                             {vehicle.year} • {vehicle.color}
                           </p>
-                          <p className="text-primary font-semibold mt-1">
-                            {vehicle.dailyPrice}€/jour
-                          </p>
+                          <div className="mt-1">
+                            <ClientMgaPrice
+                              amountMga={vehicle.dailyPrice}
+                              className="items-start text-left"
+                              primaryClassName="text-primary font-semibold text-sm"
+                              secondaryClassName="text-xs text-muted-foreground"
+                              secondarySuffix=" / jour"
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}

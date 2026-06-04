@@ -2,6 +2,8 @@
  * Helpers pour générer title, description et canonical dynamiques des pages véhicule/moto.
  */
 
+import { ariaryToEur, formatEur, FALLBACK_EXCHANGE } from "./dualCurrency";
+
 const CANONICAL_BASE = "https://rentanoo.com";
 
 export interface VehicleSeoInput {
@@ -14,10 +16,10 @@ export interface VehicleSeoInput {
 }
 
 /**
- * Formate le prix pour la meta description (ex: "35€").
+ * Formate le prix pour la meta description (montant MGA → €).
  */
-export function formatPriceForSeo(price: number): string {
-  return `${Math.round(price)}€`;
+export function formatPriceForSeo(priceMga: number, rate = FALLBACK_EXCHANGE.rate): string {
+  return formatEur(ariaryToEur(priceMga, rate));
 }
 
 /**

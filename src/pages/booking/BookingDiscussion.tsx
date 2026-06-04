@@ -41,6 +41,8 @@ import { payerLocation } from "@/lib/payerLocation";
 import { formatBillableDays } from "@/utils/formatDuration";
 import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 
 const BookingDiscussion = () => {
   console.log('💬 [DEBUG] BookingDiscussion component rendering');
@@ -49,6 +51,7 @@ const BookingDiscussion = () => {
   const { license } = useParams<{ license: string }>();
   const [searchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
+  const { formatClient, formatClientInline } = useExchangeRate();
 
   // Mapper simple entre langue i18n et locale de formatage dates/heures
   const getDateLocale = (lng?: string): string => {
@@ -750,7 +753,7 @@ const BookingDiscussion = () => {
     }
     
     return bookingData.selectedOptions
-      .map(option => `• ${option.name}${option.totalPrice > 0 ? ` (+${option.totalPrice}€)` : ''}`)
+      .map(option => `• ${option.name}${option.totalPrice > 0 ? ` (+${formatClientInline(option.totalPrice)})` : ''}`)
       .join('\n');
   };
 
@@ -1107,10 +1110,12 @@ const BookingDiscussion = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-primary">
-                    {calculateTotalPrice()}€
-                  </div>
-                  <div className="text-xs text-muted-foreground">
+                  <ClientMgaPrice
+                    amountMga={calculateTotalPrice()}
+                    className="items-end"
+                    primaryClassName="text-lg font-bold text-primary"
+                  />
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     {calculateRealDuration()}
                   </div>
                 </div>
@@ -1280,25 +1285,36 @@ const BookingDiscussion = () => {
                         
                         {/* Prix */}
                         <div className={`border-t ${isRenter ? 'border-white/20' : 'border-gray-300'} pt-2`}>
-                          <div className="flex justify-between items-center">
-                            <span className={`text-xs ${isRenter ? 'text-white/80' : 'text-gray-700'}`}>
+                          <div className="flex justify-between items-end gap-3">
+                            <div className={`flex flex-col ${isRenter ? 'text-white/80' : 'text-gray-700'}`}>
                               {(() => {
-                                // PRIORITÉ 1: Utiliser currentBooking depuis Supabase
                                 const pricePerDay = currentBooking?.price_per_day || bookingData?.rentalInfo?.pricePerDay || vehicle.dailyPrice;
                                 const realDuration = calculateRealDuration();
-                                return `${pricePerDay}€ × ${realDuration}`;
+                                const { secondary } = formatClient(pricePerDay);
+                                return (
+                                  <>
+                                    <span className="text-xs">
+                                      {formatClientInline(pricePerDay)} × {realDuration}
+                                    </span>
+                                    <span className={`text-[10px] mt-0.5 ${isRenter ? 'text-white/60' : 'text-gray-500'}`}>
+                                      {secondary} / {t("pricing.perDayShort")}
+                                    </span>
+                                  </>
+                                );
                               })()}
-                            </span>
-                            <span className={`font-bold text-lg ${isRenter ? 'text-white' : 'text-gray-800'}`}>
-                              {calculateTotalPrice()}€
-                            </span>
+                            </div>
+                            <ClientMgaPrice
+                              amountMga={calculateTotalPrice()}
+                              primaryClassName={`font-bold text-lg ${isRenter ? "text-white" : "text-gray-800"}`}
+                              secondaryClassName={`mt-0.5 text-xs tabular-nums ${isRenter ? "text-white/70" : "text-gray-600"}`}
+                            />
                           </div>
                           {(() => {
                             const optionsTotal = currentBooking?.options_total || bookingData?.rentalInfo?.optionsTotal || 0;
                             if (optionsTotal > 0) {
                               return (
                                 <div className={`text-xs mt-1 ${isRenter ? 'text-white/70' : 'text-gray-600'}`}>
-                                  {t("booking.discussion.optionsTotal", { optionsTotal })}
+                                  {t("booking.discussion.optionsTotal", { optionsTotal: formatClientInline(optionsTotal) })}
                                 </div>
                               );
                             }

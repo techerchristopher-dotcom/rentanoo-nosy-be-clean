@@ -16,6 +16,7 @@ import { isMoto } from "@/utils/vehicleType";
 import { parseEngineCapacity } from "@/utils/engineCapacity";
 import { Seo } from "@/components/seo/Seo";
 import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 
 const Index = () => {
@@ -23,6 +24,7 @@ const Index = () => {
     t,
     i18n,
   } = useTranslation('common');
+  const { formatClientInline } = useExchangeRate();
 
   const [vehicles, setVehicles] = useState<SupabaseVehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<SupabaseVehicle[]>([]);
@@ -85,13 +87,13 @@ const Index = () => {
   // Fonction pour formater l'affichage du prix de location
   const formatRentalPrice = (pricePerDay: number): string => {
     if (!rentalCalculation || !rentalCalculation.isCalculated) {
-      return `${pricePerDay}€ par jour`;
+      return `${formatClientInline(pricePerDay)} par jour`;
     }
     
     const totalCost = calculateVehicleRentalCost(pricePerDay);
     const daysText = rentalCalculation.rentalDays === 1 ? 'jour' : rentalCalculation.rentalDays % 1 === 0 ? 'jours' : 'jours';
     
-    return `${pricePerDay}€ par jour, soit **${totalCost}€** (${rentalCalculation.rentalDays} ${daysText})`;
+    return `${formatClientInline(pricePerDay)} par jour, soit **${formatClientInline(totalCost)}** (${rentalCalculation.rentalDays} ${daysText})`;
   };
 
   // Fonction pour créer les infos de location d'un véhicule
@@ -101,7 +103,7 @@ const Index = () => {
         vehicleId,
         pricePerDay,
         totalCost: 0,
-        formattedPrice: `${pricePerDay}€ par jour`
+        formattedPrice: `${formatClientInline(pricePerDay)} par jour`
       };
     }
     return createVehicleRentalInfo(vehicleId, pricePerDay, rentalCalculation);

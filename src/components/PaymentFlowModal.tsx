@@ -5,6 +5,9 @@ import { Separator } from "@/components/ui/separator";
 import { Euro, Calendar, ShieldCheck, Hourglass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ClientPriceRow } from "@/components/currency/PriceRows";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 export type ReservationPayment = {
   id: string | number;
@@ -40,6 +43,8 @@ export function PaymentFlowModal({
   bookingPaid?: boolean; // Indique explicitement si la réservation est déjà payée
 }) {
   const [isPaying, setIsPaying] = useState(false);
+  const { formatClient, footnote } = useExchangeRate();
+  const payLabel = formatClient(reservation.totalTTC).primary;
 
   const handlePayNow = async () => {
     if (!onPayNow || isPaying) return;
@@ -102,7 +107,7 @@ export function PaymentFlowModal({
                       ) : (
                         <>
                           <span className="shrink-0">🔒</span>
-                          <span>Payer {reservation.totalTTC.toFixed(2)} € via Stripe</span>
+                          <span>Payer {payLabel} via Stripe</span>
                         </>
                       )}
                     </button>
@@ -138,20 +143,19 @@ export function PaymentFlowModal({
             </div>
             <Separator />
             <div className="space-y-2 min-w-0">
-              <div className="flex justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate">Montant de base</span>
-                <span className="font-medium shrink-0">{reservation.montantDeBase.toFixed(2)}€</span>
-              </div>
-              <div className="flex justify-between gap-3 text-sm text-muted-foreground">
-                <span className="min-w-0 truncate">Frais de service (15%)</span>
-                <span className="shrink-0">+{reservation.fraisService.toFixed(2)}€</span>
-              </div>
-              <div className="flex justify-between items-center gap-3 pt-2 border-t">
+              <ClientPriceRow label="Montant de base" amountMga={reservation.montantDeBase} />
+              <ClientPriceRow label="Frais de service (15%)" amountMga={reservation.fraisService} />
+              <div className="flex justify-between items-start gap-3 pt-2 border-t">
                 <span className="font-semibold min-w-0 truncate">Total TTC à payer</span>
-                <span className="text-xl font-bold text-primary flex items-center gap-1 shrink-0">
-                  <Euro className="h-4 w-4 shrink-0" /> {reservation.totalTTC.toFixed(2)}€
-                </span>
+                <DualPrice
+                  amountMga={reservation.totalTTC}
+                  variant="client"
+                  className="items-end text-right shrink-0"
+                  primaryClassName="text-xl font-bold text-primary tabular-nums"
+                  secondaryClassName="text-xs"
+                />
               </div>
+              <p className="text-[10px] text-muted-foreground text-right">{footnote}</p>
             </div>
               {/* Services supplémentaires (toujours affiché) */}
               <div className="rounded-lg p-3 md:p-4 bg-gray-50 border border-gray-200 space-y-2 mt-4 mb-4 min-w-0">
@@ -162,7 +166,13 @@ export function PaymentFlowModal({
                       {reservation.extras.map((extra, idx) => (
                         <div key={idx} className="flex justify-between gap-3 text-sm">
                           <span className="text-foreground min-w-0 truncate">{extra.label}</span>
-                          <span className="font-medium text-foreground shrink-0">+{extra.price.toFixed(2)}€</span>
+                          <DualPrice
+                            amountMga={extra.price}
+                            variant="client"
+                            className="items-end text-right shrink-0"
+                            primaryClassName="font-medium tabular-nums text-sm"
+                            secondaryClassName="text-xs"
+                          />
                         </div>
                       ))}
                     </div>

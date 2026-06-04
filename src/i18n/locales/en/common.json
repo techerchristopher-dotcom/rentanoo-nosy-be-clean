@@ -199,7 +199,7 @@
       "pickupLocation": "Pickup: {{pickupLocation}}",
       "returnLocation": "Return: {{returnLocation}}",
       "additionalOptions": "Additional options:",
-      "optionsTotal": "Including {{optionsTotal}}€ of options",
+      "optionsTotal": "Including {{optionsTotal}} of options",
       "confirmAvailability": {
         "renter": "Can you confirm availability? Thank you!",
         "owner": "Please confirm your availability!"
@@ -856,7 +856,7 @@
       "notSpecified": "Not specified",
       "rentalDates": "Rental dates",
       "baseRate": "Base rate",
-      "pricePerDayFormat": "{{price}}€/day × {{duration}}",
+      "pricePerDayFormat": "{{price}}/day × {{duration}}",
       "downloadPdf": "Download PDF",
       "close": "Close"
     }

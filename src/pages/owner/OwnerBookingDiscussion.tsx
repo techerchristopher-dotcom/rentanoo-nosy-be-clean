@@ -33,12 +33,16 @@ import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { ProfileService } from "@/services/supabase/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
+import { calcRenterTotal } from "@/utils/serviceFees";
 
 const OwnerBookingDiscussion = () => {
   console.log('🏠 [DEBUG] OwnerBookingDiscussion component rendering');
   
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
+  const { formatClient, formatClientInline } = useExchangeRate();
   
   console.log('🏠 [DEBUG] Conversation ID:', conversationId);
   
@@ -473,13 +477,20 @@ const OwnerBookingDiscussion = () => {
                           
                           {/* Prix */}
                           <div className="border-t border-white/20 pt-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-white/80">
-                                {vehicle.dailyPrice}€ × 2 jour(s)
-                              </span>
-                              <span className="font-bold text-lg">
-                                {vehicle.dailyPrice * 2}€
-                              </span>
+                            <div className="flex justify-between items-end gap-3">
+                              <div className="flex flex-col text-white/80">
+                                <span className="text-xs">
+                                  {formatClientInline(vehicle.dailyPrice)} × 2 jour(s)
+                                </span>
+                                <span className="text-[10px] mt-0.5 text-white/60">
+                                  {formatClient(vehicle.dailyPrice).secondary} / jour
+                                </span>
+                              </div>
+                              <ClientMgaPrice
+                                amountMga={calcRenterTotal(vehicle.dailyPrice * 2)}
+                                primaryClassName="font-bold text-lg text-white"
+                                secondaryClassName="mt-0.5 text-xs tabular-nums text-white/70"
+                              />
                             </div>
                           </div>
                         </div>

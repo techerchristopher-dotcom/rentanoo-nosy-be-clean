@@ -20,6 +20,7 @@ import {
   adminDraftUpdate,
 } from "@/services/adminDraftsApi";
 import { SupabaseVehiclesService, type Vehicle } from "@/services/supabaseVehiclesService";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
 import {
   buildPlatformOptionPayload,
@@ -72,6 +73,7 @@ function defaultDateYmd(offsetDays: number): string {
 
 export default function AdminBookingNew() {
   const { toast } = useToast();
+  const { formatAdminInline } = useExchangeRate();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftIdFromUrl = searchParams.get("draftId")?.trim() || "";
@@ -664,7 +666,7 @@ export default function AdminBookingNew() {
                 const ap = agencyPricePerDayFromVehicle(v);
                 return (
                   <option key={v.id} value={v.id}>
-                    {v.brand} {v.model} — agence {ap != null ? `${ap}€/j` : "(tarif agence requis)"}
+                    {v.brand} {v.model} — agence {ap != null ? `${formatAdminInline(ap)}/j` : "(tarif agence requis)"}
                   </option>
                 );
               })}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 interface PriceFilterProps {
   vehiclePrices: number[];
@@ -18,6 +19,9 @@ export const PriceFilter = ({
   onApply, 
   onReset 
 }: PriceFilterProps) => {
+  const { formatClient } = useExchangeRate();
+  const fmtMga = (amount: number) => formatClient(amount).primary;
+
   const minPrice = vehiclePrices.length > 0 ? Math.min(...vehiclePrices) : 0;
   const maxPrice = vehiclePrices.length > 0 ? Math.max(...vehiclePrices) : 500;
   
@@ -85,8 +89,8 @@ export const PriceFilter = ({
 
         {/* Price Range Display */}
         <div className="flex justify-between items-center mb-4 text-sm text-muted-foreground">
-          <span>{minPrice}€</span>
-          <span>{maxPrice}€</span>
+          <span>{fmtMga(minPrice)}</span>
+          <span>{fmtMga(maxPrice)}</span>
         </div>
 
         {/* Slider */}
@@ -104,9 +108,9 @@ export const PriceFilter = ({
 
         {/* Selected Range Display */}
         <div className="flex justify-between items-center text-lg font-semibold">
-          <span>{localRange[0]}€</span>
+          <span>{fmtMga(localRange[0])}</span>
           <span className="text-muted-foreground text-sm">à</span>
-          <span>{localRange[1]}€</span>
+          <span>{fmtMga(localRange[1])}</span>
         </div>
       </div>
 

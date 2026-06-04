@@ -33,6 +33,7 @@ import ColorCombobox from '@/components/ui/ColorCombobox';
 import VehicleCategoryCombobox from '@/components/ui/VehicleCategoryCombobox';
 import FuelTypeCombobox from '@/components/ui/FuelTypeCombobox';
 import TransmissionTypeCombobox from '@/components/ui/TransmissionTypeCombobox';
+import { useExchangeRate } from '@/contexts/ExchangeRateContext';
 
 // Import placeholder images
 import photoAvGauchePlaceholder from "@/assets/photo-av-gauche-placeholder.png";
@@ -42,6 +43,7 @@ const RentMyCar = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation('common');
+  const { formatAdminInline } = useExchangeRate();
   const [searchParams] = useSearchParams();
   const isExistingOwner = searchParams.get('existingOwner') === 'true';
   const [currentStep, setCurrentStep] = useState(1);
@@ -3485,7 +3487,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
               </button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Prix de base: {formData.dailyPrice || '-'}€/jour
+              Prix de base: {formData.dailyPrice ? `${formatAdminInline(Number(formData.dailyPrice))}/jour` : '-'}
             </p>
           </div>
 
@@ -3614,7 +3616,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
                       <div className="flex justify-between">
                         <span>Retrait à l'aéroport:</span>
                         <span className="font-medium">
-                          {formData.airportPickupRetrievalFree ? 'Gratuit' : `${formData.airportPickupRetrievalPrice || 0}€`}
+                          {formData.airportPickupRetrievalFree ? 'Gratuit' : formatAdminInline(Number(formData.airportPickupRetrievalPrice || 0))}
                         </span>
                       </div>
                     )}
@@ -3622,7 +3624,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
                       <div className="flex justify-between">
                         <span>Retour à l'aéroport:</span>
                         <span className="font-medium">
-                          {formData.airportPickupReturnFree ? 'Gratuit' : `${formData.airportPickupReturnPrice || 0}€`}
+                          {formData.airportPickupReturnFree ? 'Gratuit' : formatAdminInline(Number(formData.airportPickupReturnPrice || 0))}
                         </span>
                       </div>
                     )}
@@ -3642,7 +3644,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
                       <div className="flex justify-between">
                         <span>Retrait à la barge:</span>
                         <span className="font-medium">
-                          {formData.bargePetiteTerreRetrievalFree ? 'Gratuit' : `${formData.bargePetiteTerreRetrievalPrice || 0}€`}
+                          {formData.bargePetiteTerreRetrievalFree ? 'Gratuit' : formatAdminInline(Number(formData.bargePetiteTerreRetrievalPrice || 0))}
                         </span>
                       </div>
                     )}
@@ -3650,7 +3652,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
                       <div className="flex justify-between">
                         <span>Retour à la barge:</span>
                         <span className="font-medium">
-                          {formData.bargePetiteTerreReturnFree ? 'Gratuit' : `${formData.bargePetiteTerreReturnPrice || 0}€`}
+                          {formData.bargePetiteTerreReturnFree ? 'Gratuit' : formatAdminInline(Number(formData.bargePetiteTerreReturnPrice || 0))}
                         </span>
                       </div>
                     )}
@@ -3670,7 +3672,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
                       <div className="flex justify-between">
                         <span>Retrait à la barge:</span>
                         <span className="font-medium">
-                          {formData.bargeGrandeTerreRetrievalFree ? 'Gratuit' : `${formData.bargeGrandeTerreRetrievalPrice || 0}€`}
+                          {formData.bargeGrandeTerreRetrievalFree ? 'Gratuit' : formatAdminInline(Number(formData.bargeGrandeTerreRetrievalPrice || 0))}
                         </span>
                       </div>
                     )}
@@ -3678,7 +3680,7 @@ N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo fle
                       <div className="flex justify-between">
                         <span>Retour à la barge:</span>
                         <span className="font-medium">
-                          {formData.bargeGrandeTerreReturnFree ? 'Gratuit' : `${formData.bargeGrandeTerreReturnPrice || 0}€`}
+                          {formData.bargeGrandeTerreReturnFree ? 'Gratuit' : formatAdminInline(Number(formData.bargeGrandeTerreReturnPrice || 0))}
                         </span>
                       </div>
                     )}

@@ -29,12 +29,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { VehicleBasicInfoTab } from "@/features/vehicle-management/components/tabs/VehicleBasicInfoTab";
 // 🆕 REFACTO Étape 2A - Import du hook pour gérer formData
 import { useManageVehicle } from "@/features/vehicle-management/hooks/useManageVehicle";
+import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
+import { DualPrice } from "@/components/currency/DualPrice";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 export default function ManageVehicle() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
   console.log("[ManageVehicle] vehicleId from params =", vehicleId);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { formatClient } = useExchangeRate();
 
   // const [loading, setLoading] = useState(false); // SUPPRIMÉ Étape 2B.1.2 - géré par useManageVehicle
   const [saving, setSaving] = useState(false);
@@ -2227,7 +2231,7 @@ export default function ManageVehicle() {
                           className="flex-1"
                         />
                         <span className="text-sm text-green-600 font-medium">
-                          {pricing.lowSeasonPrice.toFixed(2)}€
+                        <DualPrice amountMga={Math.round(pricing.lowSeasonPrice)} variant="admin" inline className="text-sm text-green-600 font-medium" />
                         </span>
                       </div>
                     </div>
@@ -2247,7 +2251,7 @@ export default function ManageVehicle() {
                           className="flex-1"
                         />
                         <span className="text-sm text-orange-600 font-medium">
-                          {pricing.highSeasonPrice.toFixed(2)}€
+                        <DualPrice amountMga={Math.round(pricing.highSeasonPrice)} variant="admin" inline className="text-sm text-orange-600 font-medium" />
                         </span>
                       </div>
                     </div>
@@ -2271,7 +2275,7 @@ export default function ManageVehicle() {
                           className="flex-1"
                         />
                         <span className="text-sm text-green-600 font-medium">
-                          {pricing.longDuration14Price.toFixed(2)}€
+                        <DualPrice amountMga={Math.round(pricing.longDuration14Price)} variant="admin" inline className="text-sm text-blue-600 font-medium" />
                         </span>
                       </div>
                     </div>
@@ -2291,7 +2295,7 @@ export default function ManageVehicle() {
                           className="flex-1"
                         />
                         <span className="text-sm text-green-600 font-medium">
-                          {pricing.longDuration60Price.toFixed(2)}€
+                        <DualPrice amountMga={Math.round(pricing.longDuration60Price)} variant="admin" inline className="text-sm text-purple-600 font-medium" />
                         </span>
                       </div>
                     </div>
@@ -3901,8 +3905,15 @@ export default function ManageVehicle() {
                               <div className="space-y-4">
                                 <div>
                                   <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-2xl font-bold text-primary">{formData.pricePerDay}€</span>
-                                    <span className="text-sm text-muted-foreground line-through">{Math.round(parseFloat(formData.pricePerDay || '0') * 1.2)}€</span>
+                                    <ClientMgaPrice
+                                      amountMga={parseFloat(formData.pricePerDay || "0") || 0}
+                                      className="items-start text-left"
+                                      primaryClassName="text-2xl font-bold text-primary"
+                                      secondaryClassName="text-xs text-muted-foreground"
+                                    />
+                                    <span className="text-sm text-muted-foreground line-through">
+                                      {formatClient(Math.round(parseFloat(formData.pricePerDay || "0") * 1.2)).primary}
+                                    </span>
                                   </div>
                                   <p className="text-muted-foreground">par jour</p>
                                 </div>
@@ -3954,8 +3965,15 @@ export default function ManageVehicle() {
                   <div className="p-3 sm:p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 max-w-6xl mx-auto">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="text-xl font-bold text-primary">{formData.pricePerDay}€</span>
-                        <span className="text-sm text-muted-foreground line-through">{Math.round(parseFloat(formData.pricePerDay || '0') * 1.2)}€</span>
+                        <ClientMgaPrice
+                          amountMga={parseFloat(formData.pricePerDay || "0") || 0}
+                          className="items-start text-left"
+                          primaryClassName="text-xl font-bold text-primary"
+                          secondaryClassName="text-xs text-muted-foreground"
+                        />
+                        <span className="text-sm text-muted-foreground line-through ml-2">
+                          {formatClient(Math.round(parseFloat(formData.pricePerDay || "0") * 1.2)).primary}
+                        </span>
                         <span className="text-sm text-muted-foreground">par jour</span>
                       </div>
                       <Button

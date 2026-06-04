@@ -65,6 +65,9 @@ import { useTranslation } from 'react-i18next'
 import { forceDepositForOwner } from '@/lib/depositCaution'
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
 import { AdminBookingBadge } from '@/components/AdminBookingBadge'
+import { DualPrice } from '@/components/currency/DualPrice'
+import { AdminPriceRow } from '@/components/currency/PriceRows'
+import { useExchangeRate } from '@/contexts/ExchangeRateContext'
 
 /** Libellé locataire pour header, tooltips, alt (pas d’email ici). */
 function formatRenterDisplayName(user: User | null | undefined): string {
@@ -126,6 +129,7 @@ export default function OwnerBookingCard({
   const navigate = useNavigate()
   const { toast } = useToast()
   const { t } = useTranslation("common")
+  const { formatAdminInline, footnote } = useExchangeRate()
   /** Profil chargé uniquement si le parent n’a pas fourni `booking.renter`. */
   const [renterFromFetch, setRenterFromFetch] = useState<User | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -140,26 +144,36 @@ export default function OwnerBookingCard({
   const [isStartingCheckin, setIsStartingCheckin] = useState(false)
   const [isForcingDeposit, setIsForcingDeposit] = useState(false)
 
-  const calculateRealDuration = () => {
-    const startTime = (booking as any).startTime || '06:30'
-    const endTime = (booking as any).endTime || '14:00'
-    const pricing = booking.vehicle?.dailyPrice
-      ? getBookingRentalPricing({
-          pricePerDay: booking.vehicle.dailyPrice,
-          startDate: booking.startDate,
-          endDate: booking.endDate,
-          startTime,
-          endTime,
-        })
-      : null
+  const cardStartTime = (booking as any).startTime || '06:30'
+  const cardEndTime = (booking as any).endTime || '14:00'
+  const cardRentalPricing = booking.vehicle?.dailyPrice
+    ? getBookingRentalPricing({
+        pricePerDay: booking.vehicle.dailyPrice,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        startTime: cardStartTime,
+        endTime: cardEndTime,
+      })
+    : null
+  const cardOptionsTotal = normalizeBookingOptions(booking.selectedOptions).reduce(
+    (sum, option) => sum + (option.totalPrice || 0),
+    0
+  )
+  const cardBasePrice =
+    cardRentalPricing?.basePrice ?? (booking as any).basePrice ?? (booking as any).base_price ?? 0
+  const cardSubtotal =
+    (booking as any).subtotal ?? cardBasePrice + cardOptionsTotal
+  const cardServiceFeeRenter = calcServiceFeeRenter(cardSubtotal)
+  const cardTotalAmount = calcRenterTotal(cardSubtotal)
+  const cardServiceFeeOwner = calcServiceFeeOwner(cardSubtotal)
+  const cardOwnerPayout = calcOwnerPayout(cardSubtotal)
+  const cardDurationText =
+    (cardRentalPricing &&
+      (formatBillableDays(t, cardRentalPricing.billableDays) ??
+        t('duration.day_one', { count: 1 }))) ||
+    t('duration.day_one', { count: 1 })
 
-    if (!pricing) return t('duration.day_one', { count: 1 })
-
-    return (
-      formatBillableDays(t, pricing.billableDays) ??
-      t('duration.day_one', { count: 1 })
-    )
-  }
+  const calculateRealDuration = () => cardDurationText
 
   // Fonction pour déterminer l'icône selon le nom du service
   const getServiceIcon = (serviceName: string) => {
@@ -382,7 +396,7 @@ export default function OwnerBookingCard({
               messageText += `🧩 Options supplémentaires : ${optionsLabels}\n`
             }
             
-            messageText += `💰 Total: ${totalPrice.toFixed(2)}€\n` +
+            messageText += `💰 Total: ${formatAdminInline(totalPrice)}\n` +
               `⏰ IMPORTANT: Vous avez 24 heures pour finaliser le paiement.`
             
             console.log('[handleAccept] Envoi message de confirmation', { 
@@ -1044,14 +1058,13 @@ export default function OwnerBookingCard({
                       <div className="flex items-center text-sm">
                         <Euro className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
                         <span className="font-medium text-foreground">Total:</span>
-                        <span className="ml-2 font-bold text-primary text-lg">
-                        {(() => {
-                          // Calculer le total TTC (même calcul que le locataire)
-                          const subtotal = (booking as any).subtotal || 
-                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
-                          // Utiliser calcRenterTotal pour avoir le même montant que le locataire
-                          return calcRenterTotal(subtotal).toFixed(2);
-                        })()}€
+                        <span className="ml-2">
+                          <DualPrice
+                            amountMga={cardTotalAmount}
+                            variant="admin"
+                            primaryClassName="font-bold text-primary text-lg"
+                            secondaryClassName="text-xs"
+                          />
                         </span>
                         <TooltipProvider>
                           <Tooltip>
@@ -1063,39 +1076,31 @@ export default function OwnerBookingCard({
                             <TooltipContent className="max-w-xs" side="top" align="start">
                               <div className="space-y-2 text-sm">
                                 <div className="font-semibold mb-2">Détail du prix :</div>
-                                {(() => {
-                                  // Calculer subtotal si non disponible (basePrice + optionsTotal)
-                                  const subtotal = (booking as any).subtotal || 
-                                    ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
-                                  const renterFee = calcServiceFeeRenter(subtotal);
-                                  const totalTTC = calcRenterTotal(subtotal);
-                                  const ownerFee = calcServiceFeeOwner(subtotal);
-                                  const ownerPayout = calcOwnerPayout(subtotal);
-                                  return (
+                                {(() => (
                                     <>
                                       <div className="flex justify-between">
                                         <span>Sous-total</span>
-                                        <span className="font-semibold">{subtotal.toFixed(2)}€</span>
+                                        <span className="font-semibold">{formatAdminInline(cardSubtotal)}</span>
                                       </div>
                                       <div className="flex justify-between text-muted-foreground">
                                         <span>Frais de service locataire (15%)</span>
-                                        <span>+{renterFee.toFixed(2)}€</span>
+                                        <span>+{formatAdminInline(cardServiceFeeRenter)}</span>
                                       </div>
                                       <div className="flex justify-between border-t pt-1">
                                         <span>Total payé par le locataire</span>
-                                        <span className="font-semibold text-success">{totalTTC.toFixed(2)}€</span>
+                                        <span className="font-semibold text-success">{formatAdminInline(cardTotalAmount)}</span>
                                       </div>
                                       <div className="flex justify-between text-muted-foreground mt-2">
                                         <span>Commission propriétaire (15%)</span>
-                                        <span className="text-destructive">-{ownerFee.toFixed(2)}€</span>
+                                        <span className="text-destructive">-{formatAdminInline(cardServiceFeeOwner)}</span>
                                       </div>
                                       <div className="flex justify-between border-t pt-1">
                                         <span>Votre revenu (85%)</span>
-                                        <span className="font-semibold text-primary">{ownerPayout.toFixed(2)}€</span>
+                                        <span className="font-semibold text-primary">{formatAdminInline(cardOwnerPayout)}</span>
                                       </div>
+                                      <p className="text-[10px] text-muted-foreground pt-1">{footnote}</p>
                                     </>
-                                  );
-                                })()}
+                                  ))()}
                         </div>
                             </TooltipContent>
                           </Tooltip>
@@ -1120,7 +1125,7 @@ export default function OwnerBookingCard({
                             <div className="flex items-center gap-2 flex-wrap">
                               <div className="flex items-center text-sm">
                                 <Shield className="h-4 w-4 mr-3 flex-shrink-0 text-primary" />
-                                <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {snapshot.toFixed(2)}€</span>
+                                <span className="font-medium text-foreground">{t('bookings.deposit.status.todo', 'Caution : à activer')} — {formatAdminInline(snapshot)}</span>
                               </div>
                               <TooltipProvider>
                                 <Tooltip>
@@ -1546,86 +1551,63 @@ export default function OwnerBookingCard({
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-start gap-4">
                     <div>
                       <p className="font-medium">Location véhicule</p>
                       <p className="text-sm text-muted-foreground">
-                        {calculateRealDuration()} × {(booking as any).pricePerDay || 0}€/jour
+                        {cardDurationText} × {formatAdminInline((booking as any).pricePerDay || booking.vehicle?.dailyPrice || 0)}/jour
                       </p>
                     </div>
-                    <span className="font-semibold">
-                      {(() => {
-                        // Afficher le basePrice réel (montant facturé avec prorata heures)
-                        const basePrice = (booking as any).basePrice || (booking as any).base_price || 0;
-                        return basePrice.toFixed(2);
-                      })()}€
-                    </span>
+                    <DualPrice amountMga={cardBasePrice} variant="admin" className="items-end text-right shrink-0" primaryClassName="font-semibold tabular-nums" secondaryClassName="text-xs" />
                   </div>
 
                   {/* Services supplémentaires */}
                   {(() => {
                     const normalizedOptions = normalizeBookingOptions((booking as any).selectedOptions);
                     if (!normalizedOptions.length) return null;
-                    const optionsTotal = normalizedOptions.reduce((sum, option) => sum + (option.totalPrice || 0), 0);
 
                     return (
                       <div className="pt-2 border-t">
                         <p className="font-medium mb-2">Services supplémentaires</p>
                         <div className="space-y-2">
                           {normalizedOptions.map((option, index) => (
-                            <div key={index} className="flex justify-between text-sm">
+                            <div key={index} className="flex justify-between items-start gap-4 text-sm">
                               <span>{option.name}</span>
-                              <span className="font-semibold">+{option.totalPrice || 0}€</span>
+                              <DualPrice amountMga={option.totalPrice || 0} variant="admin" className="items-end text-right shrink-0" primaryClassName="font-semibold tabular-nums text-sm" secondaryClassName="text-xs" />
                             </div>
                           ))}
                         </div>
-                        {optionsTotal > 0 && (
-                          <div className="flex justify-between text-sm font-semibold border-t pt-2 mt-2">
-                            <span>Sous-total options</span>
-                            <span>+{optionsTotal}€</span>
-                          </div>
+                        {cardOptionsTotal > 0 && (
+                          <AdminPriceRow label="Sous-total options" amountMga={cardOptionsTotal} className="border-t pt-2 mt-2" bold />
                         )}
                       </div>
                     );
                   })()}
 
-                  <div className="pt-2 border-t">
-                    <div className="flex justify-between mb-2">
-                      <span className="font-medium">Total réservation (TTC)</span>
-                      <span className="font-semibold">
-                        {(() => {
-                          // Calculer le total TTC (même calcul que le locataire)
-                          const subtotal = (booking as any).subtotal || 
-                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
-                          return calcRenterTotal(subtotal).toFixed(2);
-                        })()}€
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-muted-foreground">
+                  <div className="pt-2 border-t space-y-2">
+                    <AdminPriceRow label="Total réservation (TTC)" amountMga={cardTotalAmount} bold />
+                    <div className="flex justify-between items-start gap-4 text-muted-foreground">
                       <span className="text-sm">Commission de la plateforme (15%)</span>
-                      <span className="text-sm text-destructive">
-                        {(() => {
-                          // Calculer subtotal si non disponible (basePrice + optionsTotal)
-                          const subtotal = (booking as any).subtotal || 
-                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
-                          const ownerFee = (booking as any).serviceFee || calcServiceFeeOwner(subtotal);
-                          return `- ${Math.round(ownerFee)}€`;
-                        })()}
-                      </span>
+                      <DualPrice
+                        amountMga={cardServiceFeeOwner}
+                        variant="admin"
+                        className="items-end text-right shrink-0"
+                        primaryClassName="text-sm tabular-nums text-destructive"
+                        secondaryClassName="text-xs text-destructive/80"
+                      />
                     </div>
                   </div>
 
                   <div className="pt-4 border-t-2">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-start gap-4">
                       <span className="font-bold text-lg text-[#004E4E]">REVENU PROPRIÉTAIRE</span>
-                      <span className="font-bold text-2xl text-[#004E4E]">
-                        {(() => {
-                          // Calculer subtotal si non disponible (basePrice + optionsTotal)
-                          const subtotal = (booking as any).subtotal || 
-                            ((booking as any).basePrice || 0) + ((booking as any).optionsTotal || 0);
-                          return Math.round(calcOwnerPayout(subtotal));
-                        })()}€
-                      </span>
+                      <DualPrice
+                        amountMga={cardOwnerPayout}
+                        variant="admin"
+                        className="items-end text-right shrink-0"
+                        primaryClassName="font-bold text-2xl text-[#004E4E] tabular-nums"
+                        secondaryClassName="text-sm text-[#004E4E]/70"
+                      />
                     </div>
                   </div>
                 </div>

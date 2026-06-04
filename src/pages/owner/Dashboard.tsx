@@ -20,6 +20,7 @@ import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@/types";
+import { DualPrice } from "@/components/currency/DualPrice";
 
 interface DashboardStats {
   totalVehicles: number;
@@ -234,7 +235,12 @@ export default function Dashboard() {
               <DollarSign className="h-5 w-5 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.monthlyRevenue.toFixed(0)}€</div>
+              <DualPrice
+                amountMga={stats.monthlyRevenue}
+                variant="admin"
+                primaryClassName="text-3xl font-bold tabular-nums"
+                secondaryClassName="text-sm text-muted-foreground"
+              />
               <p className="text-xs text-muted-foreground mt-1">
                 Revenus du mois en cours
               </p>

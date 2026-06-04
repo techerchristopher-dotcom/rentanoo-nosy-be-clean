@@ -102,7 +102,7 @@
       "half_day_suffix": "und halb"
     },
     "pricing": {
-      "total_for_duration": "gesamt {{total}}€ ({{duration}})",
+      "total_for_duration": "gesamt {{total}} ({{duration}})",
       "perDayShort": "Tag",
       "totalExcludingOptions": "also {{total}} (ohne Zusatzoptionen)",
       "cardTotalSummary": "{{duration}} · {{total}} gesamt"
@@ -744,7 +744,7 @@
       "notSpecified": "Nicht angegeben",
       "rentalDates": "Mietdaten",
       "baseRate": "Grundpreis",
-      "pricePerDayFormat": "{{price}}€/Tag × {{duration}}",
+      "pricePerDayFormat": "{{price}}/Tag × {{duration}}",
       "downloadPdf": "PDF herunterladen",
       "close": "Schließen"
     }
@@ -954,7 +954,7 @@
       "pickupLocation": "Abholung: {{pickupLocation}}",
       "returnLocation": "Rückgabe: {{returnLocation}}",
       "additionalOptions": "Zusätzliche Optionen:",
-      "optionsTotal": "Einschließlich {{optionsTotal}}€ Optionen",
+      "optionsTotal": "Einschließlich {{optionsTotal}} Optionen",
       "confirmAvailability": {
         "renter": "Können Sie die Verfügbarkeit bestätigen? Vielen Dank!",
         "owner": "Bitte bestätigen Sie Ihre Verfügbarkeit!"
