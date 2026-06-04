@@ -44,6 +44,7 @@ import {
   type PlanningVehicle,
 } from "@/services/adminPlanningApi";
 import { adminMoveBooking } from "@/services/adminApi";
+import { PlanningBookingSheet } from "@/features/admin-bookings/components/PlanningBookingSheet";
 
 function ymdLocal(d: Date): string {
   return format(d, "yyyy-MM-dd");
@@ -469,6 +470,11 @@ export default function AdminPlanning() {
   // Lightbox photo véhicule (ouvert au clic sur l'avatar)
   const [lightboxVehicle, setLightboxVehicle] = useState<PlanningVehicle | null>(null);
 
+  // Sheet aperçu réservation
+  const [sheetBooking, setSheetBooking] = useState<PlanningBooking | null>(null);
+  const [sheetVehicle, setSheetVehicle] = useState<PlanningVehicle | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   // Drag & drop state — Pointer Events API (HTML5 drag unreliable on buttons/Safari)
   const [dragging, setDragging] = useState<{ bookingId: string; durationDays: number } | null>(null);
   const draggingRef = useRef<{ bookingId: string; durationDays: number } | null>(null);
@@ -480,6 +486,13 @@ export default function AdminPlanning() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [data, setData] = useState<PlanningResponse | null>(null);
+
+  const openBookingSheet = useCallback((booking: PlanningBooking) => {
+    const vehicle = data?.vehicles.find((v) => v.id === booking.vehicle_id) ?? null;
+    setSheetBooking(booking);
+    setSheetVehicle(vehicle);
+    setSheetOpen(true);
+  }, [data?.vehicles]);
 
   const includeInactive = vehicleFilter !== "active";
 
@@ -1106,7 +1119,11 @@ export default function AdminPlanning() {
                     `/admin/bookings/new?vehicleId=${encodeURIComponent(vehicleId)}&start=${encodeURIComponent(dayYmd)}&end=${encodeURIComponent(dayYmd)}`
                   )
                 }
-                onOpenBooking={(bookingId) => navigate(`/admin/bookings/${bookingId}`)}
+                onOpenBooking={(bookingId) => {
+                  const b = bookings.find((x) => x.id === bookingId);
+                  if (b) openBookingSheet(b);
+                  else navigate(`/admin/bookings/${bookingId}`);
+                }}
                 onOpenPhoto={(v) => setLightboxVehicle(v)}
               />
             ) : (
@@ -1261,7 +1278,7 @@ export default function AdminPlanning() {
                                       onPointerCancel={isDraggable ? cancelDrag : undefined}
                                       onClick={() => {
                                         if (didDragRef.current) { didDragRef.current = false; return; }
-                                        navigate(`/admin/bookings/${b.booking.id}`);
+                                        openBookingSheet(b.booking);
                                       }}
                                       className={cn(
                                         "w-full h-full rounded-md border px-2 py-1 text-xs text-left shadow-sm hover:shadow transition-shadow",
@@ -1331,6 +1348,13 @@ export default function AdminPlanning() {
           onClose={() => setLightboxVehicle(null)}
         />
       ) : null}
+
+      <PlanningBookingSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        booking={sheetBooking}
+        vehicle={sheetVehicle}
+      />
     </TooltipProvider>
   );
 }

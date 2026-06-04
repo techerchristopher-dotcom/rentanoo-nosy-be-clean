@@ -7,6 +7,19 @@ import { getStripe } from "../lib/stripe";
 import { updateClaimChargeRowFromPaymentIntent } from "../lib/bookingClaimChargesSync";
 import { computeBaseRentalPrice } from "@/utils/rentalPriceFromDates";
 import {
+  calcOwnerPayout,
+  calcPlatformTotalFee,
+  calcRenterTotal,
+  calcServiceFeeOwner,
+  calcServiceFeeRenter,
+} from "@/utils/serviceFees";
+import {
+  clearExtensionPending,
+  getExtensionPending,
+  wrapSelectedOptionsWithExtension,
+  type ExtensionPending,
+} from "@/features/admin-bookings/utils/extensionMeta";
+import {
   sanitizeAndRecalculateBookingOptions,
   type RawBookingOptionInput,
 } from "@/utils/bookingOptionSecurity";
@@ -2180,6 +2193,341 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     }
 
     return res.status(200).json({ ok: true, bookingId, vehicleId: newVehicleId, startDate: newStartDate, endDate: newEndDate });
+  });
+
+  // ============================================================================
+  // EXTEND BOOKING — prolonger une location confirmée / en cours
+  // ============================================================================
+  const EXTENDABLE_STATUSES = new Set(["confirmed", "active"]);
+
+  function computeBookingExtensionPricing(
+    booking: {
+      price_per_day: number;
+      start_date: string;
+      end_date: string;
+      start_time: string | null;
+      end_time: string | null;
+      options_total: number;
+      pricing_mode: string | null;
+      base_price: number;
+      subtotal: number;
+    },
+    newEndDate: string,
+    newEndTime: string
+  ) {
+    const pricePerDay = Number(booking.price_per_day) || 0;
+    const startTime = booking.start_time ?? "09:00";
+    const oldEndTime = booking.end_time ?? "09:00";
+    const startDt = combineLocalDateTime(booking.start_date, startTime);
+    const oldEndDt = combineLocalDateTime(booking.end_date, oldEndTime);
+    const newEndDt = combineLocalDateTime(newEndDate, newEndTime);
+
+    const oldBase = computeBaseRentalPrice(pricePerDay, startDt, oldEndDt, startTime, oldEndTime);
+    const newBase = computeBaseRentalPrice(pricePerDay, startDt, newEndDt, startTime, newEndTime);
+
+    const optionsTotal = Number(booking.options_total) || 0;
+    const oldSubtotal = oldBase.basePrice + optionsTotal;
+    const newSubtotal = newBase.basePrice + optionsTotal;
+    const deltaSubtotal = Math.round((newSubtotal - oldSubtotal) * 100) / 100;
+
+    const isAdmin = booking.pricing_mode === "admin";
+    const oldServiceFee = isAdmin ? 0 : calcServiceFeeRenter(oldSubtotal);
+    const newServiceFee = isAdmin ? 0 : calcServiceFeeRenter(newSubtotal);
+    const deltaServiceFee = Math.round((newServiceFee - oldServiceFee) * 100) / 100;
+
+    const oldTTC = isAdmin ? oldSubtotal : calcRenterTotal(oldSubtotal);
+    const newTTC = isAdmin ? newSubtotal : calcRenterTotal(newSubtotal);
+    const deltaTTC = Math.round((newTTC - oldTTC) * 100) / 100;
+
+    return {
+      newBasePrice: newBase.basePrice,
+      newRentalDays: newBase.rentalDays,
+      newSubtotal,
+      newServiceFee,
+      newTotalTTC: newTTC,
+      deltaSubtotal,
+      deltaServiceFee,
+      deltaTTC,
+      rentalDaysAdded: Math.round((newBase.rentalDays - oldBase.rentalDays) * 100) / 100,
+      isAdmin,
+      newServiceFeeOwner: isAdmin ? 0 : calcServiceFeeOwner(newSubtotal),
+      newPlatformFee: isAdmin ? 0 : calcPlatformTotalFee(newSubtotal),
+      newOwnerPayout: isAdmin ? newSubtotal : calcOwnerPayout(newSubtotal),
+    };
+  }
+
+  app.patch("/api/admin/bookings/:bookingId/extend", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.params.bookingId === "string" ? req.params.bookingId.trim() : "";
+    const newEndDate = typeof req.body?.newEndDate === "string" ? req.body.newEndDate.trim() : "";
+    const newEndTimeRaw = typeof req.body?.newEndTime === "string" ? req.body.newEndTime.trim() : "09:00";
+    const newEndTime = newEndTimeRaw.length >= 5 ? newEndTimeRaw.slice(0, 5) : "09:00";
+    const previewOnly = req.body?.preview === true;
+
+    if (!bookingId || !newEndDate) {
+      return res.status(400).json({ ok: false, error: "MISSING_FIELDS", message: "bookingId et newEndDate requis" });
+    }
+    if (!isValidYmd(newEndDate)) {
+      return res.status(400).json({ ok: false, error: "INVALID_DATE", message: "newEndDate invalide (YYYY-MM-DD)" });
+    }
+
+    const { data: booking, error: bErr } = await supabaseAdmin
+      .from("bookings")
+      .select(
+        "id, status, vehicle_id, start_date, end_date, start_time, end_time, price_per_day, options_total, base_price, subtotal, total_price, pricing_mode, selected_options, reference_number, admin_notes, amount_total_paid"
+      )
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (bErr || !booking) {
+      return res.status(404).json({ ok: false, error: "NOT_FOUND", message: "Réservation introuvable" });
+    }
+
+    if (!EXTENDABLE_STATUSES.has(booking.status ?? "")) {
+      return res.status(400).json({
+        ok: false,
+        error: "NOT_EXTENDABLE",
+        message: `Prolongation impossible pour le statut « ${booking.status} » (confirmée ou en cours uniquement).`,
+      });
+    }
+
+    const currentEndYmd = String(booking.end_date).split("T")[0];
+    if (newEndDate <= currentEndYmd) {
+      return res.status(400).json({
+        ok: false,
+        error: "INVALID_RANGE",
+        message: "La nouvelle date de fin doit être postérieure à la fin actuelle.",
+      });
+    }
+
+    const startYmd = String(booking.start_date).split("T")[0];
+    const { data: conflicts } = await supabaseAdmin
+      .from("bookings")
+      .select("id, reference_number, start_date, end_date")
+      .eq("vehicle_id", booking.vehicle_id)
+      .not("id", "eq", bookingId)
+      .not("status", "in", `(cancelled,rejected,expired,completed,closed,declined,terminated)`)
+      .lte("start_date", newEndDate)
+      .gte("end_date", startYmd);
+
+    if (conflicts && conflicts.length > 0) {
+      const ref = conflicts[0].reference_number;
+      const refLabel = ref != null ? `AG #${ref}` : conflicts[0].id.slice(0, 8);
+      return res.status(409).json({
+        ok: false,
+        error: "VEHICLE_DATE_CONFLICT",
+        message: `Conflit avec une autre réservation (${refLabel}) sur cette période.`,
+      });
+    }
+
+    const pricing = computeBookingExtensionPricing(booking, newEndDate, newEndTime);
+
+    if (pricing.deltaTTC <= 0) {
+      return res.status(400).json({
+        ok: false,
+        error: "NO_EXTENSION",
+        message: "Aucun jour supplémentaire facturable pour ces dates.",
+      });
+    }
+
+    if (previewOnly) {
+      return res.status(200).json({
+        ok: true,
+        preview: true,
+        previousEndDate: currentEndYmd,
+        newEndDate,
+        newEndTime,
+        delta: {
+          subtotal: pricing.deltaSubtotal,
+          serviceFee: pricing.deltaServiceFee,
+          totalTTC: pricing.deltaTTC,
+          rentalDaysAdded: pricing.rentalDaysAdded,
+        },
+        newTotalTTC: pricing.newTotalTTC,
+      });
+    }
+
+    const extensionPending: ExtensionPending = {
+      deltaSubtotal: pricing.deltaSubtotal,
+      deltaServiceFee: pricing.deltaServiceFee,
+      deltaTotalTTC: pricing.deltaTTC,
+      previousEndDate: currentEndYmd,
+      extendedAt: nowIso(),
+    };
+
+    const updatePayload: Record<string, unknown> = {
+      end_date: newEndDate,
+      end_time: newEndTime,
+      rental_days: pricing.newRentalDays,
+      base_price: pricing.newBasePrice,
+      subtotal: pricing.newSubtotal,
+      total_price: pricing.newSubtotal,
+      service_fee: pricing.newServiceFee,
+      service_fee_renter: pricing.isAdmin ? 0 : pricing.newServiceFee,
+      service_fee_owner: pricing.newServiceFeeOwner,
+      platform_total_fee: pricing.newPlatformFee,
+      owner_payout_amount: pricing.newOwnerPayout,
+      selected_options: wrapSelectedOptionsWithExtension(booking.selected_options, extensionPending),
+      admin_notes: [
+        booking.admin_notes?.trim(),
+        `[Prolongation ${nowIso().slice(0, 10)}] fin ${currentEndYmd} → ${newEndDate}, supplément ${pricing.deltaTTC.toFixed(2)} €`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      updated_at: nowIso(),
+    };
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from("bookings")
+      .update(updatePayload)
+      .eq("id", bookingId)
+      .select("*")
+      .single();
+
+    if (updateErr) {
+      return res.status(500).json({ ok: false, error: "UPDATE_FAILED", message: updateErr.message });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      booking: updated,
+      previousEndDate: currentEndYmd,
+      delta: {
+        subtotal: pricing.deltaSubtotal,
+        serviceFee: pricing.deltaServiceFee,
+        totalTTC: pricing.deltaTTC,
+        rentalDaysAdded: pricing.rentalDaysAdded,
+      },
+      newTotalTTC: pricing.newTotalTTC,
+    });
+  });
+
+  // POST /api/admin/bookings/:bookingId/collect-extension
+  app.post("/api/admin/bookings/:bookingId/collect-extension", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.params.bookingId === "string" ? req.params.bookingId.trim() : "";
+    const paidAtRaw = req.body?.paidAt;
+    const rawOpm = req.body?.offlinePaymentMethod;
+    const offlinePaymentMethod = rawOpm === "cash" || rawOpm === "card_terminal" ? rawOpm : undefined;
+
+    let paidAt: string;
+    if (typeof paidAtRaw === "string" && paidAtRaw.trim()) {
+      const d = new Date(paidAtRaw.trim());
+      paidAt = Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+    } else {
+      paidAt = new Date().toISOString();
+    }
+
+    const { data: booking, error: fetchErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, pricing_mode, selected_options, amount_total_paid, admin_notes, subtotal")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (fetchErr || !booking) return res.status(404).json({ ok: false, message: "Réservation introuvable" });
+    if (booking.pricing_mode !== "admin") {
+      return res.status(400).json({ ok: false, message: "Encaissement agence réservé aux réservations admin." });
+    }
+
+    const pending = getExtensionPending(booking.selected_options);
+    if (!pending) {
+      return res.status(400).json({ ok: false, message: "Aucun supplément de prolongation en attente." });
+    }
+
+    const prevPaid = Number(booking.amount_total_paid ?? 0) || 0;
+    const newPaid = Math.round((prevPaid + pending.deltaTotalTTC) * 100) / 100;
+    const noteLine = `[Supplément prolongation encaissé ${paidAt.slice(0, 10)}] ${pending.deltaTotalTTC.toFixed(2)} €`;
+
+    const updateFields: Record<string, unknown> = {
+      amount_total_paid: newPaid,
+      selected_options: clearExtensionPending(booking.selected_options),
+      admin_notes: [booking.admin_notes?.trim(), noteLine].filter(Boolean).join("\n"),
+      updated_at: nowIso(),
+    };
+    if (offlinePaymentMethod !== undefined) {
+      updateFields.offline_payment_method = offlinePaymentMethod;
+    }
+
+    const { error: updErr } = await supabaseAdmin
+      .from("bookings")
+      .update(updateFields)
+      .eq("id", bookingId);
+
+    if (updErr) return res.status(500).json({ ok: false, message: updErr.message });
+    return res.json({ ok: true, paidAt, amountCollected: pending.deltaTotalTTC, amountTotalPaid: newPaid });
+  });
+
+  // POST /api/admin/bookings/:bookingId/extend/pay — Stripe Checkout pour supplément web
+  app.post("/api/admin/bookings/:bookingId/extend/pay", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const bookingId = typeof req.params.bookingId === "string" ? req.params.bookingId.trim() : "";
+    const origin = typeof req.body?.returnOrigin === "string" ? req.body.returnOrigin.trim() : "";
+
+    const { data: booking, error: fetchErr } = await supabaseAdmin
+      .from("bookings")
+      .select("id, reference_number, pricing_mode, selected_options, user_id")
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (fetchErr || !booking) return res.status(404).json({ ok: false, message: "Réservation introuvable" });
+    if (booking.pricing_mode === "admin") {
+      return res.status(400).json({ ok: false, message: "Paiement Stripe réservé aux réservations web." });
+    }
+
+    const pending = getExtensionPending(booking.selected_options);
+    if (!pending) {
+      return res.status(400).json({ ok: false, message: "Aucun supplément de prolongation en attente." });
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("email, stripe_customer_id")
+      .eq("id", booking.user_id)
+      .maybeSingle();
+
+    let stripe: Stripe;
+    try {
+      stripe = getStripe();
+    } catch {
+      return res.status(503).json({ ok: false, message: "Stripe non configuré." });
+    }
+
+    const refLabel = booking.reference_number != null ? `AG #${booking.reference_number}` : bookingId.slice(0, 8);
+    const baseUrl = origin || process.env.FRONTEND_URL || "http://localhost:5173";
+    const returnPath = `/admin/bookings/${encodeURIComponent(bookingId)}`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer: profile?.stripe_customer_id ?? undefined,
+      customer_email: profile?.stripe_customer_id ? undefined : profile?.email ?? undefined,
+      line_items: [
+        {
+          price_data: {
+            currency: "eur",
+            unit_amount: Math.round(pending.deltaTotalTTC * 100),
+            product_data: {
+              name: `Prolongation location ${refLabel}`,
+              description: `Supplément prolongation (${pending.deltaTotalTTC.toFixed(2)} € TTC)`,
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        bookingId,
+        type: "extension",
+      },
+      success_url: `${baseUrl}${returnPath}?extension_paid=1`,
+      cancel_url: `${baseUrl}${returnPath}?extension_canceled=1`,
+    });
+
+    return res.json({ ok: true, url: session.url });
   });
 
   // PATCH /api/admin/bookings/:bookingId/payment-method

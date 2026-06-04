@@ -123,6 +123,44 @@ app.post(
         const checkoutSessionId: string = session?.id;
         const amountTotal: number = (session?.amount_total || 0) / 100; // EUR
         const currency: string = (session?.currency || "eur").toUpperCase();
+        const paymentType: string | undefined = session?.metadata?.type;
+
+        // Paiement supplément prolongation
+        if (paymentType === "extension") {
+          const { data: bookingRow, error: fetchErr } = await supabaseAdmin
+            .from("bookings")
+            .select("selected_options, amount_total_paid, admin_notes, status")
+            .eq("id", bookingId)
+            .single();
+          if (fetchErr) {
+            console.error("❌ Lecture booking extension:", fetchErr);
+            return res.status(500).json({ ok: false, error: fetchErr.message });
+          }
+
+          const { clearExtensionPending, getExtensionPending } = await import(
+            "../src/features/admin-bookings/utils/extensionMeta.js"
+          );
+          const pending = getExtensionPending(bookingRow?.selected_options);
+          const prevPaid = Number(bookingRow?.amount_total_paid ?? 0) || 0;
+          const newPaid = Math.round((prevPaid + amountTotal) * 100) / 100;
+          const noteLine = `[Supplément prolongation Stripe ${new Date().toISOString().slice(0, 10)}] ${amountTotal.toFixed(2)} €`;
+
+          const { error: updateErr } = await supabaseAdmin
+            .from("bookings")
+            .update({
+              amount_total_paid: newPaid,
+              selected_options: clearExtensionPending(bookingRow?.selected_options),
+              admin_notes: [bookingRow?.admin_notes?.trim(), noteLine].filter(Boolean).join("\n"),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", bookingId);
+
+          if (updateErr) {
+            console.error("❌ Update booking extension payment:", updateErr);
+            return res.status(500).json({ ok: false, error: updateErr.message });
+          }
+          return res.status(200).json({ received: true, extension: true });
+        }
 
         // Lire commission base depuis Supabase: subtotal
         const { data: bookingRow, error: fetchErr } = await supabaseAdmin

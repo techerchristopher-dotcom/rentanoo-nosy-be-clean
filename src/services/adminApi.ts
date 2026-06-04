@@ -390,6 +390,71 @@ export async function adminCollectPayment(
   return { paidAt: data.paidAt, status: data.status };
 }
 
+export type AdminExtendDelta = {
+  subtotal: number;
+  serviceFee: number;
+  totalTTC: number;
+  rentalDaysAdded: number;
+};
+
+export type AdminExtendResult = {
+  ok: boolean;
+  preview?: boolean;
+  previousEndDate: string;
+  newEndDate?: string;
+  newEndTime?: string;
+  delta: AdminExtendDelta;
+  newTotalTTC: number;
+  booking?: Tables<"bookings">;
+};
+
+export async function adminPreviewExtendBooking(
+  bookingId: string,
+  payload: { newEndDate: string; newEndTime?: string; preview?: boolean }
+): Promise<AdminExtendResult> {
+  return adminFetch<AdminExtendResult>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/extend`, {
+    method: "PATCH",
+    body: JSON.stringify({ ...payload, preview: true }),
+  });
+}
+
+export async function adminExtendBooking(
+  bookingId: string,
+  payload: { newEndDate: string; newEndTime?: string }
+): Promise<AdminExtendResult> {
+  return adminFetch<AdminExtendResult>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/extend`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminCollectExtensionPayment(
+  bookingId: string,
+  payload: { paidAt: string; offlinePaymentMethod?: "cash" | "card_terminal" }
+): Promise<{ amountCollected: number; amountTotalPaid: number }> {
+  const data = await adminFetch<{
+    ok: boolean;
+    amountCollected: number;
+    amountTotalPaid: number;
+  }>(`/api/admin/bookings/${encodeURIComponent(bookingId)}/collect-extension`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return { amountCollected: data.amountCollected, amountTotalPaid: data.amountTotalPaid };
+}
+
+export async function adminPayExtensionStripe(bookingId: string): Promise<{ url: string }> {
+  const data = await adminFetch<{ ok: boolean; url: string }>(
+    `/api/admin/bookings/${encodeURIComponent(bookingId)}/extend/pay`,
+    {
+      method: "POST",
+      body: JSON.stringify({ returnOrigin: window.location.origin }),
+    }
+  );
+  if (!data.url) throw new Error("URL Stripe manquante");
+  return { url: data.url };
+}
+
 export type AdminRevenueBooking = {
   id: string;
   reference_number: number | null;
