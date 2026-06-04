@@ -9,7 +9,8 @@ const GOOGLE_TAG_ID = "GT-TXZW7HG8";
 const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
 const GOOGLE_ADS_ID = "AW-17959989720";
 
-const GTAG_SCRIPT_URL = "https://www.googletagmanager.com/gtag/js?id=" + GOOGLE_TAG_ID;
+/** Charge gtag.js avec l’ID GA4 (un seul script suffit pour plusieurs configs). */
+const GTAG_SCRIPT_URL = `https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`;
 
 function isGtagAvailable(): boolean {
   return typeof window !== "undefined" && typeof window.gtag === "function";
@@ -61,7 +62,13 @@ export function initGtag(): void {
     window.gtag = gtagFn;
 
     gtagFn("js", new Date());
+
+    // GA4 — obligatoire pour envoyer des hits vers G-WVKC4DHFL3 (/g/collect)
+    gtagFn("config", GA4_MEASUREMENT_ID, { send_page_view: true });
+
+    // Google Tag container + Ads (conversions)
     gtagFn("config", GOOGLE_TAG_ID);
+    gtagFn("config", GOOGLE_ADS_ID);
 
     // Chargement différé, sans await : l'app démarre immédiatement
     const schedule = () => {
@@ -69,9 +76,9 @@ export function initGtag(): void {
     };
     if ("requestIdleCallback" in window) {
       (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout?: number }) => void })
-        .requestIdleCallback(schedule, { timeout: 2000 });
+        .requestIdleCallback(schedule, { timeout: 500 });
     } else {
-      setTimeout(schedule, 2000);
+      setTimeout(schedule, 0);
     }
   } catch (e) {
     console.warn("[gtag] Init failed (app continues):", e);
