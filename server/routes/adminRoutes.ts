@@ -257,8 +257,14 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
   });
 
   // GET /api/public/weather-nosy-be — météo actuelle Nosy Be (Open-Meteo)
-  app.get("/api/public/weather-nosy-be", async (_req: Request, res: Response) => {
+  app.get("/api/public/weather-nosy-be", async (req: Request, res: Response) => {
     try {
+      const extended = req.query.extended === "1" || req.query.extended === "true";
+      if (extended) {
+        const { getNosyBeWeatherExtended } = await import("../lib/nosyBeWeather");
+        const weather = await getNosyBeWeatherExtended();
+        return res.json({ ok: true, ...weather });
+      }
       const { getNosyBeWeather } = await import("../lib/nosyBeWeather");
       const weather = await getNosyBeWeather();
       return res.json({ ok: true, ...weather });
@@ -266,6 +272,20 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       return res.status(502).json({
         ok: false,
         message: e instanceof Error ? e.message : "Météo indisponible",
+      });
+    }
+  });
+
+  // GET /api/public/exchange-rate/history — historique EUR/MGA (SEO)
+  app.get("/api/public/exchange-rate/history", async (_req: Request, res: Response) => {
+    try {
+      const { getExchangeRateHistory } = await import("../lib/exchangeRateService");
+      const history = await getExchangeRateHistory(14);
+      return res.json({ ok: true, history });
+    } catch (e: unknown) {
+      return res.status(502).json({
+        ok: false,
+        message: e instanceof Error ? e.message : "Historique indisponible",
       });
     }
   });

@@ -10,12 +10,14 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { useNosyBeLocalTime } from "@/hooks/useNosyBeLocalTime";
 import { useNosyBeWeather } from "@/hooks/useNosyBeWeather";
 import type { ExchangeRateTrend } from "@/utils/dualCurrency";
 import { weatherCodeCategory, type WeatherCategory } from "@/utils/weatherCodes";
+import { SEO_EXCHANGE_PATH, SEO_WEATHER_PATH } from "@/config/seoRoutes";
 import { cn } from "@/lib/utils";
 
 type HomeDayContextStripProps = {
@@ -118,17 +120,32 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
 
         <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
 
-        <div className="flex items-center gap-2">
+        <Link
+          to={SEO_WEATHER_PATH}
+          className={cn(
+            "flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 transition-colors",
+            isHero ? "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50" : "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          )}
+          aria-label={t("home.dayContext.weatherLinkLabel")}
+        >
           {weatherCategory ? <WeatherIcon category={weatherCategory} className={isHero ? "text-amber-200" : "text-primary"} /> : null}
           <span className={cn("font-semibold tabular-nums", loading && "opacity-60")}>
             {loading && !weather ? "…" : weather ? `${weather.tempC}°C` : "—"}
           </span>
           <span className={cn(isHero ? "text-white/85" : "text-muted-foreground")}>{weatherLabel}</span>
-        </div>
+        </Link>
 
         <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
 
-        <div className={cn("text-center sm:text-left", loading && "opacity-60")}>
+        <Link
+          to={SEO_EXCHANGE_PATH}
+          className={cn(
+            "text-center sm:text-left rounded-lg px-2 py-1 -mx-2 transition-colors",
+            isHero ? "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50" : "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            loading && "opacity-60"
+          )}
+          aria-label={t("home.dayContext.exchangeLinkLabel")}
+        >
           <span className="inline-flex items-center gap-1.5 font-semibold tabular-nums">
             {trend ? <RateTrendIcon trend={trend} isHero={isHero} /> : null}
             <span>{exchangeLine}</span>
@@ -136,7 +153,7 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
           <span className={cn("block text-xs mt-0.5", isHero ? "text-white/70" : "text-muted-foreground")}>
             {t("home.dayContext.pricesHint")}
           </span>
-        </div>
+        </Link>
       </div>
     </div>
   );

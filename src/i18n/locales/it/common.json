@@ -124,6 +124,8 @@
       "exchangeLive": "1 € = {{rate}} Ar (tasso del giorno)",
       "exchangeManual": "1 € = {{rate}} Ar",
       "pricesHint": "Prezzi in € con equivalente in ariary",
+      "weatherLinkLabel": "Vedi meteo dettagliata a Nosy Be",
+      "exchangeLinkLabel": "Vedi tasso di cambio Euro Ariary Madagascar",
       "weatherUnavailable": "Meteo non disponibile",
       "rateTrend": {
         "up": "Tasso in aumento rispetto a ieri",
@@ -1048,6 +1050,14 @@
       "title": "Danni e cauzione – Noleggio scooter Nosy Be | Rentanoo",
       "description": "In caso di incidente durante il noleggio scooter a Nosy Be: procedura, cauzione, documenti e assicurazione. Rentanoo ti accompagna."
     },
+    "meteoNosyBe": {
+      "title": "Meteo Nosy Be oggi – Previsioni 7 giorni | Rentanoo",
+      "description": "Meteo in diretta a Nosy Be: temperatura attuale, previsioni 7 giorni e consigli per il soggiorno in Madagascar."
+    },
+    "tauxChange": {
+      "title": "Cambio Euro Ariary Madagascar oggi | Rentanoo",
+      "description": "Cambio EUR/MGA in diretta per il Madagascar: tasso del giorno, andamento 14 giorni e equivalente in ariary a Nosy Be."
+    },
     "notFound": {
       "title": "Pagina non trovata – Rentanoo",
       "description": "Questa pagina non esiste. Torna alla home per noleggiare uno scooter a Nosy Be con Rentanoo."
@@ -1152,5 +1162,57 @@
       "homeCta": "Torna alla home",
       "tip": "Consiglio: nel tuo messaggio, indica il riferimento della prenotazione se ce l'hai."
     }
+  },
+  "meteoNosyBePage": {
+    "eyebrow": "Madagascar · Nosy Be",
+    "title": "Meteo Nosy Be oggi",
+    "intro": "Meteo in diretta a Nosy Be e previsioni su 7 giorni per organizzare il viaggio: spiagge, gite in scooter e attività acquatiche.",
+    "liveLabel": "Temperatura attuale",
+    "localTime": "Ora locale",
+    "timezone": "Fuso Indian/Antananarivo (UTC+3)",
+    "forecastTitle": "Previsioni meteo 7 giorni a Nosy Be",
+    "tableDay": "Giorno",
+    "tableCondition": "Condizioni",
+    "tableTemp": "Min / Max",
+    "seoBlockTitle": "Clima e stagioni a Nosy Be",
+    "seoBlock": "Nosy Be ha clima tropicale con stagione secca (maggio–novembre) e piovosa (dicembre–aprile). Temperature 25–32 °C. Controlla il meteo prima di prenotare lo scooter. Rentanoo consegna all'aeroporto Fascène o in hotel.",
+    "faqTitle": "FAQ — Meteo Nosy Be",
+    "faq": {
+      "items": [
+        { "q": "Periodo migliore per visitare Nosy Be?", "a": "Stagione secca (maggio–novembre): cielo più sereno e mare calmo, ideale per esplorare in scooter." },
+        { "q": "Fa sempre caldo?", "a": "Circa 25–30 °C. In stagione piovosa più umidità — porta una protezione leggera dalla pioggia." },
+        { "q": "Le previsioni sono affidabili?", "a": "24–48 ore sono affidabili; per una settimana usale come tendenza." }
+      ]
+    },
+    "ctaTitle": "Pronto a esplorare Nosy Be?",
+    "ctaText": "Noleggia uno scooter online con Rentanoo: prenotazione rapida, consegna aeroporto o hotel.",
+    "ctaRent": "Noleggia uno scooter",
+    "ctaExchange": "Cambio Euro / Ariary"
+  },
+  "tauxChangePage": {
+    "eyebrow": "Madagascar · MGA",
+    "title": "Cambio Euro / Ariary Madagascar",
+    "intro": "Segui il cambio EUR/MGA per le spese in Madagascar: tasso del giorno, andamento recente e equivalente in ariary a Nosy Be.",
+    "liveLabel": "Tasso del giorno",
+    "liveSource": "Tasso di riferimento Frankfurter (aggiornamento quotidiano).",
+    "manualSource": "Tasso indicativo Rentanoo per la visualizzazione dei prezzi.",
+    "historyTitle": "Andamento EUR → Ariary (14 giorni)",
+    "historyHint": "Dati Frankfurter — i cambi locali possono variare leggermente.",
+    "tableDate": "Data",
+    "tableRate": "1 € in Ariary (MGA)",
+    "seoBlockTitle": "Capire il cambio Euro Ariary a Madagascar",
+    "seoBlock": "L'ariary (MGA) è la moneta ufficiale. A Nosy Be gli euro sono spesso accettati ma il resto in ariary. Rentanoo mostra i prezzi in euro con equivalente ariary. Per spese locali, tieni contanti in MGA.",
+    "faqTitle": "FAQ — Cambio Madagascar",
+    "faq": {
+      "items": [
+        { "q": "Qual è il cambio Euro Ariary oggi?", "a": "Aggiornato quotidianamente via Frankfurter; i cambi locali possono differire di qualche ariary." },
+        { "q": "Si può pagare in euro a Nosy Be?", "a": "A volte nel turismo, ma l'ariary resta la moneta corrente — cambia parte del budget in MGA." },
+        { "q": "Come usa Rentanoo questo tasso?", "a": "Prezzi in euro con equivalente ariary al tasso del giorno per una prenotazione trasparente." }
+      ]
+    },
+    "ctaTitle": "Prenota lo scooter con prezzi in € e Ar",
+    "ctaText": "Confronta i modelli e conferma online — consegna aeroporto Fascène o hotel a Nosy Be.",
+    "ctaRent": "Vedi gli scooter",
+    "ctaWeather": "Meteo Nosy Be"
   }
 }

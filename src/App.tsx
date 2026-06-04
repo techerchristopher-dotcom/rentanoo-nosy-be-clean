@@ -29,6 +29,8 @@ const MessageToOwners = lazy(() => import("./pages/booking/MessageToOwners"));
 const Legal = lazy(() => import("./pages/legal/Legal"));
 const SinistreCaution = lazy(() => import("./pages/sinistre-caution/SinistreCaution"));
 const Contact = lazy(() => import("./pages/Contact"));
+const MeteoNosyBePage = lazy(() => import("./pages/seo/MeteoNosyBePage"));
+const TauxChangeMadagascarPage = lazy(() => import("./pages/seo/TauxChangeMadagascarPage"));
 
 // Autres routes lourdes (déjà lazy)
 const VehicleDetails = lazy(() => import("./pages/vehicles/VehicleDetails"));
@@ -148,6 +150,8 @@ const App = () => (
             <Route path="/booking/message" element={<Suspense fallback={<PageLoader />}><MessageToOwners /></Suspense>} />
             <Route path="/legal" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
             <Route path="/sinistre-caution" element={<Suspense fallback={<PageLoader />}><SinistreCaution /></Suspense>} />
+            <Route path="/meteo-nosy-be" element={<Suspense fallback={<PageLoader />}><MeteoNosyBePage /></Suspense>} />
+            <Route path="/taux-change-euro-ariary-madagascar" element={<Suspense fallback={<PageLoader />}><TauxChangeMadagascarPage /></Suspense>} />
             <Route path="/contact" element={<Suspense fallback={<PageLoader />}><Contact /></Suspense>} />
             
             {/* Routes non critiques (lazy-loaded) */}

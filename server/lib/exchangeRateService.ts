@@ -16,6 +16,14 @@ export type FrankfurterEurMgaQuote = {
 
 export type ExchangeRateTrend = "up" | "down" | "stable";
 
+export type ExchangeRateHistoryPoint = {
+  date: string;
+  rate: number;
+};
+
+const HISTORY_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+let historyCache: { points: ExchangeRateHistoryPoint[]; expiresAt: number } | null = null;
+
 export async function fetchFrankfurterEurMgaOnDate(date: string): Promise<FrankfurterEurMgaQuote | null> {
   const url = `https://api.frankfurter.dev/v2/rates?date=${date}&base=EUR&quotes=MGA`;
   const res = await fetch(url, {
@@ -176,6 +184,36 @@ export async function getExchangeRateTrend(
 
   trendCache = { key: cacheKey, trend, expiresAt: Date.now() + TREND_CACHE_TTL_MS };
   return trend;
+}
+
+/** Historique EUR/MGA sur ~14 jours (Frankfurter) pour pages SEO. */
+export async function getExchangeRateHistory(days = 14): Promise<ExchangeRateHistoryPoint[]> {
+  if (historyCache && Date.now() < historyCache.expiresAt) {
+    return historyCache.points;
+  }
+
+  const to = todayYmd();
+  const from = shiftYmd(to, -(days - 1));
+  const url = `https://api.frankfurter.dev/v2/rates?from=${from}&to=${to}&base=EUR&quotes=MGA`;
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    throw new Error(`Frankfurter historique indisponible (${res.status})`);
+  }
+
+  const json = (await res.json()) as Array<{ date?: string; rate?: number }>;
+  const points: ExchangeRateHistoryPoint[] = (Array.isArray(json) ? json : [])
+    .map((row) => ({
+      date: String(row.date ?? ""),
+      rate: Math.round(Number(row.rate)),
+    }))
+    .filter((p) => p.date && Number.isFinite(p.rate) && p.rate > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  historyCache = { points, expiresAt: Date.now() + HISTORY_CACHE_TTL_MS };
+  return points;
 }
 
 export function startExchangeRateScheduler(supabaseAdmin: SupabaseClient): void {

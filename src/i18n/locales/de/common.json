@@ -124,6 +124,8 @@
       "exchangeLive": "1 € = {{rate}} Ar (Tageskurs)",
       "exchangeManual": "1 € = {{rate}} Ar",
       "pricesHint": "Preise in € mit Ariary-Äquivalent",
+      "weatherLinkLabel": "Detaillierte Wettervorhersage Nosy Be ansehen",
+      "exchangeLinkLabel": "Euro-Ariary-Wechselkurs Madagaskar ansehen",
       "weatherUnavailable": "Wetter nicht verfügbar",
       "rateTrend": {
         "up": "Kurs gestiegen gegenüber gestern",
@@ -1049,6 +1051,14 @@
       "title": "Schaden & Kaution – Rollervermietung Nosy Be | Rentanoo",
       "description": "Bei Schaden während Ihrer Rollervermietung in Nosy Be: Verfahren, Kaution, Dokumente und Versicherung. Rentanoo begleitet Sie."
     },
+    "meteoNosyBe": {
+      "title": "Wetter Nosy Be heute – 7-Tage-Vorhersage | Rentanoo",
+      "description": "Live-Wetter in Nosy Be: aktuelle Temperatur, 7-Tage-Prognose und Tipps für Ihren Aufenthalt in Madagaskar."
+    },
+    "tauxChange": {
+      "title": "Euro Ariary Wechselkurs Madagaskar heute | Rentanoo",
+      "description": "Live EUR/MGA-Kurs für Madagaskar: Tageskurs, 14-Tage-Verlauf und Ariary-Äquivalent für Nosy Be."
+    },
     "notFound": {
       "title": "Seite nicht gefunden – Rentanoo",
       "description": "Diese Seite existiert nicht. Kehren Sie zur Startseite zurück, um in Nosy Be einen Roller bei Rentanoo zu mieten."
@@ -1153,5 +1163,57 @@
       "homeCta": "Zurück zur Startseite",
       "tip": "Tipp: Fügen Sie in Ihrer Nachricht Ihre Buchungsreferenz hinzu, falls vorhanden."
     }
+  },
+  "meteoNosyBePage": {
+    "eyebrow": "Madagaskar · Nosy Be",
+    "title": "Wetter Nosy Be heute",
+    "intro": "Aktuelles Wetter in Nosy Be und 7-Tage-Vorhersage für Ihre Reiseplanung: Strände, Rollerfahrten und Wassersport.",
+    "liveLabel": "Aktuelle Temperatur",
+    "localTime": "Ortszeit",
+    "timezone": "Zeitzone Indian/Antananarivo (UTC+3)",
+    "forecastTitle": "7-Tage-Wettervorhersage Nosy Be",
+    "tableDay": "Tag",
+    "tableCondition": "Bedingungen",
+    "tableTemp": "Min / Max",
+    "seoBlockTitle": "Klima und Jahreszeiten in Nosy Be",
+    "seoBlock": "Nosy Be hat tropisches Klima mit Trockenzeit (Mai–November) und Regenzeit (Dezember–April). Temperaturen meist 25–32 °C. Prüfen Sie das Wetter vor Ihrer Rollerbuchung. Rentanoo liefert zum Flughafen Fascène oder ins Hotel.",
+    "faqTitle": "FAQ — Wetter Nosy Be",
+    "faq": {
+      "items": [
+        { "q": "Beste Reisezeit für Nosy Be?", "a": "Trockenzeit (Mai–November): klarer Himmel, ruhige See — ideal für Rollerausflüge." },
+        { "q": "Ist es immer heiß?", "a": "Etwa 25–30 °C. In der Regenzeit höhere Luftfeuchtigkeit — leichten Regenschutz einpacken." },
+        { "q": "Ist die Vorhersage zuverlässig?", "a": "24–48 h sind zuverlässig; für eine Woche als Tendenz nutzen." }
+      ]
+    },
+    "ctaTitle": "Nosy Be entdecken?",
+    "ctaText": "Roller online bei Rentanoo buchen: schnelle Reservierung, Lieferung Flughafen oder Hotel.",
+    "ctaRent": "Roller mieten",
+    "ctaExchange": "Euro / Ariary Kurs"
+  },
+  "tauxChangePage": {
+    "eyebrow": "Madagaskar · MGA",
+    "title": "Euro Ariary Wechselkurs Madagaskar",
+    "intro": "EUR/MGA-Kurs für Ausgaben in Madagaskar: Tageskurs, Verlauf und Ariary-Äquivalent für Nosy Be.",
+    "liveLabel": "Tageskurs",
+    "liveSource": "Frankfurter-Referenzkurs (täglich aktualisiert).",
+    "manualSource": "Indikativer Kurs von Rentanoo für die Preisanzeige.",
+    "historyTitle": "EUR → Ariary Verlauf (14 Tage)",
+    "historyHint": "Frankfurter-Daten — Wechselstuben können leicht abweichen.",
+    "tableDate": "Datum",
+    "tableRate": "1 € in Ariary (MGA)",
+    "seoBlockTitle": "Euro Ariary in Madagaskar verstehen",
+    "seoBlock": "Der Ariary (MGA) ist die offizielle Währung. In Nosy Be werden Euro oft akzeptiert, Wechselgeld in Ariary. Rentanoo zeigt Mietpreise in Euro mit Ariary-Äquivalent. Für lokale Ausgaben etwas Bargeld in MGA mitnehmen.",
+    "faqTitle": "FAQ — Wechselkurs Madagaskar",
+    "faq": {
+      "items": [
+        { "q": "Aktueller Euro-Ariary-Kurs?", "a": "Täglich über Frankfurter aktualisiert; lokale Kurse können leicht abweichen." },
+        { "q": "Kann man in Euro zahlen?", "a": "Im Tourismus manchmal, aber Ariary ist Alltagswährung — Teil des Budgets wechseln." },
+        { "q": "Wie nutzt Rentanoo den Kurs?", "a": "Preise in Euro mit Ariary-Äquivalent zum Tageskurs für transparente Buchung." }
+      ]
+    },
+    "ctaTitle": "Roller mit €- und Ar-Preisen buchen",
+    "ctaText": "Modelle vergleichen und online bestätigen — Lieferung Flughafen Fascène oder Hotel.",
+    "ctaRent": "Roller ansehen",
+    "ctaWeather": "Wetter Nosy Be"
   }
 }
