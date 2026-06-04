@@ -11,6 +11,7 @@ import { sendPageView } from "@/lib/gtag";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navbar } from "@/components/layout/navbar";
+import { WhatsAppFloatingButton } from "@/components/layout/WhatsAppFloatingButton";
 import { ClientProfileCompletionGuard } from "@/components/ClientProfileCompletionGuard";
 
 // Home : import direct pour premier paint rapide
@@ -125,9 +126,10 @@ const App = () => (
             {/* Wrapper to allow a fixed dev language switcher on all pages */}
             <div className="relative">
               {/* Dev-only floating language switcher, visible on all pages */}
-              <div className="fixed bottom-4 right-4 z-50">
+              <div className="fixed bottom-4 left-4 md:left-auto md:right-4 z-50">
                 <LanguageSwitcher />
               </div>
+              <WhatsAppFloatingButton />
               {/* Navbar - Rendu directement pour éviter les problèmes de ErrorBoundary */}
               <Navbar />
               <Routes>
