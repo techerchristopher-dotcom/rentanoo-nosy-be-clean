@@ -604,9 +604,10 @@ Deno.serve(async (req) => {
       paymentIntentId: session.payment_intent || "N/A",
       url: session.url?.substring(0, 50) + "...",
       bookingId,
-      amountTTC_DB: amountTTC, // euros
-      amountTTC_cents: unitAmountCents, // centimes
-      subtotal_DB: subtotal, // euros
+      amountTTCMga,
+      amountTTCEur,
+      amountTTC_cents: unitAmountCents,
+      subtotal_MGA: subtotal,
       // Info pour trouver dans le dashboard Stripe
       stripeKeyType: stripeKeyType, // TEST ou LIVE
       dashboardUrl: stripeKeyType === "TEST" 

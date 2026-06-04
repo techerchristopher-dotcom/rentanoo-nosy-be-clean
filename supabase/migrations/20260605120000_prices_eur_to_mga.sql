@@ -27,16 +27,6 @@ BEGIN
       WHEN deposit_amount IS NOT NULL AND deposit_amount > 0 AND deposit_amount < 10000
       THEN round((deposit_amount * r) / 1000) * 1000
       ELSE deposit_amount
-    END,
-    baby_seat_price = CASE
-      WHEN baby_seat_price IS NOT NULL AND baby_seat_price > 0 AND baby_seat_price < 10000
-      THEN round((baby_seat_price * r) / 1000) * 1000
-      ELSE baby_seat_price
-    END,
-    additional_driver_price = CASE
-      WHEN additional_driver_price IS NOT NULL AND additional_driver_price > 0 AND additional_driver_price < 10000
-      THEN round((additional_driver_price * r) / 1000) * 1000
-      ELSE additional_driver_price
     END
   WHERE price_per_day > 0 AND price_per_day < 10000;
 
