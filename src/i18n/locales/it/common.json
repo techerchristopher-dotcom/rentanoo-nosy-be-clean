@@ -1226,6 +1226,9 @@
     "eyebrow": "Aeroporto Fascène · NOS",
     "title": "Voli Nosy Be — arrivi e partenze",
     "intro": "Orari voli all'aeroporto Fascène: prossimi arrivi e partenze, programma su 7 giorni.",
+    "officialDisclaimerTitle": "Orari indicativi — consulta il sito ufficiale",
+    "officialDisclaimerText": "Gli orari mostrati provengono da una fonte terza (AeroDataBox) e possono essere incompleti o diversi dal programma in tempo reale dell'aeroporto Fascène. In caso di dubbio o prima del viaggio, consulta il sito ufficiale dell'aeroporto.",
+    "officialDisclaimerLink": "Orari ufficiali su nosybe-airport.aero",
     "nextArrival": "Prossimo arrivo",
     "nextDeparture": "Prossima partenza",
     "forecastTitle": "Scegli un giorno",
@@ -1251,7 +1254,7 @@
       "items": [
         { "q": "Codice IATA Nosy Be?", "a": "NOS (Fascène)." },
         { "q": "Scooter in aeroporto?", "a": "Sì, con Rentanoo prenotabile online." },
-        { "q": "Orari garantiti?", "a": "Indicativi — confermare con la compagnia." }
+        { "q": "Orari garantiti?", "a": "No. Indicativi da fonte terza. Programma ufficiale: nosybe-airport.aero/vols/ o contatta la compagnia." }
       ]
     },
     "ctaTitle": "Atterra sereno a Nosy Be",

@@ -1270,6 +1270,9 @@
     "eyebrow": "Fascène Airport · NOS",
     "title": "Nosy Be flights — arrivals & departures",
     "intro": "Check flight schedules at Nosy Be Fascène airport: upcoming arrivals and departures, 7-day programme, airlines and status. Perfect to sync your scooter rental with your flight.",
+    "officialDisclaimerTitle": "Indicative times — check the official airport site",
+    "officialDisclaimerText": "Schedules shown here come from a third-party source (AeroDataBox) and may be incomplete or differ from Fascène airport's live programme. If in doubt or before you travel, confirm on the official airport website.",
+    "officialDisclaimerLink": "Official schedules on nosybe-airport.aero",
     "nextArrival": "Next arrival",
     "nextDeparture": "Next departure",
     "forecastTitle": "Pick a day",
@@ -1295,7 +1298,7 @@
       "items": [
         { "q": "What is Nosy Be airport IATA code?", "a": "NOS (Fascène). Main airport on Nosy Be island, about 20 minutes from Hell-Ville." },
         { "q": "Can I pick up my scooter at the airport?", "a": "Yes. Rentanoo offers airport pickup at Fascène when booking online." },
-        { "q": "Are displayed times guaranteed?", "a": "These are indicative schedules from aviation data sources. Confirm with your airline if in doubt." }
+        { "q": "Are displayed times guaranteed?", "a": "No. These are indicative schedules from a third-party source. For the official programme and live status, see nosybe-airport.aero/vols/ or contact your airline." }
       ]
     },
     "ctaTitle": "Land in Nosy Be with peace of mind",

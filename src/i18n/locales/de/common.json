@@ -1227,6 +1227,9 @@
     "eyebrow": "Flughafen Fascène · NOS",
     "title": "Flüge Nosy Be — Ankünfte & Abflüge",
     "intro": "Flugzeiten am Flughafen Nosy Be Fascène: nächste Ankünfte und Abflüge, 7-Tage-Programm.",
+    "officialDisclaimerTitle": "Indikative Zeiten — offizielle Flughafenseite prüfen",
+    "officialDisclaimerText": "Die hier angezeigten Zeiten stammen von einer Drittquelle (AeroDataBox) und können unvollständig sein oder vom Live-Programm des Flughafens Fascène abweichen. Bei Zweifeln oder vor der Reise bitte die offizielle Flughafenwebsite konsultieren.",
+    "officialDisclaimerLink": "Offizielle Flugzeiten auf nosybe-airport.aero",
     "nextArrival": "Nächste Ankunft",
     "nextDeparture": "Nächster Abflug",
     "forecastTitle": "Tag wählen",
@@ -1252,7 +1255,7 @@
       "items": [
         { "q": "IATA-Code Nosy Be?", "a": "NOS (Fascène)." },
         { "q": "Roller am Flughafen?", "a": "Ja, mit Rentanoo online buchbar." },
-        { "q": "Zeiten garantiert?", "a": "Indikativ — Airline zur Bestätigung kontaktieren." }
+        { "q": "Zeiten garantiert?", "a": "Nein. Indikativ über eine Drittquelle. Offizielles Programm: nosybe-airport.aero/vols/ oder Airline kontaktieren." }
       ]
     },
     "ctaTitle": "Sorgenfrei in Nosy Be landen",

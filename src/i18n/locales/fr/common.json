@@ -1273,6 +1273,9 @@
     "eyebrow": "Aéroport Fascène · NOS",
     "title": "Vols Nosy Be — arrivées et départs",
     "intro": "Consultez les horaires des vols à l'aéroport de Nosy Be Fascène : prochaines arrivées et départs, programme sur 7 jours, compagnies aériennes et statuts. Idéal pour synchroniser votre location scooter avec votre vol.",
+    "officialDisclaimerTitle": "Horaires indicatifs — vérifiez sur le site officiel",
+    "officialDisclaimerText": "Les horaires affichés ici proviennent d'une source tierce (AeroDataBox) et peuvent être incomplets ou différer du programme en temps réel de l'aéroport Fascène. Avant votre voyage, en cas de doute ou pour confirmer un horaire, consultez le site officiel de l'aéroport.",
+    "officialDisclaimerLink": "Horaires officiels sur nosybe-airport.aero",
     "nextArrival": "Prochaine arrivée",
     "nextDeparture": "Prochain départ",
     "forecastTitle": "Choisir un jour",
@@ -1290,7 +1293,7 @@
     "noFlights": "Aucun vol prévu dans la fenêtre affichée",
     "unavailable": "Horaires vols temporairement indisponibles",
     "notConfigured": "Les horaires de vols seront affichés dès activation de la source de données (AeroDataBox).",
-    "sourceNote": "Source : AeroDataBox. Horaires indicatifs actualisés 2 fois par jour — vérifiez auprès de votre compagnie aérienne avant le départ.",
+    "sourceNote": "Source : AeroDataBox. Horaires indicatifs actualisés 2 fois par jour — peuvent différer légèrement du site officiel de l'aéroport (codes MDR/MD, horaires révisés). Vérifiez auprès de votre compagnie avant le départ.",
     "seoBlockTitle": "L'aéroport de Nosy Be Fascène (NOS)",
     "seoBlock": "L'aéroport Fascène dessert Nosy Be avec des liaisons principalement depuis Antananarivo (TNR) et des vols internationaux saisonniers. Rentanoo propose la livraison de votre scooter directement à l'aéroport dès votre atterrissage — réservez en ligne et gagnez du temps dès l'arrivée.",
     "faqTitle": "Questions fréquentes — vols Nosy Be",
@@ -1306,7 +1309,7 @@
         },
         {
           "q": "Les horaires affichés sont-ils garantis ?",
-          "a": "Ce sont des horaires indicatifs issus de sources aéronautiques. En cas de doute, confirmez avec votre compagnie aérienne."
+          "a": "Non. Ce sont des horaires indicatifs issus d'une source tierce. Pour le programme officiel et les statuts en temps réel, consultez nosybe-airport.aero/vols/ ou votre compagnie aérienne."
         }
       ]
     },

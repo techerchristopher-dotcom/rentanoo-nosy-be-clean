@@ -8,3 +8,6 @@ export const SITE_ORIGIN = "https://rentanoo.com";
 export const SEO_WEATHER_URL = `${SITE_ORIGIN}${SEO_WEATHER_PATH}`;
 export const SEO_EXCHANGE_URL = `${SITE_ORIGIN}${SEO_EXCHANGE_PATH}`;
 export const SEO_FLIGHTS_URL = `${SITE_ORIGIN}${SEO_FLIGHTS_PATH}`;
+
+/** Horaires officiels — Aéroport international de Nosy Be (Ravinala Airports). */
+export const NOSY_BE_OFFICIAL_FLIGHTS_URL = "https://www.nosybe-airport.aero/vols/";

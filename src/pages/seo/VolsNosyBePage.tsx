@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { PlaneLanding, PlaneTakeoff } from "lucide-react";
+import { PlaneLanding, PlaneTakeoff, Info, ExternalLink } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,9 +11,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Seo } from "@/components/seo/Seo";
 import { useNosyBeFlights, type NosyBeFlight } from "@/hooks/useNosyBeFlights";
-import { SEO_EXCHANGE_PATH, SEO_FLIGHTS_URL, SEO_WEATHER_PATH } from "@/config/seoRoutes";
+import { NOSY_BE_OFFICIAL_FLIGHTS_URL, SEO_EXCHANGE_PATH, SEO_FLIGHTS_URL, SEO_WEATHER_PATH } from "@/config/seoRoutes";
 import { formatYmdLabel, todayYmdNosyBe } from "@/utils/nosyBeDates";
 import { cn } from "@/lib/utils";
 
@@ -79,11 +80,10 @@ function FlightTable({
 export default function VolsNosyBePage() {
   const { t, i18n } = useTranslation("common");
   const [selectedDate, setSelectedDate] = useState(todayYmdNosyBe);
-  const { data: liveData, loading: liveLoading } = useNosyBeFlights();
   const { data, loading, error, configured } = useNosyBeFlights(selectedDate);
 
-  const nextArrival = liveData?.nextArrival ?? null;
-  const nextDeparture = liveData?.nextDeparture ?? null;
+  const nextArrival = data?.nextArrival ?? null;
+  const nextDeparture = data?.nextDeparture ?? null;
 
   const dayOptions = useMemo(() => {
     if (data?.availableDates?.length) return data.availableDates;
@@ -141,6 +141,23 @@ export default function VolsNosyBePage() {
             {t("volsNosyBePage.intro")}
           </p>
 
+          <Alert className="mt-6 border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-50">
+            <Info className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden />
+            <AlertTitle>{t("volsNosyBePage.officialDisclaimerTitle")}</AlertTitle>
+            <AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
+              <p>{t("volsNosyBePage.officialDisclaimerText")}</p>
+              <a
+                href={NOSY_BE_OFFICIAL_FLIGHTS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 font-semibold text-amber-950 underline underline-offset-2 hover:text-amber-800 dark:text-amber-50 dark:hover:text-amber-200"
+              >
+                {t("volsNosyBePage.officialDisclaimerLink")}
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </a>
+            </AlertDescription>
+          </Alert>
+
           {!configured ? (
             <Card className="mt-8 p-6 border-dashed">
               <p className="text-sm text-muted-foreground">{t("volsNosyBePage.notConfigured")}</p>
@@ -153,7 +170,7 @@ export default function VolsNosyBePage() {
                   {t("volsNosyBePage.nextArrival")}
                 </p>
                 <p className="mt-2 text-2xl font-bold tabular-nums">
-                  {liveLoading && !liveData ? "…" : nextArrival?.scheduledTime ?? "—"}
+                  {loading && !data ? "…" : nextArrival?.scheduledTime ?? "—"}
                 </p>
                 {nextArrival ? (
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -173,7 +190,7 @@ export default function VolsNosyBePage() {
                   {t("volsNosyBePage.nextDeparture")}
                 </p>
                 <p className="mt-2 text-2xl font-bold tabular-nums">
-                  {liveLoading && !liveData ? "…" : nextDeparture?.scheduledTime ?? "—"}
+                  {loading && !data ? "…" : nextDeparture?.scheduledTime ?? "—"}
                 </p>
                 {nextDeparture ? (
                   <p className="mt-1 text-sm text-muted-foreground">
