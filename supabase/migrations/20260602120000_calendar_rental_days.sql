@@ -38,7 +38,10 @@ COMMENT ON FUNCTION public._return_day_fraction(text) IS
 
 -- ---------------------------------------------------------------------------
 -- Prix de base location (jours calendaires)
+-- DROP required: OUT parameter rental_days integer -> numeric
 -- ---------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.compute_booking_base_price(numeric, date, date, text, text);
+
 CREATE OR REPLACE FUNCTION public.compute_booking_base_price(
   p_price_per_day numeric,
   p_start_date date,
