@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppIcon";
+import {
+  SS_BUBBLE_DISMISSED,
+  useWhatsAppBubbleTrigger,
+} from "@/hooks/useWhatsAppBubbleTrigger";
+import { trackWhatsAppFabEvent } from "@/lib/whatsappAnalytics";
 import { cn } from "@/lib/utils";
 
 const LS_POSITION_KEY = "rentanoo_whatsapp_fab_pos";
-const SS_SESSION_START = "rentanoo_whatsapp_session_start";
-const SS_BUBBLE_DISMISSED = "rentanoo_whatsapp_bubble_dismissed";
-const SHOW_DELAY_MS = 15_000;
+const LS_DRAG_HINT_KEY = "rentanoo_whatsapp_drag_hint_seen";
 const AUTO_HIDE_MS = 5_000;
 const DRAG_THRESHOLD = 6;
 const FADE_MS = 600;
 const AVATAR_SIZE = 56;
+const DRAG_HINT_MS = 4_000;
 
 type BubblePhase = "hidden" | "visible" | "fading" | "dismissed";
-/** Coin bas-droit de l’avatar (ancre de position). */
 type FabAnchor = { x: number; y: number };
 
 function bottomOffsetPx(): number {
@@ -47,7 +51,9 @@ function readSavedAnchor(): FabAnchor | null {
 
 export function WhatsAppFloatingButton() {
   const { t } = useTranslation("common");
+  const location = useLocation();
   const { waUrl, phoneDisplay, contact } = useWhatsAppContact();
+  const { shouldShowBubble, triggerReason } = useWhatsAppBubbleTrigger();
   const hasPhoto = Boolean(contact.profilePhotoUrl);
 
   const dragRef = useRef({
@@ -60,21 +66,37 @@ export function WhatsAppFloatingButton() {
     originY: 0,
   });
   const justDraggedRef = useRef(false);
+  const bubbleShownSentRef = useRef(false);
 
   const [anchor, setAnchor] = useState<FabAnchor | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [bubblePhase, setBubblePhase] = useState<BubblePhase>("hidden");
+  const [bubblePhase, setBubblePhase] = useState<BubblePhase>(() =>
+    sessionStorage.getItem(SS_BUBBLE_DISMISSED) ? "dismissed" : "hidden"
+  );
+  const [showDragHint, setShowDragHint] = useState(
+    () => !localStorage.getItem(LS_DRAG_HINT_KEY)
+  );
 
   const bubbleMessage = t(
     "whatsapp.floatingBubbleMessage",
     "Bonjour ! Je suis Chris, le gérant de Rentanoo. Je suis disponible pour répondre à vos questions."
   );
+  const responseHint = t(
+    "whatsapp.floatingBubbleResponseHint",
+    "Réponse habituelle sous 2 h."
+  );
+  const dragHint = t("whatsapp.floatingDragHint", "Maintenir pour déplacer");
 
   const dismissBubble = useCallback(() => {
     setBubblePhase((prev) => {
       if (prev === "hidden" || prev === "dismissed" || prev === "fading") return prev;
       return "fading";
     });
+  }, []);
+
+  const hideDragHint = useCallback(() => {
+    setShowDragHint(false);
+    localStorage.setItem(LS_DRAG_HINT_KEY, "1");
   }, []);
 
   useEffect(() => {
@@ -85,26 +107,20 @@ export function WhatsAppFloatingButton() {
   }, []);
 
   useEffect(() => {
-    if (sessionStorage.getItem(SS_BUBBLE_DISMISSED)) {
-      setBubblePhase("dismissed");
+    if (!shouldShowBubble || bubblePhase === "dismissed" || bubblePhase === "visible" || bubblePhase === "fading") {
       return;
     }
+    setBubblePhase("visible");
+  }, [shouldShowBubble, bubblePhase]);
 
-    let start = sessionStorage.getItem(SS_SESSION_START);
-    if (!start) {
-      start = String(Date.now());
-      sessionStorage.setItem(SS_SESSION_START, start);
-    }
-
-    const elapsed = Date.now() - Number(start);
-    const delay = Math.max(0, SHOW_DELAY_MS - elapsed);
-
-    const showTimer = window.setTimeout(() => {
-      setBubblePhase((prev) => (prev === "dismissed" ? prev : "visible"));
-    }, delay);
-
-    return () => window.clearTimeout(showTimer);
-  }, []);
+  useEffect(() => {
+    if (bubblePhase !== "visible" || bubbleShownSentRef.current) return;
+    bubbleShownSentRef.current = true;
+    trackWhatsAppFabEvent("whatsapp_bubble_shown", {
+      page_path: location.pathname,
+      trigger: triggerReason ?? "unknown",
+    });
+  }, [bubblePhase, location.pathname, triggerReason]);
 
   useEffect(() => {
     if (bubblePhase !== "visible") return;
@@ -120,6 +136,12 @@ export function WhatsAppFloatingButton() {
     }, FADE_MS);
     return () => window.clearTimeout(doneTimer);
   }, [bubblePhase]);
+
+  useEffect(() => {
+    if (!showDragHint) return;
+    const timer = window.setTimeout(() => hideDragHint(), DRAG_HINT_MS);
+    return () => window.clearTimeout(timer);
+  }, [showDragHint, hideDragHint]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -145,7 +167,9 @@ export function WhatsAppFloatingButton() {
     if (!drag.moved && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
       drag.moved = true;
       setIsDragging(true);
+      hideDragHint();
       dismissBubble();
+      trackWhatsAppFabEvent("whatsapp_fab_drag", { page_path: location.pathname });
     }
 
     if (!drag.moved) return;
@@ -180,7 +204,12 @@ export function WhatsAppFloatingButton() {
     if (justDraggedRef.current) {
       e.preventDefault();
       justDraggedRef.current = false;
+      return;
     }
+    trackWhatsAppFabEvent("whatsapp_fab_click", {
+      page_path: location.pathname,
+      bubble_visible: bubblePhase === "visible" ? "yes" : "no",
+    });
   };
 
   const showBubble = bubblePhase === "visible" || bubblePhase === "fading";
@@ -209,12 +238,22 @@ export function WhatsAppFloatingButton() {
           <div className="relative mr-1">
             <div className="rounded-2xl rounded-br-md border border-[#25D366]/25 bg-white px-3.5 py-2.5 text-left text-xs leading-snug text-foreground shadow-[0_8px_24px_-6px_rgba(37,211,102,0.35),0_4px_12px_rgba(0,0,0,0.08)]">
               <p>{bubbleMessage}</p>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">{responseHint}</p>
             </div>
             <span
               className="absolute -bottom-1.5 right-4 h-3 w-3 rotate-45 border-b border-r border-[#25D366]/25 bg-white"
               aria-hidden
             />
           </div>
+        </div>
+      ) : null}
+
+      {showDragHint && !showBubble ? (
+        <div
+          className="absolute top-full right-0 mt-1.5 whitespace-nowrap rounded-full bg-foreground/85 px-2.5 py-1 text-[10px] font-medium text-background shadow-md whatsapp-bubble-enter pointer-events-none"
+          aria-hidden
+        >
+          {dragHint}
         </div>
       ) : null}
 

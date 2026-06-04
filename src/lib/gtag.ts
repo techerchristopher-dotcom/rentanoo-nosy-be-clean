@@ -95,6 +95,22 @@ export function sendPageView(path: string, title?: string): void {
   }
 }
 
+/** Événement GA4 générique (best effort). */
+export function sendGtagEvent(
+  eventName: string,
+  params?: Record<string, string | number | boolean>
+): void {
+  if (!isGtagAvailable()) return;
+  try {
+    window.gtag!("event", eventName, {
+      send_to: GA4_MEASUREMENT_ID,
+      ...params,
+    });
+  } catch {
+    // no-op
+  }
+}
+
 declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;

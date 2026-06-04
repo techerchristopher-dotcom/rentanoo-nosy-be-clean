@@ -1007,7 +1007,9 @@
     "directLineShort": "Rufen Sie uns an",
     "directLineAria": "Rufen Sie uns an unter +261 37 34 379 12",
     "floatingButtonAria": "Rentanoo über WhatsApp kontaktieren",
-    "floatingBubbleMessage": "Hallo! Ich bin Chris, der Leiter von Rentanoo. Ich beantworte gerne Ihre Fragen."
+    "floatingBubbleMessage": "Hallo! Ich bin Chris, der Leiter von Rentanoo. Ich beantworte gerne Ihre Fragen.",
+    "floatingBubbleResponseHint": "Antwort in der Regel innerhalb von 2 Stunden.",
+    "floatingDragHint": "Gedrückt halten zum Verschieben"
   },
   "contact": {
     "title": "Kontaktieren Sie uns",

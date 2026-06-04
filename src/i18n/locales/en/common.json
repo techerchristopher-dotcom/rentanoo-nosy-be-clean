@@ -1031,7 +1031,9 @@
     "directLineShort": "Call us",
     "directLineAria": "Call us at +261 37 34 379 12",
     "floatingButtonAria": "Contact Rentanoo on WhatsApp",
-    "floatingBubbleMessage": "Hello! I'm Chris, the manager of Rentanoo. I'm here to answer your questions."
+    "floatingBubbleMessage": "Hello! I'm Chris, the manager of Rentanoo. I'm here to answer your questions.",
+    "floatingBubbleResponseHint": "Typical reply within 2 hours.",
+    "floatingDragHint": "Hold to move"
   },
   "contact": {
     "title": "Contact us",
