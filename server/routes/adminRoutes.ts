@@ -19,7 +19,18 @@ import {
   wrapSelectedOptionsWithExtension,
   type ExtensionPending,
 } from "@/features/admin-bookings/utils/extensionMeta";
-import { FALLBACK_EXCHANGE, parseExchangeConfig } from "@/utils/dualCurrency";
+import {
+  toPublicExchangeConfig,
+  type EurMgaExchangeSettings,
+  type ExchangeRateMode,
+} from "@/utils/dualCurrency";
+import {
+  ensureLiveExchangeFresh,
+  loadExchangeSettings,
+  refreshLiveExchangeRate,
+  saveExchangeSettings,
+  startExchangeRateScheduler,
+} from "../lib/exchangeRateService";
 import {
   sanitizeAndRecalculateBookingOptions,
   type RawBookingOptionInput,
@@ -218,36 +229,58 @@ function formatStripeErrorForAdmin(code: string | undefined, message: string): s
 }
 
 export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient) {
-  const EXCHANGE_KEY = "eur_mga_exchange";
-
-  async function loadExchangeConfig() {
-    const { data, error } = await supabaseAdmin
-      .from("platform_settings")
-      .select("value")
-      .eq("key", EXCHANGE_KEY)
-      .maybeSingle();
-    if (error || !data?.value) return { ...FALLBACK_EXCHANGE };
-    return parseExchangeConfig(data.value);
+  function settingsToAdminJson(settings: EurMgaExchangeSettings) {
+    return {
+      ok: true,
+      mode: settings.mode,
+      rate: settings.rate,
+      effectiveFrom: settings.effectiveFrom,
+      liveProvider: settings.liveProvider ?? null,
+      lastLiveRate: settings.lastLiveRate ?? null,
+      lastFetchedAt: settings.lastFetchedAt ?? null,
+    };
   }
 
   // GET /api/public/exchange-rate — lecture taux EUR/MGA (client + admin)
   app.get("/api/public/exchange-rate", async (_req: Request, res: Response) => {
-    const config = await loadExchangeConfig();
-    return res.json({ ok: true, rate: config.rate, effectiveFrom: config.effectiveFrom });
+    const settings = await ensureLiveExchangeFresh(supabaseAdmin);
+    const config = toPublicExchangeConfig(settings);
+    return res.json({
+      ok: true,
+      rate: config.rate,
+      effectiveFrom: config.effectiveFrom,
+      mode: settings.mode,
+    });
   });
 
   // GET /api/admin/settings/exchange-rate
   app.get("/api/admin/settings/exchange-rate", async (req: Request, res: Response) => {
     const gate = await requireAdmin(req, supabaseAdmin);
     if (gate.ok === false) return res.status(gate.status).json(gate.body);
-    const config = await loadExchangeConfig();
-    return res.json({ ok: true, ...config });
+    const settings = await ensureLiveExchangeFresh(supabaseAdmin);
+    return res.json(settingsToAdminJson(settings));
   });
 
   // PATCH /api/admin/settings/exchange-rate
   app.patch("/api/admin/settings/exchange-rate", async (req: Request, res: Response) => {
     const gate = await requireAdmin(req, supabaseAdmin);
     if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const modeRaw = req.body?.mode;
+    const mode: ExchangeRateMode = modeRaw === "live" ? "live" : "manual";
+    const current = await loadExchangeSettings(supabaseAdmin);
+
+    if (mode === "live") {
+      try {
+        const refreshed = await refreshLiveExchangeRate(supabaseAdmin);
+        return res.json(settingsToAdminJson(refreshed));
+      } catch (e: unknown) {
+        return res.status(502).json({
+          ok: false,
+          message: e instanceof Error ? e.message : "Impossible de récupérer le taux Frankfurter",
+        });
+      }
+    }
 
     const rateRaw = req.body?.rate;
     const rate = typeof rateRaw === "number" ? rateRaw : parseFloat(String(rateRaw ?? ""));
@@ -261,14 +294,39 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
       effectiveFrom = new Date().toISOString().slice(0, 10);
     }
 
-    const value = { rate: Math.round(rate), effectiveFrom };
-    const { error } = await supabaseAdmin.from("platform_settings").upsert(
-      { key: EXCHANGE_KEY, value, updated_at: nowIso() },
-      { onConflict: "key" }
-    );
-    if (error) return res.status(500).json({ ok: false, message: error.message });
-    return res.json({ ok: true, ...value });
+    const value: EurMgaExchangeSettings = {
+      mode: "manual",
+      rate: Math.round(rate),
+      effectiveFrom,
+      liveProvider: undefined,
+      lastLiveRate: current.lastLiveRate,
+      lastFetchedAt: current.lastFetchedAt,
+    };
+    try {
+      await saveExchangeSettings(supabaseAdmin, value);
+    } catch (e: unknown) {
+      return res.status(500).json({ ok: false, message: e instanceof Error ? e.message : "Erreur" });
+    }
+    return res.json(settingsToAdminJson(value));
   });
+
+  // POST /api/admin/settings/exchange-rate/refresh — force Frankfurter (mode live)
+  app.post("/api/admin/settings/exchange-rate/refresh", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    try {
+      const refreshed = await refreshLiveExchangeRate(supabaseAdmin);
+      return res.json(settingsToAdminJson(refreshed));
+    } catch (e: unknown) {
+      return res.status(502).json({
+        ok: false,
+        message: e instanceof Error ? e.message : "Impossible de récupérer le taux Frankfurter",
+      });
+    }
+  });
+
+  startExchangeRateScheduler(supabaseAdmin);
 
   // ============================================================================
   // Admin planning (Phase 1 backend) — source de vérité pour futur Gantt admin

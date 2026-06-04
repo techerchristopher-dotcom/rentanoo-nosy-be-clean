@@ -15,10 +15,12 @@ import {
   parseExchangeConfig,
   type DualPriceFormatted,
   type EurMgaExchangeConfig,
+  type ExchangeRateMode,
 } from "@/utils/dualCurrency";
 
 type ExchangeRateContextValue = {
   config: EurMgaExchangeConfig;
+  mode: ExchangeRateMode;
   loading: boolean;
   refresh: () => Promise<void>;
   formatClient: (eur: number) => DualPriceFormatted;
@@ -30,26 +32,29 @@ type ExchangeRateContextValue = {
 
 const ExchangeRateContext = createContext<ExchangeRateContextValue | null>(null);
 
-async function fetchPublicExchangeRate(): Promise<EurMgaExchangeConfig> {
+async function fetchPublicExchangeRate(): Promise<{ config: EurMgaExchangeConfig; mode: ExchangeRateMode }> {
   try {
     const res = await fetch("/api/public/exchange-rate");
-    if (!res.ok) return { ...FALLBACK_EXCHANGE };
-    const json = (await res.json()) as { rate?: number; effectiveFrom?: string };
-    return parseExchangeConfig(json);
+    if (!res.ok) return { config: { ...FALLBACK_EXCHANGE }, mode: "manual" };
+    const json = (await res.json()) as { rate?: number; effectiveFrom?: string; mode?: string };
+    const mode: ExchangeRateMode = json.mode === "live" ? "live" : "manual";
+    return { config: parseExchangeConfig(json), mode };
   } catch {
-    return { ...FALLBACK_EXCHANGE };
+    return { config: { ...FALLBACK_EXCHANGE }, mode: "manual" };
   }
 }
 
 export function ExchangeRateProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<EurMgaExchangeConfig>(FALLBACK_EXCHANGE);
+  const [mode, setMode] = useState<ExchangeRateMode>("manual");
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const next = await fetchPublicExchangeRate();
-      setConfig(next);
+      setConfig(next.config);
+      setMode(next.mode);
     } finally {
       setLoading(false);
     }
@@ -62,15 +67,16 @@ export function ExchangeRateProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ExchangeRateContextValue>(() => {
     return {
       config,
+      mode,
       loading,
       refresh,
       formatClient: (eur) => formatDualPrice(eur, config, "client"),
       formatAdmin: (eur) => formatDualPrice(eur, config, "admin"),
       formatClientInline: (eur) => formatDualPriceInline(eur, config, "client"),
       formatAdminInline: (eur) => formatDualPriceInline(eur, config, "admin"),
-      footnote: formatExchangeRateFootnote(config),
+      footnote: formatExchangeRateFootnote(config, { mode }),
     };
-  }, [config, loading, refresh]);
+  }, [config, mode, loading, refresh]);
 
   return <ExchangeRateContext.Provider value={value}>{children}</ExchangeRateContext.Provider>;
 }
@@ -80,6 +86,7 @@ export function useExchangeRate(): ExchangeRateContextValue {
   if (!ctx) {
     return {
       config: FALLBACK_EXCHANGE,
+      mode: "manual",
       loading: false,
       refresh: async () => {},
       formatClient: (eur) => formatDualPrice(eur, FALLBACK_EXCHANGE, "client"),

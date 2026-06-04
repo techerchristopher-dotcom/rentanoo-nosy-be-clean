@@ -502,24 +502,74 @@ export async function adminGetRevenue(params: {
 }
 
 export type EurMgaExchangeRate = {
+  mode: "manual" | "live";
   rate: number;
   effectiveFrom: string;
+  liveProvider: "frankfurter" | null;
+  lastLiveRate: number | null;
+  lastFetchedAt: string | null;
 };
 
+function mapExchangeRateResponse(data: {
+  mode?: string;
+  rate: number;
+  effectiveFrom: string;
+  liveProvider?: string | null;
+  lastLiveRate?: number | null;
+  lastFetchedAt?: string | null;
+}): EurMgaExchangeRate {
+  return {
+    mode: data.mode === "live" ? "live" : "manual",
+    rate: data.rate,
+    effectiveFrom: data.effectiveFrom,
+    liveProvider: data.liveProvider === "frankfurter" ? "frankfurter" : null,
+    lastLiveRate: data.lastLiveRate ?? null,
+    lastFetchedAt: data.lastFetchedAt ?? null,
+  };
+}
+
 export async function adminGetExchangeRate(): Promise<EurMgaExchangeRate> {
-  const data = await adminFetch<{ ok: boolean; rate: number; effectiveFrom: string }>(
-    "/api/admin/settings/exchange-rate"
-  );
-  return { rate: data.rate, effectiveFrom: data.effectiveFrom };
+  const data = await adminFetch<{
+    ok: boolean;
+    mode?: string;
+    rate: number;
+    effectiveFrom: string;
+    liveProvider?: string | null;
+    lastLiveRate?: number | null;
+    lastFetchedAt?: string | null;
+  }>("/api/admin/settings/exchange-rate");
+  return mapExchangeRateResponse(data);
 }
 
 export async function adminUpdateExchangeRate(payload: {
-  rate: number;
+  mode: "manual" | "live";
+  rate?: number;
   effectiveFrom?: string;
 }): Promise<EurMgaExchangeRate> {
-  const data = await adminFetch<{ ok: boolean; rate: number; effectiveFrom: string }>(
-    "/api/admin/settings/exchange-rate",
-    { method: "PATCH", body: JSON.stringify(payload) }
-  );
-  return { rate: data.rate, effectiveFrom: data.effectiveFrom };
+  const data = await adminFetch<{
+    ok: boolean;
+    mode?: string;
+    rate: number;
+    effectiveFrom: string;
+    liveProvider?: string | null;
+    lastLiveRate?: number | null;
+    lastFetchedAt?: string | null;
+  }>("/api/admin/settings/exchange-rate", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return mapExchangeRateResponse(data);
+}
+
+export async function adminRefreshExchangeRate(): Promise<EurMgaExchangeRate> {
+  const data = await adminFetch<{
+    ok: boolean;
+    mode?: string;
+    rate: number;
+    effectiveFrom: string;
+    liveProvider?: string | null;
+    lastLiveRate?: number | null;
+    lastFetchedAt?: string | null;
+  }>("/api/admin/settings/exchange-rate/refresh", { method: "POST" });
+  return mapExchangeRateResponse(data);
 }
