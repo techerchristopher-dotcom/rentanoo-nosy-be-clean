@@ -132,7 +132,15 @@ function syncDraftLocations(draft: BookingDraft, options: BookingOption[]): void
 
 /** Recalcule lieux + sauvegarde avant ouverture modale de confirmation. */
 export function finalizeBookingDraftForCheckout(draft: BookingDraft): BookingDraft {
-  syncDraftLocations(draft, draft.selectedOptions ?? []);
+  const options = draft.selectedOptions ?? [];
+  const optionsTotal = options
+    .filter((o) => o.selected)
+    .reduce((sum, o) => sum + o.totalPrice, 0);
+  draft.optionsTotal = optionsTotal;
+  draft.subtotal = draft.basePrice + optionsTotal;
+  draft.serviceFee = calcServiceFeeRenter(draft.subtotal);
+  draft.totalAmount = calcRenterTotal(draft.subtotal);
+  syncDraftLocations(draft, options);
   draft.updatedAt = new Date().toISOString();
   saveBookingDraft(draft);
   return draft;

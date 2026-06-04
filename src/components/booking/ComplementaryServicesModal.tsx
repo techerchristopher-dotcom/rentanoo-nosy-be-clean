@@ -10,10 +10,12 @@ import { Plane, Building2 } from "lucide-react";
 import {
   isPlatformPickupOption,
   isPlatformReturnOption,
+  isPlatformTransportOption,
+  LEGACY_AIRPORT_OPTION_ID_MAP,
   resolvePickupExclusion,
   resolveReturnExclusion,
 } from "@/constants/platformBookingOptions";
-import { applyComplementaryServicesToDraft } from "@/services/localStorage/bookingStorage";
+import { applyComplementaryServicesToDraft, getBookingDraft } from "@/services/localStorage/bookingStorage";
 import { requiresHotelName } from "@/utils/bookingLocations";
 import { useToast } from "@/hooks/use-toast";
 import { usePlatformTransportOptions } from "@/hooks/usePlatformTransportOptions";
@@ -38,8 +40,12 @@ export function ComplementaryServicesModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setSelectedIds([]);
-    setHotelName("");
+    const draft = getBookingDraft();
+    const platformIds = (draft?.selectedOptions ?? [])
+      .filter((o) => o.selected && isPlatformTransportOption(o.id))
+      .map((o) => LEGACY_AIRPORT_OPTION_ID_MAP[o.id] ?? o.id);
+    setSelectedIds(platformIds);
+    setHotelName(draft?.hotelName ?? "");
   }, [isOpen]);
 
   const optionsTotal = useMemo(

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -43,29 +43,23 @@ interface ServiceOption {
   isFree: boolean;
 }
 
+function readSelectedServiceIdsFromDraft(): string[] {
+  const draft = getBookingDraft();
+  if (!draft?.selectedOptions?.length) return [];
+  return draft.selectedOptions
+    .filter((opt) => opt.selected)
+    .map((opt) => LEGACY_AIRPORT_OPTION_ID_MAP[opt.id] ?? opt.id);
+}
+
 export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOptionsProps) {
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [hotelName, setHotelName] = useState("");
-  const hydratedRef = useRef(false);
+  const [selectedServices, setSelectedServices] = useState(readSelectedServiceIdsFromDraft);
+  const [hotelName, setHotelName] = useState(() => getBookingDraft()?.hotelName ?? "");
   const { formatClient } = useExchangeRate();
   const { options: platformTransportOptions } = usePlatformTransportOptions();
   const formatDualLabel = (amountMga: number) => {
     const { primary, secondary } = formatClient(amountMga);
     return `${primary} (${secondary})`;
   };
-  
-  // Initialiser depuis le brouillon avant toute écriture localStorage
-  useEffect(() => {
-    const draft = getBookingDraft();
-    if (draft?.selectedOptions && draft.selectedOptions.length > 0) {
-      const existingSelectedIds = draft.selectedOptions
-        .filter(opt => opt.selected)
-        .map(opt => LEGACY_AIRPORT_OPTION_ID_MAP[opt.id] ?? opt.id);
-      setSelectedServices(existingSelectedIds);
-      if (draft.hotelName) setHotelName(draft.hotelName);
-    }
-    hydratedRef.current = true;
-  }, []);
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // CONSTRUIRE LA LISTE DES SERVICES DEPUIS LES DONNÉES DU VÉHICULE
@@ -246,8 +240,6 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   // METTRE À JOUR LOCALSTORAGE À CHAQUE CHANGEMENT
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   useEffect(() => {
-    if (!hydratedRef.current) return;
-
     const selectedOptionsData: BookingOption[] = availableServices
       .filter(service => selectedServices.includes(service.id))
       .map(service => ({
