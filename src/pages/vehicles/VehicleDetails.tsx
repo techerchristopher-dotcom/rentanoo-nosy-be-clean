@@ -132,6 +132,9 @@ export default function VehicleDetails() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showComplementaryModal, setShowComplementaryModal] = useState(false);
   const [showPhoneRequiredModal, setShowPhoneRequiredModal] = useState(false);
+
+  const hideMobileBookingBar =
+    showConfirmationModal || showComplementaryModal || showPhoneRequiredModal;
   const [phoneReturnTo, setPhoneReturnTo] = useState<string>("");
   const [phone, setPhone] = useState<string | undefined>('');
   const [isSavingPhone, setIsSavingPhone] = useState(false);
@@ -963,7 +966,7 @@ export default function VehicleDetails() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-20 lg:pb-0">{/* pb-20 pour laisser l'espace au sticky mobile */}
+    <div className={`min-h-screen flex flex-col bg-background ${hideMobileBookingBar ? "pb-0" : "pb-20"} lg:pb-0`}>
       <Seo
         title={buildVehicleSeoTitle(seoInput)}
         description={buildVehicleSeoDescription(seoInput)}
@@ -1518,7 +1521,8 @@ export default function VehicleDetails() {
       </main>
       
       {/* Mobile Sticky Bottom Price Card */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
+      {!hideMobileBookingBar && (
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t">
         <div className="p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col">
@@ -1558,6 +1562,7 @@ export default function VehicleDetails() {
           </div>
         </div>
       </div>
+      )}
       
       <Footer />
       

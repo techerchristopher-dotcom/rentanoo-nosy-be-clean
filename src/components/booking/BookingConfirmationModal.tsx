@@ -168,16 +168,16 @@ export function BookingConfirmationModal({
         ].join(" ")}
       >
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
-        <DialogHeader className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 mb-2">
+        <DialogHeader className="text-center mb-4 sm:mb-6">
+          <div className="hidden sm:flex items-center justify-center gap-2 mb-2">
             <div className="p-2 bg-primary rounded-full">
               <Zap className="h-5 w-5 text-white" />
             </div>
           </div>
-          <DialogTitle className="text-3xl font-bold text-center text-primary">
+          <DialogTitle className="text-xl sm:text-3xl font-bold text-center text-primary">
             {t("booking.confirmation.title")}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
             {t("booking.confirmation.subtitle")}
           </p>
         </DialogHeader>
@@ -378,8 +378,8 @@ export function BookingConfirmationModal({
 
         </div>
 
-        {/* Informations importantes */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        {/* Informations importantes — desktop uniquement (allège mobile) */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
           <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200/50">
             <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />

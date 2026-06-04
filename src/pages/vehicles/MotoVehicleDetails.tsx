@@ -162,6 +162,9 @@ export default function MotoVehicleDetails() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showComplementaryModal, setShowComplementaryModal] = useState(false);
   const [showPhoneRequiredModal, setShowPhoneRequiredModal] = useState(false);
+
+  const hideMobileBookingBar =
+    showConfirmationModal || showComplementaryModal || showPhoneRequiredModal;
   const [phoneReturnTo, setPhoneReturnTo] = useState<string>("");
   const [phone, setPhone] = useState<string | undefined>('');
   const [isSavingPhone, setIsSavingPhone] = useState(false);
@@ -921,7 +924,7 @@ export default function MotoVehicleDetails() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-20 lg:pb-0">
+    <div className={`min-h-screen flex flex-col bg-background ${hideMobileBookingBar ? "pb-0" : "pb-20"} lg:pb-0`}>
       <Seo
         title={buildVehicleSeoTitle(seoInput)}
         description={buildVehicleSeoDescription(seoInput)}
@@ -1474,7 +1477,8 @@ export default function MotoVehicleDetails() {
         </div>
       </main>
 
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
+      {!hideMobileBookingBar && (
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t">
         <div className="p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col">
@@ -1514,6 +1518,7 @@ export default function MotoVehicleDetails() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Panneau debug i18n - DEV uniquement */}
 
