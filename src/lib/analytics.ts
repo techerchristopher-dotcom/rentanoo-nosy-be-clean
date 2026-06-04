@@ -1,60 +1,11 @@
 /**
- * Google Tag — complète le snippet GA4 dans index.html (Ads + conteneur GT).
- * GA4 G-WVKC4DHFL3 est configuré dans index.html pour garantir les hits /g/collect.
+ * Analytics — GA4 uniquement via le snippet dans index.html.
+ * Pas de Google Tag Manager / conteneur GT : une seule source de vérité G-WVKC4DHFL3.
  */
 
-const GOOGLE_TAG_ID = "GT-TXZW7HG8";
 export const GA4_MEASUREMENT_ID = "G-WVKC4DHFL3";
+
 const GOOGLE_ADS_ID = "AW-17959989720";
-
-function isGtagAvailable(): boolean {
-  return typeof window !== "undefined" && typeof window.gtag === "function";
-}
-
-/**
- * Complète la config gtag (GA4 déjà initialisé dans index.html).
- */
-export function initGtag(): void {
-  if (!isGtagAvailable()) return;
-  try {
-    window.gtag!("config", GOOGLE_TAG_ID);
-    window.gtag!("config", GOOGLE_ADS_ID);
-  } catch (e) {
-    console.warn("[gtag] Ads/GT config failed (app continues):", e);
-  }
-}
-
-/**
- * Envoie un page_view à chaque changement de route (SPA).
- */
-export function sendPageView(path: string, title?: string): void {
-  if (!isGtagAvailable()) return;
-  try {
-    window.gtag!("event", "page_view", {
-      send_to: GA4_MEASUREMENT_ID,
-      page_path: path,
-      page_title: title ?? document.title,
-    });
-  } catch {
-    // no-op
-  }
-}
-
-/** Événement GA4 générique (best effort). */
-export function sendGtagEvent(
-  eventName: string,
-  params?: Record<string, string | number | boolean>
-): void {
-  if (!isGtagAvailable()) return;
-  try {
-    window.gtag!("event", eventName, {
-      send_to: GA4_MEASUREMENT_ID,
-      ...params,
-    });
-  } catch {
-    // no-op
-  }
-}
 
 declare global {
   interface Window {
@@ -63,17 +14,55 @@ declare global {
   }
 }
 
-/** Label conversion Purchase - configuré dans Google Ads > Mesures > Conversions */
+function isGtagAvailable(): boolean {
+  return typeof window !== "undefined" && typeof window.gtag === "function";
+}
+
+/** Étape 2 (SPA) : page_view manuel à chaque changement de route. La 1re page est envoyée par gtag('config') dans index.html. */
+export function trackGa4PageView(pagePath: string, pageTitle?: string): void {
+  if (!isGtagAvailable()) return;
+  try {
+    window.gtag!("event", "page_view", {
+      page_path: pagePath,
+      page_title: pageTitle ?? document.title,
+      page_location: `${window.location.origin}${pagePath}`,
+    });
+  } catch {
+    // best effort
+  }
+}
+
+/** Étape 3 : événements personnalisés (WhatsApp, etc.). */
+export function trackGa4Event(
+  eventName: string,
+  params?: Record<string, string | number | boolean>
+): void {
+  if (!isGtagAvailable()) return;
+  try {
+    window.gtag!("event", eventName, params);
+  } catch {
+    // best effort
+  }
+}
+
+// --- Google Ads conversions (optionnel, chargé à la demande) ---
+
 const CONVERSION_LABEL_PURCHASE = import.meta.env.VITE_GOOGLE_ADS_CONVERSION_LABEL_PURCHASE || "";
 const CONVERSION_LABEL_DEPOSIT = import.meta.env.VITE_GOOGLE_ADS_CONVERSION_LABEL_DEPOSIT || "";
 
-interface PurchaseConversionParams {
-  value: number;
-  currency: string;
-  transaction_id: string;
+let adsConfigured = false;
+
+function ensureGoogleAdsConfig(): void {
+  if (adsConfigured || !isGtagAvailable()) return;
+  try {
+    window.gtag!("config", GOOGLE_ADS_ID);
+    adsConfigured = true;
+  } catch {
+    // best effort
+  }
 }
 
-interface DepositConversionParams {
+interface ConversionParams {
   value: number;
   currency: string;
   transaction_id: string;
@@ -82,17 +71,16 @@ interface DepositConversionParams {
 const STORAGE_KEY_PURCHASE = "gtag_purchase_sent";
 const STORAGE_KEY_DEPOSIT = "gtag_deposit_sent";
 
-export function sendPurchaseConversion(params: PurchaseConversionParams): void {
+export function sendPurchaseConversion(params: ConversionParams): void {
   if (!isGtagAvailable()) return;
-
   const label = CONVERSION_LABEL_PURCHASE;
   if (!label) {
     if (import.meta.env.DEV) {
-      console.warn("[gtag] VITE_GOOGLE_ADS_CONVERSION_LABEL_PURCHASE non configuré - conversion non envoyée");
+      console.warn("[analytics] VITE_GOOGLE_ADS_CONVERSION_LABEL_PURCHASE non configuré");
     }
     return;
   }
-
+  ensureGoogleAdsConfig();
   try {
     window.gtag!("event", "conversion", {
       send_to: `${GOOGLE_ADS_ID}/${label}`,
@@ -101,21 +89,20 @@ export function sendPurchaseConversion(params: PurchaseConversionParams): void {
       transaction_id: params.transaction_id,
     });
   } catch {
-    // no-op
+    // best effort
   }
 }
 
-export function sendDepositConversion(params: DepositConversionParams): void {
+export function sendDepositConversion(params: ConversionParams): void {
   if (!isGtagAvailable()) return;
-
   const label = CONVERSION_LABEL_DEPOSIT;
   if (!label) {
     if (import.meta.env.DEV) {
-      console.warn("[gtag] VITE_GOOGLE_ADS_CONVERSION_LABEL_DEPOSIT non configuré - conversion non envoyée");
+      console.warn("[analytics] VITE_GOOGLE_ADS_CONVERSION_LABEL_DEPOSIT non configuré");
     }
     return;
   }
-
+  ensureGoogleAdsConfig();
   try {
     window.gtag!("event", "conversion", {
       send_to: `${GOOGLE_ADS_ID}/${label}`,
@@ -124,7 +111,7 @@ export function sendDepositConversion(params: DepositConversionParams): void {
       transaction_id: params.transaction_id,
     });
   } catch {
-    // no-op
+    // best effort
   }
 }
 
@@ -132,8 +119,7 @@ export function hasPurchaseConversionBeenSent(transactionId: string): boolean {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY_PURCHASE);
     if (!stored) return false;
-    const set = new Set<string>(JSON.parse(stored));
-    return set.has(transactionId);
+    return new Set<string>(JSON.parse(stored)).has(transactionId);
   } catch {
     return false;
   }
@@ -143,8 +129,7 @@ export function hasDepositConversionBeenSent(transactionId: string): boolean {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY_DEPOSIT);
     if (!stored) return false;
-    const set = new Set<string>(JSON.parse(stored));
-    return set.has(transactionId);
+    return new Set<string>(JSON.parse(stored)).has(transactionId);
   } catch {
     return false;
   }
@@ -156,11 +141,7 @@ export function markPurchaseConversionSent(transactionId: string): void {
     const set = new Set<string>(stored ? JSON.parse(stored) : []);
     set.add(transactionId);
     const arr = [...set];
-    if (arr.length > 50) {
-      sessionStorage.setItem(STORAGE_KEY_PURCHASE, JSON.stringify(arr.slice(-50)));
-    } else {
-      sessionStorage.setItem(STORAGE_KEY_PURCHASE, JSON.stringify(arr));
-    }
+    sessionStorage.setItem(STORAGE_KEY_PURCHASE, JSON.stringify(arr.length > 50 ? arr.slice(-50) : arr));
   } catch {
     // ignore
   }
@@ -172,11 +153,7 @@ export function markDepositConversionSent(transactionId: string): void {
     const set = new Set<string>(stored ? JSON.parse(stored) : []);
     set.add(transactionId);
     const arr = [...set];
-    if (arr.length > 50) {
-      sessionStorage.setItem(STORAGE_KEY_DEPOSIT, JSON.stringify(arr.slice(-50)));
-    } else {
-      sessionStorage.setItem(STORAGE_KEY_DEPOSIT, JSON.stringify(arr));
-    }
+    sessionStorage.setItem(STORAGE_KEY_DEPOSIT, JSON.stringify(arr.length > 50 ? arr.slice(-50) : arr));
   } catch {
     // ignore
   }

@@ -1,4 +1,4 @@
-import { sendGtagEvent } from "@/lib/gtag";
+import { trackGa4Event } from "@/lib/analytics";
 
 export type WhatsAppFabEvent =
   | "whatsapp_fab_click"
@@ -38,12 +38,12 @@ export function trackWhatsAppFabEvent(
   name: WhatsAppFabEvent,
   params?: Record<string, string | number | boolean>
 ): void {
-  sendGtagEvent(name, params);
+  trackGa4Event(name, params);
   persistSiteEvent(name, params);
 }
 
 export function trackPageViewEvent(pagePath: string, pageTitle?: string): void {
-  sendGtagEvent("page_view", { page_path: pagePath, page_title: pageTitle ?? document.title });
+  trackGa4Event("page_view", { page_path: pagePath, page_title: pageTitle ?? document.title });
   persistSiteEvent("page_view", { page_path: pagePath, page_title: pageTitle ?? document.title });
 }
 
@@ -52,6 +52,6 @@ export function trackSiteEvent(
   params?: Record<string, string | number | boolean>
 ): void {
   if (!ANALYTICS_EVENTS.has(name)) return;
-  sendGtagEvent(name, params);
+  trackGa4Event(name, params);
   persistSiteEvent(name, params);
 }

@@ -9,7 +9,7 @@ import {
   sendDepositConversion,
   hasDepositConversionBeenSent,
   markDepositConversionSent,
-} from "@/lib/gtag";
+} from "@/lib/analytics";
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";

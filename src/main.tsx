@@ -3,7 +3,6 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import "@/i18n/config";
-import { initGtag } from "@/lib/gtag";
 import { initLcpLogger } from "@/utils/lcpLogger";
 import { setupRemoveChildDiagnostic } from "@/utils/removeChildDiagnostic";
 
@@ -44,11 +43,6 @@ window.addEventListener("unhandledrejection", (event) => {
   handleChunkError(msg);
 });
 
-try {
-  initGtag();
-} catch {
-  // GA4/Ads best-effort : ne jamais bloquer le démarrage
-}
 initLcpLogger();
 
 // ⭐ Diagnostic removeChild (dev only)

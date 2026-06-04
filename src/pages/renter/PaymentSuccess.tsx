@@ -4,7 +4,7 @@ import {
   sendPurchaseConversion,
   hasPurchaseConversionBeenSent,
   markPurchaseConversionSent,
-} from "@/lib/gtag";
+} from "@/lib/analytics";
 import { adminGetBooking } from "@/services/adminApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
