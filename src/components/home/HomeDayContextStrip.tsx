@@ -4,6 +4,7 @@ import {
   CloudFog,
   CloudRain,
   CloudSun,
+  Equal,
   Sun,
   TrendingDown,
   TrendingUp,
@@ -51,6 +52,7 @@ function RateTrendIcon({
   const label = t(`home.dayContext.rateTrend.${trend}`);
   const upClass = isHero ? "text-emerald-300" : "text-emerald-600";
   const downClass = isHero ? "text-rose-300" : "text-rose-600";
+  const stableClass = isHero ? "text-white/70" : "text-muted-foreground";
   const iconClass = "h-3.5 w-3.5 shrink-0";
 
   if (trend === "up") {
@@ -59,7 +61,7 @@ function RateTrendIcon({
   if (trend === "down") {
     return <TrendingDown className={cn(iconClass, downClass)} aria-label={label} />;
   }
-  return null;
+  return <Equal className={cn(iconClass, stableClass)} aria-label={label} />;
 }
 
 export function HomeDayContextStrip({ variant, className }: HomeDayContextStripProps) {
@@ -128,7 +130,7 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
 
         <div className={cn("text-center sm:text-left", loading && "opacity-60")}>
           <span className="inline-flex items-center gap-1.5 font-semibold tabular-nums">
-            {trend === "up" || trend === "down" ? <RateTrendIcon trend={trend} isHero={isHero} /> : null}
+            {trend ? <RateTrendIcon trend={trend} isHero={isHero} /> : null}
             <span>{exchangeLine}</span>
           </span>
           <span className={cn("block text-xs mt-0.5", isHero ? "text-white/70" : "text-muted-foreground")}>

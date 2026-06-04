@@ -152,7 +152,7 @@ function computeTrend(current: number, previous: number | null): ExchangeRateTre
   if (previous == null) return null;
   if (current > previous) return "up";
   if (current < previous) return "down";
-  return null;
+  return "stable";
 }
 
 /** Tendance vs veille Frankfurter (live uniquement). */
