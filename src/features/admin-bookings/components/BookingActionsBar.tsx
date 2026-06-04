@@ -1,74 +1,122 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarPlus, ClipboardCheck, CreditCard, Shield, Wallet } from "lucide-react";
+import { Banknote, CalendarPlus, ClipboardCheck, CreditCard, Shield, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatMoney } from "@/features/back-office/components/MoneyInput";
+import { cn } from "@/lib/utils";
 import type { ExtensionPending } from "../utils/extensionMeta";
+
+type PaymentMethodChoice = "cash" | "card";
 
 type BookingActionsBarProps = {
   bookingId: string;
   status: string;
   isAdminPricing: boolean;
-  canPayNow: boolean;
+  needsPayment: boolean;
+  paymentSummary: string | null;
+  totalFormatted: string;
   payLoading: boolean;
-  canTakeDeposit: boolean;
-  canCollectInitial: boolean;
   collectLoading: boolean;
+  canTakeDeposit: boolean;
   canCancelBooking: boolean;
   cancelLoading: boolean;
   canExtend: boolean;
   extensionPending: ExtensionPending | null;
   isWebPricing: boolean;
   extensionPayLoading: boolean;
-  opmDraft: "cash" | "card_terminal" | "";
-  opmSaveLoading: boolean;
-  currentOpm: string;
-  onOpmChange: (v: "cash" | "card_terminal" | "") => void;
-  onSaveOpm: () => void;
-  onPayNow: () => void;
+  extensionCollectLoading: boolean;
+  onCollectCash: () => void;
+  onPayCard: () => void;
   onTakeDeposit: () => void;
-  onCollectInitial: () => void;
   onExtend: () => void;
-  onCollectExtension: () => void;
+  onCollectExtensionCash: () => void;
   onPayExtensionStripe: () => void;
   onCancel: () => void;
-  paidAtLabel?: string | null;
 };
+
+function PaymentMethodPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: PaymentMethodChoice;
+  onChange: (v: PaymentMethodChoice) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <RadioGroup
+      value={value}
+      onValueChange={(v) => onChange(v as PaymentMethodChoice)}
+      className="grid grid-cols-2 gap-2"
+      disabled={disabled}
+    >
+      <Label
+        htmlFor="pay-cash"
+        className={cn(
+          "flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors",
+          value === "cash" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        <RadioGroupItem value="cash" id="pay-cash" />
+        <Banknote className="h-4 w-4 shrink-0" />
+        <span className="text-sm font-medium">Espèces</span>
+      </Label>
+      <Label
+        htmlFor="pay-card"
+        className={cn(
+          "flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors",
+          value === "card" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        <RadioGroupItem value="card" id="pay-card" />
+        <CreditCard className="h-4 w-4 shrink-0" />
+        <span className="text-sm font-medium">Carte bancaire</span>
+      </Label>
+    </RadioGroup>
+  );
+}
 
 export function BookingActionsBar({
   bookingId,
   status,
   isAdminPricing,
-  canPayNow,
+  needsPayment,
+  paymentSummary,
+  totalFormatted,
   payLoading,
-  canTakeDeposit,
-  canCollectInitial,
   collectLoading,
+  canTakeDeposit,
   canCancelBooking,
   cancelLoading,
   canExtend,
   extensionPending,
   isWebPricing,
   extensionPayLoading,
-  opmDraft,
-  opmSaveLoading,
-  currentOpm,
-  onOpmChange,
-  onSaveOpm,
-  onPayNow,
+  extensionCollectLoading,
+  onCollectCash,
+  onPayCard,
   onTakeDeposit,
-  onCollectInitial,
   onExtend,
-  onCollectExtension,
+  onCollectExtensionCash,
   onPayExtensionStripe,
   onCancel,
-  paidAtLabel,
 }: BookingActionsBarProps) {
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodChoice>("cash");
+  const [extensionMethod, setExtensionMethod] = useState<PaymentMethodChoice>("cash");
+
+  const showAdminPaymentChoice = isAdminPricing && needsPayment;
+  const showWebStripeOnly = !isAdminPricing && needsPayment;
+
   return (
     <div className="space-y-4">
       {extensionPending ? (
         <Card className="border-violet-200 bg-violet-50/50 dark:border-violet-800 dark:bg-violet-950/20">
-          <CardContent className="pt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardContent className="pt-4 space-y-4">
             <div>
               <div className="font-medium text-violet-900 dark:text-violet-100">Supplément prolongation</div>
               <div className="text-sm text-violet-800/80 dark:text-violet-200/80">
@@ -77,12 +125,25 @@ export function BookingActionsBar({
             </div>
             {isWebPricing ? (
               <Button type="button" onClick={onPayExtensionStripe} disabled={extensionPayLoading}>
-                {extensionPayLoading ? "Ouverture Stripe…" : "Payer le supplément"}
+                {extensionPayLoading ? "Ouverture Stripe…" : "Payer le supplément par CB"}
               </Button>
             ) : (
-              <Button type="button" onClick={onCollectExtension}>
-                Encaisser le supplément
-              </Button>
+              <>
+                <PaymentMethodPicker
+                  value={extensionMethod}
+                  onChange={setExtensionMethod}
+                  disabled={extensionCollectLoading || extensionPayLoading}
+                />
+                {extensionMethod === "cash" ? (
+                  <Button type="button" onClick={onCollectExtensionCash} disabled={extensionCollectLoading}>
+                    {extensionCollectLoading ? "Encaissement…" : "Encaisser le supplément en espèces"}
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={onPayExtensionStripe} disabled={extensionPayLoading}>
+                    {extensionPayLoading ? "Ouverture Stripe…" : "Payer le supplément par CB"}
+                  </Button>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -94,28 +155,55 @@ export function BookingActionsBar({
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Paiement */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
               <Wallet className="h-3.5 w-3.5" />
               Paiement
+              {needsPayment ? (
+                <span className="normal-case font-bold text-foreground ml-1">— {totalFormatted}</span>
+              ) : null}
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={onPayNow} disabled={!canPayNow || payLoading}>
-                {payLoading ? "Ouverture Stripe…" : "Passer au paiement"}
-              </Button>
-              {canCollectInitial ? (
-                <Button type="button" variant="secondary" onClick={onCollectInitial} disabled={collectLoading}>
-                  Enregistrer l'encaissement
+
+            {paymentSummary ? (
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{paymentSummary}</p>
+            ) : null}
+
+            {showAdminPaymentChoice ? (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+                <p className="text-sm text-muted-foreground">Comment le client règle ?</p>
+                <PaymentMethodPicker
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                  disabled={collectLoading || payLoading}
+                />
+                {paymentMethod === "cash" ? (
+                  <Button type="button" onClick={onCollectCash} disabled={collectLoading} className="w-full sm:w-auto">
+                    {collectLoading ? "Encaissement…" : "Encaisser en espèces"}
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={onPayCard} disabled={payLoading} className="w-full sm:w-auto">
+                    {payLoading ? "Ouverture Stripe…" : "Payer par CB"}
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {paymentMethod === "cash"
+                    ? "Encaisse le montant et confirme la réservation automatiquement."
+                    : "Ouvre la page Stripe pour le paiement en ligne."}
+                </p>
+              </div>
+            ) : null}
+
+            {showWebStripeOnly ? (
+              <div className="space-y-2">
+                <Button type="button" onClick={onPayCard} disabled={payLoading}>
+                  {payLoading ? "Ouverture Stripe…" : "Payer par CB"}
                 </Button>
-              ) : null}
-              {paidAtLabel ? (
-                <span className="self-center text-sm text-muted-foreground">Encaissé le {paidAtLabel}</span>
-              ) : null}
-            </div>
-            {!canPayNow && status !== "confirmed" && !canCollectInitial ? (
-              <p className="text-xs text-muted-foreground">
-                Paiement Stripe disponible en statut « en attente de paiement ».
-              </p>
+                <p className="text-xs text-muted-foreground">Paiement en ligne via Stripe.</p>
+              </div>
+            ) : null}
+
+            {!needsPayment && !paymentSummary && status !== "confirmed" ? (
+              <p className="text-xs text-muted-foreground">Aucune action de paiement disponible pour ce statut.</p>
             ) : null}
           </div>
 
@@ -151,37 +239,6 @@ export function BookingActionsBar({
               </Button>
             </div>
           </div>
-
-          {/* Mode paiement agence */}
-          {isAdminPricing ? (
-            <div className="space-y-2 border-t border-border pt-4">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <CreditCard className="h-3.5 w-3.5" />
-                Mode de paiement agence
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <select
-                  className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-w-xs"
-                  value={opmDraft}
-                  onChange={(e) => onOpmChange(e.target.value as "cash" | "card_terminal" | "")}
-                  disabled={opmSaveLoading}
-                >
-                  <option value="">— Non précisé —</option>
-                  <option value="cash">Espèces</option>
-                  <option value="card_terminal">CB (terminal)</option>
-                </select>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={onSaveOpm}
-                  disabled={opmSaveLoading || opmDraft === currentOpm}
-                >
-                  {opmSaveLoading ? "…" : "Sauvegarder"}
-                </Button>
-              </div>
-            </div>
-          ) : null}
 
           {/* Danger */}
           {canCancelBooking ? (

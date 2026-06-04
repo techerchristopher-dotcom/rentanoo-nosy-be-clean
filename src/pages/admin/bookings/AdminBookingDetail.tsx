@@ -11,7 +11,6 @@ import {
   adminGetBooking,
   adminListBookingClaimCharges,
   adminPayExtensionStripe,
-  adminUpdateOfflinePaymentMethod,
   type AdminBookingClaimCharge,
   type AdminBookingClaimChargesSummary,
 } from "@/services/adminApi";
@@ -38,9 +37,9 @@ import { BookingActionsBar } from "@/features/admin-bookings/components/BookingA
 import { BookingFinancialCard } from "@/features/admin-bookings/components/BookingFinancialCard";
 import { BookingDepositCard } from "@/features/admin-bookings/components/BookingDepositCard";
 import { BookingExtendModal } from "@/features/admin-bookings/components/BookingExtendModal";
-import { BookingCollectExtensionDialog } from "@/features/admin-bookings/components/BookingCollectExtensionDialog";
 import { computeBookingFinancials } from "@/features/admin-bookings/utils/bookingFinancials";
 import { getExtensionPending } from "@/features/admin-bookings/utils/extensionMeta";
+import { formatPaymentSummary, todayCollectIso } from "@/features/admin-bookings/utils/paymentFlow";
 
 export default function AdminBookingDetail() {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -65,18 +64,11 @@ export default function AdminBookingDetail() {
   const [claimConfirmChecked, setClaimConfirmChecked] = useState(false);
   const [claimSubmitLoading, setClaimSubmitLoading] = useState(false);
 
-  const [opmDraft, setOpmDraft] = useState<"cash" | "card_terminal" | "">("");
-  const [opmSaveLoading, setOpmSaveLoading] = useState(false);
-
-  const [collectModalOpen, setCollectModalOpen] = useState(false);
-  const [collectDate, setCollectDate] = useState("");
-  const [collectOpm, setCollectOpm] = useState<"cash" | "card_terminal" | "">("");
   const [collectLoading, setCollectLoading] = useState(false);
+  const [extensionCollectLoading, setExtensionCollectLoading] = useState(false);
 
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [extendLoading, setExtendLoading] = useState(false);
-  const [collectExtensionOpen, setCollectExtensionOpen] = useState(false);
-  const [collectExtensionLoading, setCollectExtensionLoading] = useState(false);
   const [extensionPayLoading, setExtensionPayLoading] = useState(false);
 
   const refreshPayload = useCallback(async () => {
@@ -154,24 +146,6 @@ export default function AdminBookingDetail() {
     }
   }, [searchParams, setSearchParams, toast, refreshPayload]);
 
-  useEffect(() => {
-    const opm = (payload?.booking as Record<string, unknown>)?.offline_payment_method ?? "";
-    setOpmDraft(opm === "cash" || opm === "card_terminal" ? opm : "");
-    const paidAtRaw = (payload?.booking as Record<string, unknown>)?.paid_at;
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    if (paidAtRaw) {
-      const d = new Date(String(paidAtRaw));
-      if (!Number.isNaN(d.getTime())) {
-        setCollectDate(
-          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-        );
-      }
-    } else {
-      setCollectDate(todayStr);
-    }
-  }, [payload]);
-
   const b = payload?.booking ?? ({} as Record<string, unknown>);
   const v = payload?.vehicle ?? null;
   const r = payload?.renter ?? null;
@@ -192,12 +166,16 @@ export default function AdminBookingDetail() {
   );
 
   const total = formatMoney(bookingFinancials.totalTTC);
-  const canPayNow = status === "pending_payment";
+
+  const needsPayment = isAdminPricing
+    ? status === "pending" || status === "pending_payment" || status === "accepted"
+    : status === "pending_payment";
+
+  const paymentSummary = useMemo(() => formatPaymentSummary(b, status), [b, status]);
+
   const canCancelBooking =
     status === "pending" || status === "pending_payment" || status === "confirmed";
   const canExtend = status === "confirmed" || status === "active";
-  const canCollectInitial =
-    isAdminPricing && (status === "pending" || status === "pending_payment" || status === "accepted");
 
   const depositStatus = typeof b.deposit_status === "string" ? String(b.deposit_status) : null;
   const depositAmountSnapshot = Number(b.deposit_amount_snapshot ?? 0);
@@ -236,36 +214,16 @@ export default function AdminBookingDetail() {
     };
   }, [bookingId, b, v]);
 
-  const paidAtLabel =
-    b.paid_at && !b.stripe_payment_intent_id
-      ? new Date(String(b.paid_at)).toLocaleDateString("fr-FR")
-      : null;
-
-  const runSaveOpm = async () => {
+  const runCollectCash = async () => {
     if (!bookingId) return;
-    setOpmSaveLoading(true);
-    try {
-      await adminUpdateOfflinePaymentMethod(bookingId, opmDraft || null);
-      await refreshPayload();
-      toast({ title: "Mode de paiement enregistré" });
-    } catch (e: unknown) {
-      toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
-    } finally {
-      setOpmSaveLoading(false);
-    }
-  };
-
-  const runCollect = async () => {
-    if (!bookingId || !collectDate) return;
     setCollectLoading(true);
     try {
       await adminCollectPayment(bookingId, {
-        paidAt: `${collectDate}T12:00:00.000Z`,
-        offlinePaymentMethod: collectOpm || undefined,
+        paidAt: todayCollectIso(),
+        offlinePaymentMethod: "cash",
       });
       await refreshPayload();
-      setCollectModalOpen(false);
-      toast({ title: "Encaissement enregistré", description: "Réservation confirmée." });
+      toast({ title: "Encaissement enregistré", description: "Réservation confirmée en espèces." });
     } catch (e: unknown) {
       toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
     } finally {
@@ -274,20 +232,19 @@ export default function AdminBookingDetail() {
   };
 
   const runCollectExtension = async () => {
-    if (!bookingId || !collectDate || !extensionPending) return;
-    setCollectExtensionLoading(true);
+    if (!bookingId || !extensionPending) return;
+    setExtensionCollectLoading(true);
     try {
       await adminCollectExtensionPayment(bookingId, {
-        paidAt: `${collectDate}T12:00:00.000Z`,
-        offlinePaymentMethod: collectOpm || undefined,
+        paidAt: todayCollectIso(),
+        offlinePaymentMethod: "cash",
       });
       await refreshPayload();
-      setCollectExtensionOpen(false);
       toast({ title: "Supplément encaissé", description: `${formatMoney(extensionPending.deltaTotalTTC)} enregistré.` });
     } catch (e: unknown) {
       toast({ title: "Erreur", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
     } finally {
-      setCollectExtensionLoading(false);
+      setExtensionCollectLoading(false);
     }
   };
 
@@ -320,9 +277,6 @@ export default function AdminBookingDetail() {
         title: "Location prolongée",
         description: `Supplément : ${formatMoney(result.delta.totalTTC)}`,
       });
-      if (isAdminPricing) {
-        setCollectExtensionOpen(true);
-      }
     } catch (e: unknown) {
       toast({ title: "Prolongation impossible", description: e instanceof Error ? e.message : "Erreur", variant: "destructive" });
     } finally {
@@ -345,8 +299,8 @@ export default function AdminBookingDetail() {
     }
   };
 
-  const runPayNow = async () => {
-    if (!reservationForPayment || !canPayNow) return;
+  const runPayCard = async () => {
+    if (!reservationForPayment) return;
     setPayLoading(true);
     try {
       await payerLocation(reservationForPayment);
@@ -459,30 +413,26 @@ export default function AdminBookingDetail() {
         bookingId={bookingId}
         status={status}
         isAdminPricing={isAdminPricing}
-        canPayNow={canPayNow}
+        needsPayment={needsPayment}
+        paymentSummary={paymentSummary}
+        totalFormatted={total}
         payLoading={payLoading}
-        canTakeDeposit={canTakeDeposit}
-        canCollectInitial={canCollectInitial}
         collectLoading={collectLoading}
+        canTakeDeposit={canTakeDeposit}
         canCancelBooking={canCancelBooking}
         cancelLoading={cancelLoading}
         canExtend={canExtend}
         extensionPending={extensionPending}
         isWebPricing={isWebPricing}
         extensionPayLoading={extensionPayLoading}
-        opmDraft={opmDraft}
-        opmSaveLoading={opmSaveLoading}
-        currentOpm={String(b.offline_payment_method ?? "")}
-        onOpmChange={setOpmDraft}
-        onSaveOpm={() => void runSaveOpm()}
-        onPayNow={() => void runPayNow()}
+        extensionCollectLoading={extensionCollectLoading}
+        onCollectCash={() => void runCollectCash()}
+        onPayCard={() => void runPayCard()}
         onTakeDeposit={() => setDepositOpen(true)}
-        onCollectInitial={() => setCollectModalOpen(true)}
         onExtend={() => setExtendModalOpen(true)}
-        onCollectExtension={() => setCollectExtensionOpen(true)}
+        onCollectExtensionCash={() => void runCollectExtension()}
         onPayExtensionStripe={() => void runPayExtensionStripe()}
         onCancel={() => void runCancelBooking()}
-        paidAtLabel={paidAtLabel}
       />
 
       <BookingFinancialCard financials={bookingFinancials} isAdminPricing={isAdminPricing} />
@@ -508,53 +458,6 @@ export default function AdminBookingDetail() {
         onConfirm={runExtend}
         confirmLoading={extendLoading}
       />
-
-      <BookingCollectExtensionDialog
-        open={collectExtensionOpen}
-        onOpenChange={setCollectExtensionOpen}
-        amountEuros={extensionPending?.deltaTotalTTC ?? 0}
-        collectDate={collectDate}
-        collectOpm={collectOpm}
-        loading={collectExtensionLoading}
-        onDateChange={setCollectDate}
-        onOpmChange={setCollectOpm}
-        onConfirm={() => void runCollectExtension()}
-      />
-
-      <Dialog open={collectModalOpen} onOpenChange={setCollectModalOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Enregistrer l'encaissement</DialogTitle>
-            <DialogDescription>La réservation passera au statut « confirmée ».</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="collect-date">Date d'encaissement</Label>
-              <Input id="collect-date" type="date" value={collectDate} onChange={(e) => setCollectDate(e.target.value)} disabled={collectLoading} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="collect-opm">Mode de paiement</Label>
-              <select
-                id="collect-opm"
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                value={collectOpm}
-                onChange={(e) => setCollectOpm(e.target.value as "cash" | "card_terminal" | "")}
-                disabled={collectLoading}
-              >
-                <option value="">— Non précisé —</option>
-                <option value="cash">Espèces</option>
-                <option value="card_terminal">CB (terminal)</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setCollectModalOpen(false)} disabled={collectLoading}>Annuler</Button>
-            <Button type="button" onClick={() => void runCollect()} disabled={collectLoading}>
-              {collectLoading ? "Enregistrement…" : "Confirmer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={claimModalOpen} onOpenChange={setClaimModalOpen}>
         <DialogContent className="sm:max-w-md">
