@@ -338,6 +338,15 @@
     "dayContext": {
       "ariaLabel": "Today's weather and exchange rate in Nosy Be",
       "title": "Nosy Be today",
+      "weatherLabel": "Weather",
+      "flightsLabel": "Flights",
+      "exchangeLabel": "Rate",
+      "timeLabel": "Local time",
+      "timeSub": "Madagascar · UTC+3",
+      "flightsToday": "Next flights today",
+      "flightsTomorrow": "Next flights tomorrow",
+      "exchangeShort": "1 € = {{rate}} Ar",
+      "exchangeLiveHint": "Today's rate",
       "exchangeLive": "1 € = {{rate}} Ar (today's rate)",
       "exchangeManual": "1 € = {{rate}} Ar",
       "pricesHint": "Prices shown in € with ariary equivalent",
@@ -349,6 +358,11 @@
         "up": "Rate up compared to yesterday",
         "down": "Rate down compared to yesterday",
         "stable": "Rate stable compared to yesterday"
+      },
+      "rateTrendShort": {
+        "up": "Up vs yesterday",
+        "down": "Down vs yesterday",
+        "stable": "Stable vs yesterday"
       },
       "weather": {
         "clear": "Sunny",

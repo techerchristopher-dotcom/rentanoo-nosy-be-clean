@@ -121,6 +121,15 @@
     "dayContext": {
       "ariaLabel": "Meteo e tasso di cambio di oggi a Nosy Be",
       "title": "Nosy Be oggi",
+      "weatherLabel": "Meteo",
+      "flightsLabel": "Voli",
+      "exchangeLabel": "Cambio",
+      "timeLabel": "Ora locale",
+      "timeSub": "Madagascar · UTC+3",
+      "flightsToday": "Prossimi voli oggi",
+      "flightsTomorrow": "Prossimi voli domani",
+      "exchangeShort": "1 € = {{rate}} Ar",
+      "exchangeLiveHint": "Tasso del giorno",
       "exchangeLive": "1 € = {{rate}} Ar (tasso del giorno)",
       "exchangeManual": "1 € = {{rate}} Ar",
       "pricesHint": "Prezzi in € con equivalente in ariary",
@@ -132,6 +141,11 @@
         "up": "Tasso in aumento rispetto a ieri",
         "down": "Tasso in calo rispetto a ieri",
         "stable": "Tasso stabile rispetto a ieri"
+      },
+      "rateTrendShort": {
+        "up": "In aumento vs ieri",
+        "down": "In calo vs ieri",
+        "stable": "Stabile vs ieri"
       },
       "weather": {
         "clear": "Soleggiato",

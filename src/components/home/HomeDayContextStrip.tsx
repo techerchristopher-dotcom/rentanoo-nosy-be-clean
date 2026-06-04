@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Clock,
   Cloud,
@@ -21,6 +22,7 @@ import { useNosyBeFlights } from "@/hooks/useNosyBeFlights";
 import type { ExchangeRateTrend } from "@/utils/dualCurrency";
 import { weatherCodeCategory, type WeatherCategory } from "@/utils/weatherCodes";
 import { SEO_EXCHANGE_PATH, SEO_FLIGHTS_PATH, SEO_WEATHER_PATH } from "@/config/seoRoutes";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type HomeDayContextStripProps = {
@@ -28,8 +30,12 @@ type HomeDayContextStripProps = {
   className?: string;
 };
 
+function todayYmdNosyBe(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Indian/Antananarivo" }).format(new Date());
+}
+
 function WeatherIcon({ category, className }: { category: WeatherCategory; className?: string }) {
-  const props = { className: cn("h-4 w-4 shrink-0", className), "aria-hidden": true as const };
+  const props = { className: cn("h-[18px] w-[18px] shrink-0", className), "aria-hidden": true as const };
   switch (category) {
     case "clear":
       return <Sun {...props} />;
@@ -71,6 +77,85 @@ function RateTrendIcon({
   return <Equal className={cn(iconClass, stableClass)} aria-label={label} />;
 }
 
+type ContextChipProps = {
+  label: string;
+  value: ReactNode;
+  sub?: ReactNode;
+  icon?: ReactNode;
+  href?: string;
+  ariaLabel?: string;
+  isHero: boolean;
+  loading?: boolean;
+  tooltip?: string;
+};
+
+function ContextChip({
+  label,
+  value,
+  sub,
+  icon,
+  href,
+  ariaLabel,
+  isHero,
+  loading,
+  tooltip,
+}: ContextChipProps) {
+  const cardClass = cn(
+    "group flex flex-col gap-1 rounded-xl px-4 py-3.5 text-left transition-all duration-200",
+    "focus-visible:outline-none focus-visible:ring-2",
+    isHero
+      ? "bg-white/[0.08] border border-white/20 text-white backdrop-blur-md hover:bg-white/[0.14] hover:scale-[1.02] focus-visible:ring-white/50"
+      : "bg-background/80 border border-border text-foreground shadow-sm hover:bg-muted/80 hover:scale-[1.01] focus-visible:ring-ring"
+  );
+
+  const labelClass = cn(
+    "text-[10px] font-medium uppercase tracking-widest",
+    isHero ? "text-white/55" : "text-muted-foreground"
+  );
+
+  const subClass = cn("text-xs truncate", isHero ? "text-white/65" : "text-muted-foreground");
+
+  const content = (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span className={labelClass}>{label}</span>
+        {icon ? <span className="opacity-90">{icon}</span> : null}
+      </div>
+      <div
+        className={cn(
+          "text-base font-semibold tabular-nums tracking-tight leading-tight",
+          loading && "animate-pulse opacity-60",
+          isHero ? "text-white" : "text-foreground"
+        )}
+      >
+        {value}
+      </div>
+      {sub ? <div className={subClass}>{sub}</div> : null}
+    </>
+  );
+
+  const inner = href ? (
+    <Link to={href} className={cardClass} aria-label={ariaLabel}>
+      {content}
+    </Link>
+  ) : (
+    <div className={cardClass} aria-label={ariaLabel}>
+      {content}
+    </div>
+  );
+
+  if (!tooltip) return inner;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{inner}</TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-xs text-center">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function HomeDayContextStrip({ variant, className }: HomeDayContextStripProps) {
   const { t } = useTranslation("common");
   const { config, mode, trend, loading: rateLoading } = useExchangeRate();
@@ -79,117 +164,122 @@ export function HomeDayContextStrip({ variant, className }: HomeDayContextStripP
   const localTime = useNosyBeLocalTime();
 
   const isHero = variant === "hero";
-  const loading = rateLoading || weatherLoading;
+  const weatherLoadingState = weatherLoading && !weather;
+  const rateLoadingState = rateLoading;
+  const flightsLoadingState = flightsLoading && !flights;
 
   const weatherCategory = weather ? weatherCodeCategory(weather.weatherCode) : null;
-  const weatherLabel = weatherCategory
+  const weatherSub = weatherCategory
     ? t(`home.dayContext.weather.${weatherCategory}`)
     : weatherError
       ? t("home.dayContext.weatherUnavailable")
       : "…";
 
   const rateFormatted = new Intl.NumberFormat("fr-FR").format(config.rate);
-  const exchangeLine =
-    mode === "live"
-      ? t("home.dayContext.exchangeLive", { rate: rateFormatted })
-      : t("home.dayContext.exchangeManual", { rate: rateFormatted });
+  const exchangeValue = t("home.dayContext.exchangeShort", { rate: rateFormatted });
+  const exchangeSub =
+    trend && mode === "live"
+      ? t(`home.dayContext.rateTrendShort.${trend}`)
+      : mode === "live"
+        ? t("home.dayContext.exchangeLiveHint")
+        : undefined;
+
+  const today = todayYmdNosyBe();
+  const nextArrival = flights?.nextArrival;
+  const nextDeparture = flights?.nextDeparture;
+  const flightDate = nextArrival?.scheduledDate ?? nextDeparture?.scheduledDate;
+  const flightsAreTomorrow = Boolean(flightDate && flightDate !== today);
+  const flightsSub = flightsAreTomorrow
+    ? t("home.dayContext.flightsTomorrow")
+    : t("home.dayContext.flightsToday");
+
+  const arrivalTime = flightsLoadingState ? "…" : nextArrival?.scheduledTime ?? "—";
+  const departureTime = flightsLoadingState ? "…" : nextDeparture?.scheduledTime ?? "—";
+
+  const cardCount = flightsConfigured ? 4 : 3;
 
   return (
-    <div
-      className={cn(
-        "mx-auto w-full max-w-5xl",
-        isHero ? "mb-8" : "mb-6",
-        className
-      )}
-      aria-label={t("home.dayContext.ariaLabel")}
-    >
+    <TooltipProvider delayDuration={300}>
       <div
-        className={cn(
-          "flex flex-col sm:flex-row sm:flex-wrap items-center justify-center gap-3 sm:gap-4 px-4 py-3 rounded-2xl text-sm",
-          isHero
-            ? "bg-white/10 border border-white/25 text-white backdrop-blur-sm"
-            : "bg-muted/50 border border-border text-foreground"
-        )}
+        className={cn("mx-auto w-full max-w-4xl", isHero ? "mb-8" : "mb-6", className)}
+        aria-label={t("home.dayContext.ariaLabel")}
       >
-        <div className="flex items-center gap-2 font-medium">
-          <span className={cn("text-xs uppercase tracking-wide", isHero ? "text-white/70" : "text-muted-foreground")}>
-            {t("home.dayContext.title")}
-          </span>
-          <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
-          <span className="flex items-center gap-1.5 tabular-nums">
-            <Clock className={cn("h-3.5 w-3.5 shrink-0", isHero ? "text-white/70" : "text-muted-foreground")} aria-hidden />
-            <span className={cn("text-xs font-semibold", isHero ? "text-white/90" : "text-foreground")}>
-              {localTime}
-            </span>
-          </span>
+        <div
+          className={cn(
+            "grid gap-3",
+            cardCount === 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3"
+          )}
+        >
+          <ContextChip
+            isHero={isHero}
+            label={t("home.dayContext.weatherLabel")}
+            href={SEO_WEATHER_PATH}
+            ariaLabel={t("home.dayContext.weatherLinkLabel")}
+            loading={weatherLoadingState}
+            icon={
+              weatherCategory ? (
+                <WeatherIcon category={weatherCategory} className={isHero ? "text-amber-200" : "text-primary"} />
+              ) : null
+            }
+            value={weatherLoadingState ? "…" : weather ? `${weather.tempC}°C` : "—"}
+            sub={weatherSub}
+          />
+
+          {flightsConfigured ? (
+            <ContextChip
+              isHero={isHero}
+              label={t("home.dayContext.flightsLabel")}
+              href={SEO_FLIGHTS_PATH}
+              ariaLabel={t("home.dayContext.flightsLinkLabel")}
+              loading={flightsLoadingState}
+              sub={flightsSub}
+              value={
+                <span className="inline-flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1">
+                    <PlaneLanding
+                      className={cn("h-3.5 w-3.5 shrink-0", isHero ? "text-sky-200" : "text-primary")}
+                      aria-hidden
+                    />
+                    {arrivalTime}
+                  </span>
+                  <span className={cn("font-normal", isHero ? "text-white/40" : "text-muted-foreground/60")}>·</span>
+                  <span className="inline-flex items-center gap-1">
+                    <PlaneTakeoff
+                      className={cn("h-3.5 w-3.5 shrink-0", isHero ? "text-sky-200" : "text-primary")}
+                      aria-hidden
+                    />
+                    {departureTime}
+                  </span>
+                </span>
+              }
+            />
+          ) : null}
+
+          <ContextChip
+            isHero={isHero}
+            label={t("home.dayContext.exchangeLabel")}
+            href={SEO_EXCHANGE_PATH}
+            ariaLabel={t("home.dayContext.exchangeLinkLabel")}
+            loading={rateLoadingState}
+            tooltip={t("home.dayContext.pricesHint")}
+            value={
+              <span className="inline-flex items-center gap-1.5">
+                {trend ? <RateTrendIcon trend={trend} isHero={isHero} /> : null}
+                <span>{exchangeValue}</span>
+              </span>
+            }
+            sub={exchangeSub}
+          />
+
+          <ContextChip
+            isHero={isHero}
+            label={t("home.dayContext.timeLabel")}
+            icon={<Clock className={cn(isHero ? "text-white/60" : "text-muted-foreground")} aria-hidden />}
+            value={localTime}
+            sub={t("home.dayContext.timeSub")}
+          />
         </div>
-
-        <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
-
-        <Link
-          to={SEO_WEATHER_PATH}
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 transition-colors",
-            isHero ? "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50" : "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          )}
-          aria-label={t("home.dayContext.weatherLinkLabel")}
-        >
-          {weatherCategory ? <WeatherIcon category={weatherCategory} className={isHero ? "text-amber-200" : "text-primary"} /> : null}
-          <span className={cn("font-semibold tabular-nums", loading && "opacity-60")}>
-            {loading && !weather ? "…" : weather ? `${weather.tempC}°C` : "—"}
-          </span>
-          <span className={cn(isHero ? "text-white/85" : "text-muted-foreground")}>{weatherLabel}</span>
-        </Link>
-
-        {flightsConfigured ? (
-          <>
-            <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
-            <Link
-              to={SEO_FLIGHTS_PATH}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-2 py-1 -mx-2 transition-colors text-xs sm:text-sm",
-                isHero ? "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50" : "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                flightsLoading && "opacity-60"
-              )}
-              aria-label={t("home.dayContext.flightsLinkLabel")}
-            >
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <PlaneLanding className={cn("h-3.5 w-3.5 shrink-0", isHero ? "text-sky-200" : "text-primary")} aria-hidden />
-                <span className={cn("font-semibold", isHero ? "text-white/90" : "text-foreground")}>
-                  {flightsLoading && !flights ? "…" : flights?.nextArrival?.scheduledTime ?? "—"}
-                </span>
-              </span>
-              <span className={cn(isHero ? "text-white/50" : "text-muted-foreground")}>·</span>
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <PlaneTakeoff className={cn("h-3.5 w-3.5 shrink-0", isHero ? "text-sky-200" : "text-primary")} aria-hidden />
-                <span className={cn("font-semibold", isHero ? "text-white/90" : "text-foreground")}>
-                  {flightsLoading && !flights ? "…" : flights?.nextDeparture?.scheduledTime ?? "—"}
-                </span>
-              </span>
-            </Link>
-          </>
-        ) : null}
-
-        <span className={cn("hidden sm:block w-px h-4", isHero ? "bg-white/30" : "bg-border")} aria-hidden />
-
-        <Link
-          to={SEO_EXCHANGE_PATH}
-          className={cn(
-            "text-center sm:text-left rounded-lg px-2 py-1 -mx-2 transition-colors",
-            isHero ? "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50" : "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            loading && "opacity-60"
-          )}
-          aria-label={t("home.dayContext.exchangeLinkLabel")}
-        >
-          <span className="inline-flex items-center gap-1.5 font-semibold tabular-nums">
-            {trend ? <RateTrendIcon trend={trend} isHero={isHero} /> : null}
-            <span>{exchangeLine}</span>
-          </span>
-          <span className={cn("block text-xs mt-0.5", isHero ? "text-white/70" : "text-muted-foreground")}>
-            {t("home.dayContext.pricesHint")}
-          </span>
-        </Link>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
