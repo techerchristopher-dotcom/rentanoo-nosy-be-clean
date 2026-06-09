@@ -1326,5 +1326,35 @@
     "ctaRent": "Rent a scooter",
     "ctaWeather": "Nosy Be weather",
     "ctaExchange": "Euro / Ariary rate"
+  },
+  "categoryShowcase": {
+    "title": "What would you like to rent in Nosy Be?",
+    "subtitle": "Discover our rental solutions available today and those coming soon.",
+    "sectionAvailable": "Available now",
+    "sectionComingSoon": "Coming soon",
+    "badgeAvailable": "Available now",
+    "badgeComingSoon": "Coming soon",
+    "viewAllAvailable": "View all available rentals",
+    "button": "Explore",
+    "items": {
+      "scooter": {
+        "label": "Scooter"
+      },
+      "moto": {
+        "label": "Motorbike"
+      },
+      "quad": {
+        "label": "Quad",
+        "waPrefillMessage": "Hello Rentanoo,\n\nI'm interested in renting a quad in Nosy Be.\n\nCould you let me know as soon as this service becomes available?\n\nThank you."
+      },
+      "boat": {
+        "label": "Boat",
+        "waPrefillMessage": "Hello Rentanoo,\n\nI'm interested in renting a boat in Nosy Be.\n\nCould you let me know as soon as this service becomes available?\n\nThank you."
+      },
+      "accommodation": {
+        "label": "Accommodation",
+        "waPrefillMessage": "Hello Rentanoo,\n\nI'm interested in the accommodations offered by Rentanoo (villa, house, bungalow).\n\nCould you let me know as soon as this service becomes available?\n\nThank you."
+      }
+    }
   }
 }

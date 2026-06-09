@@ -1282,5 +1282,35 @@
     "ctaRent": "Roller mieten",
     "ctaWeather": "Wetter Nosy Be",
     "ctaExchange": "Euro / Ariary Kurs"
+  },
+  "categoryShowcase": {
+    "title": "Was möchten Sie in Nosy Be mieten?",
+    "subtitle": "Entdecken Sie unsere Mietangebote, die heute verfügbar sind, und die demnächst kommen.",
+    "sectionAvailable": "Jetzt verfügbar",
+    "sectionComingSoon": "Demnächst",
+    "badgeAvailable": "Jetzt verfügbar",
+    "badgeComingSoon": "Demnächst",
+    "viewAllAvailable": "Alle verfügbaren Mietangebote ansehen",
+    "button": "Entdecken",
+    "items": {
+      "scooter": {
+        "label": "Roller"
+      },
+      "moto": {
+        "label": "Motorrad"
+      },
+      "quad": {
+        "label": "Quad",
+        "waPrefillMessage": "Hallo Rentanoo,\n\nIch interessiere mich für die Miete eines Quads in Nosy Be.\n\nKönnen Sie mich benachrichtigen, sobald dieser Service verfügbar ist?\n\nVielen Dank."
+      },
+      "boat": {
+        "label": "Boot",
+        "waPrefillMessage": "Hallo Rentanoo,\n\nIch interessiere mich für die Miete eines Bootes in Nosy Be.\n\nKönnen Sie mich benachrichtigen, sobald dieser Service verfügbar ist?\n\nVielen Dank."
+      },
+      "accommodation": {
+        "label": "Unterkunft",
+        "waPrefillMessage": "Hallo Rentanoo,\n\nIch interessiere mich für die auf Rentanoo angebotenen Unterkünfte (Villa, Haus, Bungalow).\n\nKönnen Sie mich benachrichtigen, sobald dieser Service verfügbar ist?\n\nVielen Dank."
+      }
+    }
   }
 }

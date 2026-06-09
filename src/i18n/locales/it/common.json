@@ -1282,5 +1282,35 @@
     "ctaRent": "Noleggia uno scooter",
     "ctaWeather": "Meteo Nosy Be",
     "ctaExchange": "Cambio Euro / Ariary"
+  },
+  "categoryShowcase": {
+    "title": "Cosa vuoi noleggiare a Nosy Be?",
+    "subtitle": "Scopri le nostre soluzioni di noleggio disponibili oggi e quelle in arrivo.",
+    "sectionAvailable": "Disponibile ora",
+    "sectionComingSoon": "Prossimamente",
+    "badgeAvailable": "Disponibile ora",
+    "badgeComingSoon": "Prossimamente",
+    "viewAllAvailable": "Vedi tutti i noleggi disponibili",
+    "button": "Esplora",
+    "items": {
+      "scooter": {
+        "label": "Scooter"
+      },
+      "moto": {
+        "label": "Moto"
+      },
+      "quad": {
+        "label": "Quad",
+        "waPrefillMessage": "Ciao Rentanoo,\n\nSono interessato/a al noleggio di quad a Nosy Be.\n\nPotete avvisarmi non appena questo servizio sarà disponibile?\n\nGrazie."
+      },
+      "boat": {
+        "label": "Barca",
+        "waPrefillMessage": "Ciao Rentanoo,\n\nSono interessato/a al noleggio di barche a Nosy Be.\n\nPotete avvisarmi non appena questo servizio sarà disponibile?\n\nGrazie."
+      },
+      "accommodation": {
+        "label": "Alloggio",
+        "waPrefillMessage": "Ciao Rentanoo,\n\nSono interessato/a agli alloggi proposti su Rentanoo (villa, casa, bungalow).\n\nPotete avvisarmi non appena questo servizio sarà disponibile?\n\nGrazie."
+      }
+    }
   }
 }

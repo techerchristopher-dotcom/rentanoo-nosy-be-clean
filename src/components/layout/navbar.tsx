@@ -20,6 +20,7 @@ import { ProfileService } from "@/services/supabase/profile";
 import { User as UserType, UserRoleUtils } from "@/types";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { WhatsAppHeader } from "@/components/layout/WhatsAppHeader";
+import { ExploreCategoriesButton } from "@/components/categories/ExploreCategoriesButton";
 
 const LANGUAGES: Array<{ code: LangCode; flag: string; label: string }> = [
   { code: "fr", flag: "🇫🇷", label: "Français" },
@@ -162,7 +163,10 @@ export function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             {/* Language Switcher */}
             <LanguageSwitcher />
-            
+
+            {/* Explorer (catégories showcase) */}
+            <ExploreCategoriesButton />
+
             {user ? (
               <div className="flex items-center space-x-3">
                 <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
@@ -240,7 +244,10 @@ export function Navbar() {
           </div>
 
           {/* Mobile User Menu - Mon espace */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center gap-1">
+            {/* Explorer (catégories showcase) — icône seule sur mobile */}
+            <ExploreCategoriesButton iconOnlyOnMobile className="px-2" />
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

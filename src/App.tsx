@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { WhatsAppContactProvider } from "@/contexts/WhatsAppContactContext";
+import { CategoryShowcaseProvider } from "@/hooks/useCategoryShowcase";
+import { CategoryShowcaseModal } from "@/components/categories/CategoryShowcaseModal";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import { trackPageViewEvent } from "@/lib/whatsappAnalytics";
@@ -121,6 +123,7 @@ const App = () => (
       <AuthProvider>
         <ExchangeRateProvider>
         <WhatsAppContactProvider>
+        <CategoryShowcaseProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -134,6 +137,7 @@ const App = () => (
                 <LanguageSwitcher />
               </div>
               <WhatsAppFloatingButton />
+              <CategoryShowcaseModal />
               {/* Navbar - Rendu directement pour éviter les problèmes de ErrorBoundary */}
               <Navbar />
               <Routes>
@@ -568,6 +572,7 @@ const App = () => (
             </div>
           </BrowserRouter>
         </TooltipProvider>
+        </CategoryShowcaseProvider>
         </WhatsAppContactProvider>
         </ExchangeRateProvider>
       </AuthProvider>
