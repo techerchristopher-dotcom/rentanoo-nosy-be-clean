@@ -1,5 +1,11 @@
 import type { ReservationPayment } from "@/components/PaymentFlowModal";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  ANALYTICS_BOOKING_CURRENCY,
+  hasStripeRedirectBeenSent,
+  markStripeRedirectSent,
+  trackGa4Event,
+} from "@/lib/analytics";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 if (!SUPABASE_URL) {
@@ -97,7 +103,18 @@ export async function payerLocation(reservation: ReservationPayment) {
     }
 
     console.log('✅ [payerLocation] Redirection vers:', data.url);
-    
+
+    const bookingId = String(reservation.id);
+    if (!hasStripeRedirectBeenSent(bookingId)) {
+      trackGa4Event("stripe_redirect", {
+        booking_id: bookingId,
+        amount_total_expected:
+          reservation.amountTotalExpected ?? reservation.totalTTC ?? 0,
+        currency: ANALYTICS_BOOKING_CURRENCY,
+      });
+      markStripeRedirectSent(bookingId);
+    }
+
     // Redirection du navigateur vers Stripe Checkout
     window.location.href = data.url;
   } catch (err) {

@@ -47,6 +47,7 @@ import {
   getRenterPaymentAmountsFromBooking,
 } from "@/utils/renterPaymentFromBooking";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 
 const BookingDiscussion = () => {
@@ -968,7 +969,17 @@ const BookingDiscussion = () => {
     });
 
     console.debug('[BookingDiscussion] pay button clicked', { bookingForPayment: reservation });
-    
+
+    if (!isCashOnSitePayment(reservation.paymentMethod ?? "card_online")) {
+      trackGa4Event("payment_flow_opened", {
+        booking_id: String(reservation.id),
+        payment_method: reservation.paymentMethod ?? "card_online",
+        amount_total_expected:
+          reservation.amountTotalExpected ?? reservation.totalTTC ?? 0,
+        currency: ANALYTICS_BOOKING_CURRENCY,
+      });
+    }
+
     // Ouvrir la modale de paiement
     setReservationForPayment(reservation);
     setStep1Complete(false);

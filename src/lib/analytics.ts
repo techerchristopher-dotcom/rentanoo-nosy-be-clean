@@ -160,3 +160,53 @@ export function markDepositConversionSent(transactionId: string): void {
     // ignore
   }
 }
+
+// --- Paiements V1 (A2) — déduplication GA4 ---
+
+/** Devise des montants booking stockés en DB (ariary). */
+export const ANALYTICS_BOOKING_CURRENCY = "MGA";
+
+const STORAGE_KEY_STRIPE_REDIRECT = "ga4_stripe_redirect_sent";
+const STORAGE_KEY_PAYMENT_COMPLETED = "ga4_payment_completed_sent";
+
+function readDedupSet(storageKey: string): Set<string> {
+  try {
+    const stored = sessionStorage.getItem(storageKey);
+    if (!stored) return new Set();
+    return new Set<string>(JSON.parse(stored));
+  } catch {
+    return new Set();
+  }
+}
+
+function writeDedupSet(storageKey: string, set: Set<string>): void {
+  try {
+    const arr = [...set];
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify(arr.length > 50 ? arr.slice(-50) : arr)
+    );
+  } catch {
+    // ignore
+  }
+}
+
+export function hasStripeRedirectBeenSent(bookingId: string): boolean {
+  return readDedupSet(STORAGE_KEY_STRIPE_REDIRECT).has(bookingId);
+}
+
+export function markStripeRedirectSent(bookingId: string): void {
+  const set = readDedupSet(STORAGE_KEY_STRIPE_REDIRECT);
+  set.add(bookingId);
+  writeDedupSet(STORAGE_KEY_STRIPE_REDIRECT, set);
+}
+
+export function hasPaymentCompletedBeenSent(bookingId: string): boolean {
+  return readDedupSet(STORAGE_KEY_PAYMENT_COMPLETED).has(bookingId);
+}
+
+export function markPaymentCompletedSent(bookingId: string): void {
+  const set = readDedupSet(STORAGE_KEY_PAYMENT_COMPLETED);
+  set.add(bookingId);
+  writeDedupSet(STORAGE_KEY_PAYMENT_COMPLETED, set);
+}

@@ -40,6 +40,8 @@ import {
   SupabaseBookingsService,
   type BookingPaymentMethod,
 } from "@/services/supabase/bookings";
+import { supabase } from "@/integrations/supabase/client";
+import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
 import { ProfileService } from "@/services/supabase/profile";
 import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle as AppVehicle } from "@/types";
 import { Vehicle } from "@/services/supabaseVehiclesService";
@@ -706,6 +708,28 @@ export default function VehicleDetails() {
       
       if (bookingResult.data) {
         console.log('✅ [DEBUG] Réservation créée avec succès:', bookingResult.data);
+        try {
+          const { data: bookingRow } = await supabase
+            .from("bookings")
+            .select(
+              "payment_method, amount_total_expected, service_fee_percent_applied, subtotal"
+            )
+            .eq("id", bookingResult.data.id)
+            .single();
+          if (bookingRow) {
+            trackGa4Event("booking_created", {
+              payment_method: bookingRow.payment_method ?? paymentMethod,
+              amount_total_expected: Number(bookingRow.amount_total_expected ?? 0),
+              service_fee_percent_applied: Number(
+                bookingRow.service_fee_percent_applied ?? 0
+              ),
+              subtotal: Number(bookingRow.subtotal ?? subtotal),
+              currency: ANALYTICS_BOOKING_CURRENCY,
+            });
+          }
+        } catch {
+          // best effort analytics
+        }
         // Ajouter l'ID de la réservation aux données pour la discussion
         bookingData.bookingId = bookingResult.data.id;
         
@@ -1601,10 +1625,12 @@ export default function VehicleDetails() {
           onClose={() => setShowConfirmationModal(false)}
           onConfirm={handleConfirmBooking}
           vehicle={{
+            id: vehicle.id,
             brand: vehicle.brand,
             model: vehicle.model,
             year: vehicle.year,
-            imageUrl: photos.length > 0 ? photos[0].url : undefined
+            imageUrl: photos.length > 0 ? photos[0].url : undefined,
+            category: vehicle.vehicleType ?? "car",
           }}
           rentalInfo={{
             pickupLocation: getBookingDraft()?.pickupLocation || navigationState.pickupLocation || 'Non spécifié',

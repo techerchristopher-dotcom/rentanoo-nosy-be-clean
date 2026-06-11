@@ -27,6 +27,7 @@ import {
 } from "@/utils/renterPaymentFromBooking";
 import { computeBillableRentalDays } from "@/utils/rentalPriceFromDates";
 import { logRadixPortalDebug, subscribeRadixPortalDebug } from "@/lib/debugRadixPortal";
+import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
 
 interface BookingWithDetails extends Booking {
   vehicle?: Vehicle;
@@ -935,6 +936,16 @@ export default function RenterBookings() {
                     onBookingDeleted={handleBookingDeleted}
                     onBookingUpdated={handleBookingUpdated}
                     onRequestPay={(reservation) => {
+                      const method = reservation.paymentMethod ?? "card_online";
+                      if (!isCashOnSitePayment(method)) {
+                        trackGa4Event("payment_flow_opened", {
+                          booking_id: String(reservation.id),
+                          payment_method: method,
+                          amount_total_expected:
+                            reservation.amountTotalExpected ?? reservation.totalTTC ?? 0,
+                          currency: ANALYTICS_BOOKING_CURRENCY,
+                        });
+                      }
                       setReservationCourante(reservation);
                       setModalMode("avantPaiement");
                       setStep1Complete(false);

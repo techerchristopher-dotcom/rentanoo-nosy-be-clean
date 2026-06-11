@@ -4,7 +4,12 @@ import {
   sendPurchaseConversion,
   hasPurchaseConversionBeenSent,
   markPurchaseConversionSent,
+  ANALYTICS_BOOKING_CURRENCY,
+  hasPaymentCompletedBeenSent,
+  markPaymentCompletedSent,
+  trackGa4Event,
 } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
 import { adminGetBooking } from "@/services/adminApi";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -40,6 +45,7 @@ export default function PaymentSuccess() {
     const verifyPayment = async () => {
       try {
         let bookingIdFromStripe: string | null = null;
+        let sessionPaidConfirmed = false;
 
         // 1) Récupérer les détails de la session (backend-confirmed : Stripe vérifie payment_status)
         if (sessionIdFromUrl) {
@@ -49,6 +55,7 @@ export default function PaymentSuccess() {
           const data = await res.json();
 
           if (data.ok && data.amount !== undefined) {
+            sessionPaidConfirmed = true;
             // Paiement confirmé côté Stripe → envoyer conversion Google Ads (avec anti-double)
             if (!hasPurchaseConversionBeenSent(sessionIdFromUrl)) {
               sendPurchaseConversion({
@@ -66,6 +73,31 @@ export default function PaymentSuccess() {
         // 2) Attendre pour laisser le webhook mettre à jour la DB
         console.log("⏳ [PaymentSuccess] Attente webhook (2s)...");
         await new Promise(resolve => setTimeout(resolve, 2000));
+
+        if (
+          sessionPaidConfirmed &&
+          bookingIdFromStripe &&
+          !hasPaymentCompletedBeenSent(bookingIdFromStripe)
+        ) {
+          try {
+            const { data: bookingRow } = await supabase
+              .from("bookings")
+              .select("payment_method, amount_total_paid")
+              .eq("id", bookingIdFromStripe)
+              .single();
+            if (bookingRow) {
+              trackGa4Event("payment_completed", {
+                booking_id: bookingIdFromStripe,
+                payment_method: bookingRow.payment_method ?? "card_online",
+                amount_total_paid: Number(bookingRow.amount_total_paid ?? 0),
+                currency: ANALYTICS_BOOKING_CURRENCY,
+              });
+              markPaymentCompletedSent(bookingIdFromStripe);
+            }
+          } catch {
+            // best effort analytics
+          }
+        }
 
         // 3) Retour spécifique admin/agence (fallback obligatoire vers web)
         if (bookingIdFromStripe) {

@@ -21,16 +21,19 @@ import { PaymentMethodSelector } from "@/components/booking/PaymentMethodSelecto
 import { useRenterFeePreview } from "@/hooks/useRenterFeePreview";
 import { feePercentLabel } from "@/services/supabase/renterFeePreview";
 import type { BookingPaymentMethod } from "@/services/supabase/bookings";
+import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
 
 interface BookingConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (paymentMethod: BookingPaymentMethod) => void;
   vehicle: {
+    id: string;
     brand: string;
     model: string;
     year: number;
     imageUrl?: string;
+    category?: string;
   };
   rentalInfo: {
     pickupLocation?: string;
@@ -100,6 +103,18 @@ export function BookingConfirmationModal({
   };
 
   const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>('card_online');
+
+  const handlePaymentMethodChange = (method: BookingPaymentMethod) => {
+    if (method === paymentMethod) return;
+    setPaymentMethod(method);
+    trackGa4Event("payment_method_selected", {
+      payment_method: method,
+      vehicle_id: vehicle.id,
+      vehicle_category: vehicle.category ?? "unknown",
+      subtotal,
+      currency: ANALYTICS_BOOKING_CURRENCY,
+    });
+  };
 
   // Charger le brouillon depuis localStorage quand la modal s'ouvre
   useEffect(() => {
@@ -365,7 +380,7 @@ export function BookingConfirmationModal({
           {/* Mode de paiement (P3-A) */}
           <PaymentMethodSelector
             value={paymentMethod}
-            onChange={setPaymentMethod}
+            onChange={handlePaymentMethodChange}
             savingsMga={savingsMga}
             disabled={previewLoading}
           />
