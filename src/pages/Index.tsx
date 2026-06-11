@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { format } from "date-fns";
+import { ChevronDown } from "lucide-react";
 import { SearchBarAirbnb } from "@/components/ui/search-bar-airbnb";
+import { Button } from "@/components/ui/button";
 import { calculateRentalCost, createRentalCalculation, createVehicleRentalInfo } from "@/lib/utils";
 import { VehicleFilters, RentalCalculation, VehicleRentalInfo } from "@/types";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
@@ -16,7 +18,13 @@ import { isMoto } from "@/utils/vehicleType";
 import { parseEngineCapacity } from "@/utils/engineCapacity";
 import { Seo } from "@/components/seo/Seo";
 import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
+import { HomeHeroTrustStrip } from "@/components/home/HomeHeroTrustStrip";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import {
+  isFilterableVehicleType,
+  useCategoryShowcase,
+  type FilterableVehicleType,
+} from "@/hooks/useCategoryShowcase";
 
 
 const Index = () => {
@@ -40,15 +48,31 @@ const Index = () => {
   const [selectedEngineCapacities, setSelectedEngineCapacities] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
   const shouldScrollToResultsRef = useRef(false);
+  const pendingCatalogScrollRef = useRef(false);
 
-  const scrollToResults = () => {
+  const scrollToResults = useCallback(() => {
     requestAnimationFrame(() => {
       document.getElementById("search-results")?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
     });
-  };
+  }, []);
+
+  const requestCatalogScroll = useCallback(() => {
+    setShowResults(true);
+    pendingCatalogScrollRef.current = true;
+  }, []);
+
+  const applyCategoryFilter = useCallback((type: FilterableVehicleType) => {
+    setSelectedVehicleTypes([type]);
+    setSelectedEngineCapacities([]);
+    requestCatalogScroll();
+  }, [requestCatalogScroll]);
+
+  const handleCatalogCtaClick = useCallback(() => {
+    requestCatalogScroll();
+  }, [requestCatalogScroll]);
 
   // Variables pour le calcul de location (structure structurée)
   const [rentalCalculation, setRentalCalculation] = useState<RentalCalculation | null>(null);
@@ -110,7 +134,53 @@ const Index = () => {
   };
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const {
+    registerHomeCatalogHandlers,
+    unregisterHomeCatalogHandlers,
+  } = useCategoryShowcase();
+
+  const minPricePerDay = useMemo(() => {
+    if (vehicles.length === 0) return null;
+    return Math.min(...vehicles.map((v) => v.price_per_day));
+  }, [vehicles]);
+
+  const minPriceLabel =
+    minPricePerDay != null ? formatClientInline(minPricePerDay) : null;
+
+  const showCatalogUi = !loading && vehicles.length > 0;
+
+  useEffect(() => {
+    registerHomeCatalogHandlers({ applyCategoryFilter });
+    return () => unregisterHomeCatalogHandlers();
+  }, [
+    registerHomeCatalogHandlers,
+    unregisterHomeCatalogHandlers,
+    applyCategoryFilter,
+  ]);
+
+  useEffect(() => {
+    const state = location.state as {
+      categoryFilter?: string;
+      scrollCatalog?: boolean;
+    } | null;
+
+    if (!state?.categoryFilter || !isFilterableVehicleType(state.categoryFilter)) {
+      return;
+    }
+
+    applyCategoryFilter(state.categoryFilter);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate, applyCategoryFilter]);
+
+  useEffect(() => {
+    if (!pendingCatalogScrollRef.current || !showResults || loading) return;
+
+    pendingCatalogScrollRef.current = false;
+    const timer = setTimeout(scrollToResults, 100);
+    return () => clearTimeout(timer);
+  }, [filteredVehicles, showResults, loading, scrollToResults]);
 
 
   // Charger les véhicules depuis Supabase
@@ -528,6 +598,13 @@ const Index = () => {
               )}
             </p>
 
+            {showCatalogUi ? (
+              <HomeHeroTrustStrip
+                vehicleCount={vehicles.length}
+                minPriceLabel={minPriceLabel}
+              />
+            ) : null}
+
             <HomeDayContextStrip variant="hero" />
             
             {/* 🎨 Nouvelle SearchBar style Airbnb */}
@@ -546,28 +623,38 @@ const Index = () => {
               searching={searching}
               onResetSearch={handleResetSearch}
             />
-          </div>
-        </section>
 
-        {/* Bloc texte SEO — location scooter Nosy Be, livraison, assurance */}
-        <section className="py-10">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-xl font-semibold text-foreground mb-3">
-                {t("home.seoBlockTitle")}
-              </h2>
-              <p className="text-muted-foreground text-base leading-relaxed">
-                {t("home.seoBlock")}
-              </p>
-            </div>
+            {showCatalogUi ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCatalogCtaClick}
+                aria-label={t("home.catalogCtaAria")}
+                className="mt-6 min-h-[48px] border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              >
+                {vehicles.length === 1
+                  ? t("home.catalogCta_one")
+                  : t("home.catalogCta", { count: vehicles.length })}
+                <ChevronDown className="ml-2 h-4 w-4" aria-hidden="true" />
+              </Button>
+            ) : !loading ? null : (
+              <Button
+                type="button"
+                variant="outline"
+                disabled
+                className="mt-6 min-h-[48px] border-white/40 bg-white/10 text-white/70"
+              >
+                {t("home.catalogCtaLoading")}
+              </Button>
+            )}
           </div>
         </section>
 
         {/* Filters & Results — lazy + rendu différé pour LCP (H1 prioritaire) */}
         {!showResults ? (
-          <div className="min-h-[400px]" aria-hidden="true" />
+          <div id="search-results" className="min-h-[400px] scroll-mt-4" aria-hidden="true" />
         ) : (
-          <Suspense fallback={<div className="min-h-[400px]" />}>
+          <Suspense fallback={<div id="search-results" className="min-h-[400px] scroll-mt-4" />}>
             <HomeResults
               filteredVehicles={filteredVehicles}
               loading={loading}
@@ -583,6 +670,20 @@ const Index = () => {
             />
           </Suspense>
         )}
+
+        {/* Bloc texte SEO — location scooter Nosy Be, livraison, assurance */}
+        <section className="py-10">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-xl font-semibold text-foreground mb-3">
+                {t("home.seoBlockTitle")}
+              </h2>
+              <p className="text-muted-foreground text-base leading-relaxed">
+                {t("home.seoBlock")}
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
       <Suspense fallback={null}>
         <Footer />

@@ -123,11 +123,11 @@ const App = () => (
       <AuthProvider>
         <ExchangeRateProvider>
         <WhatsAppContactProvider>
-        <CategoryShowcaseProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <CategoryShowcaseProvider>
             <RouteChangeTracker />
             <ClientProfileCompletionGuard />
             {/* Wrapper to allow a fixed dev language switcher on all pages */}
@@ -570,9 +570,9 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
               </Routes>
             </div>
+            </CategoryShowcaseProvider>
           </BrowserRouter>
         </TooltipProvider>
-        </CategoryShowcaseProvider>
         </WhatsAppContactProvider>
         </ExchangeRateProvider>
       </AuthProvider>

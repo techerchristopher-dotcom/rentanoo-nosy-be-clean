@@ -355,6 +355,19 @@
   "home": {
     "heroTitle": "Rent your scooter in Nosy Be in just a few clicks",
     "heroSubtitle": "RENTANOO, the first 100% online scooter rental platform",
+    "catalogCta": "View {{count}} available vehicles",
+    "catalogCta_one": "View the available vehicle",
+    "catalogCtaLoading": "View available vehicles",
+    "catalogCtaAria": "Scroll to the vehicle catalog",
+    "trustStrip": {
+      "vehicleCount": "{{count}} vehicles available",
+      "vehicleCount_one": "1 vehicle available",
+      "fromPrice": "From {{price}}/day",
+      "airportDelivery": "Airport delivery",
+      "helmetIncluded": "Helmet included",
+      "insuranceIncluded": "Insurance included",
+      "ariaLabel": "Rentanoo highlights"
+    },
     "dayContext": {
       "ariaLabel": "Today's weather and exchange rate in Nosy Be",
       "title": "Nosy Be today",

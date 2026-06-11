@@ -119,6 +119,19 @@
   "home": {
     "heroTitle": "Mieten Sie Ihren Roller in Nosy Be mit nur wenigen Klicks",
     "heroSubtitle": "RENTANOO, die erste 100 % online Scooter-Vermietungsplattform",
+    "catalogCta": "{{count}} verfügbare Fahrzeuge ansehen",
+    "catalogCta_one": "Verfügbares Fahrzeug ansehen",
+    "catalogCtaLoading": "Verfügbare Fahrzeuge ansehen",
+    "catalogCtaAria": "Zum Fahrzeugkatalog scrollen",
+    "trustStrip": {
+      "vehicleCount": "{{count}} Fahrzeuge verfügbar",
+      "vehicleCount_one": "1 Fahrzeug verfügbar",
+      "fromPrice": "Ab {{price}}/Tag",
+      "airportDelivery": "Flughafen-Lieferung",
+      "helmetIncluded": "Helm inklusive",
+      "insuranceIncluded": "Versicherung inklusive",
+      "ariaLabel": "Rentanoo Vorteile"
+    },
     "dayContext": {
       "ariaLabel": "Wetter und Wechselkurs heute in Nosy Be",
       "title": "Nosy Be heute",

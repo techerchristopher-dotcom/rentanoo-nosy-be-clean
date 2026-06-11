@@ -13,7 +13,7 @@ import {
   COMING_SOON_CATEGORIES,
   type CategoryShowcaseItem,
 } from "@/data/categoryShowcaseItems";
-import { useCategoryShowcase } from "@/hooks/useCategoryShowcase";
+import { isFilterableVehicleType, useCategoryShowcase } from "@/hooks/useCategoryShowcase";
 import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
 import { trackGa4Event } from "@/lib/analytics";
 import { CategoryShowcaseCard } from "./CategoryShowcaseCard";
@@ -25,15 +25,19 @@ function buildWhatsAppUrl(waUrl: string, message: string): string {
 
 export function CategoryShowcaseModal() {
   const { t } = useTranslation("common");
-  const { isOpen, close } = useCategoryShowcase();
+  const { isOpen, close, selectAvailableCategory } = useCategoryShowcase();
   const { waUrl } = useWhatsAppContact();
 
   const handleAvailableClick = useCallback(
     (item: CategoryShowcaseItem) => {
       trackGa4Event("category_select", { category: item.gtagCategoryId });
-      close();
+      if (isFilterableVehicleType(item.id)) {
+        selectAvailableCategory(item.id);
+      } else {
+        close();
+      }
     },
-    [close],
+    [close, selectAvailableCategory],
   );
 
   // Click coming-soon : ouvre WhatsApp directement, ne ferme PAS la modale,
