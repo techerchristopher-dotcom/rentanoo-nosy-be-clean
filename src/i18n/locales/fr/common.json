@@ -171,7 +171,22 @@
     "optionsSubtotal": "Sous-total options",
     "subtotal": "Sous-total",
     "serviceFee": "Frais de service ({{percent}}%)",
+    "reservationFee": "Frais de réservation ({{percent}}%)",
     "totalToPay": "TOTAL À PAYER",
+    "paymentMethod": {
+      "title": "Mode de paiement",
+      "recommended": "Recommandé",
+      "previewError": "Les frais de réservation n’ont pas pu être chargés. Le paiement en ligne par carte est appliqué par défaut.",
+      "savingsAmount": "Économisez {{amount}}",
+      "cardOnline": {
+        "label": "Payer en ligne par carte",
+        "hint": "Paiement sécurisé Stripe"
+      },
+      "cashOnSite": {
+        "label": "Paiement à l'agence",
+        "hint": "Règlement lors de la remise des clés"
+      }
+    },
     "confirmBooking": "Je confirme ma demande de réservation",
     "benefits": {
       "quickResponse": "Réponse rapide",

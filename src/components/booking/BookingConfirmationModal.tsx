@@ -14,15 +14,18 @@ import { getBookingDraft, updateBookingOptions } from "@/services/localStorage/b
 import { formatBillableDays } from "@/utils/formatDuration";
 import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatCurrency } from "@/utils/currency";
-import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
 import { DualPrice } from "@/components/currency/DualPrice";
 import { ClientPriceRow } from "@/components/currency/PriceRows";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { PaymentMethodSelector } from "@/components/booking/PaymentMethodSelector";
+import { useRenterFeePreview } from "@/hooks/useRenterFeePreview";
+import { feePercentLabel } from "@/services/supabase/renterFeePreview";
+import type { BookingPaymentMethod } from "@/services/supabase/bookings";
 
 interface BookingConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (paymentMethod: BookingPaymentMethod) => void;
   vehicle: {
     brand: string;
     model: string;
@@ -96,9 +99,12 @@ export function BookingConfirmationModal({
     setDraftReturnLocation(draft?.returnLocation);
   };
 
+  const [paymentMethod, setPaymentMethod] = useState<BookingPaymentMethod>('card_online');
+
   // Charger le brouillon depuis localStorage quand la modal s'ouvre
   useEffect(() => {
     if (!isOpen) return;
+    setPaymentMethod('card_online');
     syncDraftState();
     const interval = setInterval(syncDraftState, 100);
     return () => clearInterval(interval);
@@ -112,12 +118,14 @@ export function BookingConfirmationModal({
   
   // Calculer le sous-total
   const subtotal = rentalInfo.basePrice + optionsTotal;
-  
-  // Calculer les frais de service (15%)
-  const serviceFee = calcServiceFeeRenter(subtotal);
-  
-  // Calculer le total final
-  const totalAmount = calcRenterTotal(subtotal);
+
+  const { previewFor, savingsMga, loading: previewLoading, error: previewError } =
+    useRenterFeePreview(subtotal);
+
+  const activePreview = previewFor(paymentMethod);
+  const reservationFee = activePreview?.service_fee_renter ?? 0;
+  const totalAmount = activePreview?.amount_total_expected ?? subtotal;
+  const feePercentDisplay = activePreview ? feePercentLabel(activePreview.fee_percent) : null;
   
   // Formater les dates avec locale dynamique
   const formattedStartDate = format(rentalInfo.startDate, "EEEE d MMMM yyyy", { locale: dateLocale });
@@ -354,10 +362,31 @@ export function BookingConfirmationModal({
 
           <Separator />
 
+          {/* Mode de paiement (P3-A) */}
+          <PaymentMethodSelector
+            value={paymentMethod}
+            onChange={setPaymentMethod}
+            savingsMga={savingsMga}
+            disabled={previewLoading}
+          />
+
+          {previewError ? (
+            <p className="text-xs text-muted-foreground">
+              {t("booking.paymentMethod.previewError")}
+            </p>
+          ) : null}
+
           {/* Section Total */}
           <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
             <ClientPriceRow label={t("booking.subtotal")} amountMga={subtotal} bold />
-            <ClientPriceRow label={t("booking.serviceFee", { percent: 15 })} amountMga={serviceFee} />
+            {activePreview && feePercentDisplay !== null ? (
+              <ClientPriceRow
+                label={t("booking.reservationFee", { percent: feePercentDisplay })}
+                amountMga={reservationFee}
+              />
+            ) : previewLoading ? (
+              <p className="text-xs text-muted-foreground text-right">…</p>
+            ) : null}
 
             <Separator className="border-primary/30" />
 
@@ -522,7 +551,7 @@ export function BookingConfirmationModal({
         {/* CTA sticky — toujours visible sur mobile */}
         <div className="sticky bottom-0 z-10 flex shrink-0 flex-col border-t bg-background px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
           <Button
-            onClick={onConfirm}
+            onClick={() => onConfirm(paymentMethod)}
             size="lg"
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 font-semibold"
           >

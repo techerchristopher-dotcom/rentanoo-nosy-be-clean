@@ -171,7 +171,22 @@
     "optionsSubtotal": "Options subtotal",
     "subtotal": "Subtotal",
     "serviceFee": "Service fee ({{percent}}%)",
+    "reservationFee": "Booking fee ({{percent}}%)",
     "totalToPay": "TOTAL TO PAY",
+    "paymentMethod": {
+      "title": "Payment method",
+      "recommended": "Recommended",
+      "previewError": "Booking fees could not be loaded. Online card payment is applied by default.",
+      "savingsAmount": "Save {{amount}}",
+      "cardOnline": {
+        "label": "Pay online by card",
+        "hint": "Secure payment via Stripe"
+      },
+      "cashOnSite": {
+        "label": "Pay at the agency",
+        "hint": "Payment when keys are handed over"
+      }
+    },
     "confirmBooking": "I confirm my booking request",
     "benefits": {
       "quickResponse": "Quick response",

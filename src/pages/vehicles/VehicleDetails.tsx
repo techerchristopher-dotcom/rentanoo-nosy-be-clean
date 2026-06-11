@@ -36,9 +36,11 @@ import { Label } from "@/components/ui/label";
 import { LazyPhoneInput } from "@/components/ui/lazy-phone-input";
 import { Loader2 } from "lucide-react";
 import { VehiclesService, PhotosService } from "@/services";
-import { SupabaseBookingsService } from "@/services/supabase/bookings";
+import {
+  SupabaseBookingsService,
+  type BookingPaymentMethod,
+} from "@/services/supabase/bookings";
 import { ProfileService } from "@/services/supabase/profile";
-import { calcServiceFeeRenter } from "@/utils/serviceFees";
 import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle as AppVehicle } from "@/types";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import { createVehicleRentalInfo } from "@/lib/utils";
@@ -465,7 +467,22 @@ export default function VehicleDetails() {
         setPhone('');
         
         // Relancer la réservation avec les dates déjà en mémoire
-        await handleConfirmBooking();
+        const pendingRaw = sessionStorage.getItem('pendingBooking');
+        let paymentMethod: BookingPaymentMethod = 'card_online';
+        if (pendingRaw) {
+          try {
+            const parsed = JSON.parse(pendingRaw) as { paymentMethod?: BookingPaymentMethod };
+            if (
+              parsed.paymentMethod === 'card_online' ||
+              parsed.paymentMethod === 'cash_on_site'
+            ) {
+              paymentMethod = parsed.paymentMethod;
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        await handleConfirmBooking(paymentMethod);
       }
     } catch (error: any) {
       // Erreur inattendue
@@ -474,7 +491,9 @@ export default function VehicleDetails() {
     }
   };
   
-  const handleConfirmBooking = async () => {
+  const handleConfirmBooking = async (
+    paymentMethod: BookingPaymentMethod = 'card_online',
+  ) => {
     console.log('✅ [DEBUG] Confirmation de la réservation');
     // Fermer la modal de confirmation
     setShowConfirmationModal(false);
@@ -624,10 +643,8 @@ export default function VehicleDetails() {
     try {
       console.log('💾 [DEBUG] Création de la réservation dans Supabase...');
       
-      // Calculer les valeurs nécessaires
       const subtotal = basePrice + optionsTotal;
-      const serviceFee = calcServiceFeeRenter(subtotal);
-      
+
       const bookingResult = await SupabaseBookingsService.createBooking({
         vehicleId: vehicle.id,
         renterId: currentUser.id,
@@ -641,10 +658,10 @@ export default function VehicleDetails() {
         selectedOptions: bookingData.selectedOptions,
         basePrice: bookingData.rentalInfo.basePrice,
         optionsTotal: bookingData.rentalInfo.optionsTotal,
-        serviceFee: serviceFee,
         subtotal: subtotal,
         pricePerDay: vehicle.dailyPrice,
         rentalDays: bookingData.rentalInfo.rentalDays,
+        paymentMethod,
       });
       
       if (bookingResult.error === "HOTEL_NAME_REQUIRED") {
@@ -674,6 +691,7 @@ export default function VehicleDetails() {
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           currentRoute: `/vehicle/${vehicle.license}`,
+          paymentMethod,
         };
         sessionStorage.setItem('pendingBooking', JSON.stringify(pendingBooking));
         
