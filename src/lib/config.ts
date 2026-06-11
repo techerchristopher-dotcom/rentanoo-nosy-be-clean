@@ -24,8 +24,13 @@ function getSiteUrl(): string {
     return import.meta.env.VITE_PUBLIC_SITE_URL;
   }
 
-  // Fallback pour build/SSR
-  return 'http://localhost:3002';
+  // Prod runtime si VITE_PUBLIC_SITE_URL absent au build Vite (ex. Railway)
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  // Fallback pour build/SSR local
+  return "http://localhost:3002";
 }
 
 export const SITE_URL = getSiteUrl();
