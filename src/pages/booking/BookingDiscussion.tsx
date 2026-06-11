@@ -40,7 +40,12 @@ import { PaymentFlowModal, type ReservationPayment } from "@/components/PaymentF
 import { payerLocation } from "@/lib/payerLocation";
 import { formatBillableDays } from "@/utils/formatDuration";
 import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
-import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
+import {
+  buildReservationPaymentFromBooking,
+  isCashOnSitePayment,
+  getPaymentMethodFromBooking,
+  getRenterPaymentAmountsFromBooking,
+} from "@/utils/renterPaymentFromBooking";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 
@@ -765,6 +770,16 @@ const BookingDiscussion = () => {
   };
 
   const calculateTotalPrice = () => {
+    if (currentBooking) {
+      const dbAmounts = getRenterPaymentAmountsFromBooking(currentBooking);
+      if (dbAmounts.amountTotalExpected > 0) {
+        return dbAmounts.amountTotalExpected;
+      }
+      if (dbAmounts.subtotal > 0) {
+        return dbAmounts.subtotal;
+      }
+    }
+
     if (currentBooking && vehicle) {
       const pricing = getBookingRentalPricing({
         pricePerDay: vehicle.dailyPrice,
@@ -777,46 +792,18 @@ const BookingDiscussion = () => {
       if (pricing) {
         const optionsTotal =
           currentBooking?.options_total || bookingData?.rentalInfo?.optionsTotal || 0;
-        return calcRenterTotal(pricing.basePrice + optionsTotal);
+        return pricing.basePrice + optionsTotal;
       }
     }
-    
-    // Fallback: utiliser le prix de Supabase (si c'est déjà le total TTC)
+
     if (currentBooking?.total_price) {
-      // Si total_price contient déjà les frais, l'utiliser tel quel
-      // Sinon, recalculer avec les frais
-      const basePrice = currentBooking.base_price || 0;
-      const optionsTotal = currentBooking.options_total || 0;
-      const subtotal = basePrice + optionsTotal;
-      
-      // Si le total_price est significativement différent du subtotal, 
-      // c'est probablement déjà le total TTC
-      const priceDiff = Math.abs(Number(currentBooking.total_price) - subtotal);
-      if (priceDiff > subtotal * 0.1) {
-        // Probablement déjà le total TTC
-        return Number(currentBooking.total_price);
-      }
-      
-      // Sinon, recalculer avec les frais
-      return calcRenterTotal(subtotal);
+      return Number(currentBooking.total_price);
     }
-    
+
     if (bookingData?.rentalInfo?.totalPrice) {
-      // Si totalPrice contient déjà les frais, l'utiliser
-      // Sinon, recalculer
-      const basePrice = bookingData.rentalInfo.basePrice || 0;
-      const optionsTotal = bookingData.rentalInfo.optionsTotal || 0;
-      const subtotal = basePrice + optionsTotal;
-      
-      const priceDiff = Math.abs(bookingData.rentalInfo.totalPrice - subtotal);
-      if (priceDiff > subtotal * 0.1) {
-        return bookingData.rentalInfo.totalPrice;
-      }
-      
-      return calcRenterTotal(subtotal);
+      return bookingData.rentalInfo.totalPrice;
     }
-    
-    // Sinon, calculer de base
+
     if (!startDate || !endDate || !vehicle) return 0;
 
     const pricing = getBookingRentalPricing({
@@ -828,10 +815,7 @@ const BookingDiscussion = () => {
     });
     const basePrice = pricing?.basePrice ?? 0;
     const optionsTotal = bookingData?.rentalInfo?.optionsTotal || 0;
-    const subtotal = basePrice + optionsTotal;
-    
-    // Retourner le TOTAL TTC (avec frais de service 15%)
-    return calcRenterTotal(subtotal);
+    return basePrice + optionsTotal;
   };
 
   const calculateRealDuration = () => {
@@ -954,10 +938,6 @@ const BookingDiscussion = () => {
       return;
     }
     
-    // Calculer les fees et total depuis le subtotal DB (même logique que l'Edge Function)
-    const fee = calcServiceFeeRenter(subtotalDB);
-    const total = calcRenterTotal(subtotalDB);
-    
     // Calculer la durée pour l'affichage
     const start = new Date(currentBooking.start_date);
     const end = new Date(currentBooking.end_date);
@@ -969,27 +949,22 @@ const BookingDiscussion = () => {
       ? JSON.parse(currentBooking.selected_options).map((opt: any) => ({ label: opt.name, price: opt.totalPrice || opt.price || 0 }))
       : [];
 
-    // Préparer la réservation pour la modale
-    // montantDeBase = subtotal (base_price + options_total) pour l'affichage
-    const reservation: ReservationPayment = {
-      id: currentBooking.id,
+    const reservation = buildReservationPaymentFromBooking(currentBooking, {
       voiture: `${vehicle.brand} ${vehicle.model}`,
       dateDebut: formatDate(currentBooking.start_date),
       dateFin: formatDate(currentBooking.end_date),
       duree: t(days === 1 ? "duration.day_one" : "duration.day_other", { count: days }),
-      montantDeBase: subtotalDB, // subtotal = base + options (HT)
-      fraisService: fee, // 15% du subtotal
-      totalTTC: total, // subtotal + frais service (TTC)
       extras: selectedExtras,
-    };
-    
-    console.debug('[BookingDiscussion] handlePayNow: Réservation préparée depuis DB', {
+    });
+
+    console.debug("[BookingDiscussion] handlePayNow: Réservation préparée depuis DB", {
       bookingId: currentBooking.id,
       base_price_DB: base,
       options_total_DB: optionsTotal,
       subtotal_DB: subtotalDB,
-      service_fee: fee,
-      totalTTC: total,
+      payment_method: reservation.paymentMethod,
+      service_fee_renter: reservation.serviceFeeRenter,
+      amount_total_expected: reservation.amountTotalExpected,
     });
 
     console.debug('[BookingDiscussion] pay button clicked', { bookingForPayment: reservation });
@@ -1137,15 +1112,27 @@ const BookingDiscussion = () => {
               </Button>
               
               {(() => {
-                const shouldShowPayButton = currentBooking?.status === 'pending_payment' || bookingStatus === 'pending_payment';
-                console.log('🔍 [BookingDiscussion] Affichage bouton paiement:', {
-                  shouldShowPayButton,
-                  currentBookingStatus: currentBooking?.status,
-                  bookingStatus,
-                  hasCurrentBooking: !!currentBooking,
-                  bookingId: currentBooking?.id
-                });
-                return shouldShowPayButton ? (
+                const isPendingPayment =
+                  currentBooking?.status === "pending_payment" || bookingStatus === "pending_payment";
+                if (!isPendingPayment) return null;
+
+                const paymentMethod = getPaymentMethodFromBooking(currentBooking ?? {});
+                const isCash = isCashOnSitePayment(paymentMethod);
+
+                if (isCash) {
+                  return (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 max-w-md">
+                      <p className="font-semibold">
+                        {t("booking.paymentMethod.noOnlinePaymentRequired", "Aucun paiement en ligne n'est nécessaire")}
+                      </p>
+                      <p className="text-amber-800 mt-1 text-xs">
+                        {t("booking.paymentMethod.cashOnSite.modalHint", "Règlement lors de la remise des clés à l'agence.")}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
                   <Button
                     size="lg"
                     className="bg-gradient-lagoon hover:opacity-90 text-white shadow-lg"
@@ -1158,7 +1145,7 @@ const BookingDiscussion = () => {
                     {t("booking.discussion.payRental")}
                     <Shield className="h-4 w-4 ml-2 opacity-75" />
                   </Button>
-                ) : null;
+                );
               })()}
             </div>
             
@@ -1457,13 +1444,14 @@ const BookingDiscussion = () => {
           onClose={() => setIsPaymentModalOpen(false)}
           reservation={reservationForPayment}
           onPayNow={async (rsv) => {
+            if (isCashOnSitePayment(rsv.paymentMethod ?? "card_online")) return;
             try {
               await payerLocation(rsv);
             } catch (e: any) {
               toast({
                 title: t("booking.discussion.toasts.paymentError.title"),
                 description: e?.message || t("booking.discussion.toasts.paymentError.description"),
-                variant: "destructive"
+                variant: "destructive",
               });
             }
           }}

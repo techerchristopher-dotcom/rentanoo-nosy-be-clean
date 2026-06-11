@@ -1,13 +1,15 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Euro, Calendar, ShieldCheck, Hourglass } from "lucide-react";
+import { Calendar, ShieldCheck, Hourglass, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ClientPriceRow } from "@/components/currency/PriceRows";
 import { DualPrice } from "@/components/currency/DualPrice";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { isCashOnSitePayment } from "@/utils/renterPaymentFromBooking";
 
 export type ReservationPayment = {
   id: string | number;
@@ -18,7 +20,11 @@ export type ReservationPayment = {
   montantDeBase: number;
   fraisService: number;
   totalTTC: number;
-  extras?: Array<{ label: string; price: number }>; // nouveaux services supplémentaires
+  extras?: Array<{ label: string; price: number }>;
+  paymentMethod?: string;
+  serviceFeePercentApplied?: number;
+  amountTotalExpected?: number;
+  serviceFeeRenter?: number;
 };
 
 export function PaymentFlowModal({
@@ -43,8 +49,15 @@ export function PaymentFlowModal({
   bookingPaid?: boolean; // Indique explicitement si la réservation est déjà payée
 }) {
   const [isPaying, setIsPaying] = useState(false);
+  const { t } = useTranslation("common");
   const { formatClient, footnote } = useExchangeRate();
+  const isCash = isCashOnSitePayment(reservation.paymentMethod ?? "card_online");
   const payLabel = formatClient(reservation.totalTTC).primary;
+  const feePercent = reservation.serviceFeePercentApplied ?? 0;
+  const serviceFeeLabel =
+    feePercent > 0
+      ? t("booking.serviceFee", { percent: feePercent })
+      : t("booking.paymentMethod.serviceFeeGeneric", "Frais de service");
 
   const handlePayNow = async () => {
     if (!onPayNow || isPaying) return;
@@ -88,7 +101,11 @@ export function PaymentFlowModal({
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-                  {!isStep1ActuallyComplete ? (
+                  {isCash && !isStep1ActuallyComplete ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-semibold">
+                      {t("booking.paymentMethod.cashOnSite.badge", "Paiement à l'agence")}
+                    </span>
+                  ) : !isStep1ActuallyComplete ? (
                     <button
                       type="button"
                       disabled={isPaying}
@@ -142,9 +159,33 @@ export function PaymentFlowModal({
               <span className="font-medium">{reservation.duree}</span>
             </div>
             <Separator />
+            {isCash && !isStep1ActuallyComplete && (
+              <div className="rounded-xl p-4 bg-amber-50 border border-amber-200 flex items-start gap-3 mt-2 mb-4 min-w-0">
+                <Banknote className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="font-semibold text-amber-900">
+                    {t("booking.paymentMethod.noOnlinePaymentRequired", "Aucun paiement en ligne n'est nécessaire")}
+                  </div>
+                  <div className="text-sm text-amber-800 mt-1">
+                    {t("booking.paymentMethod.cashOnSite.modalHint", "Règlement lors de la remise des clés à l'agence.")}
+                  </div>
+                  {reservation.totalTTC > 0 && (
+                    <div className="mt-2">
+                      <DualPrice
+                        amountMga={reservation.totalTTC}
+                        variant="client"
+                        className="items-start"
+                        primaryClassName="text-lg font-bold text-amber-900 tabular-nums"
+                        secondaryClassName="text-xs text-amber-700"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="space-y-2 min-w-0">
-              <ClientPriceRow label="Montant de base" amountMga={reservation.montantDeBase} />
-              <ClientPriceRow label="Frais de service (15%)" amountMga={reservation.fraisService} />
+              <ClientPriceRow label="Sous-total" amountMga={reservation.montantDeBase} />
+              <ClientPriceRow label={serviceFeeLabel} amountMga={reservation.fraisService} />
               <div className="flex justify-between items-start gap-3 pt-2 border-t">
                 <span className="font-semibold min-w-0 truncate">Total TTC à payer</span>
                 <DualPrice
@@ -185,7 +226,7 @@ export function PaymentFlowModal({
                   </>
                 )}
               </div>
-            {/* Bloc réassurance Stripe */}
+            {!isCash && (
               <div className="rounded-xl p-4 bg-gray-50 border border-border/50 flex items-start gap-3 mt-4 mb-4 min-w-0">
               <div className="pt-0.5">
                 <ShieldCheck className="h-5 w-5 text-green-500" />
@@ -206,19 +247,31 @@ export function PaymentFlowModal({
                 </div>
               </div>
             </div>
+            )}
 
-            <div className="text-xs text-[#6B7280] text-center">
-              Vous serez redirigé vers une page Stripe sécurisée pour effectuer votre paiement, puis automatiquement renvoyé ici.
-            </div>
-            <div className="pt-2 text-center text-sm text-[#9CA3AF]">
-              ✅ Transactions vérifiées — 🔐 Paiement crypté — 🕒 Confirmation instantanée
-            </div>
+            {!isCash && (
+              <>
+                <div className="text-xs text-[#6B7280] text-center">
+                  Vous serez redirigé vers une page Stripe sécurisée pour effectuer votre paiement, puis automatiquement renvoyé ici.
+                </div>
+                <div className="pt-2 text-center text-sm text-[#9CA3AF]">
+                  ✅ Transactions vérifiées — 🔐 Paiement crypté — 🕒 Confirmation instantanée
+                </div>
+              </>
+            )}
             </CollapsibleContent>
           </Collapsible>
         </div>
         {/* Footer CTA sticky — toujours visible, accessible sans scroll excessif */}
         <div className="flex-shrink-0 border-t bg-background pt-4 mt-4 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 pb-0">
-          {!isStep1ActuallyComplete ? (
+          {isCash && !isStep1ActuallyComplete ? (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="w-full sm:flex-1 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 font-medium py-3 px-4 text-sm text-center">
+                {t("booking.paymentMethod.noOnlinePaymentRequired", "Aucun paiement en ligne n'est nécessaire")}
+              </div>
+              <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fermer</Button>
+            </div>
+          ) : !isStep1ActuallyComplete ? (
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 disabled={isPaying}

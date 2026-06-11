@@ -21,7 +21,10 @@ import { PaymentFlowModal, type ReservationPayment } from "@/components/PaymentF
 import { DepositFlowModal } from "@/components/DepositFlowModal";
 import { payerLocation } from "@/lib/payerLocation";
 import { useTranslation } from "react-i18next";
-import { calcServiceFeeRenter, calcRenterTotal } from "@/utils/serviceFees";
+import {
+  buildReservationPaymentFromBooking,
+  isCashOnSitePayment,
+} from "@/utils/renterPaymentFromBooking";
 import { computeBillableRentalDays } from "@/utils/rentalPriceFromDates";
 import { logRadixPortalDebug, subscribeRadixPortalDebug } from "@/lib/debugRadixPortal";
 
@@ -155,40 +158,29 @@ export default function RenterBookings() {
         const endDate = new Date(recentBooking.endDate);
         const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
         
-        // Calculer les montants
-        // Utiliser subtotal si disponible, sinon recalculer depuis basePrice + optionsTotal
-        const basePrice = (recentBooking as any).basePrice || (days * (recentBooking.vehicle.dailyPrice || 0));
-        const optionsTotal = (recentBooking as any).optionsTotal || 0;
-        const subtotal = (recentBooking as any).subtotal || (basePrice + optionsTotal);
-        const fee = calcServiceFeeRenter(subtotal);
-        const total = calcRenterTotal(subtotal);
-        
-        // Extraire les services supplémentaires
         const selectedExtras = getServicesFromOptions(recentBooking.selectedOptions);
-        
-        setReservationCourante({
-          id: recentBooking.id,
-          voiture: `${recentBooking.vehicle.brand} ${recentBooking.vehicle.model}`,
-          dateDebut: new Date(recentBooking.startDate).toLocaleDateString("fr-FR", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-          }),
-          dateFin: new Date(recentBooking.endDate).toLocaleDateString("fr-FR", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-          }),
-          duree: days === 1 ? '1 jour' : `${days} jours`,
-          montantDeBase: subtotal,
-          fraisService: fee,
-          totalTTC: total,
-          extras: selectedExtras,
-        });
+
+        setReservationCourante(
+          buildReservationPaymentFromBooking(recentBooking as Record<string, unknown>, {
+            voiture: `${recentBooking.vehicle.brand} ${recentBooking.vehicle.model}`,
+            dateDebut: new Date(recentBooking.startDate).toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            dateFin: new Date(recentBooking.endDate).toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            duree: days === 1 ? "1 jour" : `${days} jours`,
+            extras: selectedExtras,
+          })
+        );
         
         // Si la réservation est payée (accepted ou trace de paiement), marquer étape 1 complète
         if (isBookingPaid(recentBooking)) {
@@ -543,6 +535,13 @@ export default function RenterBookings() {
                 stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null,
                 pricingMode: (booking as any).pricing_mode ?? undefined,
                 createdByAdminId: (booking as any).created_by_admin_id ?? null,
+                paymentMethod: (booking as any).payment_method ?? "card_online",
+                amountTotalExpected: (booking as any).amount_total_expected ?? null,
+                serviceFeeRenter: (booking as any).service_fee_renter ?? null,
+                serviceFeePercentApplied: (booking as any).service_fee_percent_applied ?? null,
+                subtotal: (booking as any).subtotal ?? null,
+                basePrice: (booking as any).base_price ?? null,
+                optionsTotal: (booking as any).options_total ?? null,
                 checkinDepart,
               };
               
@@ -592,7 +591,14 @@ export default function RenterBookings() {
                 depositAmountSnapshot: (booking as any).deposit_amount_snapshot ?? null,
                 stripePaymentMethodId: (booking as any).stripe_payment_method_id ?? null,
                 pricingMode: (booking as any).pricing_mode ?? undefined,
-                createdByAdminId: (booking as any).created_by_admin_id ?? null
+                createdByAdminId: (booking as any).created_by_admin_id ?? null,
+                paymentMethod: (booking as any).payment_method ?? "card_online",
+                amountTotalExpected: (booking as any).amount_total_expected ?? null,
+                serviceFeeRenter: (booking as any).service_fee_renter ?? null,
+                serviceFeePercentApplied: (booking as any).service_fee_percent_applied ?? null,
+                subtotal: (booking as any).subtotal ?? null,
+                basePrice: (booking as any).base_price ?? null,
+                optionsTotal: (booking as any).options_total ?? null,
               };
             }
           })
@@ -1027,6 +1033,7 @@ export default function RenterBookings() {
           extras: [],
         }}
         onPayNow={async (rsv) => {
+          if (isCashOnSitePayment(rsv.paymentMethod ?? "card_online")) return;
           try {
             await payerLocation(rsv);
           } catch (e: any) {

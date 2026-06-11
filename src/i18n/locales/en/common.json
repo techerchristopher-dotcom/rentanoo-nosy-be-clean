@@ -184,8 +184,12 @@
       },
       "cashOnSite": {
         "label": "Pay at the agency",
-        "hint": "Payment when keys are handed over"
-      }
+        "hint": "Payment when keys are handed over",
+        "badge": "Pay at the agency",
+        "modalHint": "Payment when keys are handed over at the agency."
+      },
+      "noOnlinePaymentRequired": "No online payment is required",
+      "serviceFeeGeneric": "Service fee"
     },
     "confirmBooking": "I confirm my booking request",
     "benefits": {

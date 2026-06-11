@@ -184,8 +184,12 @@
       },
       "cashOnSite": {
         "label": "Paiement à l'agence",
-        "hint": "Règlement lors de la remise des clés"
-      }
+        "hint": "Règlement lors de la remise des clés",
+        "badge": "Paiement à l'agence",
+        "modalHint": "Règlement lors de la remise des clés à l'agence."
+      },
+      "noOnlinePaymentRequired": "Aucun paiement en ligne n'est nécessaire",
+      "serviceFeeGeneric": "Frais de service"
     },
     "confirmBooking": "Je confirme ma demande de réservation",
     "benefits": {

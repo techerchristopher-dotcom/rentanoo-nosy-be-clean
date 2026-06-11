@@ -10,6 +10,11 @@ if (!SUPABASE_URL) {
 const isDev = import.meta.env.DEV;
 
 export async function payerLocation(reservation: ReservationPayment) {
+  if (reservation.paymentMethod === "cash_on_site") {
+    console.log("[payerLocation] cash_on_site — aucun paiement Stripe requis");
+    return;
+  }
+
   try {
     console.log('💳 [payerLocation] Création session Stripe pour:', reservation);
     
@@ -80,6 +85,11 @@ export async function payerLocation(reservation: ReservationPayment) {
         urlPreview: data?.url ? data.url.substring(0, 50) + '...' : 'N/A',
         timestamp: new Date().toISOString(),
       });
+    }
+
+    if (data?.mode === "cash_on_site") {
+      console.log("[payerLocation] Edge a retourné cash_on_site — pas de redirection");
+      return;
     }
 
     if (!data || !data.url) {

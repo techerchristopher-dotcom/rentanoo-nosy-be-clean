@@ -61,7 +61,11 @@ import { formatCurrency } from '@/utils/currency'
 import { DualPrice } from '@/components/currency/DualPrice'
 import { ClientPriceRow } from '@/components/currency/PriceRows'
 import { useExchangeRate } from '@/contexts/ExchangeRateContext'
-import { calcServiceFeeRenter, calcRenterTotal } from '@/utils/serviceFees'
+import {
+  buildReservationPaymentFromBooking,
+  getRenterPaymentAmountsFromBooking,
+  isCashOnSitePayment,
+} from '@/utils/renterPaymentFromBooking'
 import { getBookingRentalPricing } from '@/utils/rentalPriceFromDates'
 import { formatBillableDays } from '@/utils/formatDuration'
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
@@ -330,8 +334,13 @@ export default function RenterBookingCard({
   const cardBasePrice =
     cardRentalPricing?.basePrice ?? (booking as any).basePrice ?? 0
   const cardSubtotal = cardBasePrice + cardOptionsTotal
-  const cardServiceFee = calcServiceFeeRenter(cardSubtotal)
-  const cardTotalAmount = calcRenterTotal(cardSubtotal)
+  const dbPayment = getRenterPaymentAmountsFromBooking(booking as Record<string, unknown>)
+  const displaySubtotal = dbPayment.subtotal > 0 ? dbPayment.subtotal : cardSubtotal
+  const displayServiceFee = dbPayment.serviceFeeRenter
+  const displayTotal =
+    dbPayment.amountTotalExpected > 0 ? dbPayment.amountTotalExpected : displaySubtotal
+  const displayFeePercent = dbPayment.serviceFeePercentApplied
+  const isCashPayment = isCashOnSitePayment(dbPayment.paymentMethod)
   const cardDurationText =
     (cardRentalPricing &&
       (formatBillableDays(t, cardRentalPricing.billableDays) ??
@@ -1033,7 +1042,7 @@ export default function RenterBookingCard({
                       <span className="font-medium text-foreground">{t('bookings.card.totalLabel')}</span>
                       <span className="ml-2">
                         <DualPrice
-                          amountMga={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
+                          amountMga={cardRentalPricing ? displayTotal : (booking.totalAmount || 0)}
                           variant="client"
                           primaryClassName="font-bold text-primary text-lg"
                           secondaryClassName="text-xs"
@@ -1063,15 +1072,19 @@ export default function RenterBookingCard({
                                   )}
                                   <div className="flex justify-between border-t pt-1">
                                     <span>Sous-total</span>
-                                    <span className="font-semibold">{formatClientInline(cardSubtotal)}</span>
+                                    <span className="font-semibold">{formatClientInline(displaySubtotal)}</span>
                                   </div>
                                   <div className="flex justify-between text-muted-foreground">
-                                    <span>Frais de service (15%)</span>
-                                    <span>+{formatClientInline(cardServiceFee)}</span>
+                                    <span>
+                                      {displayFeePercent > 0
+                                        ? t('booking.serviceFee', { percent: displayFeePercent })
+                                        : t('booking.paymentMethod.serviceFeeGeneric', 'Frais de service')}
+                                    </span>
+                                    <span>+{formatClientInline(displayServiceFee)}</span>
                                   </div>
                                   <div className="flex justify-between font-bold border-t pt-1">
                                     <span>TOTAL</span>
-                                    <span>{formatClientInline(cardTotalAmount)}</span>
+                                    <span>{formatClientInline(displayTotal)}</span>
                                   </div>
                                   <p className="text-[10px] text-muted-foreground pt-1">{footnote}</p>
                                 </>
@@ -1171,52 +1184,47 @@ export default function RenterBookingCard({
                   return null
                 })()}
                 
-                {/* Bouton paiement si en attente */}
-                {booking.status === 'pending_payment' && (
+                {/* Paiement en ligne (card_online) ou encart cash_on_site */}
+                {booking.status === 'pending_payment' && isCashPayment && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 w-full min-w-0 sm:min-w-[200px] sm:flex-1">
+                    <p className="font-semibold">
+                      {t('booking.paymentMethod.noOnlinePaymentRequired', "Aucun paiement en ligne n'est nécessaire")}
+                    </p>
+                    <p className="text-amber-800 mt-1 text-xs">
+                      {t('booking.paymentMethod.cashOnSite.modalHint', "Règlement lors de la remise des clés à l'agence.")}
+                    </p>
+                  </div>
+                )}
+                {booking.status === 'pending_payment' && !isCashPayment && (
                   <Button
                     size="lg"
                     className="relative bg-gradient-lagoon hover:opacity-90 text-white shadow-lg hover:shadow-2xl transition-all w-full min-w-0 sm:min-w-[200px] sm:flex-1 overflow-hidden group border-2 border-primary"
                     onClick={(e) => {
                       e.stopPropagation()
-                      // Préparer les données de réservation pour la modale de paiement
-                      const start = new Date(booking.startDate)
-                      const end = new Date(booking.endDate)
-                      const startTime = (booking as any).startTime || '06:30'
-                      const endTime = (booking as any).endTime || '14:00'
-                      const [sh, sm] = startTime.split(':')
-                      const [eh, em] = endTime.split(':')
-                      start.setHours(parseInt(sh), parseInt(sm), 0, 0)
-                      end.setHours(parseInt(eh), parseInt(em), 0, 0)
-                      const hours = (end.getTime() - start.getTime()) / (1000*60*60)
-                      const days = Math.max(1, Math.ceil(hours / 24))
-                      const base = booking.vehicle?.dailyPrice ? Math.ceil(days * booking.vehicle.dailyPrice) : (booking.totalAmount || 0)
-                      // Extras issus des options sélectionnées s'ils existent
-                      const selectedExtras: Array<{ label: string; price: number }> = Array.isArray((booking as any).selectedOptions)
-                        ? ((booking as any).selectedOptions || []).map((opt: any) => ({ label: opt.name, price: opt.totalPrice }))
+                      const selectedExtras: Array<{ label: string; price: number }> = Array.isArray(
+                        (booking as any).selectedOptions
+                      )
+                        ? ((booking as any).selectedOptions || []).map((opt: any) => ({
+                            label: opt.name,
+                            price: opt.totalPrice,
+                          }))
                         : []
-                      const optionsTotal = selectedExtras.reduce((s, x) => s + (x.price || 0), 0)
-                      const subtotal = base + optionsTotal
-                      const fee = calcServiceFeeRenter(subtotal)
-                      const total = calcRenterTotal(subtotal)
-                      onRequestPay?.({
-                        id: booking.id,
-                        voiture: booking.vehicle ? `${booking.vehicle.brand} ${booking.vehicle.model}` : 'Véhicule',
-                        dateDebut: formatDate(booking.startDate),
-                        dateFin: formatDate(booking.endDate),
-                        duree: days === 1 ? '1 jour' : `${days} jours`,
-                        montantDeBase: base,
-                        fraisService: fee,
-                        totalTTC: total,
-                        extras: selectedExtras,
-                      })
+                      onRequestPay?.(
+                        buildReservationPaymentFromBooking(booking as Record<string, unknown>, {
+                          voiture: booking.vehicle
+                            ? `${booking.vehicle.brand} ${booking.vehicle.model}`
+                            : 'Véhicule',
+                          dateDebut: formatDate(booking.startDate),
+                          dateFin: formatDate(booking.endDate),
+                          duree: calculateRealDuration(),
+                          extras: selectedExtras,
+                        })
+                      )
                     }}
                   >
-                    {/* Effet shimmer au hover */}
                     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    
                     <div className="relative flex items-center justify-center gap-2">
                       <CreditCard className="h-5 w-5" />
-                      {/* TODO(i18n): bookings.details.payBooking */}
                       <span className="font-semibold">Payer ma location</span>
                       <Shield className="h-4 w-4 opacity-75" />
                     </div>
@@ -1580,15 +1588,22 @@ export default function RenterBookingCard({
 
               {/* Section Total - avec alignement parfait */}
               <div className="space-y-3 bg-gradient-to-br from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
-                <ClientPriceRow label="Sous-total" amountMga={cardRentalPricing ? cardSubtotal : 0} bold />
-                <ClientPriceRow label="Frais de service (15%)" amountMga={cardRentalPricing ? cardServiceFee : 0} />
+                <ClientPriceRow label="Sous-total" amountMga={cardRentalPricing ? displaySubtotal : 0} bold />
+                <ClientPriceRow
+                  label={
+                    displayFeePercent > 0
+                      ? t('booking.serviceFee', { percent: displayFeePercent })
+                      : t('booking.paymentMethod.serviceFeeGeneric', 'Frais de service')
+                  }
+                  amountMga={cardRentalPricing ? displayServiceFee : 0}
+                />
 
                 <Separator className="border-primary/30" />
 
                 <div className="flex justify-between items-start pt-2 gap-4">
                   <span className="text-lg font-bold text-foreground">TOTAL À PAYER</span>
                   <DualPrice
-                    amountMga={cardRentalPricing ? cardTotalAmount : (booking.totalAmount || 0)}
+                    amountMga={cardRentalPricing ? displayTotal : (booking.totalAmount || 0)}
                     variant="client"
                     className="items-end text-right min-w-[100px]"
                     primaryClassName="text-3xl font-bold text-primary"
