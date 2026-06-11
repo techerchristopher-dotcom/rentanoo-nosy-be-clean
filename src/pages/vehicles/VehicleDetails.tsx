@@ -1025,7 +1025,7 @@ export default function VehicleDetails() {
 
           <Button
             size="lg"
-            onClick={handleBooking}
+            onClick={() => handleBooking()}
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
             <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
@@ -1697,7 +1697,7 @@ export default function VehicleDetails() {
             </div>
             <Button
               size="lg"
-              onClick={handleBooking}
+              onClick={() => handleBooking()}
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >
               <Zap className="h-4 w-4 mr-2 text-yellow-400" fill="currentColor" />
@@ -1775,7 +1775,7 @@ export default function VehicleDetails() {
             <DialogTitle>Numéro de téléphone requis</DialogTitle>
             <DialogDescription>
               {phoneGateSource === "booking_start"
-                ? "Pour finaliser votre réservation, nous avons besoin de votre numéro de téléphone."
+                ? "Pour finaliser votre demande de réservation, nous avons besoin de votre numéro de téléphone."
                 : "Ajoutez votre numéro de téléphone pour continuer votre réservation."}
             </DialogDescription>
           </DialogHeader>
