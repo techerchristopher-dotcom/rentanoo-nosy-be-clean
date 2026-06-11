@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { 
@@ -54,7 +54,19 @@ import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { createBookingDraft, getBookingDraft, clearBookingDraft, saveBookingDraft, finalizeBookingDraftForCheckout } from "@/services/localStorage/bookingStorage";
 import { shouldShowComplementaryServicesModal } from "@/utils/bookingUpsell";
 import { requiresHotelName } from "@/utils/bookingLocations";
-import { markPageRefresh } from "@/services/localStorage/searchStorage";
+import {
+  saveBookingResumeIntent,
+  loadBookingResumeIntent,
+  clearBookingResumeIntent,
+  intentMatchesPath,
+  buildNavStateFromIntent,
+  type VehicleNavState,
+} from "@/lib/bookingResumeIntent";
+import {
+  trackViewItem,
+  trackBeginCheckout,
+  trackBookingBlocked,
+} from "@/lib/bookingFunnelAnalytics";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { PhotoService } from "@/services/supabase/photos";
 import VehicleOwnerCard from "@/components/VehicleOwnerCard";
@@ -153,11 +165,44 @@ export default function VehicleDetails() {
     benefits: true,
     legal: false
   });
+  const [restoredNavState, setRestoredNavState] = useState<VehicleNavState>(null);
+  const viewItemSentRef = useRef(false);
 
   useEffect(() => {
-    console.log('🔄 [VehicleDetails] Marquage du rafraîchissement de page');
-    markPageRefresh();
-  }, []);
+    const routerState = location.state as VehicleNavState | null;
+    if (routerState?.rentalCalculation) {
+      setRestoredNavState(null);
+      return;
+    }
+    if (!license) return;
+
+    const currentPath = `/vehicle/${license}`;
+    const intent = loadBookingResumeIntent();
+    if (!intent || !intentMatchesPath(intent, currentPath)) return;
+
+    const rebuilt = buildNavStateFromIntent(intent);
+    if (rebuilt) setRestoredNavState(rebuilt);
+  }, [license, location.state]);
+
+  useEffect(() => {
+    if (loading || !vehicle || viewItemSentRef.current) return;
+    viewItemSentRef.current = true;
+
+    const routerState = location.state as VehicleNavState | null;
+    const effectiveNav = routerState?.rentalCalculation
+      ? routerState
+      : restoredNavState ?? routerState;
+
+    trackViewItem({
+      itemId: vehicle.id,
+      itemName: `${vehicle.brand} ${vehicle.model}`,
+      itemCategory: vehicle.vehicleType ?? "car",
+      itemVariant: license,
+      price: vehicle.dailyPrice,
+      hasDates: Boolean(effectiveNav?.rentalCalculation),
+      rentalDays: effectiveNav?.rentalCalculation?.rentalDays,
+    });
+  }, [loading, vehicle?.id, license]);
 
   useEffect(() => {
     console.log('🚀 [DEBUG] VehicleDetails useEffect triggered');
@@ -361,22 +406,47 @@ export default function VehicleDetails() {
     
     if (!currentUser) {
       console.log('❌ [DEBUG] Utilisateur non connecté, redirection vers login');
+      const path = `/vehicle/${license}`;
+      saveBookingResumeIntent({ path, navState: navigationState });
+      trackBookingBlocked({
+        reason: "auth_required",
+        itemId: vehicle?.id,
+        itemVariant: license,
+      });
       toast({
         title: "Connexion requise",
         description: "Vous devez être connecté pour réserver un véhicule.",
       });
-      navigate("/auth/login");
+      navigate(`/auth/login?redirect=${encodeURIComponent(path)}`);
       return;
     }
 
-    if (!vehicle || !navigationState?.rentalCalculation) {
+    if (!vehicle) {
+      trackBookingBlocked({ reason: "missing_vehicle", itemVariant: license });
+      return;
+    }
+
+    if (!navigationState?.rentalCalculation) {
+      trackBookingBlocked({
+        reason: "missing_dates",
+        itemId: vehicle.id,
+        itemVariant: license,
+      });
       toast({
-        title: "Informations manquantes",
-        description: "Veuillez sélectionner des dates de location.",
-        variant: "destructive"
+        title: t("booking.funnel.missingDates.title"),
+        description: t("booking.funnel.missingDates.description"),
+        variant: "destructive",
       });
       return;
     }
+
+    trackBeginCheckout({
+      itemId: vehicle.id,
+      itemName: `${vehicle.brand} ${vehicle.model}`,
+      value: vehicleRentalInfo?.totalCost ?? dailyRate,
+      rentalDays: navigationState.rentalCalculation.rentalDays,
+      source: "vehicle_detail",
+    });
     
     // 🔧 SOLUTION : Récupérer le brouillon existant au lieu de le créer à nouveau
     let bookingDraft = getBookingDraft();
@@ -730,6 +800,7 @@ export default function VehicleDetails() {
         } catch {
           // best effort analytics
         }
+        clearBookingResumeIntent();
         // Ajouter l'ID de la réservation aux données pour la discussion
         bookingData.bookingId = bookingResult.data.id;
         
@@ -843,15 +914,19 @@ export default function VehicleDetails() {
   const dailyRate = vehicle.dailyPrice;
   const originalRate = Math.round(dailyRate * 1.2);
   
-  // Récupérer les informations de location depuis le state de navigation
-  const navigationState = location.state as {
+  // Récupérer les informations de location depuis le state de navigation ou sessionStorage
+  const routerNavState = location.state as {
     rentalCalculation?: RentalCalculation;
     startDate?: string;
     endDate?: string;
     startTime?: string;
     endTime?: string;
-    pickupLocation?: string; // Zone de prise en charge depuis la recherche
+    pickupLocation?: string;
   } | null;
+
+  const navigationState: VehicleNavState = routerNavState?.rentalCalculation
+    ? routerNavState
+    : restoredNavState ?? routerNavState;
   
   // Calculer les informations de location pour ce véhicule
   const vehicleRentalInfo: VehicleRentalInfo | null = navigationState?.rentalCalculation 

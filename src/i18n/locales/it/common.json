@@ -910,6 +910,12 @@
     "baseRateLabel": "Tariffa base*:",
     "excludingFeesNote": "* Escluse opzioni e commissioni di servizio",
     "reserve": "Prenota",
+    "funnel": {
+      "missingDates": {
+        "title": "Date obbligatorie",
+        "description": "Seleziona le date sulla homepage, poi torna a questa scheda per prenotare."
+      }
+    },
     "freeCancellation": "Cancellazione gratuita",
     "includedInPrice": "Incluso nel prezzo",
     "included": {

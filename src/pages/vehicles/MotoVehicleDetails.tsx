@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -82,7 +82,19 @@ import {
 } from "@/services/localStorage/bookingStorage";
 import { shouldShowComplementaryServicesModal } from "@/utils/bookingUpsell";
 import { requiresHotelName } from "@/utils/bookingLocations";
-import { markPageRefresh } from "@/services/localStorage/searchStorage";
+import {
+  saveBookingResumeIntent,
+  loadBookingResumeIntent,
+  clearBookingResumeIntent,
+  intentMatchesPath,
+  buildNavStateFromIntent,
+  type VehicleNavState,
+} from "@/lib/bookingResumeIntent";
+import {
+  trackViewItem,
+  trackBeginCheckout,
+  trackBookingBlocked,
+} from "@/lib/bookingFunnelAnalytics";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { PhotoService } from "@/services/supabase/photos";
 import VehicleOwnerCard from "@/components/VehicleOwnerCard";
@@ -183,6 +195,8 @@ export default function MotoVehicleDetails() {
     benefits: true,
     legal: false,
   });
+  const [restoredNavState, setRestoredNavState] = useState<VehicleNavState>(null);
+  const viewItemSentRef = useRef(false);
 
   // Flag pour contrôler l'affichage de la section "Récupération du véhicule"
   const ENABLE_PICKUP_ZONES_SECTION = false;
@@ -207,9 +221,40 @@ export default function MotoVehicleDetails() {
       : t("common.not_specified");
 
   useEffect(() => {
-    console.log("🏍️ [MotoVehicleDetails] Marquage du rafraîchissement de page");
-    markPageRefresh();
-  }, []);
+    const routerState = location.state as VehicleNavState | null;
+    if (routerState?.rentalCalculation) {
+      setRestoredNavState(null);
+      return;
+    }
+    if (!license) return;
+
+    const currentPath = `/moto/${license}`;
+    const intent = loadBookingResumeIntent();
+    if (!intent || !intentMatchesPath(intent, currentPath)) return;
+
+    const rebuilt = buildNavStateFromIntent(intent);
+    if (rebuilt) setRestoredNavState(rebuilt);
+  }, [license, location.state]);
+
+  useEffect(() => {
+    if (loading || !vehicle || viewItemSentRef.current) return;
+    viewItemSentRef.current = true;
+
+    const routerState = location.state as VehicleNavState | null;
+    const effectiveNav = routerState?.rentalCalculation
+      ? routerState
+      : restoredNavState ?? routerState;
+
+    trackViewItem({
+      itemId: vehicle.id,
+      itemName: `${vehicle.brand} ${vehicle.model}`,
+      itemCategory: vehicle.vehicleType ?? "moto",
+      itemVariant: license,
+      price: vehicle.dailyPrice,
+      hasDates: Boolean(effectiveNav?.rentalCalculation),
+      rentalDays: effectiveNav?.rentalCalculation?.rentalDays,
+    });
+  }, [loading, vehicle?.id, license]);
 
   useEffect(() => {
     console.log("🏍️ [DEBUG] MotoVehicleDetails useEffect triggered");
@@ -362,7 +407,7 @@ export default function MotoVehicleDetails() {
     }
   };
 
-  const navigationState = location.state as {
+  const routerNavState = location.state as {
     rentalCalculation?: RentalCalculation;
     startDate?: string;
     endDate?: string;
@@ -370,6 +415,10 @@ export default function MotoVehicleDetails() {
     endTime?: string;
     pickupLocation?: string;
   } | null;
+
+  const navigationState: VehicleNavState = routerNavState?.rentalCalculation
+    ? routerNavState
+    : restoredNavState ?? routerNavState;
 
   const vehicleRentalInfo: VehicleRentalInfo | null =
     vehicle && navigationState?.rentalCalculation
@@ -393,22 +442,47 @@ export default function MotoVehicleDetails() {
       console.log(
         "❌ [DEBUG] Utilisateur non connecté, redirection vers login (moto)"
       );
+      const path = `/moto/${license}`;
+      saveBookingResumeIntent({ path, navState: navigationState });
+      trackBookingBlocked({
+        reason: "auth_required",
+        itemId: vehicle?.id,
+        itemVariant: license,
+      });
       toast({
         title: t("motoDetails.errors.loginRequired.title"),
         description: t("motoDetails.errors.loginRequired.description"),
       });
-      navigate("/auth/login");
+      navigate(`/auth/login?redirect=${encodeURIComponent(path)}`);
       return;
     }
 
-    if (!vehicle || !navigationState?.rentalCalculation) {
+    if (!vehicle) {
+      trackBookingBlocked({ reason: "missing_vehicle", itemVariant: license });
+      return;
+    }
+
+    if (!navigationState?.rentalCalculation) {
+      trackBookingBlocked({
+        reason: "missing_dates",
+        itemId: vehicle.id,
+        itemVariant: license,
+      });
       toast({
-        title: t("motoDetails.errors.missingInfo.title"),
-        description: t("motoDetails.errors.missingInfo.description"),
+        title: t("booking.funnel.missingDates.title"),
+        description: t("booking.funnel.missingDates.description"),
         variant: "destructive",
       });
       return;
     }
+
+    trackBeginCheckout({
+      itemId: vehicle.id,
+      itemName: `${vehicle.brand} ${vehicle.model}`,
+      value: vehicleRentalInfo?.totalCost ?? vehicle.dailyPrice,
+      rentalDays: navigationState.rentalCalculation.rentalDays,
+      source: "moto_detail",
+    });
 
     let bookingDraft = getBookingDraft();
 
@@ -738,6 +812,7 @@ export default function MotoVehicleDetails() {
         } catch {
           // best effort analytics
         }
+        clearBookingResumeIntent();
         bookingData.bookingId = bookingResult.data.id;
         sessionStorage.setItem("lagon_booking_data", JSON.stringify(bookingData));
 

@@ -910,6 +910,12 @@
     "baseRateLabel": "Grundpreis*:",
     "excludingFeesNote": "* Ohne Optionen und Servicegebühren",
     "reserve": "Buchen",
+    "funnel": {
+      "missingDates": {
+        "title": "Daten erforderlich",
+        "description": "Wählen Sie Ihre Daten auf der Startseite und kehren Sie dann zu dieser Anzeige zurück, um zu buchen."
+      }
+    },
     "freeCancellation": "Kostenlose Stornierung",
     "includedInPrice": "Im Preis enthalten",
     "included": {
