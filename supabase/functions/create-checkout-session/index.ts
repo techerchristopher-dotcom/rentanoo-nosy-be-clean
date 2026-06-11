@@ -1,30 +1,30 @@
 /**
  * Edge Function Supabase : Création d'une session Stripe Checkout
- * 
+ *
+ * P2 (fees dynamic v2) :
+ *   - Ne calcule PLUS les frais (10% / 15%) localement.
+ *   - Lit `amount_total_expected` (source de vérité écrite par create_web_booking
+ *     via compute_renter_total côté DB) pour les bookings pricing_mode='web'.
+ *   - Pour pricing_mode='admin' : continue d'utiliser `total_price`.
+ *   - Pour `payment_method='cash_on_site'` : ne crée PAS de session Stripe et
+ *     retourne une réponse métier explicite (200 + `{ok:true, mode:"cash_on_site", ...}`).
+ *
  * Variables d'environnement requises :
  * - STRIPE_SECRET_KEY : Clé secrète Stripe (ex: sk_test_xxx)
- * - STRIPE_SUCCESS_URL : URL de redirection après paiement réussi
- *   ⚠️ EN DEV LOCAL : Utiliser http://localhost:3012/success (tenant) ou http://localhost:3013/success (owner)
- *   ⚠️ Configurer selon l'instance utilisée (tenant sur 3012, owner sur 3013)
- * - STRIPE_CANCEL_URL : URL de redirection après annulation
- *   ⚠️ EN DEV LOCAL : Utiliser http://localhost:3012/cancel (tenant) ou http://localhost:3013/cancel (owner)
- * - SUPABASE_URL : URL du projet Supabase
- * - SUPABASE_SERVICE_ROLE_KEY : Clé service role pour bypass RLS
- * 
+ * - STRIPE_SUCCESS_URL / STRIPE_CANCEL_URL : URLs de redirection
+ * - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
+ *
  * Payload attendu (POST JSON) :
  * {
  *   "bookingId": string      // ID de la réservation (REQUIS)
  * }
- * 
- * La fonction lit la réservation depuis la DB (source de vérité) :
- * - Montants en DB en ariary (MGA) ; conversion EUR au checkout Stripe
- * - pricing_mode 'web' : TTC MGA = subtotal + 15 % locataire → converti en EUR pour Stripe
- * 
+ *
  * Réponse :
- * - 200 : { "url": "https://checkout.stripe.com/..." }
- * - 400 : { "ok": false, "error": "..." }
- * - 404 : { "ok": false, "error": "Booking not found" }
- * - 500 : { "ok": false, "error": "..." }
+ * - 200 (CB)   : { "url": "https://checkout.stripe.com/..." }
+ * - 200 (cash) : { "ok": true, "mode": "cash_on_site", "message": "...", "amount_total_expected": <mga> }
+ * - 400        : { "ok": false, "error": "..." }
+ * - 404        : { "ok": false, "error": "Booking not found" }
+ * - 500        : { "ok": false, "error": "..." }
  */
 
 import Stripe from "https://esm.sh/stripe@latest";
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
       .select(
-        "subtotal, base_price, options_total, vehicle_id, start_date, end_date, user_id, pricing_mode, total_price",
+        "subtotal, base_price, options_total, vehicle_id, start_date, end_date, user_id, pricing_mode, total_price, payment_method, amount_total_expected, service_fee_renter, service_fee_percent_applied",
       )
       .eq("id", bookingId)
       .single();
@@ -296,6 +296,42 @@ Deno.serve(async (req) => {
 
     const pricingModeRaw = booking.pricing_mode;
     const isAdminPricing = pricingModeRaw === "admin";
+    const paymentMethodRaw = booking.payment_method ?? null;
+
+    // ============================================
+    // GUARD MÉTIER : cash_on_site → pas de checkout Stripe
+    // ============================================
+    // P2 : un booking marqué 'cash_on_site' doit être encaissé à l'agence.
+    // On ne crée donc pas de session Stripe et on retourne une réponse 200
+    // métier explicite (logguée) plutôt qu'une erreur 400 technique.
+    if (paymentMethodRaw === "cash_on_site") {
+      const expectedMga = Number(booking.amount_total_expected ?? 0) || 0;
+      console.info("ℹ️ [create-checkout-session][CASH_ON_SITE] Paiement à l'agence — aucun checkout Stripe requis.", {
+        bookingId,
+        pricing_mode: pricingModeRaw,
+        payment_method: paymentMethodRaw,
+        amount_total_expected_mga: expectedMga,
+        timestamp: new Date().toISOString(),
+      });
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          mode: "cash_on_site",
+          message:
+            "Paiement à l'agence — aucun checkout Stripe nécessaire. Le client réglera lors de la remise des clés.",
+          bookingId,
+          amount_total_expected: expectedMga,
+          currency_db: "MGA",
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        }
+      );
+    }
 
     const userId = booking?.user_id ?? null;
     let profile: { stripe_customer_id: string | null; email: string | null } | null = null;
@@ -313,18 +349,13 @@ Deno.serve(async (req) => {
     }
 
     // ============================================
-    // CALCUL DU MONTANT TTC (selon pricing_mode) — montants en MGA en base
+    // P2 : LECTURE DU MONTANT TTC DEPUIS LA DB (source de vérité unique)
     // ============================================
-    const SERVICE_FEE_PERCENT_RENTER = 0.15;
-
-    function calcServiceFeeRenter(subtotalMga: number): number {
-      return Math.round(subtotalMga * SERVICE_FEE_PERCENT_RENTER);
-    }
-
-    function calcRenterTotalMga(subtotalMga: number): number {
-      return subtotalMga + calcServiceFeeRenter(subtotalMga);
-    }
-
+    // Pour pricing_mode='web' (card_online) : amount_total_expected est écrit
+    // par create_web_booking via compute_renter_total(subtotal, payment_method)
+    // dans Postgres. AUCUN recalcul côté Edge Function.
+    // Pour pricing_mode='admin' : on continue d'utiliser total_price (logique
+    // de l'admin backend, hors scope P2).
     async function fetchEurMgaRate(): Promise<number> {
       const { data, error } = await supabaseAdmin
         .from("platform_settings")
@@ -373,17 +404,24 @@ Deno.serve(async (req) => {
         amountTTCMga,
       });
     } else {
-      if (!subtotal || subtotal <= 0) {
-        console.error("❌ [create-checkout-session][FAIL][INVALID_SUBTOTAL] Subtotal invalide:", {
+      const expectedFromDb = Number(booking.amount_total_expected ?? 0);
+      if (!expectedFromDb || expectedFromDb <= 0) {
+        console.error("❌ [create-checkout-session][FAIL][INVALID_AMOUNT_TOTAL_EXPECTED] amount_total_expected invalide:", {
           bookingId,
           pricing_mode: pricingModeRaw,
+          amount_total_expected: booking.amount_total_expected,
           subtotal,
-          base_price: booking.base_price,
-          options_total: booking.options_total,
+          payment_method: paymentMethodRaw,
+          service_fee_renter: booking.service_fee_renter,
+          service_fee_percent_applied: booking.service_fee_percent_applied,
           timestamp: new Date().toISOString(),
         });
         return new Response(
-          JSON.stringify({ ok: false, error: "Booking subtotal is invalid or missing" }),
+          JSON.stringify({
+            ok: false,
+            error:
+              "Booking amount_total_expected is invalid or missing. Le booking doit avoir été créé via create_web_booking (P2).",
+          }),
           {
             status: 400,
             headers: {
@@ -393,12 +431,15 @@ Deno.serve(async (req) => {
           },
         );
       }
-      amountTTCMga = calcRenterTotalMga(subtotal);
-      console.log("💰 [create-checkout-session] Montant web (subtotal MGA + 15 %):", {
+      amountTTCMga = Math.round(expectedFromDb);
+      console.log("💰 [create-checkout-session] Montant web (amount_total_expected DB, P2 source de vérité):", {
         bookingId,
         pricing_mode: pricingModeRaw ?? "web (default)",
+        payment_method: paymentMethodRaw,
         subtotal_DB: subtotal,
-        service_fee_renter: calcServiceFeeRenter(subtotal),
+        service_fee_renter_DB: booking.service_fee_renter,
+        service_fee_percent_applied_DB: booking.service_fee_percent_applied,
+        amount_total_expected_DB: expectedFromDb,
         amountTTCMga,
       });
     }

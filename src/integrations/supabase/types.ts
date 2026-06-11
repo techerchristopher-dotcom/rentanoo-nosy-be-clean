@@ -146,6 +146,7 @@ export type Database = {
       bookings: {
         Row: {
           admin_notes: string | null
+          amount_total_expected: number | null
           amount_total_paid: number | null
           base_price: number
           created_at: string | null
@@ -165,8 +166,8 @@ export type Database = {
           options_total: number
           owner_payout_amount: number | null
           paid_at: string | null
+          payment_method: string | null
           pickup_location: string | null
-          return_location: string | null
           platform_total_fee: number | null
           price_per_day: number
           pricing_mode: string | null
@@ -175,9 +176,11 @@ export type Database = {
           rental_contract_signed_at: string | null
           rental_contract_template_version: string | null
           rental_days: number | null
+          return_location: string | null
           selected_options: Json | null
           service_fee: number
           service_fee_owner: number | null
+          service_fee_percent_applied: number | null
           service_fee_renter: number | null
           start_date: string
           start_time: string | null
@@ -193,6 +196,7 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          amount_total_expected?: number | null
           amount_total_paid?: number | null
           base_price: number
           created_at?: string | null
@@ -212,8 +216,8 @@ export type Database = {
           options_total: number
           owner_payout_amount?: number | null
           paid_at?: string | null
+          payment_method?: string | null
           pickup_location?: string | null
-          return_location?: string | null
           platform_total_fee?: number | null
           price_per_day: number
           pricing_mode?: string | null
@@ -222,9 +226,11 @@ export type Database = {
           rental_contract_signed_at?: string | null
           rental_contract_template_version?: string | null
           rental_days?: number | null
+          return_location?: string | null
           selected_options?: Json | null
           service_fee: number
           service_fee_owner?: number | null
+          service_fee_percent_applied?: number | null
           service_fee_renter?: number | null
           start_date: string
           start_time?: string | null
@@ -240,6 +246,7 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          amount_total_expected?: number | null
           amount_total_paid?: number | null
           base_price?: number
           created_at?: string | null
@@ -259,8 +266,8 @@ export type Database = {
           options_total?: number
           owner_payout_amount?: number | null
           paid_at?: string | null
+          payment_method?: string | null
           pickup_location?: string | null
-          return_location?: string | null
           platform_total_fee?: number | null
           price_per_day?: number
           pricing_mode?: string | null
@@ -269,9 +276,11 @@ export type Database = {
           rental_contract_signed_at?: string | null
           rental_contract_template_version?: string | null
           rental_days?: number | null
+          return_location?: string | null
           selected_options?: Json | null
           service_fee?: number
           service_fee_owner?: number | null
+          service_fee_percent_applied?: number | null
           service_fee_renter?: number | null
           start_date?: string
           start_time?: string | null
@@ -301,6 +310,162 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bookings_backup_pre_p2_20260611: {
+        Row: {
+          _backup_captured_at_utc: string | null
+          admin_notes: string | null
+          amount_total_expected: number | null
+          amount_total_paid: number | null
+          base_price: number | null
+          created_at: string | null
+          created_by_admin_id: string | null
+          currency: string | null
+          deposit_amount_snapshot: number | null
+          deposit_capture_amount: number | null
+          deposit_capture_before: string | null
+          deposit_hold_created_at: string | null
+          deposit_payment_intent_id: string | null
+          deposit_reason: string | null
+          deposit_status: string | null
+          end_date: string | null
+          end_time: string | null
+          id: string | null
+          offline_payment_method: string | null
+          options_total: number | null
+          owner_payout_amount: number | null
+          paid_at: string | null
+          payment_method: string | null
+          pickup_location: string | null
+          platform_total_fee: number | null
+          price_per_day: number | null
+          pricing_mode: string | null
+          reference_number: number | null
+          rental_contract_pdf_url: string | null
+          rental_contract_signed_at: string | null
+          rental_contract_template_version: string | null
+          rental_days: number | null
+          return_location: string | null
+          selected_options: Json | null
+          service_fee: number | null
+          service_fee_owner: number | null
+          service_fee_percent_applied: number | null
+          service_fee_renter: number | null
+          start_date: string | null
+          start_time: string | null
+          status: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_payment_method_id: string | null
+          subtotal: number | null
+          total_price: number | null
+          updated_at: string | null
+          user_id: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          _backup_captured_at_utc?: string | null
+          admin_notes?: string | null
+          amount_total_expected?: number | null
+          amount_total_paid?: number | null
+          base_price?: number | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          currency?: string | null
+          deposit_amount_snapshot?: number | null
+          deposit_capture_amount?: number | null
+          deposit_capture_before?: string | null
+          deposit_hold_created_at?: string | null
+          deposit_payment_intent_id?: string | null
+          deposit_reason?: string | null
+          deposit_status?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          id?: string | null
+          offline_payment_method?: string | null
+          options_total?: number | null
+          owner_payout_amount?: number | null
+          paid_at?: string | null
+          payment_method?: string | null
+          pickup_location?: string | null
+          platform_total_fee?: number | null
+          price_per_day?: number | null
+          pricing_mode?: string | null
+          reference_number?: number | null
+          rental_contract_pdf_url?: string | null
+          rental_contract_signed_at?: string | null
+          rental_contract_template_version?: string | null
+          rental_days?: number | null
+          return_location?: string | null
+          selected_options?: Json | null
+          service_fee?: number | null
+          service_fee_owner?: number | null
+          service_fee_percent_applied?: number | null
+          service_fee_renter?: number | null
+          start_date?: string | null
+          start_time?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          subtotal?: number | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          _backup_captured_at_utc?: string | null
+          admin_notes?: string | null
+          amount_total_expected?: number | null
+          amount_total_paid?: number | null
+          base_price?: number | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          currency?: string | null
+          deposit_amount_snapshot?: number | null
+          deposit_capture_amount?: number | null
+          deposit_capture_before?: string | null
+          deposit_hold_created_at?: string | null
+          deposit_payment_intent_id?: string | null
+          deposit_reason?: string | null
+          deposit_status?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          id?: string | null
+          offline_payment_method?: string | null
+          options_total?: number | null
+          owner_payout_amount?: number | null
+          paid_at?: string | null
+          payment_method?: string | null
+          pickup_location?: string | null
+          platform_total_fee?: number | null
+          price_per_day?: number | null
+          pricing_mode?: string | null
+          reference_number?: number | null
+          rental_contract_pdf_url?: string | null
+          rental_contract_signed_at?: string | null
+          rental_contract_template_version?: string | null
+          rental_days?: number | null
+          return_location?: string | null
+          selected_options?: Json | null
+          service_fee?: number | null
+          service_fee_owner?: number | null
+          service_fee_percent_applied?: number | null
+          service_fee_renter?: number | null
+          start_date?: string | null
+          start_time?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          subtotal?: number | null
+          total_price?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: []
       }
       checkin_depart: {
         Row: {
@@ -868,6 +1033,24 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address_line1: string | null
@@ -1288,6 +1471,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_analytics_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          id: string
+          metadata: Json
+          page_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          id?: string
+          metadata?: Json
+          page_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          id?: string
+          metadata?: Json
+          page_path?: string | null
+        }
+        Relationships: []
       }
       stock_movements: {
         Row: {
@@ -1761,9 +1968,81 @@ export type Database = {
       }
     }
     Functions: {
+      _booking_combine_datetime: {
+        Args: { p_date: string; p_time: string }
+        Returns: string
+      }
+      _resolve_booking_option_id: { Args: { p_id: string }; Returns: string }
+      _return_day_fraction: { Args: { p_end_time: string }; Returns: number }
+      compute_booking_base_price: {
+        Args: {
+          p_end_date: string
+          p_end_time?: string
+          p_price_per_day: number
+          p_start_date: string
+          p_start_time?: string
+        }
+        Returns: {
+          base_price: number
+          rental_days: number
+          rental_hours: number
+        }[]
+      }
+      compute_renter_fee: {
+        Args: { p_payment_method: string; p_subtotal: number }
+        Returns: number
+      }
+      compute_renter_total: {
+        Args: { p_payment_method: string; p_subtotal: number }
+        Returns: number
+      }
+      create_web_booking:
+        | {
+            Args: {
+              p_end_date: string
+              p_end_time?: string
+              p_hotel_name?: string
+              p_pickup_location?: string
+              p_selected_options?: Json
+              p_start_date: string
+              p_start_time?: string
+              p_vehicle_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_end_date: string
+              p_end_time: string
+              p_hotel_name: string
+              p_payment_method: string
+              p_pickup_location: string
+              p_selected_options: Json
+              p_start_date: string
+              p_start_time: string
+              p_vehicle_id: string
+            }
+            Returns: Json
+          }
+      derive_booking_locations: {
+        Args: { p_hotel_name?: string; p_selected_options: Json }
+        Returns: {
+          pickup_location: string
+          return_location: string
+        }[]
+      }
+      get_fee_percent: { Args: { p_payment_method: string }; Returns: number }
       has_staff_role: { Args: { roles: string[] }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       normalize_text: { Args: { input_text: string }; Returns: string }
+      preview_renter_fee: {
+        Args: { p_payment_method: string; p_subtotal: number }
+        Returns: Json
+      }
+      recalc_vehicle_operational_status: {
+        Args: { p_vehicle_id: string }
+        Returns: undefined
+      }
       rpc_cancel_part_sale: { Args: { p_sale_id: string }; Returns: undefined }
       rpc_cancel_repair: { Args: { p_repair_id: string }; Returns: undefined }
       rpc_consume_parts_for_repair: {
@@ -1784,6 +2063,16 @@ export type Database = {
           p_unit_cost: number
         }
         Returns: string
+      }
+      sanitize_booking_selected_options: {
+        Args: { p_base_price: number; p_raw_options: Json }
+        Returns: {
+          options_total: number
+          selected_options: Json
+          service_fee: number
+          subtotal: number
+          total_price: number
+        }[]
       }
       unaccent: { Args: { "": string }; Returns: string }
     }

@@ -28,3 +28,6 @@ dist-ssr
 *.sln
 *.sw?
 
+# n8n workflow backups (created by audit tooling, may contain sensitive data)
+scripts/n8n-backups/
+

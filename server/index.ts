@@ -162,110 +162,39 @@ app.post(
           return res.status(200).json({ received: true, extension: true });
         }
 
-        // Lire commission base depuis Supabase: subtotal
-        const { data: bookingRow, error: fetchErr } = await supabaseAdmin
-          .from("bookings")
-          .select("subtotal")
-          .eq("id", bookingId)
-          .single();
-        if (fetchErr) {
-          console.error("❌ Lecture bookings.subtotal:", fetchErr);
-          return res.status(500).json({ ok: false, error: fetchErr.message });
-        }
-
-        const commissionBase = Number(bookingRow?.subtotal || 0);
-        // Calculs business (15% locataire + 15% propriétaire) sur subtotal
-        const { 
-          calcServiceFeeRenter, 
-          calcServiceFeeOwner, 
-          calcRenterTotal, 
-          calcOwnerPayout, 
-          calcPlatformTotalFee,
-          validateFeeCalculations
-        } = await import("../src/utils/serviceFees.js");
-        const round2 = (n: number) => Math.round(n * 100) / 100;
-        const serviceFeeRenter = calcServiceFeeRenter(commissionBase);
-        const serviceFeeOwner = calcServiceFeeOwner(commissionBase);
-        const amountTotalPaid = calcRenterTotal(commissionBase);
-        const ownerPayoutAmount = calcOwnerPayout(commissionBase);
-        const platformTotalFee = calcPlatformTotalFee(commissionBase);
-        
-        // Self-check DEV-only
-        validateFeeCalculations(commissionBase, serviceFeeRenter, serviceFeeOwner, platformTotalFee);
-
-        // Alerte si désalignement montant Stripe vs calcul (tolérance arrondis)
-        if (amountTotal && Math.abs(amountTotal - amountTotalPaid) > 0.02) {
-          console.warn("⚠️ Stripe amount_total différent du calcul business", {
-            amountTotalFromStripe: amountTotal,
-            amountTotalPaid,
-          });
-        }
-
-        // Préparer le payload pour l'update
-        const updatePayload = {
-          status: "accepted",
-          paid_at: new Date().toISOString(),
-          stripe_payment_intent_id: paymentIntentId || null,
-          stripe_checkout_session_id: checkoutSessionId,
-          amount_total_paid: amountTotal || amountTotalPaid,
-          service_fee_renter: serviceFeeRenter,
-          service_fee_owner: serviceFeeOwner,
-          owner_payout_amount: ownerPayoutAmount,
-          platform_total_fee: platformTotalFee,
-          currency,
-          updated_at: new Date().toISOString(),
-        };
-
-        // Log DEV-only avant update
-        if (process.env.NODE_ENV !== "production") {
-          console.info("[fees-webhook-write:before]", {
+        // ============================================================
+        // P2 (fees dynamic v2) — NEUTRALISATION CHECKOUT STANDARD
+        // ============================================================
+        // L'Edge Function `stripe-webhook` est désormais le SEUL handler
+        // canonique pour `checkout.session.completed` (cf. audit Stripe).
+        // Le webhook Express continue de recevoir l'event (endpoint legacy
+        // toujours actif côté Stripe Dashboard tant qu'il n'est pas
+        // explicitement désactivé), mais ne doit PLUS écrire les frais ni
+        // changer le statut : cela serait une double écriture conflictuelle
+        // avec l'Edge Function (qui passe le statut à 'confirmed' et écrit
+        // les bons montants depuis amount_total_expected).
+        //
+        // On log explicitement la réception puis on rend 200 — Stripe
+        // arrête de retenter, et la base reste alimentée par l'Edge Function.
+        // ⚠️ NE PAS DÉSACTIVER les branches `extension` (ci-dessus) ni
+        // `payment_intent.*` (ci-dessous) : elles ne sont PAS gérées par
+        // l'Edge Function et restent canoniques côté Express.
+        const isDevLog = process.env.NODE_ENV !== "production";
+        if (isDevLog) {
+          console.info("[express-webhook][checkout.session.completed][NEUTRALIZED-P2]", {
             webhook: "EXPRESS_WEBHOOK",
             bookingId,
-            status: updatePayload.status,
-            currency: updatePayload.currency,
-            paid_at: updatePayload.paid_at,
-            stripe_checkout_session_id: updatePayload.stripe_checkout_session_id,
-            stripe_payment_intent_id: updatePayload.stripe_payment_intent_id,
-            amount_total_paid: updatePayload.amount_total_paid,
-            service_fee_renter: updatePayload.service_fee_renter,
-            service_fee_owner: updatePayload.service_fee_owner,
-            owner_payout_amount: updatePayload.owner_payout_amount,
-            platform_total_fee: updatePayload.platform_total_fee,
+            checkoutSessionId,
+            paymentIntentId: paymentIntentId || null,
+            stripeAmountTotal: amountTotal,
+            stripeCurrency: currency,
+            note: "Edge Function canonique gère cet event en P2. Express log-only.",
           });
+        } else {
+          console.log(
+            `ℹ️ [webhook][NEUTRALIZED-P2] checkout.session.completed reçu bookingId=${bookingId} ; déféré à l'Edge Function canonique. Aucun écriture DB côté Express.`
+          );
         }
-
-        const { data: updateData, error: updateErr } = await supabaseAdmin
-          .from("bookings")
-          .update(updatePayload)
-          .eq("id", bookingId)
-          .select();
-
-        // Log DEV-only après update
-        if (process.env.NODE_ENV !== "production") {
-          console.info("[fees-webhook-write:after]", {
-            webhook: "EXPRESS_WEBHOOK",
-            bookingId,
-            ok: !updateErr,
-            error: updateErr?.message || null,
-            data: updateData ? "updated" : null,
-          });
-        }
-
-        if (updateErr) {
-          console.error("❌ Update bookings après paiement:", updateErr);
-          return res.status(500).json({ ok: false, error: updateErr.message });
-        }
-
-        console.log("✅ [webhook] Booking mis à jour après paiement:", {
-          bookingId,
-          status: "accepted",
-          paymentStatus: "paid",
-          amountTotalPaid,
-          ownerPayoutAmount,
-          platformTotalFee,
-        });
-        
-        console.log(`✅ [webhook] bookingId=${bookingId}, payment confirmed -> statutReservation=accepted, statutPaiement=paid`);
       } else if (event.type === "payment_intent.succeeded") {
         const pi = event.data.object as Parameters<typeof reconcileClaimChargeFromWebhookPaymentIntent>[2];
         try {

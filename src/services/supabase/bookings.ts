@@ -1,6 +1,6 @@
 // Service Supabase pour la gestion des réservations
 import { supabase } from '@/integrations/supabase/client';
-import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
+import type { Json, Tables, TablesUpdate } from '@/integrations/supabase/types';
 import type { BookingPricingMode } from '@/types';
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin';
 import { ProfileService } from './profile';
@@ -17,6 +17,13 @@ interface CreateWebBookingRpcResult {
   created_at: string;
 }
 
+/**
+ * Mode de paiement client (P2 fees dynamic v2).
+ * - card_online : Stripe en ligne, frais = get_fee_percent('card_online') côté DB (10% par défaut).
+ * - cash_on_site : espèces à l'agence, frais = get_fee_percent('cash_on_site') côté DB (15% par défaut).
+ */
+export type BookingPaymentMethod = 'card_online' | 'cash_on_site';
+
 function mapCreateWebBookingRpcError(message: string): string {
   if (message.includes('PHONE_REQUIRED')) return 'PHONE_REQUIRED';
   if (message.includes('VEHICLE_NOT_FOUND')) return 'VEHICLE_NOT_FOUND';
@@ -25,6 +32,7 @@ function mapCreateWebBookingRpcError(message: string): string {
   if (message.includes('INVALID_PRICE_PER_DAY')) return 'INVALID_PRICE_PER_DAY';
   if (message.includes('HOTEL_NAME_REQUIRED')) return 'HOTEL_NAME_REQUIRED';
   if (message.includes('UNAUTHENTICATED')) return 'UNAUTHENTICATED';
+  if (message.includes('INVALID_PAYMENT_METHOD')) return 'INVALID_PAYMENT_METHOD';
   return message;
 }
 
@@ -53,6 +61,13 @@ export interface BookingData {
   rentalDays?: number;
   /** Optionnel : aligné sur `bookings.pricing_mode` (défaut DB `web` si absent à l’insertion) */
   pricingMode?: BookingPricingMode;
+  /**
+   * P2 (fees dynamic v2) — mode de paiement client.
+   * Si absent, la RPC `create_web_booking` applique `card_online` par défaut
+   * (via le wrapper 8-arg). Quand le frontend P3 affiche la modale CB/espèces,
+   * il doit toujours fournir cette valeur explicitement.
+   */
+  paymentMethod?: BookingPaymentMethod;
 }
 
 export interface BookingResponse {
@@ -98,16 +113,26 @@ export class SupabaseBookingsService {
         return { data: null, error: 'INVALID_DATETIME_RANGE' };
       }
 
-      // 🔒 Création via RPC SECURITY DEFINER (recalcul serveur des montants, RLS INSERT bloqué)
+      // 🔒 Création via RPC SECURITY DEFINER (recalcul serveur des montants, RLS INSERT bloqué).
+      // P2 : on envoie systématiquement `p_payment_method` pour cibler la signature
+      // 9-arg de `create_web_booking`. Défaut = 'card_online' (parité 1:1 avec le
+      // wrapper 8-arg conservé en compat 72h pour les onglets en cache).
+      const paymentMethod: BookingPaymentMethod =
+        bookingData.paymentMethod ?? 'card_online';
+
+      // Chaînes vides côté wire → NULLIF(trim(...), '') côté Postgres → NULL.
+      // Permet de matcher l'overload 9-arg (params text NOT NULL) tout en
+      // produisant les bons NULL en base.
       const { data: rpcData, error: rpcError } = await supabase.rpc('create_web_booking', {
         p_vehicle_id: bookingData.vehicleId,
         p_start_date: bookingData.startDate.split('T')[0],
         p_end_date: bookingData.endDate.split('T')[0],
-        p_start_time: bookingData.startTime || null,
-        p_end_time: bookingData.endTime || null,
-        p_pickup_location: bookingData.pickupLocation || null,
-        p_selected_options: bookingData.selectedOptions ?? [],
-        p_hotel_name: bookingData.hotelName?.trim() || null,
+        p_start_time: bookingData.startTime ?? '',
+        p_end_time: bookingData.endTime ?? '',
+        p_pickup_location: bookingData.pickupLocation ?? '',
+        p_selected_options: (bookingData.selectedOptions ?? []) as unknown as Json,
+        p_hotel_name: bookingData.hotelName?.trim() ?? '',
+        p_payment_method: paymentMethod,
       });
 
       if (rpcError) {
