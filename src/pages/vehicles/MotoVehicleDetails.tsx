@@ -221,6 +221,10 @@ export default function MotoVehicleDetails() {
       : t("common.not_specified");
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [license]);
+
+  useEffect(() => {
     const routerState = location.state as VehicleNavState | null;
     if (routerState?.rentalCalculation) {
       setRestoredNavState(null);
