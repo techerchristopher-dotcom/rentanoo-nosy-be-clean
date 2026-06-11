@@ -11,6 +11,21 @@ export function safeRedirectPath(raw: string | null): string | null {
   return trimmed;
 }
 
+/** Lit ?redirect= depuis des search params. */
+export function getRedirectFromSearch(
+  searchParams: URLSearchParams
+): string | null {
+  return safeRedirectPath(searchParams.get("redirect"));
+}
+
+/** Construit un lien auth interne avec ?redirect= optionnel. */
+export function buildAuthLink(path: string, redirect: string | null): string {
+  const safe = safeRedirectPath(redirect);
+  if (!safe) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}redirect=${encodeURIComponent(safe)}`;
+}
+
 /** OAuth / callback : callback de base + ?redirect= si chemin interne valide. */
 export function buildAuthCallbackUrl(
   callbackBaseUrl: string,
@@ -22,13 +37,16 @@ export function buildAuthCallbackUrl(
 }
 
 /**
- * Destination post-auth : ?redirect= URL, puis bookingResumeIntent, puis onboarding.
+ * Destination post-auth : redirect URL safe, puis bookingResumeIntent, puis onboarding.
  */
-export function resolvePostAuthRedirect(): string {
+export function resolvePostAuthRedirect(
+  explicitRedirect?: string | null
+): string {
   const fromQuery = safeRedirectPath(
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("redirect")
-      : null
+    explicitRedirect ??
+      (typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("redirect")
+        : null)
   );
   if (fromQuery) return fromQuery;
 

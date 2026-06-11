@@ -2,7 +2,8 @@ import { createRentalCalculation } from "@/lib/utils";
 import type { RentalCalculation } from "@/types";
 
 const STORAGE_KEY = "lagon_booking_resume_intent";
-const TTL_MS = 30 * 60 * 1000;
+const LEGACY_STORAGE_KEY = STORAGE_KEY;
+const TTL_MS = 24 * 60 * 60 * 1000;
 
 export interface BookingResumeIntent {
   path: string;
@@ -22,6 +23,36 @@ export type VehicleNavState = {
   endTime?: string;
   pickupLocation?: string;
 } | null;
+
+function readRawFromStorage(storage: Storage): string | null {
+  try {
+    return storage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function parseIntent(raw: string): BookingResumeIntent | null {
+  try {
+    const intent = JSON.parse(raw) as BookingResumeIntent;
+    if (!intent.path || !intent.savedAt) return null;
+
+    const age = Date.now() - new Date(intent.savedAt).getTime();
+    if (age > TTL_MS) return null;
+
+    return intent;
+  } catch {
+    return null;
+  }
+}
+
+function persistIntent(intent: BookingResumeIntent): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(intent));
+  } catch {
+    // best effort
+  }
+}
 
 export function saveBookingResumeIntent(params: {
   path: string;
@@ -48,7 +79,13 @@ export function saveBookingResumeIntent(params: {
       payload.pickupLocation = nav.pickupLocation;
     }
 
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    persistIntent(payload);
+
+    try {
+      sessionStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      // best effort
+    }
   } catch {
     // best effort
   }
@@ -56,19 +93,34 @@ export function saveBookingResumeIntent(params: {
 
 export function loadBookingResumeIntent(): BookingResumeIntent | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-
-    const intent = JSON.parse(raw) as BookingResumeIntent;
-    if (!intent.path || !intent.savedAt) return null;
-
-    const age = Date.now() - new Date(intent.savedAt).getTime();
-    if (age > TTL_MS) {
+    const fromLocal = readRawFromStorage(localStorage);
+    if (fromLocal) {
+      const intent = parseIntent(fromLocal);
+      if (intent) return intent;
       clearBookingResumeIntent();
       return null;
     }
 
-    return intent;
+    const fromSession = readRawFromStorage(sessionStorage);
+    if (fromSession) {
+      const intent = parseIntent(fromSession);
+      if (intent) {
+        persistIntent(intent);
+        try {
+          sessionStorage.removeItem(LEGACY_STORAGE_KEY);
+        } catch {
+          // best effort
+        }
+        return intent;
+      }
+      try {
+        sessionStorage.removeItem(LEGACY_STORAGE_KEY);
+      } catch {
+        // best effort
+      }
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -76,7 +128,12 @@ export function loadBookingResumeIntent(): BookingResumeIntent | null {
 
 export function clearBookingResumeIntent(): void {
   try {
-    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // best effort
+  }
+  try {
+    sessionStorage.removeItem(LEGACY_STORAGE_KEY);
   } catch {
     // best effort
   }

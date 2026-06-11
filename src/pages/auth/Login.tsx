@@ -20,7 +20,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleIcon } from "@/components/ui/social-icons";
 import { AUTH_CALLBACK_URL } from "@/lib/config";
-import { buildAuthCallbackUrl, safeRedirectPath } from "@/lib/safeRedirectPath";
+import {
+  buildAuthCallbackUrl,
+  buildAuthLink,
+  resolvePostAuthRedirect,
+} from "@/lib/safeRedirectPath";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
@@ -93,8 +97,7 @@ export default function Login() {
           title: "Connexion réussie",
           description: "Bienvenue sur Rentanoo !",
         });
-        const next = safeRedirectPath(searchParams.get("redirect"));
-        navigate(next ?? "/onboarding/client");
+        navigate(resolvePostAuthRedirect(searchParams.get("redirect")));
       }
     } catch (error) {
       toast({
@@ -403,7 +406,7 @@ export default function Login() {
               <p className="text-sm text-muted-foreground">
                 Pas encore de compte ?{" "}
                 <Link
-                  to="/auth/register"
+                  to={buildAuthLink("/auth/register", searchParams.get("redirect"))}
                   className="font-medium text-primary hover:underline"
                 >
                   S'inscrire

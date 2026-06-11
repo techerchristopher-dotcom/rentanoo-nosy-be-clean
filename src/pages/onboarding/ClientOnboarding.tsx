@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, Clock, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { loadBookingResumeIntent } from "@/lib/bookingResumeIntent";
+import { buildAuthLink } from "@/lib/safeRedirectPath";
 
 const STEPS = [
   { id: 1, label: "Session active" },
@@ -334,7 +335,11 @@ export default function ClientOnboarding() {
                 Connectez-vous pour continuer votre onboarding.
               </p>
               <Button
-                onClick={() => navigate("/auth/login")}
+                onClick={() =>
+                  navigate(
+                    buildAuthLink("/auth/login", resumeIntent?.path ?? null)
+                  )
+                }
                 className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
               >
                 Se connecter

@@ -4,7 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Car, CheckCircle2, AlertCircle } from "lucide-react";
-import { resolvePostAuthRedirect } from "@/lib/safeRedirectPath";
+import {
+  buildAuthLink,
+  getRedirectFromSearch,
+  resolvePostAuthRedirect,
+} from "@/lib/safeRedirectPath";
 
 type CallbackStatus = "loading" | "success" | "invalid";
 
@@ -398,7 +402,16 @@ export default function Callback() {
               </>
             ) : (
               <Button
-                onClick={() => navigate("/auth/login")}
+                onClick={() =>
+                  navigate(
+                    buildAuthLink(
+                      "/auth/login",
+                      getRedirectFromSearch(
+                        new URLSearchParams(window.location.search)
+                      )
+                    )
+                  )
+                }
                 className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
               >
                 Retour connexion
