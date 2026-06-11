@@ -178,6 +178,10 @@ export default function MotoVehicleDetails() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showComplementaryModal, setShowComplementaryModal] = useState(false);
   const [showPhoneRequiredModal, setShowPhoneRequiredModal] = useState(false);
+  type PhoneGateSource = "booking_start" | "booking_confirmation";
+  const [phoneGateSource, setPhoneGateSource] = useState<PhoneGateSource | null>(
+    null
+  );
 
   const hideMobileBookingBar =
     showConfirmationModal || showComplementaryModal || showPhoneRequiredModal;
@@ -437,12 +441,13 @@ export default function MotoVehicleDetails() {
     ? formatBillableDays(t, vehicleRentalInfo.days)
     : null;
 
-  const handleBooking = () => {
+  const handleBooking = (userOverride?: User | null) => {
+    const activeUser = userOverride ?? currentUser;
     console.log("🏍️ [DEBUG] Clic sur Réserver (moto)");
-    console.log("👤 [DEBUG] currentUser:", currentUser);
+    console.log("👤 [DEBUG] currentUser:", activeUser);
     console.log("🏍️ [DEBUG] vehicle:", vehicle);
 
-    if (!currentUser) {
+    if (!activeUser) {
       console.log(
         "❌ [DEBUG] Utilisateur non connecté, redirection vers login (moto)"
       );
@@ -458,6 +463,14 @@ export default function MotoVehicleDetails() {
         description: t("motoDetails.errors.loginRequired.description"),
       });
       navigate(`/auth/login?redirect=${encodeURIComponent(path)}`);
+      return;
+    }
+
+    if (!activeUser.phone?.trim()) {
+      setPhoneGateSource("booking_start");
+      setPhone("");
+      setPhoneError(null);
+      setShowPhoneRequiredModal(true);
       return;
     }
 
@@ -546,43 +559,53 @@ export default function MotoVehicleDetails() {
 
   // Handler pour sauvegarder le téléphone et continuer la réservation
   const handleSavePhoneAndContinue = async () => {
-    // Réinitialiser l'erreur
     setPhoneError(null);
-    
-    // Validation frontend
-    if (!phone || phone.trim().length === 0) {
-      setPhoneError('Veuillez saisir un numéro de téléphone');
+
+    const trimmedPhone = phone?.trim() ?? "";
+    if (trimmedPhone.length < 6) {
+      setPhoneError(
+        "Le numéro de téléphone doit contenir au moins 6 caractères"
+      );
       return;
     }
-    
+
     setIsSavingPhone(true);
-    
+    const gateSource = phoneGateSource;
+
     try {
-      // Appel API pour sauvegarder le téléphone
-      const { data: updatedUser, error } = await ProfileService.updateProfile({ phone: phone || undefined });
-      
+      const { data: updatedUser, error } = await ProfileService.updateProfile({
+        phone: trimmedPhone,
+      });
+
       if (error) {
-        // Erreur lors de la sauvegarde
-        setPhoneError(error || 'Erreur lors de la sauvegarde du téléphone');
+        setPhoneError(error || "Erreur lors de la sauvegarde du téléphone");
         setIsSavingPhone(false);
         return;
       }
-      
+
       if (updatedUser) {
-        // Succès : fermer la modal et relancer la réservation
         setShowPhoneRequiredModal(false);
         setPhoneError(null);
-        setPhone('');
-        
-        // Relancer la réservation avec les dates déjà en mémoire
-        const pendingRaw = sessionStorage.getItem('pendingBooking');
-        let paymentMethod: BookingPaymentMethod = 'card_online';
+        setPhone("");
+        setPhoneGateSource(null);
+        setCurrentUser(updatedUser);
+        setIsSavingPhone(false);
+
+        if (gateSource === "booking_start") {
+          handleBooking(updatedUser);
+          return;
+        }
+
+        const pendingRaw = sessionStorage.getItem("pendingBooking");
+        let paymentMethod: BookingPaymentMethod = "card_online";
         if (pendingRaw) {
           try {
-            const parsed = JSON.parse(pendingRaw) as { paymentMethod?: BookingPaymentMethod };
+            const parsed = JSON.parse(pendingRaw) as {
+              paymentMethod?: BookingPaymentMethod;
+            };
             if (
-              parsed.paymentMethod === 'card_online' ||
-              parsed.paymentMethod === 'cash_on_site'
+              parsed.paymentMethod === "card_online" ||
+              parsed.paymentMethod === "cash_on_site"
             ) {
               paymentMethod = parsed.paymentMethod;
             }
@@ -592,9 +615,10 @@ export default function MotoVehicleDetails() {
         }
         await handleConfirmBooking(paymentMethod);
       }
-    } catch (error: any) {
-      // Erreur inattendue
-      setPhoneError(error?.message || 'Une erreur est survenue');
+    } catch (error: unknown) {
+      setPhoneError(
+        error instanceof Error ? error.message : "Une erreur est survenue"
+      );
       setIsSavingPhone(false);
     }
   };
@@ -772,8 +796,7 @@ export default function MotoVehicleDetails() {
       }
 
       // 🔒 Guard : Gérer l'erreur PHONE_REQUIRED
-      if (bookingResult.error === 'PHONE_REQUIRED') {
-        // Sauvegarder le contexte de réservation pour reprise après ajout téléphone
+      if (bookingResult.error === "PHONE_REQUIRED") {
         const pendingBooking = {
           vehicleId: vehicle.id,
           vehicleLicense: vehicle.license,
@@ -782,13 +805,13 @@ export default function MotoVehicleDetails() {
           currentRoute: `/moto/${vehicle.license}`,
           paymentMethod,
         };
-        sessionStorage.setItem('pendingBooking', JSON.stringify(pendingBooking));
-        
-        // Ouvrir la modal au lieu de rediriger directement
+        sessionStorage.setItem("pendingBooking", JSON.stringify(pendingBooking));
+
         const returnTo = `/moto/${vehicle.license}`;
         setPhoneReturnTo(returnTo);
-        setPhone(''); // Réinitialiser le champ téléphone
-        setPhoneError(null); // Réinitialiser l'erreur
+        setPhoneGateSource("booking_confirmation");
+        setPhone("");
+        setPhoneError(null);
         setShowPhoneRequiredModal(true);
         return;
       }
@@ -1694,12 +1717,24 @@ export default function MotoVehicleDetails() {
       />
 
       {/* Phone Required Modal */}
-      <Dialog open={showPhoneRequiredModal} onOpenChange={setShowPhoneRequiredModal}>
+      <Dialog
+        open={showPhoneRequiredModal}
+        onOpenChange={(open) => {
+          setShowPhoneRequiredModal(open);
+          if (!open) {
+            setPhone("");
+            setPhoneError(null);
+            setPhoneGateSource(null);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Numéro de téléphone requis</DialogTitle>
             <DialogDescription>
-              Ajoutez votre numéro de téléphone pour continuer votre réservation.
+              {phoneGateSource === "booking_start"
+                ? "Pour finaliser votre réservation, nous avons besoin de votre numéro de téléphone."
+                : "Ajoutez votre numéro de téléphone pour continuer votre réservation."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1727,8 +1762,9 @@ export default function MotoVehicleDetails() {
               variant="outline"
               onClick={() => {
                 setShowPhoneRequiredModal(false);
-                setPhone('');
+                setPhone("");
                 setPhoneError(null);
+                setPhoneGateSource(null);
               }}
               disabled={isSavingPhone}
             >

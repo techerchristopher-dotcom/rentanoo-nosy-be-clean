@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  intentMatchesPath,
+  loadBookingResumeIntent,
+} from "@/lib/bookingResumeIntent";
 import { ProfileService } from "@/services/supabase/profile";
 
 /** Aligné avec ClientOnboarding : prénom + nom + téléphone requis. */
@@ -33,6 +37,16 @@ function isPathExemptFromClientProfileGuard(pathname: string): boolean {
   return false;
 }
 
+/** Fiche véhicule (/moto/:license ou /vehicle/:license) avec intent de réservation actif. */
+function isActiveBookingFichePath(pathname: string): boolean {
+  const intent = loadBookingResumeIntent();
+  if (!intent) return false;
+  if (!pathname.startsWith("/moto/") && !pathname.startsWith("/vehicle/")) {
+    return false;
+  }
+  return intentMatchesPath(intent, pathname);
+}
+
 /**
  * Redirige les utilisateurs connectés dont le profil est incomplet vers `/onboarding/client`.
  * Ne s’applique pas aux admins, aux chemins exemptés, ni en cas d’erreur de chargement du profil (fail-open).
@@ -48,6 +62,7 @@ export function ClientProfileCompletionGuard() {
 
     const pathname = location.pathname;
     if (isPathExemptFromClientProfileGuard(pathname)) return;
+    if (isActiveBookingFichePath(pathname)) return;
 
     const seq = ++fetchSeq.current;
     void (async () => {

@@ -194,7 +194,10 @@ export default function Register() {
                             await supabase.auth.signInWithOAuth({
                               provider: "google",
                               options: {
-                                redirectTo: AUTH_CALLBACK_URL,
+                                redirectTo: buildAuthCallbackUrl(
+                                  AUTH_CALLBACK_URL,
+                                  redirectParam
+                                ),
                               },
                             });
                           } catch (error) {
