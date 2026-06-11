@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, Clock, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { loadBookingResumeIntent } from "@/lib/bookingResumeIntent";
 
 const STEPS = [
   { id: 1, label: "Session active" },
@@ -268,6 +269,8 @@ export default function ClientOnboarding() {
     return "locked";
   };
 
+  const resumeIntent = loadBookingResumeIntent();
+
   return (
     <div className="min-h-screen bg-gradient-soft flex items-center justify-center p-4">
       <Card className="w-full max-w-lg shadow-card">
@@ -468,10 +471,12 @@ export default function ClientOnboarding() {
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Votre inscription est terminée.</p>
               <Button
-                onClick={() => navigate("/")}
+                onClick={() => navigate(resumeIntent?.path ?? "/")}
                 className="w-full bg-gradient-lagoon hover:opacity-90 shadow-lagoon"
               >
-                Accéder à l&apos;accueil
+                {resumeIntent
+                  ? "Reprendre ma réservation"
+                  : "Accéder à l\u2019accueil"}
               </Button>
             </div>
           )}
