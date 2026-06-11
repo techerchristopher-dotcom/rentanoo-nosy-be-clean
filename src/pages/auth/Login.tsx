@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleIcon } from "@/components/ui/social-icons";
 import { AUTH_CALLBACK_URL } from "@/lib/config";
-import { safeRedirectPath } from "@/lib/safeRedirectPath";
+import { buildAuthCallbackUrl, safeRedirectPath } from "@/lib/safeRedirectPath";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
@@ -180,10 +180,13 @@ export default function Login() {
                   setLoading(true);
                   try {
                     await supabase.auth.signInWithOAuth({
-                      provider: 'google',
+                      provider: "google",
                       options: {
-                        redirectTo: AUTH_CALLBACK_URL
-                      }
+                        redirectTo: buildAuthCallbackUrl(
+                          AUTH_CALLBACK_URL,
+                          searchParams.get("redirect")
+                        ),
+                      },
                     });
                   } catch (error) {
                     toast({

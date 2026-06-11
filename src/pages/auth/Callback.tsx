@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Car, CheckCircle2, AlertCircle } from "lucide-react";
+import { resolvePostAuthRedirect } from "@/lib/safeRedirectPath";
 
 type CallbackStatus = "loading" | "success" | "invalid";
 
@@ -287,7 +288,8 @@ export default function Callback() {
   // Auto-redirect après succès (success uniquement)
   useEffect(() => {
     if (status !== "success") return;
-    const timer = setTimeout(() => navigate("/onboarding/client"), 4000);
+    const target = resolvePostAuthRedirect();
+    const timer = setTimeout(() => navigate(target), 4000);
     const interval = setInterval(() => {
       setCountdown((c) => (c <= 1 ? 0 : c - 1));
     }, 1000);
@@ -367,7 +369,7 @@ export default function Callback() {
               <>
                 <Button
                   onClick={() => {
-                    const target = "/onboarding/client";
+                    const target = resolvePostAuthRedirect();
                     try {
                       window.open("", "_self");
                       window.close();
