@@ -35,6 +35,7 @@ import { OwnerDualCurrencyInput } from "@/components/currency/OwnerDualCurrencyI
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { useTranslation } from "react-i18next";
 import { ListingOwnersService } from "@/services/supabase/listingOwners";
+import { ListingOwnerAvatarsService } from "@/services/supabase/listingOwnerAvatars";
 
 export default function ManageVehicle() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -52,7 +53,9 @@ export default function ManageVehicle() {
   // const [validationErrors, setValidationErrors] = useState<Record<string, string>>({}); // SUPPRIMÉ - géré par useManageVehicle
   const [photos, setPhotos] = useState<any[]>([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadingListingOwnerAvatar, setUploadingListingOwnerAvatar] = useState(false);
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
+  const listingOwnerAvatarInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("basic");
   const [ownerProfile, setOwnerProfile] = useState<User | null>(null);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
@@ -1081,6 +1084,135 @@ export default function ManageVehicle() {
       }
     };
     input.click();
+  };
+
+  const ensureListingOwnerRecord = async (): Promise<string | null> => {
+    if (!vehicleId) return null;
+
+    const displayName = formData.listingOwnerDisplayName.trim();
+    if (!displayName) return null;
+
+    const existingId = formData.listingOwnerId?.trim();
+    if (existingId) return existingId;
+
+    const { listingOwnerId, error } = await ListingOwnersService.syncForVehicle(vehicleId, {
+      displayName,
+      avatarUrl: formData.listingOwnerAvatarUrl,
+      ownerType: formData.listingOwnerType,
+      existingListingOwnerId: null,
+    });
+
+    if (error || !listingOwnerId) {
+      throw new Error(error || "Impossible de créer le propriétaire affiché");
+    }
+
+    setFormData((prev) => ({ ...prev, listingOwnerId }));
+    return listingOwnerId;
+  };
+
+  const handleListingOwnerAvatarUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !vehicleId) return;
+    event.target.value = "";
+
+    if (!formData.listingOwnerDisplayName.trim()) {
+      toast({
+        title: t("common.error", "Erreur"),
+        description: t(
+          "listingOwner.toasts.nameRequired",
+          "Renseignez d'abord le nom affiché avant d'ajouter une photo."
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingListingOwnerAvatar(true);
+    try {
+      const listingOwnerId = await ensureListingOwnerRecord();
+      if (!listingOwnerId) {
+        throw new Error("Impossible de préparer le propriétaire affiché");
+      }
+
+      const { url, error: uploadError } = await ListingOwnerAvatarsService.uploadAvatar(
+        listingOwnerId,
+        file
+      );
+
+      if (uploadError || !url) {
+        throw new Error(uploadError || "Upload impossible");
+      }
+
+      const { error: updateError } = await ListingOwnersService.update(listingOwnerId, {
+        avatar_url: url,
+      });
+
+      if (updateError) {
+        throw new Error(updateError);
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        listingOwnerId,
+        listingOwnerAvatarUrl: url,
+      }));
+      setHasChanges(true);
+
+      toast({
+        title: t("common.success", "Succès"),
+        description: t(
+          "listingOwner.toasts.uploadSuccess",
+          "Photo du propriétaire enregistrée."
+        ),
+      });
+    } catch (error) {
+      console.error("Erreur upload avatar propriétaire:", error);
+      toast({
+        title: t("common.error", "Erreur"),
+        description:
+          error instanceof Error
+            ? error.message
+            : t(
+                "listingOwner.toasts.uploadError",
+                "Impossible d'uploader la photo du propriétaire."
+              ),
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingListingOwnerAvatar(false);
+    }
+  };
+
+  const handleListingOwnerAvatarRemove = async () => {
+    const listingOwnerId = formData.listingOwnerId?.trim();
+
+    if (listingOwnerId) {
+      const { error } = await ListingOwnersService.update(listingOwnerId, {
+        avatar_url: null,
+      });
+
+      if (error) {
+        toast({
+          title: t("common.error", "Erreur"),
+          description: error,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, listingOwnerAvatarUrl: "" }));
+    setHasChanges(true);
+
+    toast({
+      title: t("common.success", "Succès"),
+      description: t(
+        "listingOwner.toasts.removeSuccess",
+        "Photo du propriétaire supprimée."
+      ),
+    });
   };
 
   const handleDeletePhoto = async (photoUrl: string) => {
@@ -2134,17 +2266,74 @@ export default function ManageVehicle() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="listingOwnerAvatarUrl">
-                    {t("listingOwner.avatarUrl", "Avatar / logo (URL)")}
+                <div className="space-y-3">
+                  <Label htmlFor="listingOwnerAvatar">
+                    {t("listingOwner.photo", "Logo ou photo du propriétaire")}
                   </Label>
-                  <Input
-                    id="listingOwnerAvatarUrl"
-                    type="url"
-                    value={formData.listingOwnerAvatarUrl}
-                    onChange={(e) => handleInputChange("listingOwnerAvatarUrl", e.target.value)}
-                    placeholder="https://…"
-                  />
+
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16 ring-2 ring-primary-soft/30">
+                      <AvatarImage
+                        src={formData.listingOwnerAvatarUrl || undefined}
+                        alt={formData.listingOwnerDisplayName || ""}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-primary-soft text-primary font-semibold">
+                        {formData.listingOwnerDisplayName.trim().charAt(0).toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="space-y-2">
+                      <Input
+                        ref={listingOwnerAvatarInputRef}
+                        id="listingOwnerAvatar"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleListingOwnerAvatarUpload}
+                        className="hidden"
+                        disabled={uploadingListingOwnerAvatar}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={uploadingListingOwnerAvatar}
+                          onClick={() => listingOwnerAvatarInputRef.current?.click()}
+                        >
+                          {uploadingListingOwnerAvatar ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {t("listingOwner.uploading", "Upload en cours…")}
+                            </>
+                          ) : (
+                            <>
+                              <Camera className="h-4 w-4 mr-2" />
+                              {t("listingOwner.chooseFile", "Choisir un fichier")}
+                            </>
+                          )}
+                        </Button>
+                        {formData.listingOwnerAvatarUrl.trim() && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={uploadingListingOwnerAvatar}
+                            onClick={handleListingOwnerAvatarRemove}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {t("listingOwner.removePhoto", "Supprimer")}
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t(
+                          "listingOwner.photoHelper",
+                          "Formats acceptés : JPG, PNG, WebP. Taille max : 5 Mo"
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -2180,10 +2369,10 @@ export default function ManageVehicle() {
                   </Select>
                 </div>
 
-                {formData.listingOwnerDisplayName.trim() && formData.listingOwnerAvatarUrl.trim() && (
+                {formData.listingOwnerDisplayName.trim() && (
                   <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={formData.listingOwnerAvatarUrl} alt="" />
+                      <AvatarImage src={formData.listingOwnerAvatarUrl || undefined} alt="" />
                       <AvatarFallback>
                         {formData.listingOwnerDisplayName.trim().charAt(0).toUpperCase()}
                       </AvatarFallback>

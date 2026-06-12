@@ -262,7 +262,11 @@
     "intro": "Public identity shown on the listing. Leave blank to use the manager account profile.",
     "displayName": "Display name",
     "displayNamePlaceholder": "E.g. Ambatoloaka Residence, John Doe…",
-    "avatarUrl": "Avatar / logo (URL)",
+    "photo": "Owner photo or logo",
+    "chooseFile": "Choose a file",
+    "removePhoto": "Remove",
+    "uploading": "Uploading…",
+    "photoHelper": "Accepted formats: JPG, PNG, WebP. Max size: 5 MB",
     "ownerType": "Owner type",
     "previewHint": "Displayed owner preview",
     "types": {
@@ -274,6 +278,12 @@
     "stats": {
       "listings": "Listings",
       "thisListing": "This listing"
+    },
+    "toasts": {
+      "nameRequired": "Enter a display name before adding a photo.",
+      "uploadSuccess": "Owner photo saved.",
+      "uploadError": "Could not upload the owner photo.",
+      "removeSuccess": "Owner photo removed."
     }
   },
   "accommodationDetails": {

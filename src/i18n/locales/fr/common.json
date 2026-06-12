@@ -262,7 +262,11 @@
     "intro": "Identité affichée publiquement sur la fiche. Laissez vide pour utiliser le profil du compte gestionnaire.",
     "displayName": "Nom affiché",
     "displayNamePlaceholder": "Ex. Résidence Ambatoloaka, Jean Dupont…",
-    "avatarUrl": "Avatar / logo (URL)",
+    "photo": "Logo ou photo du propriétaire",
+    "chooseFile": "Choisir un fichier",
+    "removePhoto": "Supprimer",
+    "uploading": "Upload en cours…",
+    "photoHelper": "Formats acceptés : JPG, PNG, WebP. Taille max : 5 Mo",
     "ownerType": "Type de propriétaire",
     "previewHint": "Aperçu du propriétaire affiché",
     "types": {
@@ -274,6 +278,12 @@
     "stats": {
       "listings": "Annonces",
       "thisListing": "Cette annonce"
+    },
+    "toasts": {
+      "nameRequired": "Renseignez d'abord le nom affiché avant d'ajouter une photo.",
+      "uploadSuccess": "Photo du propriétaire enregistrée.",
+      "uploadError": "Impossible d'uploader la photo du propriétaire.",
+      "removeSuccess": "Photo du propriétaire supprimée."
     }
   },
   "accommodationDetails": {
