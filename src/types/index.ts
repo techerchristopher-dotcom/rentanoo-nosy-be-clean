@@ -129,8 +129,10 @@ export interface Vehicle {
   location?: string; // Localisation du véhicule
   seats?: number; // Nombre de places (utile pour moto)
   engineCapacity?: string; // Cylindrée (cc) pour moto
-  /** Type véhicule Supabase : 'car' | 'moto' | 'scooter' — pour H1 SEO */
-  vehicleType?: 'car' | 'moto' | 'scooter' | null;
+  /** Type véhicule Supabase : 'car' | 'moto' | 'scooter' | 'accommodation' — pour H1 SEO */
+  vehicleType?: 'car' | 'moto' | 'scooter' | 'accommodation' | null;
+  /** Catégorie affichée (ex. Villa, Bungalow) — colonne vehicle_category */
+  vehicleCategory?: string | null;
   
   // 🆕 Services supplémentaires configurés par le propriétaire
   // 🛩️ Services Aéroport

@@ -1,6 +1,7 @@
 // src/components/RenterBookingCard.tsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getPublicListingPath, getPublicDiscussionPath } from '@/utils/vehicleType'
 import { useTranslation } from 'react-i18next'
 import {
   Calendar,
@@ -916,7 +917,7 @@ export default function RenterBookingCard({
                           onClick={(e) => {
                             e.stopPropagation()
                             navigate(
-                              `/vehicle/${booking.vehicle?.license || 'unknown'}/booking/discussion`
+                              getPublicDiscussionPath(booking.vehicle ?? { id: 'unknown', license: 'unknown' })
                             )
                           }}
                         >
@@ -1236,7 +1237,7 @@ export default function RenterBookingCard({
                   onViewDetails={() => setShowDetailsModal(true)}
                   onViewVehicle={() => {
                     if (booking.vehicle) {
-                      navigate(`/vehicle/${booking.vehicle.license}`)
+                      navigate(getPublicListingPath(booking.vehicle))
                     }
                   }}
                 />

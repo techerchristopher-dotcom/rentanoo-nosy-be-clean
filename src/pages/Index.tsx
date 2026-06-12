@@ -14,7 +14,7 @@ const HomeResults = lazy(() => import("@/components/home/HomeResults").then((m) 
 import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
 import { FEATURES } from "@/config/features";
-import { isMoto } from "@/utils/vehicleType";
+import { getPublicListingPath } from "@/utils/vehicleType";
 import { parseEngineCapacity } from "@/utils/engineCapacity";
 import { Seo } from "@/components/seo/Seo";
 import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
@@ -540,15 +540,10 @@ const Index = () => {
   }, [searchText, startDate, endDate, startTime, endTime, selectedVehicleTypes, selectedEngineCapacities]);
 
   const handleVehicleClick = (vehicle: SupabaseVehicle) => {
-    // Utiliser la license générée temporairement pour la navigation
     const license = vehicle.id.substring(0, 8).toUpperCase();
+    const route = getPublicListingPath(vehicle);
     
-    // Déterminer la route selon le type de véhicule
-    const isMotoVehicle = isMoto(vehicle);
-    const route = isMotoVehicle ? `/moto/${license}` : `/vehicle/${license}`;
-    
-    // Passer les informations de location via le state de navigation
-        navigate(route, {
+    navigate(route, {
           state: {
             rentalCalculation: rentalCalculation || undefined,
             startDate: startDate?.toISOString(),

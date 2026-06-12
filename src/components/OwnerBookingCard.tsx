@@ -1,6 +1,7 @@
 // src/components/OwnerBookingCard.tsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { getPublicListingPath, getPublicDiscussionPath } from '@/utils/vehicleType'
 import {
   Calendar,
   Euro,
@@ -936,7 +937,7 @@ export default function OwnerBookingCard({
                               onClick={(e) => {
                                 e.stopPropagation()
                                 if (booking.vehicle) {
-                                  navigate(`/vehicle/${booking.vehicle.license || 'unknown'}/booking/discussion`)
+                                  navigate(getPublicDiscussionPath(booking.vehicle ?? { id: 'unknown', license: 'unknown' }))
                                 }
                               }}
                             >
@@ -1387,7 +1388,7 @@ export default function OwnerBookingCard({
                     }}
                     onViewVehicle={() => {
                       if (booking.vehicle) {
-                        navigate(`/vehicle/${booking.vehicle.license}`)
+                        navigate(getPublicListingPath(booking.vehicle))
                       }
                     }}
                     className="flex-1 sm:flex-none sm:ml-auto w-full sm:w-auto"

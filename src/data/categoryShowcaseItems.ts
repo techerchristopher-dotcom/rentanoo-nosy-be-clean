@@ -63,8 +63,7 @@ export const CATEGORY_SHOWCASE_ITEMS: CategoryShowcaseItem[] = [
     id: "accommodation",
     labelKey: "categoryShowcase.items.accommodation.label",
     Icon: MdHotel,
-    available: false,
-    waPrefillKey: "categoryShowcase.items.accommodation.waPrefillMessage",
+    available: true,
     gtagCategoryId: "accommodation",
   },
 ];

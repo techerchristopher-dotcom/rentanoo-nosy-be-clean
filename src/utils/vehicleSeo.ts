@@ -15,11 +15,44 @@ export interface VehicleSeoInput {
   license: string;
 }
 
+export interface AccommodationSeoInput {
+  model: string;
+  pricePerDay?: number | null;
+  license: string;
+}
+
 /**
  * Formate le prix pour la meta description (montant MGA → €).
  */
 export function formatPriceForSeo(priceMga: number, rate = FALLBACK_EXCHANGE.rate): string {
   return formatEur(ariaryToEur(priceMga, rate));
+}
+
+/**
+ * Construit le title SEO pour une page hébergement.
+ */
+export function buildAccommodationSeoTitle(input: AccommodationSeoInput): string {
+  const name = input.model || "Hébergement";
+  return `${name} – Location hébergement Nosy Be | Rentanoo`;
+}
+
+/**
+ * Construit la meta description SEO pour une page hébergement.
+ */
+export function buildAccommodationSeoDescription(input: AccommodationSeoInput): string {
+  const name = input.model || "hébergement";
+  const pricePart =
+    input.pricePerDay != null && input.pricePerDay > 0
+      ? `À partir de ${formatPriceForSeo(input.pricePerDay)}/nuit. `
+      : "";
+  return `Louez ${name} à Nosy Be. ${pricePart}Réservation en ligne sur Rentanoo.`;
+}
+
+/**
+ * Construit l'URL canonique pour une page hébergement.
+ */
+export function buildAccommodationCanonical(license: string): string {
+  return `${CANONICAL_BASE}/hebergement/${license}`;
 }
 
 /**

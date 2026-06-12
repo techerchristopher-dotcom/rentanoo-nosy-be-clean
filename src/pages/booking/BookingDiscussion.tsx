@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { getPublicListingPath } from "@/utils/vehicleType";
 import { useTranslation } from "react-i18next";
 import { 
   ArrowLeft,
@@ -271,6 +272,7 @@ const BookingDiscussion = () => {
           location: foundVehicle.location || undefined,
           createdAt: foundVehicle.created_at || new Date().toISOString(),
           updatedAt: foundVehicle.updated_at || new Date().toISOString(),
+          vehicleType: (foundVehicle.vehicle_type as Vehicle["vehicleType"]) ?? "car",
         };
 
         console.log('📸 [DEBUG] ===== IMAGE_URL DU VÉHICULE =====');
@@ -662,7 +664,7 @@ const BookingDiscussion = () => {
               });
               // Rediriger vers la page du véhicule ou les réservations
               setTimeout(() => {
-                navigate(`/vehicle/${vehicle.license}`);
+                navigate(getPublicListingPath(mappedVehicle));
               }, 2000);
             }
           }
@@ -1029,7 +1031,7 @@ const BookingDiscussion = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate(`/vehicle/${vehicle.license}`)}
+            onClick={() => vehicle && navigate(getPublicListingPath(vehicle))}
             className="mr-4 hover:bg-slate-200"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1436,7 +1438,7 @@ const BookingDiscussion = () => {
                 </p>
               </div>
               <Button
-                onClick={() => navigate(`/vehicle/${vehicle?.license}`)}
+                onClick={() => vehicle && navigate(getPublicListingPath(vehicle))}
                 className="bg-primary hover:bg-primary/90 text-white"
               >
                 Nouvelle réservation

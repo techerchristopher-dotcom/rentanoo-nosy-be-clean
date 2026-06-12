@@ -31,6 +31,7 @@ import { VehicleBasicInfoTab } from "@/features/vehicle-management/components/ta
 import { useManageVehicle } from "@/features/vehicle-management/hooks/useManageVehicle";
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { DualPrice } from "@/components/currency/DualPrice";
+import { OwnerDualCurrencyInput } from "@/components/currency/OwnerDualCurrencyInput";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 export default function ManageVehicle() {
@@ -896,16 +897,16 @@ export default function ManageVehicle() {
         break;
       case "pricePerDay":
         const price = parseFloat(value);
-        if (!value || isNaN(price) || price <= 0) {
-          error = "Le prix doit être un nombre positif";
+        if (!value || isNaN(price) || price < 1000) {
+          error = "Le prix doit être d'au moins 1 000 Ar";
         }
         break;
       case "pricePerDayAgency": {
         const raw = typeof value === "string" ? value.trim() : "";
         if (!raw) break;
         const agency = parseFloat(raw);
-        if (isNaN(agency) || agency <= 0) {
-          error = "Le tarif agence doit être un nombre positif, ou laissez vide";
+        if (isNaN(agency) || agency < 1000) {
+          error = "Le tarif agence doit être d'au moins 1 000 Ar, ou laissez vide";
         }
         break;
       }
@@ -2137,60 +2138,33 @@ export default function ManageVehicle() {
                   </Alert>
                 )}
                 {/* Prix de base */}
-                <div className="space-y-2">
-                  <Label htmlFor="pricePerDay" className="flex items-center gap-2">
-                    Prix journalier de base (Ar) *
-                    {validationErrors.pricePerDay ? (
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                    ) : formData.pricePerDay && (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    )}
-                  </Label>
-                  <Input
-                    id="pricePerDay"
-                    type="number"
-                    value={formData.pricePerDay}
-                    onChange={(e) => handleInputChange("pricePerDay", e.target.value)}
-                    placeholder="50000"
-                    min="1000"
-                    step="1000"
-                    className={validationErrors.pricePerDay ? "border-red-500 focus:border-red-500" : ""}
-                  />
-                  {validationErrors.pricePerDay && (
-                    <p className="text-xs text-red-500">{validationErrors.pricePerDay}</p>
-                  )}
-                </div>
+                <OwnerDualCurrencyInput
+                  id="pricePerDay"
+                  label="Prix journalier de base"
+                  valueMga={formData.pricePerDay}
+                  onChangeMga={(value) => handleInputChange("pricePerDay", value)}
+                  required
+                  minMga={1000}
+                  showValidIcon
+                  error={validationErrors.pricePerDay}
+                  arPlaceholder="50000"
+                  eurPlaceholder="10"
+                />
 
                 {/* Tarif agence (réservations passées en agence / admin) */}
-                <div className="space-y-2">
-                  <Label htmlFor="pricePerDayAgency" className="flex items-center gap-2">
-                    Tarif journalier agence (Ar)
-                    {validationErrors.pricePerDayAgency ? (
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                    ) : formData.pricePerDayAgency?.trim() ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : null}
-                  </Label>
-                  <Input
-                    id="pricePerDayAgency"
-                    type="number"
-                    value={formData.pricePerDayAgency}
-                    onChange={(e) => handleInputChange("pricePerDayAgency", e.target.value)}
-                    placeholder="Ex. 27 (optionnel)"
-                    min="0"
-                    step="0.01"
-                    className={
-                      validationErrors.pricePerDayAgency ? "border-red-500 focus:border-red-500" : ""
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Utilisé pour les locations en agence (sans commission locataire de 15 % sur ce tarif).
-                    Laissez vide si identique au tarif internet ou non applicable.
-                  </p>
-                  {validationErrors.pricePerDayAgency && (
-                    <p className="text-xs text-red-500">{validationErrors.pricePerDayAgency}</p>
-                  )}
-                </div>
+                <OwnerDualCurrencyInput
+                  id="pricePerDayAgency"
+                  label="Tarif journalier agence"
+                  valueMga={formData.pricePerDayAgency}
+                  onChangeMga={(value) => handleInputChange("pricePerDayAgency", value)}
+                  allowEmpty
+                  minMga={1000}
+                  showValidIcon
+                  error={validationErrors.pricePerDayAgency}
+                  arPlaceholder="40000"
+                  eurPlaceholder="8"
+                  hint="Utilisé pour les locations en agence (sans commission locataire de 15 % sur ce tarif). Laissez vide si identique au tarif internet ou non applicable."
+                />
 
                 {/* Montant caution */}
                 <div className="space-y-2">

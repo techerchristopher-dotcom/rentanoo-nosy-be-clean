@@ -89,7 +89,7 @@ import {
   buildVehicleBreadcrumbSchema,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
-import { isMoto } from "@/utils/vehicleType";
+import { isMoto, isAccommodation } from "@/utils/vehicleType";
 import { getCarEquipmentItems, mapSupabaseEquipment } from "@/utils/vehicleEquipment";
 import {
   Breadcrumb,
@@ -263,6 +263,10 @@ export default function VehicleDetails() {
              const vehicle = allVehicles.find(v => v.id.substring(0, 8).toUpperCase() === license.toUpperCase());
       
       if (vehicle) {
+        if (isAccommodation(vehicle)) {
+          navigate(`/hebergement/${license}`, { replace: true, state: location.state });
+          return;
+        }
         if (isMoto(vehicle)) {
           navigate(`/moto/${license}`, { replace: true, state: location.state });
           return;

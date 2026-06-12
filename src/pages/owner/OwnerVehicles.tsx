@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { VehicleTypeModal } from "@/components/owner/VehicleTypeModal";
+import { getPublicListingPath } from "@/utils/vehicleType";
 import { getOptimizedImageUrl } from "@/utils/imageOptimization";
 
 const LOCKED_OPERATIONAL_STATUSES = new Set([
@@ -227,6 +228,11 @@ const OwnerVehicles = () => {
     navigate("/me/owner/vehicles/add-moto");
   };
 
+  const handleSelectAccommodation = () => {
+    setShowVehicleTypeModal(false);
+    navigate("/me/owner/vehicles/add-moto?kind=accommodation");
+  };
+
   const loadData = async () => {
     try {
       const userResult = await ProfileService.getCurrentUserProfile();
@@ -287,6 +293,7 @@ const OwnerVehicles = () => {
           imageUrl: supabaseVehicle.image_url || null,
           createdAt: supabaseVehicle.created_at || new Date().toISOString(),
           updatedAt: supabaseVehicle.updated_at || new Date().toISOString(),
+          vehicleType: (supabaseVehicle.vehicle_type as Vehicle["vehicleType"]) ?? "car",
         }));
 
         // Enrichir avec les photos uploadées (vehicle_photos table)
@@ -373,7 +380,7 @@ const OwnerVehicles = () => {
     <>
       <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
         <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
                 {t("ownerVehicles.header.title", "Mes véhicules")}
@@ -385,6 +392,16 @@ const OwnerVehicles = () => {
                 )}
               </p>
             </div>
+            {vehicles.length > 0 && (
+              <Button
+                type="button"
+                onClick={handleAddVehicleClick}
+                className="shrink-0 inline-flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {t("ownerVehicles.addCard.title", "Ajouter un véhicule")}
+              </Button>
+            )}
           </div>
 
           {currentUser.kycStatus !== "verified" && (
@@ -547,7 +564,7 @@ const OwnerVehicles = () => {
                           )}
                         </Button>
                       </Link>
-                      <Link to={`/vehicle/${vehicle.license}`}>
+                      <Link to={getPublicListingPath(vehicle)}>
                         <Button 
                           variant="ghost"
                           className="w-full bg-white/70 hover:bg-white/90 text-gray-700 hover:text-gray-900 hover:shadow-sm transition-all duration-200"
@@ -673,6 +690,7 @@ const OwnerVehicles = () => {
         onOpenChange={setShowVehicleTypeModal}
         onSelectCar={handleSelectCar}
         onSelectMoto={handleSelectMoto}
+        onSelectAccommodation={handleSelectAccommodation}
       />
 
       <Footer />

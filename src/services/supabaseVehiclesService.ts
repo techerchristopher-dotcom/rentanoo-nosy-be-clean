@@ -31,8 +31,8 @@ export interface Vehicle {
   has_carplay: boolean | null;
   has_audio_input: boolean | null;
   vehicle_category: string | null;
-  // Type explicite de véhicule (car, moto, scooter)
-  vehicle_type?: 'car' | 'moto' | 'scooter' | null;
+  // Type explicite de véhicule (car, moto, scooter, accommodation)
+  vehicle_type?: 'car' | 'moto' | 'scooter' | 'accommodation' | null;
   // Nouveaux champs de remises
   low_season_discount: number | null;
   high_season_surcharge: number | null;
@@ -215,7 +215,7 @@ export const SupabaseVehiclesService = {
     fuel_type?: string;
     engine_capacity?: string;
     vehicle_category?: string;
-    vehicle_type?: 'car' | 'moto' | 'scooter';
+    vehicle_type?: 'car' | 'moto' | 'scooter' | 'accommodation';
     has_ac?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;

@@ -135,6 +135,7 @@
   "pricing": {
     "total_for_duration": "soit {{total}} ({{duration}})",
     "perDayShort": "jour",
+    "perNightShort": "nuit",
     "totalExcludingOptions": "soit {{total}} (hors options supplémentaires)",
     "cardTotalSummary": "{{duration}} · {{total}} total"
   },
@@ -248,6 +249,42 @@
           "title": "Erreur paiement",
           "description": "Impossible de démarrer le paiement"
         }
+      }
+    }
+  },
+  "accommodationCard": {
+    "filterLabel": "Hébergement",
+    "typeFallback": "Hébergement"
+  },
+  "accommodationDetails": {
+    "back": "Retour",
+    "loading": "Chargement de l'hébergement...",
+    "descriptionTitle": "Description",
+    "descriptionHeading": "Location de {{name}} à Nosy Be",
+    "errors": {
+      "vehicleIncompatible": {
+        "title": "Annonce incompatible",
+        "description": "Cette page est réservée aux hébergements."
+      },
+      "vehicleNotFound": {
+        "title": "Hébergement introuvable",
+        "description": "Cet hébergement n'est plus disponible."
+      },
+      "loadError": {
+        "title": "Erreur de chargement",
+        "description": "Impossible de charger cet hébergement."
+      },
+      "loginRequired": {
+        "title": "Connexion requise",
+        "description": "Connectez-vous pour réserver cet hébergement."
+      },
+      "bookingError": {
+        "title": "Erreur de réservation",
+        "description": "Impossible de créer la demande de réservation."
+      },
+      "unexpectedError": {
+        "title": "Erreur",
+        "description": "Une erreur inattendue s'est produite."
       }
     }
   },
@@ -921,6 +958,7 @@
         "description": "Choisissez le type de véhicule que vous voulez publier sur la plateforme.",
         "carLabel": "Voiture",
         "motoLabel": "Moto / Scooter",
+        "accommodationLabel": "Hébergement",
         "cancel": "Annuler"
       },
     "card": {
@@ -1002,6 +1040,38 @@
           "removedTitle": "Photo supprimée",
           "removedDescription": "La photo a été supprimée avec succès."
         }
+    },
+    "accommodationForm": {
+      "title": "Ajouter un hébergement",
+      "category": "Type d'hébergement",
+      "categoryPlaceholder": "Sélectionner",
+      "categoryVilla": "Villa",
+      "categoryBungalow": "Bungalow",
+      "categoryMaison": "Maison",
+      "categoryChambre": "Chambre",
+      "categoryAppartement": "Appartement",
+      "name": "Nom de l'hébergement",
+      "namePlaceholder": "Ex : Villa les Flamboyants",
+      "capacity": "Capacité voyageurs",
+      "nightlyPrice": "Prix par nuit",
+      "nightlyPriceHint": "Saisissez l'un ou l'autre — équivalent € affiché aux voyageurs selon le taux du jour",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez votre hébergement, les équipements, la localisation...",
+      "submit": "Créer l'hébergement",
+      "saving": "Création en cours...",
+      "successTitle": "Hébergement ajouté avec succès",
+      "successDescription": "Votre annonce a été créée. Vous pouvez la gérer dans la liste de vos véhicules.",
+      "errors": {
+        "required": "Merci de renseigner le type, le nom, la capacité et le prix par nuit.",
+        "price": "Merci de saisir un prix par nuit valide (minimum 1 000 Ar).",
+        "capacity": "Merci de saisir une capacité entre 1 et 20 voyageurs.",
+        "generic": "Impossible de créer l'hébergement. Veuillez réessayer."
+      },
+      "photos": {
+        "sectionTitle": "Photos de l'hébergement",
+        "sectionSubtitle": "Ajoutez au moins une photo pour mettre en valeur votre hébergement.",
+        "minRequired": "Veuillez ajouter au moins une photo de votre hébergement."
+      }
     },
     "availabilityDialog": {
       "title": "Confirmer la modification de disponibilité",

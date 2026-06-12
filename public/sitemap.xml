@@ -2,49 +2,49 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://rentanoo.com/</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/legal</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/contact</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/rent-my-car</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/sinistre-caution</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/meteo-nosy-be</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/taux-change-euro-ariary-madagascar</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/vols-aeroport-nosy-be</loc>
-    <lastmod>2026-06-11</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -67,12 +67,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rentanoo.com/moto/9BB89913</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rentanoo.com/moto/AD531416</loc>
     <lastmod>2026-06-04</lastmod>
     <changefreq>weekly</changefreq>
@@ -81,6 +75,18 @@
   <url>
     <loc>https://rentanoo.com/moto/B6D383ED</loc>
     <lastmod>2026-06-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/moto/A3570211</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/moto/9BB89913</loc>
+    <lastmod>2026-06-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -164,13 +170,13 @@
   </url>
   <url>
     <loc>https://rentanoo.com/moto/4B0802DA</loc>
-    <lastmod>2026-06-04</lastmod>
+    <lastmod>2026-06-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://rentanoo.com/moto/C7B6931F</loc>
-    <lastmod>2026-06-05</lastmod>
+    <lastmod>2026-06-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

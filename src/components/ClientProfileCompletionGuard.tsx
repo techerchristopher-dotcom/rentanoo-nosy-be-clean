@@ -37,11 +37,15 @@ function isPathExemptFromClientProfileGuard(pathname: string): boolean {
   return false;
 }
 
-/** Fiche véhicule (/moto/:license ou /vehicle/:license) avec intent de réservation actif. */
+/** Fiche véhicule ou hébergement avec intent de réservation actif. */
 function isActiveBookingFichePath(pathname: string): boolean {
   const intent = loadBookingResumeIntent();
   if (!intent) return false;
-  if (!pathname.startsWith("/moto/") && !pathname.startsWith("/vehicle/")) {
+  if (
+    !pathname.startsWith("/moto/") &&
+    !pathname.startsWith("/vehicle/") &&
+    !pathname.startsWith("/hebergement/")
+  ) {
     return false;
   }
   return intentMatchesPath(intent, pathname);

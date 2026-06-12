@@ -135,6 +135,7 @@
   "pricing": {
     "total_for_duration": "total {{total}} ({{duration}})",
     "perDayShort": "day",
+    "perNightShort": "night",
     "totalExcludingOptions": "total {{total}} (excluding additional options)",
     "cardTotalSummary": "{{duration}} · {{total}} total"
   },
@@ -248,6 +249,42 @@
           "title": "Payment error",
           "description": "Unable to start payment"
         }
+      }
+    }
+  },
+  "accommodationCard": {
+    "filterLabel": "Accommodation",
+    "typeFallback": "Accommodation"
+  },
+  "accommodationDetails": {
+    "back": "Back",
+    "loading": "Loading accommodation...",
+    "descriptionTitle": "Description",
+    "descriptionHeading": "Rent {{name}} in Nosy Be",
+    "errors": {
+      "vehicleIncompatible": {
+        "title": "Incompatible listing",
+        "description": "This page is for accommodations only."
+      },
+      "vehicleNotFound": {
+        "title": "Accommodation not found",
+        "description": "This accommodation is no longer available."
+      },
+      "loadError": {
+        "title": "Loading error",
+        "description": "Unable to load this accommodation."
+      },
+      "loginRequired": {
+        "title": "Login required",
+        "description": "Sign in to book this accommodation."
+      },
+      "bookingError": {
+        "title": "Booking error",
+        "description": "Unable to create the booking request."
+      },
+      "unexpectedError": {
+        "title": "Error",
+        "description": "An unexpected error occurred."
       }
     }
   },
@@ -918,6 +955,7 @@
         "description": "Choose the type of vehicle you want to publish on the platform.",
         "carLabel": "Car",
         "motoLabel": "Moto / Scooter",
+        "accommodationLabel": "Accommodation",
         "cancel": "Cancel"
       },
     "card": {
@@ -999,6 +1037,38 @@
           "removedTitle": "Photo removed",
           "removedDescription": "The photo has been removed successfully."
         }
+    },
+    "accommodationForm": {
+      "title": "Add accommodation",
+      "category": "Accommodation type",
+      "categoryPlaceholder": "Select",
+      "categoryVilla": "Villa",
+      "categoryBungalow": "Bungalow",
+      "categoryMaison": "House",
+      "categoryChambre": "Room",
+      "categoryAppartement": "Apartment",
+      "name": "Accommodation name",
+      "namePlaceholder": "e.g. Flamboyants Villa",
+      "capacity": "Guest capacity",
+      "nightlyPrice": "Price per night",
+      "nightlyPriceHint": "Enter either amount — € equivalent shown to travelers at today's rate",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your accommodation, amenities, location...",
+      "submit": "Create accommodation",
+      "saving": "Creating...",
+      "successTitle": "Accommodation added successfully",
+      "successDescription": "Your listing has been created. You can manage it in your vehicles list.",
+      "errors": {
+        "required": "Please fill in type, name, capacity and price per night.",
+        "price": "Please enter a valid price per night (minimum 1,000 Ar).",
+        "capacity": "Please enter a capacity between 1 and 20 guests.",
+        "generic": "Unable to create the accommodation. Please try again."
+      },
+      "photos": {
+        "sectionTitle": "Accommodation photos",
+        "sectionSubtitle": "Add at least one photo to showcase your accommodation.",
+        "minRequired": "Please add at least one photo of your accommodation."
+      }
     },
     "availabilityDialog": {
       "title": "Confirm availability change",

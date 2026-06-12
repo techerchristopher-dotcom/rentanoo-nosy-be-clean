@@ -40,6 +40,7 @@ const VolsNosyBePage = lazy(() => import("./pages/seo/VolsNosyBePage"));
 // Autres routes lourdes (déjà lazy)
 const VehicleDetails = lazy(() => import("./pages/vehicles/VehicleDetails"));
 const MotoVehicleDetails = lazy(() => import("./pages/vehicles/MotoVehicleDetails"));
+const AccommodationDetails = lazy(() => import("./pages/vehicles/AccommodationDetails"));
 const RenterBookings = lazy(() => import("./pages/renter/RenterBookings"));
 const PaymentSuccess = lazy(() => import("./pages/renter/PaymentSuccess"));
 const PaymentCancel = lazy(() => import("./pages/renter/PaymentCancel"));
@@ -158,6 +159,7 @@ const App = () => (
             <Route path="/profile-test" element={<Suspense fallback={<PageLoader />}><ProfileTest /></Suspense>} />
             <Route path="/vehicle/:license/booking/discussion" element={<Suspense fallback={<PageLoader />}><BookingDiscussion /></Suspense>} />
             <Route path="/moto/:license/booking/discussion" element={<Suspense fallback={<PageLoader />}><BookingDiscussion /></Suspense>} />
+            <Route path="/hebergement/:license/booking/discussion" element={<Suspense fallback={<PageLoader />}><BookingDiscussion /></Suspense>} />
             <Route path="/booking/message" element={<Suspense fallback={<PageLoader />}><MessageToOwners /></Suspense>} />
             <Route path="/legal" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
             <Route path="/sinistre-caution" element={<Suspense fallback={<PageLoader />}><SinistreCaution /></Suspense>} />
@@ -175,6 +177,11 @@ const App = () => (
             <Route path="/moto/:license" element={
               <Suspense fallback={<PageLoader />}>
                 <MotoVehicleDetails />
+              </Suspense>
+            } />
+            <Route path="/hebergement/:license" element={
+              <Suspense fallback={<PageLoader />}>
+                <AccommodationDetails />
               </Suspense>
             } />
             <Route path="/me/dashboard" element={

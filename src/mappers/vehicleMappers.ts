@@ -125,4 +125,34 @@ export const mapToMotoVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   additional_driver_price: vehicle.additional_driver_price || 0,
 });
 
+export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
+  id: vehicle.id,
+  ownerId: vehicle.owner_id || "",
+  license: vehicle.id.substring(0, 8).toUpperCase(),
+  brand: vehicle.brand,
+  model: vehicle.model,
+  color: (vehicle.color ?? undefined) as any,
+  fuel: "gasoline" as any,
+  year: vehicle.year,
+  hasAC: false,
+  doors: 0,
+  transmission: "manual" as any,
+  mileage: 0,
+  dailyPrice: vehicle.price_per_day,
+  currency: "EUR",
+  latitude: 0,
+  longitude: 0,
+  status: "available" as any,
+  description: vehicle.description || undefined,
+  location:
+    vehicle.pickup_zones && vehicle.pickup_zones.length > 0
+      ? vehicle.pickup_zones.join(", ")
+      : (undefined as any),
+  createdAt: vehicle.created_at || new Date().toISOString(),
+  updatedAt: vehicle.updated_at || new Date().toISOString(),
+  seats: (vehicle.seats ?? undefined) as any,
+  vehicleType: "accommodation",
+  vehicleCategory: vehicle.vehicle_category ?? undefined,
+});
+
 

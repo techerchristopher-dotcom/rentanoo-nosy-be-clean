@@ -17,7 +17,7 @@ import {
   RotateCcw,
   Filter
 } from "lucide-react";
-import { computeBillableRentalDays } from "@/utils/rentalPriceFromDates";
+import { getPublicDiscussionPath } from "@/utils/vehicleType";
 import { BookingsService } from "@/services";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
 import { ProfileService } from "@/services/supabase/profile";
@@ -547,7 +547,12 @@ const OwnerBookings = () => {
       return;
     }
 
-    navigate(`/vehicle/${booking.vehicle.license}/booking/discussion?start=${booking.startDate}&end=${booking.endDate}`);
+    navigate(
+      getPublicDiscussionPath(booking.vehicle, {
+        start: booking.startDate,
+        end: booking.endDate,
+      })
+    );
   };
 
   // Notification badge logic removed

@@ -7,15 +7,18 @@ import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 interface VehicleCardRentalPricingProps {
   dailyPrice: number;
   rentalInfo?: VehicleRentalInfo;
+  /** i18n key for the price unit suffix (default: pricing.perDayShort) */
+  priceUnitKey?: string;
 }
 
 export function VehicleCardRentalPricing({
   dailyPrice,
   rentalInfo,
+  priceUnitKey = "pricing.perDayShort",
 }: VehicleCardRentalPricingProps) {
   const { t } = useTranslation();
   const { formatClient } = useExchangeRate();
-  const perDayShort = t("pricing.perDayShort", "jour");
+  const perDayShort = t(priceUnitKey, priceUnitKey === "pricing.perNightShort" ? "nuit" : "jour");
   const totalSummary =
     rentalInfo && rentalInfo.days > 0 && rentalInfo.totalCost > 0
       ? getVehicleCardTotalSummary(t, rentalInfo, (mga) => formatClient(mga).primary)

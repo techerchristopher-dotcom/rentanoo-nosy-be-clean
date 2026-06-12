@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +17,16 @@ import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { uploadVehiclePhotos } from "@/templates/vehicleTemplate";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Bike, Camera, Upload, CheckCircle, Trash2, ArrowRight } from "lucide-react";
+import { OwnerDualCurrencyInput } from "@/components/currency/OwnerDualCurrencyInput";
+import { Bike, Camera, Upload, CheckCircle, Trash2, ArrowRight, Hotel } from "lucide-react";
+
+type AccommodationCategory = "Villa" | "Bungalow" | "Maison" | "Chambre" | "Appartement";
 
 export default function AddMotoPlaceholder() {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isAccommodationMode = searchParams.get("kind") === "accommodation";
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -39,6 +44,7 @@ export default function AddMotoPlaceholder() {
   const [year, setYear] = useState("");
   const [engineCapacity, setEngineCapacity] = useState("");
   const [vehicleKind, setVehicleKind] = useState<"moto" | "scooter" | "">("");
+  const [accommodationCategory, setAccommodationCategory] = useState<AccommodationCategory | "">("");
   const [licensePlate, setLicensePlate] = useState("");
   const [dailyPrice, setDailyPrice] = useState("");
   const [mileage, setMileage] = useState("");
@@ -245,15 +251,121 @@ export default function AddMotoPlaceholder() {
       toast({
         title: t("common.error", "Erreur"),
         description: t(
-          "ownerVehicles.motoForm.photos.minRequired",
-          "Veuillez ajouter au moins une photo de votre moto ou scooter."
+          isAccommodationMode
+            ? "ownerVehicles.accommodationForm.photos.minRequired"
+            : "ownerVehicles.motoForm.photos.minRequired",
+          isAccommodationMode
+            ? "Veuillez ajouter au moins une photo de votre hébergement."
+            : "Veuillez ajouter au moins une photo de votre moto ou scooter."
         ),
         variant: "destructive",
       });
       return;
     }
 
-    // Validations minimales
+    if (isAccommodationMode) {
+      if (!accommodationCategory || !model.trim() || !dailyPrice.trim() || !seats.trim()) {
+        toast({
+          title: t("common.error", "Erreur"),
+          description: t(
+            "ownerVehicles.accommodationForm.errors.required",
+            "Merci de renseigner le type, le nom, la capacité et le prix par nuit."
+          ),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const parsedPrice = parseFloat(dailyPrice.replace(",", "."));
+      const parsedSeats = parseInt(seats, 10);
+
+      if (Number.isNaN(parsedPrice) || parsedPrice < 1000) {
+        toast({
+          title: t("common.error", "Erreur"),
+          description: t(
+            "ownerVehicles.accommodationForm.errors.price",
+            "Merci de saisir un prix par nuit valide (minimum 1 000 Ar)."
+          ),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (Number.isNaN(parsedSeats) || parsedSeats <= 0 || parsedSeats > 20) {
+        toast({
+          title: t("common.error", "Erreur"),
+          description: t(
+            "ownerVehicles.accommodationForm.errors.capacity",
+            "Merci de saisir une capacité entre 1 et 20 voyageurs."
+          ),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const { data, error } = await SupabaseVehiclesService.createVehicle({
+          owner_id: user.id,
+          brand: "Hébergement",
+          model: model.trim(),
+          year: new Date().getFullYear(),
+          mileage: 0,
+          price_per_day: parsedPrice,
+          description: description || undefined,
+          seats: parsedSeats,
+          vehicle_type: "accommodation",
+          vehicle_category: accommodationCategory,
+          available: true,
+          status: "active",
+        });
+
+        if (error || !data) {
+          throw new Error(error || "Erreur lors de la création de l'hébergement");
+        }
+
+        const photoResult = await uploadVehiclePhotos(
+          data.id,
+          vehiclePhotos,
+          additionalPhotos,
+          toast
+        );
+
+        if (photoResult.errors.length > 0) {
+          console.warn("Erreurs d'upload de photos hébergement:", photoResult.errors);
+        }
+
+        toast({
+          title: t(
+            "ownerVehicles.accommodationForm.successTitle",
+            "Hébergement ajouté avec succès"
+          ),
+          description: t(
+            "ownerVehicles.accommodationForm.successDescription",
+            "Votre annonce a été créée. Vous pouvez la gérer dans la liste de vos véhicules."
+          ),
+        });
+
+        navigate("/me/owner/vehicles");
+      } catch (err: any) {
+        console.error("Erreur création hébergement:", err);
+        toast({
+          title: t("common.error", "Erreur"),
+          description:
+            err?.message ||
+            t(
+              "ownerVehicles.accommodationForm.errors.generic",
+              "Impossible de créer l'hébergement. Veuillez réessayer."
+            ),
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Validations minimales (moto / scooter)
     if (!brand.trim() || !model.trim() || !dailyPrice.trim() || !year.trim()) {
       toast({
         title: t("common.error", "Erreur"),
@@ -394,12 +506,21 @@ export default function AddMotoPlaceholder() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
-                <Bike className="h-8 w-8 text-primary" />
+                {isAccommodationMode ? (
+                  <Hotel className="h-8 w-8 text-primary" />
+                ) : (
+                  <Bike className="h-8 w-8 text-primary" />
+                )}
                 <span>
-                  {t(
-                    "ownerVehicles.motoForm.title",
-                    "Ajouter une moto / scooter"
-                  )}
+                  {isAccommodationMode
+                    ? t(
+                        "ownerVehicles.accommodationForm.title",
+                        "Ajouter un hébergement"
+                      )
+                    : t(
+                        "ownerVehicles.motoForm.title",
+                        "Ajouter une moto / scooter"
+                      )}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -488,6 +609,104 @@ export default function AddMotoPlaceholder() {
                   }}
                   disabled={additionalPhotos.length >= 3}
                 />
+                {isAccommodationMode ? (
+                  <>
+                    <div className="space-y-1">
+                      <Label>
+                        {t(
+                          "ownerVehicles.accommodationForm.category",
+                          "Type d'hébergement"
+                        )}
+                      </Label>
+                      <Select
+                        value={accommodationCategory}
+                        onValueChange={(v: AccommodationCategory) =>
+                          setAccommodationCategory(v)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t(
+                              "ownerVehicles.accommodationForm.categoryPlaceholder",
+                              "Sélectionner"
+                            )}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Villa">
+                            {t("ownerVehicles.accommodationForm.categoryVilla", "Villa")}
+                          </SelectItem>
+                          <SelectItem value="Bungalow">
+                            {t("ownerVehicles.accommodationForm.categoryBungalow", "Bungalow")}
+                          </SelectItem>
+                          <SelectItem value="Maison">
+                            {t("ownerVehicles.accommodationForm.categoryMaison", "Maison")}
+                          </SelectItem>
+                          <SelectItem value="Chambre">
+                            {t("ownerVehicles.accommodationForm.categoryChambre", "Chambre")}
+                          </SelectItem>
+                          <SelectItem value="Appartement">
+                            {t("ownerVehicles.accommodationForm.categoryAppartement", "Appartement")}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="accommodation-name">
+                        {t("ownerVehicles.accommodationForm.name", "Nom de l'hébergement")}
+                      </Label>
+                      <Input
+                        id="accommodation-name"
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        placeholder={t(
+                          "ownerVehicles.accommodationForm.namePlaceholder",
+                          "Ex : Villa les Flamboyants"
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="accommodation-seats">
+                          {t(
+                            "ownerVehicles.accommodationForm.capacity",
+                            "Capacité voyageurs"
+                          )}
+                        </Label>
+                        <Input
+                          id="accommodation-seats"
+                          type="number"
+                          value={seats}
+                          min={1}
+                          max={20}
+                          onChange={(e) => setSeats(e.target.value)}
+                          placeholder="4"
+                        />
+                      </div>
+                    </div>
+
+                    <OwnerDualCurrencyInput
+                      id="accommodation-price"
+                      label={t(
+                        "ownerVehicles.accommodationForm.nightlyPrice",
+                        "Prix par nuit"
+                      )}
+                      valueMga={dailyPrice}
+                      onChangeMga={setDailyPrice}
+                      required
+                      minMga={1000}
+                      arPlaceholder="100000"
+                      eurPlaceholder="20"
+                      hint={t(
+                        "ownerVehicles.accommodationForm.nightlyPriceHint",
+                        "Saisissez l'un ou l'autre — équivalent € affiché aux voyageurs selon le taux du jour"
+                      )}
+                    />
+                  </>
+                ) : (
+                  <>
                 {/* Ligne 1 : Marque / Modèle */}
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-1">
@@ -717,7 +936,7 @@ export default function AddMotoPlaceholder() {
                   </div>
                 </div>
 
-                {/* Ligne 6 : Prix / jour */}
+                {/* Ligne 6 : Prix / jour (moto uniquement) */}
                 <div className="space-y-1">
                   <Label htmlFor="dailyPrice">
                     {t(
@@ -732,13 +951,17 @@ export default function AddMotoPlaceholder() {
                     placeholder="25"
                   />
                 </div>
+                  </>
+                )}
 
-                {/* Ligne 7 : Description */}
+                {/* Description */}
                 <div className="space-y-1">
                   <Label htmlFor="description">
                     {t(
-                      "ownerVehicles.motoForm.description",
-                      "Description (optionnel)"
+                      isAccommodationMode
+                        ? "ownerVehicles.accommodationForm.description"
+                        : "ownerVehicles.motoForm.description",
+                      isAccommodationMode ? "Description" : "Description (optionnel)"
                     )}
                   </Label>
                   <textarea
@@ -747,13 +970,17 @@ export default function AddMotoPlaceholder() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder={t(
-                      "ownerVehicles.motoForm.descriptionPlaceholder",
-                      "Décrivez l'état de la moto, les équipements fournis (casque, top case, etc.)..."
+                      isAccommodationMode
+                        ? "ownerVehicles.accommodationForm.descriptionPlaceholder"
+                        : "ownerVehicles.motoForm.descriptionPlaceholder",
+                      isAccommodationMode
+                        ? "Décrivez votre hébergement, les équipements, la localisation..."
+                        : "Décrivez l'état de la moto, les équipements fournis (casque, top case, etc.)..."
                     )}
                   />
                 </div>
 
-                {/* Ligne 8 : Photos */}
+                {/* Photos */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -761,14 +988,20 @@ export default function AddMotoPlaceholder() {
                       <div>
                         <p className="text-sm font-medium">
                           {t(
-                            "ownerVehicles.motoForm.photos.sectionTitle",
-                            "Photos du véhicule"
+                            isAccommodationMode
+                              ? "ownerVehicles.accommodationForm.photos.sectionTitle"
+                              : "ownerVehicles.motoForm.photos.sectionTitle",
+                            isAccommodationMode ? "Photos de l'hébergement" : "Photos du véhicule"
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {t(
-                            "ownerVehicles.motoForm.photos.sectionSubtitle",
-                            "Ajoutez au moins une photo de votre moto ou scooter pour attirer plus de locataires."
+                            isAccommodationMode
+                              ? "ownerVehicles.accommodationForm.photos.sectionSubtitle"
+                              : "ownerVehicles.motoForm.photos.sectionSubtitle",
+                            isAccommodationMode
+                              ? "Ajoutez au moins une photo pour mettre en valeur votre hébergement."
+                              : "Ajoutez au moins une photo de votre moto ou scooter pour attirer plus de locataires."
                           )}
                         </p>
                       </div>
@@ -1131,12 +1364,16 @@ export default function AddMotoPlaceholder() {
                   <Button type="submit" disabled={loading}>
                     {loading
                       ? t(
-                          "ownerVehicles.motoForm.saving",
+                          isAccommodationMode
+                            ? "ownerVehicles.accommodationForm.saving"
+                            : "ownerVehicles.motoForm.saving",
                           "Création en cours..."
                         )
                       : t(
-                          "ownerVehicles.motoForm.submit",
-                          "Créer le véhicule"
+                          isAccommodationMode
+                            ? "ownerVehicles.accommodationForm.submit"
+                            : "ownerVehicles.motoForm.submit",
+                          isAccommodationMode ? "Créer l'hébergement" : "Créer le véhicule"
                         )}
                   </Button>
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { getPublicListingPath } from "@/utils/vehicleType";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
   ArrowLeft,
@@ -166,6 +166,7 @@ const OwnerBookingDiscussion = () => {
           location: foundVehicle.location || undefined,
           createdAt: foundVehicle.created_at || new Date().toISOString(),
           updatedAt: foundVehicle.updated_at || new Date().toISOString(),
+          vehicleType: (foundVehicle.vehicle_type as Vehicle["vehicleType"]) ?? "car",
         };
 
         setVehicleImageUrl(foundVehicle.image_url || null);
@@ -665,7 +666,7 @@ const OwnerBookingDiscussion = () => {
                 </p>
               </div>
               <Button
-                onClick={() => navigate(`/vehicle/${vehicle?.license}`)}
+                onClick={() => vehicle && navigate(getPublicListingPath(vehicle))}
                 className="bg-primary hover:bg-primary/90 text-white"
               >
                 Nouvelle réservation

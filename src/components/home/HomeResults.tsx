@@ -14,8 +14,9 @@ import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { MotoVehicleCard } from "@/components/vehicles/moto-vehicle-card";
 import { Vehicle, VehicleRentalInfo } from "@/types";
 import { Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
-import { mapToCarVehicle, mapToMotoVehicle } from "@/mappers/vehicleMappers";
-import { isMoto } from "@/utils/vehicleType";
+import { mapToCarVehicle, mapToMotoVehicle, mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
+import { isMoto, isAccommodation } from "@/utils/vehicleType";
+import { AccommodationCard } from "@/components/accommodation/AccommodationCard";
 import { getDistinctEngineCapacities } from "@/utils/engineCapacity";
 
 export interface HomeResultsProps {
@@ -84,6 +85,9 @@ export function HomeResults({
               <SelectContent>
                 <SelectItem value="scooter">Scooter</SelectItem>
                 <SelectItem value="moto">Moto</SelectItem>
+                <SelectItem value="accommodation">
+                  {t("accommodationCard.filterLabel", "Hébergement")}
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -149,8 +153,11 @@ export function HomeResults({
                   ? getVehicleRentalInfo(vehicle.id, vehicle.price_per_day)
                   : undefined;
 
+                const isAccommodationVehicle = isAccommodation(vehicle);
                 const isMotoVehicle = isMoto(vehicle);
-                const mappedVehicle: Vehicle = isMotoVehicle
+                const mappedVehicle: Vehicle = isAccommodationVehicle
+                  ? mapToAccommodationVehicle(vehicle)
+                  : isMotoVehicle
                   ? mapToMotoVehicle(vehicle)
                   : mapToCarVehicle(vehicle);
 
@@ -166,7 +173,17 @@ export function HomeResults({
                     }
                   : null;
 
-                return isMotoVehicle ? (
+                return isAccommodationVehicle ? (
+                  <AccommodationCard
+                    key={vehicle.id}
+                    vehicle={mappedVehicle}
+                    primaryPhoto={primaryPhoto}
+                    rentalInfo={vehicleRentalInfo}
+                    onClick={() => onVehicleClick(vehicle)}
+                    index={index}
+                    deferImages={deferImages}
+                  />
+                ) : isMotoVehicle ? (
                   <MotoVehicleCard
                     key={vehicle.id}
                     vehicle={mappedVehicle}
