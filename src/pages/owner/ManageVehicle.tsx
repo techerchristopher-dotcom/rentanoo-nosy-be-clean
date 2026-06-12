@@ -33,12 +33,15 @@ import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { DualPrice } from "@/components/currency/DualPrice";
 import { OwnerDualCurrencyInput } from "@/components/currency/OwnerDualCurrencyInput";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
+import { useTranslation } from "react-i18next";
+import { ListingOwnersService } from "@/services/supabase/listingOwners";
 
 export default function ManageVehicle() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
   console.log("[ManageVehicle] vehicleId from params =", vehicleId);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation("common");
   const { formatClient } = useExchangeRate();
 
   // const [loading, setLoading] = useState(false); // SUPPRIMÉ Étape 2B.1.2 - géré par useManageVehicle
@@ -1528,6 +1531,23 @@ export default function ManageVehicle() {
         console.warn("Erreur lors de la sauvegarde des services additionnels:", additionalServicesError);
       }
 
+      const { listingOwnerId, error: listingOwnerError } =
+        await ListingOwnersService.syncForVehicle(vehicle.id, {
+          displayName: formData.listingOwnerDisplayName,
+          avatarUrl: formData.listingOwnerAvatarUrl,
+          ownerType: formData.listingOwnerType,
+          existingListingOwnerId: formData.listingOwnerId?.trim() || null,
+        });
+
+      if (listingOwnerError) {
+        throw new Error(listingOwnerError);
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        listingOwnerId: listingOwnerId || "",
+      }));
+
       console.log("Sauvegarde terminée");
 
       console.log("Sauvegarde réussie!");
@@ -1656,7 +1676,7 @@ export default function ManageVehicle() {
           <div className="-mx-3 px-3 sm:mx-0 sm:px-0 overflow-x-auto manage-vehicle-tabs-scroll">
             <TabsList
               className={`inline-flex h-auto min-w-full w-max sm:w-full sm:grid gap-1 ${
-                previewMode ? "sm:grid-cols-5" : "sm:grid-cols-4"
+                previewMode ? "sm:grid-cols-6" : "sm:grid-cols-5"
               } bg-gray-100 p-1 rounded-lg`}
             >
               <TabsTrigger
@@ -1671,6 +1691,13 @@ export default function ManageVehicle() {
                 className="relative shrink-0 sm:shrink transition-all duration-300 ease-in-out hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
               >
                 Annonce
+              </TabsTrigger>
+              <TabsTrigger
+                value="listing-owner"
+                className="relative shrink-0 sm:shrink transition-all duration-300 ease-in-out hover:bg-white data-[state=active]:bg-white data-[state=active]:shadow-md rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
+              >
+                <span className="sm:hidden">{t("listingOwner.tabShort", "Proprio")}</span>
+                <span className="hidden sm:inline">{t("listingOwner.tab", "Propriétaire")}</span>
               </TabsTrigger>
               <TabsTrigger
                 value="pricing"
@@ -2074,6 +2101,103 @@ export default function ManageVehicle() {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* Propriétaire affiché */}
+          <TabsContent value="listing-owner">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  {t("listingOwner.tab", "Propriétaire")}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "listingOwner.intro",
+                    "Identité affichée publiquement sur la fiche. Laissez vide pour utiliser le profil du compte gestionnaire."
+                  )}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="listingOwnerDisplayName">
+                    {t("listingOwner.displayName", "Nom affiché")}
+                  </Label>
+                  <Input
+                    id="listingOwnerDisplayName"
+                    value={formData.listingOwnerDisplayName}
+                    onChange={(e) => handleInputChange("listingOwnerDisplayName", e.target.value)}
+                    placeholder={t(
+                      "listingOwner.displayNamePlaceholder",
+                      "Ex. Résidence Ambatoloaka, Jean Dupont…"
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="listingOwnerAvatarUrl">
+                    {t("listingOwner.avatarUrl", "Avatar / logo (URL)")}
+                  </Label>
+                  <Input
+                    id="listingOwnerAvatarUrl"
+                    type="url"
+                    value={formData.listingOwnerAvatarUrl}
+                    onChange={(e) => handleInputChange("listingOwnerAvatarUrl", e.target.value)}
+                    placeholder="https://…"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="listingOwnerType">
+                    {t("listingOwner.ownerType", "Type de propriétaire")}
+                  </Label>
+                  <Select
+                    value={formData.listingOwnerType}
+                    onValueChange={(value) =>
+                      handleInputChange(
+                        "listingOwnerType",
+                        value as typeof formData.listingOwnerType
+                      )
+                    }
+                  >
+                    <SelectTrigger id="listingOwnerType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">
+                        {t("listingOwner.types.individual", "Particulier")}
+                      </SelectItem>
+                      <SelectItem value="agency">
+                        {t("listingOwner.types.agency", "Agence")}
+                      </SelectItem>
+                      <SelectItem value="residence">
+                        {t("listingOwner.types.residence", "Résidence / hébergement")}
+                      </SelectItem>
+                      <SelectItem value="platform_managed">
+                        {t("listingOwner.types.platformManaged", "Géré par la plateforme")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.listingOwnerDisplayName.trim() && formData.listingOwnerAvatarUrl.trim() && (
+                  <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={formData.listingOwnerAvatarUrl} alt="" />
+                      <AvatarFallback>
+                        {formData.listingOwnerDisplayName.trim().charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{formData.listingOwnerDisplayName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("listingOwner.previewHint", "Aperçu du propriétaire affiché")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Tarifs */}

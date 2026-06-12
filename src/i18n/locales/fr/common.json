@@ -256,6 +256,26 @@
     "filterLabel": "Hébergement",
     "typeFallback": "Hébergement"
   },
+  "listingOwner": {
+    "tab": "Propriétaire",
+    "tabShort": "Proprio",
+    "intro": "Identité affichée publiquement sur la fiche. Laissez vide pour utiliser le profil du compte gestionnaire.",
+    "displayName": "Nom affiché",
+    "displayNamePlaceholder": "Ex. Résidence Ambatoloaka, Jean Dupont…",
+    "avatarUrl": "Avatar / logo (URL)",
+    "ownerType": "Type de propriétaire",
+    "previewHint": "Aperçu du propriétaire affiché",
+    "types": {
+      "individual": "Particulier",
+      "agency": "Agence",
+      "residence": "Résidence / hébergement",
+      "platformManaged": "Géré par la plateforme"
+    },
+    "stats": {
+      "listings": "Annonces",
+      "thisListing": "Cette annonce"
+    }
+  },
   "accommodationDetails": {
     "back": "Retour",
     "loading": "Chargement de l'hébergement...",

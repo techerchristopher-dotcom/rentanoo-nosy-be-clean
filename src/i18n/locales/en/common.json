@@ -256,6 +256,26 @@
     "filterLabel": "Accommodation",
     "typeFallback": "Accommodation"
   },
+  "listingOwner": {
+    "tab": "Owner",
+    "tabShort": "Owner",
+    "intro": "Public identity shown on the listing. Leave blank to use the manager account profile.",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "E.g. Ambatoloaka Residence, John Doe…",
+    "avatarUrl": "Avatar / logo (URL)",
+    "ownerType": "Owner type",
+    "previewHint": "Displayed owner preview",
+    "types": {
+      "individual": "Individual",
+      "agency": "Agency",
+      "residence": "Residence / accommodation",
+      "platformManaged": "Platform managed"
+    },
+    "stats": {
+      "listings": "Listings",
+      "thisListing": "This listing"
+    }
+  },
   "accommodationDetails": {
     "back": "Back",
     "loading": "Loading accommodation...",

@@ -105,6 +105,12 @@ export interface VehicleFormData {
   additionalDriverService: boolean;
   additionalDriverFree: boolean;
   additionalDriverPrice: string;
+
+  /** Propriétaire affiché publiquement (listing_owners) */
+  listingOwnerId: string;
+  listingOwnerDisplayName: string;
+  listingOwnerAvatarUrl: string;
+  listingOwnerType: "individual" | "agency" | "residence" | "platform_managed";
 }
 
 /**
@@ -215,5 +221,9 @@ export const initialFormData: VehicleFormData = {
   additionalDriverService: false,
   additionalDriverFree: false,
   additionalDriverPrice: "15",
+  listingOwnerId: "",
+  listingOwnerDisplayName: "",
+  listingOwnerAvatarUrl: "",
+  listingOwnerType: "individual",
 };
 

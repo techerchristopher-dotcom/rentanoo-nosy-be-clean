@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Vehicle } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
+import { ListingOwnersService } from "@/services/supabase/listingOwners";
 import {
   VehicleFormData,
   VehicleValidationErrors,
@@ -181,7 +182,26 @@ export function useManageVehicle(
         additionalDriverService: vehicleData.additional_driver_service || false,
         additionalDriverFree: vehicleData.additional_driver_free ?? false,
         additionalDriverPrice: (vehicleData.additional_driver_price || 15).toString(),
+        listingOwnerId: vehicleData.listing_owner_id || "",
+        listingOwnerDisplayName: "",
+        listingOwnerAvatarUrl: "",
+        listingOwnerType: "individual",
       });
+
+      if (vehicleData.listing_owner_id) {
+        const { data: listingOwner } = await ListingOwnersService.getById(
+          vehicleData.listing_owner_id
+        );
+        if (listingOwner) {
+          setFormData((prev) => ({
+            ...prev,
+            listingOwnerId: listingOwner.id,
+            listingOwnerDisplayName: listingOwner.display_name,
+            listingOwnerAvatarUrl: listingOwner.avatar_url || "",
+            listingOwnerType: listingOwner.owner_type,
+          }));
+        }
+      }
       console.log("[useManageVehicle] ✅ setFormData done, formData.brand =", vehicleData.brand);
       
       // 🆕 Activer automatiquement les services correspondants aux zones de pickup

@@ -33,6 +33,7 @@ export interface Vehicle {
   vehicle_category: string | null;
   // Type explicite de véhicule (car, moto, scooter, accommodation)
   vehicle_type?: 'car' | 'moto' | 'scooter' | 'accommodation' | null;
+  listing_owner_id?: string | null;
   // Nouveaux champs de remises
   low_season_discount: number | null;
   high_season_surcharge: number | null;
