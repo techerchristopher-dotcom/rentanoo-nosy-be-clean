@@ -1049,7 +1049,7 @@ export default function AccommodationDetails() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="max-w-md">
                   {vehicle && (
-                    <VehicleOwnerCard vehicleId={vehicle.id} className="w-full" listingKind="accommodation" />
+                    <VehicleOwnerCard vehicleId={vehicle.id} className="w-full" />
                   )}
                 </div>
 
