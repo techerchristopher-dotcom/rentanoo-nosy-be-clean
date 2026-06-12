@@ -22,11 +22,13 @@ import { useRenterFeePreview } from "@/hooks/useRenterFeePreview";
 import { feePercentLabel } from "@/services/supabase/renterFeePreview";
 import type { BookingPaymentMethod } from "@/services/supabase/bookings";
 import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
+import { useListingTerms, type ListingKind } from "@/utils/listingTerminology";
 
 interface BookingConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (paymentMethod: BookingPaymentMethod) => void;
+  listingKind?: ListingKind;
   vehicle: {
     id: string;
     brand: string;
@@ -57,11 +59,13 @@ export function BookingConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
+  listingKind = "car",
   vehicle,
   rentalInfo,
   selectedOptions = []
 }: BookingConfirmationModalProps) {
   const { t, i18n } = useTranslation();
+  const terms = useListingTerms(listingKind);
   const { footnote, formatClientInline } = useExchangeRate();
   
   // Locale du calendrier / formatage des dates en fonction de la langue active
@@ -127,6 +131,8 @@ export function BookingConfirmationModal({
   
   const pickupLocation = draftPickupLocation ?? rentalInfo.pickupLocation;
   const returnLocation = draftReturnLocation ?? rentalInfo.returnLocation;
+  const isAccommodation = listingKind === "accommodation";
+  const showLocations = !isAccommodation && (pickupLocation || returnLocation);
   
   // Calculer le total des options (utiliser draftOptions au lieu de selectedOptions)
   const optionsTotal = draftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
@@ -220,16 +226,18 @@ export function BookingConfirmationModal({
             )}
             <div>
               <h3 className="text-lg font-bold text-primary">
-                {vehicle.brand} {vehicle.model}
+                {terms.formatListingTitle(vehicle.brand, vehicle.model)}
               </h3>
-              <p className="text-sm text-muted-foreground font-medium">
-                {t("ownerVehicles.card.year", "Année")} {vehicle.year}
-              </p>
+              {!isAccommodation && (
+                <p className="text-sm text-muted-foreground font-medium">
+                  {t("ownerVehicles.card.year", "Année")} {vehicle.year}
+                </p>
+              )}
             </div>
           </div>
 
           {/* Lieux de prise en charge / restitution */}
-          {(pickupLocation || returnLocation) && (
+          {showLocations && (
             <>
               <Separator />
               <div className="space-y-3 px-2">
@@ -239,7 +247,7 @@ export function BookingConfirmationModal({
                       <MapPin className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">{t("lieu_de_prise_en_charge")}</p>
+                      <p className="text-xs text-muted-foreground mb-1">{terms.pickupLocationLabel}</p>
                       <p className="text-base font-semibold text-foreground">
                         {pickupLocation}
                       </p>
@@ -253,7 +261,7 @@ export function BookingConfirmationModal({
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-1">
-                        {t("booking.confirmation.returnLocation")}
+                        {terms.returnLocationLabel}
                       </p>
                       <p className="text-base font-semibold text-foreground">
                         {returnLocation}
@@ -277,7 +285,7 @@ export function BookingConfirmationModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-card rounded-lg border border-border/50 space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">{t("searchBar.departure")}</p>
+                <p className="text-xs text-muted-foreground font-medium">{terms.startDateLabel}</p>
                 <p className="text-sm font-bold text-foreground capitalize">{formattedStartDate}</p>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                   <Clock className="h-3.5 w-3.5" />
@@ -286,7 +294,7 @@ export function BookingConfirmationModal({
               </div>
 
               <div className="p-3 bg-card rounded-lg border border-border/50 space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">{t("searchBar.return")}</p>
+                <p className="text-xs text-muted-foreground font-medium">{terms.endDateLabel}</p>
                 <p className="text-sm font-bold text-foreground capitalize">{formattedEndDate}</p>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                   <Clock className="h-3.5 w-3.5" />
@@ -319,12 +327,12 @@ export function BookingConfirmationModal({
 
             <div className="bg-card rounded-lg border border-border/50 p-3 space-y-2">
               <ClientPriceRow
-                label={t("booking.vehicleRental")}
+                label={terms.rentalLabel}
                 amountMga={rentalInfo.basePrice}
                 labelClassName="font-medium"
               />
               <p className="text-xs text-muted-foreground pl-1">
-                {formatClientInline(rentalInfo.pricePerDay)}/{t("par_jour")} × {durationText || ""}
+                {formatClientInline(rentalInfo.pricePerDay)}/{terms.perNightSuffix} × {durationText || ""}
               </p>
             </div>
           </div>
@@ -383,6 +391,7 @@ export function BookingConfirmationModal({
             onChange={handlePaymentMethodChange}
             savingsMga={savingsMga}
             disabled={previewLoading}
+            listingKind={listingKind}
           />
 
           {previewError ? (

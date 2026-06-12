@@ -6,12 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { BookingPaymentMethod } from '@/services/supabase/bookings';
 import { useExchangeRate } from '@/contexts/ExchangeRateContext';
+import type { ListingKind } from '@/utils/listingTerminology';
 
 interface PaymentMethodSelectorProps {
   value: BookingPaymentMethod;
   onChange: (value: BookingPaymentMethod) => void;
   savingsMga: number;
   disabled?: boolean;
+  listingKind?: ListingKind;
 }
 
 export function PaymentMethodSelector({
@@ -19,9 +21,17 @@ export function PaymentMethodSelector({
   onChange,
   savingsMga,
   disabled = false,
+  listingKind = 'car',
 }: PaymentMethodSelectorProps) {
   const { t } = useTranslation('common');
   const { formatClientInline } = useExchangeRate();
+  const isAccommodation = listingKind === 'accommodation';
+  const cashOnSiteLabel = isAccommodation
+    ? t('booking.paymentMethod.cashOnSite.accommodation.label')
+    : t('booking.paymentMethod.cashOnSite.label');
+  const cashOnSiteHint = isAccommodation
+    ? t('booking.paymentMethod.cashOnSite.accommodation.hint')
+    : t('booking.paymentMethod.cashOnSite.hint');
 
   const savingsLabel =
     savingsMga > 0
@@ -102,11 +112,11 @@ export function PaymentMethodSelector({
               <div className="flex items-center gap-2">
                 <Banknote className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="text-sm font-semibold text-foreground">
-                  {t('booking.paymentMethod.cashOnSite.label')}
+                  {cashOnSiteLabel}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                {t('booking.paymentMethod.cashOnSite.hint')}
+                {cashOnSiteHint}
               </p>
             </div>
           </div>

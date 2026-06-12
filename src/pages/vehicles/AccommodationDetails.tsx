@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   Car,
+  Home,
   Fuel,
   Settings,
   Wind,
@@ -99,6 +100,7 @@ import { AccommodationHighlights } from "@/components/accommodation/Accommodatio
 import { useToast } from "@/hooks/use-toast";
 import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
+import { useListingTerms } from "@/utils/listingTerminology";
 import { Seo } from "@/components/seo/Seo";
 import {
   buildAccommodationSeoTitle,
@@ -122,6 +124,7 @@ export default function AccommodationDetails() {
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
+  const listingTerms = useListingTerms("accommodation");
   
   // Locale pour formatCurrency (comme dans BookingConfirmationModal)
   const currentLang = i18n.language || "fr";
@@ -1046,7 +1049,7 @@ export default function AccommodationDetails() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="max-w-md">
                   {vehicle && (
-                    <VehicleOwnerCard vehicleId={vehicle.id} className="w-full" isMoto={false} />
+                    <VehicleOwnerCard vehicleId={vehicle.id} className="w-full" listingKind="accommodation" />
                   )}
                 </div>
 
@@ -1055,7 +1058,7 @@ export default function AccommodationDetails() {
                     <Card className="h-full overflow-hidden">
                       <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                         <CardTitle className="text-lg flex items-center gap-2">
-                          <Car className="h-5 w-5 text-primary" />
+                          <Home className="h-5 w-5 text-primary" />
                           {t("accommodationDetails.descriptionTitle", "Description")}
                         </CardTitle>
                       </CardHeader>
@@ -1136,10 +1139,10 @@ export default function AccommodationDetails() {
                                 </div>
                               </div>
                               <p className="text-sm text-muted-foreground mb-1">
-                                {t("motoDetails.reviews.sample1.meta")}
+                                {listingTerms.reviewSample1Meta}
                               </p>
                               <p className="text-sm">
-                                {t("motoDetails.reviews.sample1.text")}
+                                {listingTerms.reviewSample1Text}
                               </p>
                             </div>
                           </div>
@@ -1164,10 +1167,10 @@ export default function AccommodationDetails() {
                                 </div>
                               </div>
                               <p className="text-sm text-muted-foreground mb-1">
-                                {t("motoDetails.reviews.sample2.meta")}
+                                {listingTerms.reviewSample2Meta}
                               </p>
                               <p className="text-sm">
-                                {t("motoDetails.reviews.sample2.text")}
+                                {listingTerms.reviewSample2Text}
                               </p>
                             </div>
                           </div>
@@ -1286,6 +1289,7 @@ export default function AccommodationDetails() {
           isOpen={showConfirmationModal}
           onClose={() => setShowConfirmationModal(false)}
           onConfirm={handleConfirmBooking}
+          listingKind="accommodation"
           vehicle={{
             id: vehicle.id,
             brand: vehicle.brand,

@@ -192,6 +192,10 @@
       "cashOnSite": {
         "label": "Pay at the agency",
         "hint": "Payment when keys are handed over",
+        "accommodation": {
+          "label": "Pay on arrival",
+          "hint": "Payment upon arrival at the property"
+        },
         "badge": "Pay at the agency",
         "modalHint": "Payment when keys are handed over at the agency."
       },
@@ -284,6 +288,68 @@
       "uploadSuccess": "Owner photo saved.",
       "uploadError": "Could not upload the owner photo.",
       "removeSuccess": "Owner photo removed."
+    }
+  },
+  "listingTerms": {
+    "car": {
+      "statsVehicles": "Vehicles",
+      "statsThis": "This car",
+      "rentalLabel": "Vehicle rental",
+      "startDateLabel": "Pick-up",
+      "endDateLabel": "Return",
+      "perNight": "per day",
+      "pickupLocation": "Pickup location",
+      "returnLocation": "Return location",
+      "reviews": {
+        "sample1": {
+          "meta": "2 weeks ago • 3-day rental",
+          "text": "Vehicle in perfect condition, very clean. Pierre is a thoughtful and available host. Highly recommended!"
+        },
+        "sample2": {
+          "meta": "1 month ago • 5-day rental",
+          "text": "Excellent vehicle to explore the island. Economical and reliable. Perfect communication with the owner."
+        }
+      }
+    },
+    "moto": {
+      "statsVehicles": "Vehicles",
+      "statsThis": "This motorbike",
+      "rentalLabel": "Vehicle rental",
+      "startDateLabel": "Pick-up",
+      "endDateLabel": "Return",
+      "perNight": "per day",
+      "pickupLocation": "Pickup location",
+      "returnLocation": "Return location",
+      "reviews": {
+        "sample1": {
+          "meta": "2 weeks ago • 3-day rental",
+          "text": "Vehicle in perfect condition, very clean. Pierre is a thoughtful and available host. Highly recommended!"
+        },
+        "sample2": {
+          "meta": "1 month ago • 5-day rental",
+          "text": "Excellent vehicle to explore the island. Economical and reliable. Perfect communication with the owner."
+        }
+      }
+    },
+    "accommodation": {
+      "statsVehicles": "Accommodations",
+      "statsThis": "This accommodation",
+      "rentalLabel": "Accommodation rental",
+      "startDateLabel": "Check-in",
+      "endDateLabel": "Check-out",
+      "perNight": "per night",
+      "pickupLocation": "Check-in location",
+      "returnLocation": "Check-out location",
+      "reviews": {
+        "sample1": {
+          "meta": "2 weeks ago • 3-night stay",
+          "text": "Impeccable accommodation, very clean and well located. The host is thoughtful and available. Highly recommended!"
+        },
+        "sample2": {
+          "meta": "1 month ago • 5-night stay",
+          "text": "Excellent place to discover Nosy Be. Comfortable and quiet. Perfect communication with the owner."
+        }
+      }
     }
   },
   "accommodationDetails": {
