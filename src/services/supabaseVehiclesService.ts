@@ -1,5 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { debug } from "@/utils/logger";
+import type { LocationAreaRef } from "@/types/locationArea";
+
+const VEHICLE_SELECT_WITH_AREA =
+  "*, location_areas(id, name, slug, active), vehicle_photos(photo_url, is_primary, display_order)";
+
+const VEHICLE_SELECT_WITH_AREA_SIMPLE = "*, location_areas(id, name, slug, active)";
 
 export interface Vehicle {
   id: string;
@@ -14,7 +20,8 @@ export interface Vehicle {
   price_per_day_agency?: number | null;
   description: string | null;
   image_url: string | null;
-  location: string | null;
+  location_area_id?: string | null;
+  location_areas?: LocationAreaRef | null;
   pickup_zones: string[] | null;
   seats: number | null;
   doors: number | null;
@@ -128,7 +135,7 @@ export const SupabaseVehiclesService = {
     try {
       let query = supabase
         .from('vehicles')
-        .select('*, vehicle_photos(photo_url, is_primary, display_order)')
+        .select(VEHICLE_SELECT_WITH_AREA)
         .eq('available', true);
 
       // Appliquer les filtres si fournis
@@ -208,7 +215,7 @@ export const SupabaseVehiclesService = {
     price_per_day: number;
     description?: string;
     image_url?: string;
-    location?: string;
+    location_area_id?: string | null;
     pickup_zones?: string[] | null;
     seats?: number;
     doors?: number;
@@ -358,7 +365,7 @@ export const SupabaseVehiclesService = {
     try {
       const { data, error } = await supabase
         .from('vehicles')
-        .select('*')
+        .select(VEHICLE_SELECT_WITH_AREA_SIMPLE)
         .eq('id', vehicleId)
         .single();
 
@@ -394,9 +401,11 @@ export const SupabaseVehiclesService = {
     price_per_day?: number;
     price_per_day_agency?: number | null;
     description?: string;
-    location?: string;
+    location_area_id?: string | null;
     available?: boolean;
     status?: 'active' | 'inactive' | 'review';
+    pickup_zones?: string[] | null;
+    listing_owner_id?: string | null;
     has_ac?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
@@ -421,10 +430,11 @@ export const SupabaseVehiclesService = {
 
       debug('SupabaseVehiclesService.updateVehicle - Données finales:', finalUpdateData);
 
-      // La colonne 'location' n'existe pas dans la table 'vehicles' :
-      // on la retire du payload pour éviter l'erreur de schema cache.
-      // La localisation est gérée via pickup_zones ou d'autres champs.
-      const { location, ...safeUpdateData } = finalUpdateData as any;
+      // Colonne legacy inexistante — ignorée si présente dans le payload
+      const { location, ...safeUpdateData } = finalUpdateData as Record<string, unknown> & {
+        location?: unknown;
+      };
+      void location;
 
       const { data, error } = await supabase
         .from('vehicles')
@@ -464,7 +474,7 @@ export const SupabaseVehiclesService = {
       // 1. Récupérer les véhicules disponibles (avec photo principale en un seul appel)
       let query = supabase
         .from('vehicles')
-        .select('*, vehicle_photos(photo_url, is_primary, display_order)')
+        .select(VEHICLE_SELECT_WITH_AREA)
         .eq('available', true);
 
       const { data: vehiclesData, error: vehiclesError } = await query

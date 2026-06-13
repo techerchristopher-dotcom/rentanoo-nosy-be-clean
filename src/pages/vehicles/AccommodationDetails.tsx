@@ -924,6 +924,7 @@ export default function AccommodationDetails() {
     model: vehicle.model,
     vehicleCategory: rawVehicleCategory ?? vehicle.vehicleCategory,
     description: vehicle.description,
+    locationArea: vehicle.locationArea ?? null,
     location: vehicle.location,
     pricePerDay: vehicle.dailyPrice,
     license: license || vehicle.license,
@@ -1068,6 +1069,7 @@ export default function AccommodationDetails() {
 
                 <AccommodationHighlights
                   location={vehicle.location}
+                  locationArea={vehicle.locationArea}
                   seats={vehicle.seats}
                   category={rawVehicleCategory ?? vehicle.vehicleCategory}
                 />

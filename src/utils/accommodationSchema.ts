@@ -3,7 +3,7 @@
  */
 
 import {
-  extractAccommodationLocality,
+  resolveAccommodationLocalityName,
   getAccommodationCategoryLabel,
   type AccommodationSeoInput,
 } from "./accommodationSeo";
@@ -40,11 +40,7 @@ export interface AccommodationSchemaInput extends AccommodationSeoInput {
 export function buildAccommodationVacationRentalSchema(
   input: AccommodationSchemaInput
 ): object {
-  const locality = extractAccommodationLocality(
-    input.location,
-    input.model,
-    input.description
-  );
+  const locality = resolveAccommodationLocalityName(input);
   const category = getAccommodationCategoryLabel(input.vehicleCategory);
 
   let imageUrls = input.images

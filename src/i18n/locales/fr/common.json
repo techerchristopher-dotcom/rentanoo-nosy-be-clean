@@ -260,6 +260,29 @@
     "filterLabel": "Hébergement",
     "typeFallback": "Hébergement"
   },
+  "locationArea": {
+    "label": "Quartier",
+    "placeholder": "Sélectionner un quartier",
+    "loading": "Chargement…",
+    "addNew": "Ajouter une nouvelle localisation",
+    "newNamePlaceholder": "Ex. Ambatoloaka",
+    "create": "Ajouter",
+    "creating": "Ajout…",
+    "createdTitle": "Quartier ajouté",
+    "createdDescription": "{{name}} est maintenant sélectionné.",
+    "errors": {
+      "loadTitle": "Erreur",
+      "createTitle": "Impossible d'ajouter le quartier",
+      "createUnknown": "Erreur inconnue",
+      "requiredTitle": "Quartier requis",
+      "required": "Le quartier est obligatoire pour un hébergement disponible."
+    }
+  },
+  "homeFilters": {
+    "area": {
+      "all": "Tous les quartiers"
+    }
+  },
   "listingOwner": {
     "tab": "Propriétaire",
     "tabShort": "Proprio",

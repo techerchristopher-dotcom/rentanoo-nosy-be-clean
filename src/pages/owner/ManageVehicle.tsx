@@ -36,6 +36,7 @@ import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { useTranslation } from "react-i18next";
 import { ListingOwnersService } from "@/services/supabase/listingOwners";
 import { ListingOwnerAvatarsService } from "@/services/supabase/listingOwnerAvatars";
+import { LocationAreaSelect } from "@/components/location/LocationAreaSelect";
 
 export default function ManageVehicle() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
@@ -101,6 +102,7 @@ export default function ManageVehicle() {
     validationErrors,
     setValidationErrors,
     loadVehicle,
+    vehicleType,
   } = useManageVehicle(vehicleId);
   
   console.log("[ManageVehicle] Hook states - vehicle =", vehicle, ", loading =", loading, ", formData.brand =", formData.brand);
@@ -1319,6 +1321,27 @@ export default function ManageVehicle() {
       return false;
     }
 
+    const isAccommodationListing = vehicleType === "accommodation";
+    if (isAccommodationListing && formData.available && !formData.locationAreaId) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        locationAreaId: t(
+          "locationArea.errors.required",
+          "Le quartier est obligatoire pour un hébergement disponible."
+        ),
+      }));
+      toast({
+        title: t("locationArea.errors.requiredTitle", "Quartier requis"),
+        description: t(
+          "locationArea.errors.required",
+          "Le quartier est obligatoire pour un hébergement disponible."
+        ),
+        variant: "destructive",
+      });
+      setActiveTab("listing");
+      return false;
+    }
+
     // 🆕 Vérifier s'il y a des configurations en attente
     console.log("🔍 Vérification des configurations en attente:", pendingConfigurations);
     
@@ -1539,6 +1562,7 @@ export default function ManageVehicle() {
       try {
         const bookingUpdateData = {
           pickup_zones: formData.pickupZones,
+          location_area_id: formData.locationAreaId || null,
           min_advance_hours: parseInt(formData.minAdvanceHours) || undefined,
           min_rental_days: parseInt(formData.minRentalDays) || undefined,
           max_rental_days: formData.maxRentalDays ? parseInt(formData.maxRentalDays) : undefined,
@@ -1898,6 +1922,15 @@ export default function ManageVehicle() {
                       className="min-h-[120px] w-full"
                     />
                   </div>
+
+                  <LocationAreaSelect
+                    value={formData.locationAreaId}
+                    onChange={(id) => handleInputChange("locationAreaId", id)}
+                    required={vehicleType === "accommodation" && formData.available}
+                  />
+                  {validationErrors.locationAreaId && (
+                    <p className="text-xs text-red-500">{validationErrors.locationAreaId}</p>
+                  )}
 
                   {/* 🆕 VILLE PAR DÉFAUT DU PROPRIÉTAIRE */}
                   <div className="space-y-2">

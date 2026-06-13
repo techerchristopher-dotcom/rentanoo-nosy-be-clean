@@ -32,6 +32,7 @@ export function useManageVehicle(
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState<VehicleValidationErrors>({});
+  const [vehicleType, setVehicleType] = useState<string | null>(null);
 
   /**
    * Charge le véhicule depuis Supabase et initialise le formulaire
@@ -63,6 +64,7 @@ export function useManageVehicle(
       }
 
       console.log("[useManageVehicle] ✅ Vehicle found, mapping to Vehicle type...");
+      setVehicleType(vehicleData.vehicle_type ?? null);
       setVehicle({
         id: vehicleData.id,
         ownerId: vehicleData.owner_id || "",
@@ -108,6 +110,7 @@ export function useManageVehicle(
             : "",
         description: vehicleData.description || "",
         location: vehicleData.location || "",
+        locationAreaId: vehicleData.location_area_id || "",
         status: (vehicleData.status as "active" | "inactive" | "review") || "active",
         available: vehicleData.available || false,
         // Charger les remises depuis Supabase ou utiliser les valeurs par défaut
@@ -278,6 +281,7 @@ export function useManageVehicle(
 
     // Actions
     loadVehicle, // 🆕 Étape 2B.1 - Fonction de chargement
+    vehicleType,
     updateField,
     setFormData,
     setHasChanges,

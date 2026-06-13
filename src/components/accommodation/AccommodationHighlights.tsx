@@ -1,14 +1,19 @@
 import { useTranslation } from "react-i18next";
 import { MapPin, Users, Home } from "lucide-react";
 
+import type { LocationAreaRef } from "@/types/locationArea";
+import { resolveListingLocationName } from "@/utils/resolveListingLocation";
+
 interface AccommodationHighlightsProps {
   location?: string | null;
+  locationArea?: LocationAreaRef | null;
   seats?: number | null;
   category?: string | null;
 }
 
 export function AccommodationHighlights({
   location,
+  locationArea,
   seats,
   category,
 }: AccommodationHighlightsProps) {
@@ -16,9 +21,9 @@ export function AccommodationHighlights({
 
   const hasSeats = typeof seats === "number" && seats > 0;
   const locationLabel =
-    location && location.length > 0
-      ? location
-      : t("common.not_specified", "Non spécifié");
+    resolveListingLocationName({ locationArea }) ||
+    (location?.trim() ? location.trim() : null) ||
+    t("common.not_specified", "Non spécifié");
   const capacityLabel = hasSeats
     ? t("vehicle.places", { count: seats })
     : t("common.not_specified", "Non spécifié");

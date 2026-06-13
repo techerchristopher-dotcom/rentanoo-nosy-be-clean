@@ -1,6 +1,18 @@
 import { Vehicle } from "@/types";
 import { Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { mapSupabaseEquipment } from "@/utils/vehicleEquipment";
+import type { LocationAreaRef } from "@/types/locationArea";
+import { resolveListingLocationName } from "@/utils/resolveListingLocation";
+
+function mapLocationAreaFromRow(
+  vehicle: SupabaseVehicle
+): LocationAreaRef | null {
+  const row = vehicle.location_areas;
+  if (!row || typeof row !== "object" || Array.isArray(row)) return null;
+  const area = row as { id?: string; name?: string; slug?: string };
+  if (!area.id || !area.name || !area.slug) return null;
+  return { id: area.id, name: area.name, slug: area.slug };
+}
 
 // Mapping voiture : copie conforme du mapping inline actuel dans Index.tsx
 export const mapToCarVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
@@ -125,7 +137,17 @@ export const mapToMotoVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   additional_driver_price: vehicle.additional_driver_price || 0,
 });
 
-export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
+export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => {
+  const locationArea = mapLocationAreaFromRow(vehicle);
+  const pickupZones = vehicle.pickup_zones || [];
+  const locationLabel = resolveListingLocationName({
+    locationArea,
+    pickupZones,
+    model: vehicle.model,
+    description: vehicle.description,
+  });
+
+  return {
   id: vehicle.id,
   ownerId: vehicle.owner_id || "",
   license: vehicle.id.substring(0, 8).toUpperCase(),
@@ -144,15 +166,14 @@ export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => 
   longitude: 0,
   status: "available" as any,
   description: vehicle.description || undefined,
-  location:
-    vehicle.pickup_zones && vehicle.pickup_zones.length > 0
-      ? vehicle.pickup_zones.join(", ")
-      : (undefined as any),
+  location: locationLabel || undefined,
+  locationArea: locationArea || undefined,
   createdAt: vehicle.created_at || new Date().toISOString(),
   updatedAt: vehicle.updated_at || new Date().toISOString(),
   seats: (vehicle.seats ?? undefined) as any,
   vehicleType: "accommodation",
   vehicleCategory: vehicle.vehicle_category ?? undefined,
-});
+};
+};
 
 

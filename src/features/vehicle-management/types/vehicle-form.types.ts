@@ -21,6 +21,7 @@ export interface VehicleFormData {
   pricePerDayAgency: string;
   description: string;
   location: string;
+  locationAreaId: string;
   status: "active" | "inactive" | "review";
   available: boolean;
 
@@ -134,6 +135,7 @@ export interface UseManageVehicleReturn {
 
   // Actions
   loadVehicle: () => Promise<void>; // 🆕 Étape 2B.1 - Fonction de chargement
+  vehicleType: string | null;
   updateField: (field: keyof VehicleFormData, value: any) => void;
   setFormData: React.Dispatch<React.SetStateAction<VehicleFormData>>;
   setHasChanges: (value: boolean) => void;
@@ -157,6 +159,7 @@ export const initialFormData: VehicleFormData = {
   pricePerDayAgency: "",
   description: "",
   location: "",
+  locationAreaId: "",
   status: "active",
   available: true,
   lowSeasonDiscount: "",

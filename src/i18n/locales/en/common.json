@@ -260,6 +260,29 @@
     "filterLabel": "Accommodation",
     "typeFallback": "Accommodation"
   },
+  "locationArea": {
+    "label": "Neighborhood",
+    "placeholder": "Select an area",
+    "loading": "Loading…",
+    "addNew": "Add a new location",
+    "newNamePlaceholder": "e.g. Ambatoloaka",
+    "create": "Add",
+    "creating": "Adding…",
+    "createdTitle": "Area added",
+    "createdDescription": "{{name}} is now selected.",
+    "errors": {
+      "loadTitle": "Error",
+      "createTitle": "Could not add area",
+      "createUnknown": "Unknown error",
+      "requiredTitle": "Area required",
+      "required": "Neighborhood is required for an available accommodation listing."
+    }
+  },
+  "homeFilters": {
+    "area": {
+      "all": "All neighborhoods"
+    }
+  },
   "listingOwner": {
     "tab": "Owner",
     "tabShort": "Owner",

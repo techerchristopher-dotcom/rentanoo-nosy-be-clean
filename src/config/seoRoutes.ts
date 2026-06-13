@@ -80,3 +80,17 @@ export const ACCOMMODATION_SEO_HUBS = [
 export const ACCOMMODATION_SEO_HUB_ROUTE_PATHS = ACCOMMODATION_SEO_HUBS.map(
   (hub) => hub.path
 );
+
+/**
+ * Hub SEO quartier dynamique (Phase 2) — slug depuis location_areas.slug.
+ * Ex. buildAccommodationAreaSeoPath("ambatoloaka") → /location-appartement-ambatoloaka
+ */
+export function buildAccommodationAreaSeoPath(
+  areaSlug: string,
+  categorySlug: "appartement" | "villa" | "bungalow" | "vacances" = "appartement"
+): string {
+  if (categorySlug === "vacances") {
+    return SEO_ACCOMMODATION_HUB_VACANCES_PATH;
+  }
+  return `/location-${categorySlug}-${areaSlug}`;
+}

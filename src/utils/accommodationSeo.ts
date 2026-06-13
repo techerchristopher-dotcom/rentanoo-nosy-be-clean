@@ -3,6 +3,7 @@
  */
 
 import { ariaryToEur, formatEur, FALLBACK_EXCHANGE } from "./dualCurrency";
+import type { LocationAreaRef } from "@/types/locationArea";
 
 const CANONICAL_BASE = "https://rentanoo.com";
 
@@ -15,16 +16,23 @@ export const NOSY_BE_LOCALITIES = [
   "Dzamandzar",
   "Hell-Ville",
   "Hell Ville",
+  "Fascène",
+  "Fascene",
+  "Palm Beach",
+  "Dar Es Salam",
 ] as const;
 
 export interface AccommodationSeoInput {
   model: string;
   vehicleCategory?: string | null;
   description?: string | null;
+  /** @deprecated Préférer locationArea */
   location?: string | null;
+  locationArea?: LocationAreaRef | null;
   pricePerDay?: number | null;
   license: string;
   seats?: number | null;
+  pickupZones?: string[] | null;
 }
 
 function formatPriceForSeo(priceMga: number, rate = FALLBACK_EXCHANGE.rate): string {
@@ -69,13 +77,32 @@ function getAccommodationDemonstrative(category?: string | null): "ce" | "cet" |
   return "ce";
 }
 
-function buildLocationPhrase(input: AccommodationSeoInput): string {
-  const category = getAccommodationCategoryLabel(input.vehicleCategory);
-  const locality = extractAccommodationLocality(
+/** Résout le nom de quartier : location_area > pickup_zones > texte libre. */
+export function resolveAccommodationLocalityName(
+  input: Pick<
+    AccommodationSeoInput,
+    "locationArea" | "location" | "pickupZones" | "model" | "description"
+  >
+): string | null {
+  if (input.locationArea?.name?.trim()) {
+    return input.locationArea.name.trim();
+  }
+
+  const pickupHaystack = (input.pickupZones || []).join(" ");
+  const fromText = extractAccommodationLocality(
     input.location,
+    pickupHaystack,
     input.model,
     input.description
   );
+  if (fromText) return fromText;
+
+  return null;
+}
+
+function buildLocationPhrase(input: AccommodationSeoInput): string {
+  const category = getAccommodationCategoryLabel(input.vehicleCategory);
+  const locality = resolveAccommodationLocalityName(input);
 
   if (category && locality) {
     return `Location ${category} à ${locality}, Nosy Be`;
@@ -102,11 +129,7 @@ export function buildAccommodationSeoDescription(
   input: AccommodationSeoInput
 ): string {
   const category = getAccommodationCategoryLabel(input.vehicleCategory);
-  const locality = extractAccommodationLocality(
-    input.location,
-    input.model,
-    input.description
-  );
+  const locality = resolveAccommodationLocalityName(input);
 
   const demonstrative = category
     ? getAccommodationDemonstrative(category)
@@ -138,11 +161,7 @@ export function buildAccommodationCanonical(license: string): string {
 /** Nom court pour breadcrumb / schema (sans emoji). */
 export function buildAccommodationShortName(input: AccommodationSeoInput): string {
   const category = getAccommodationCategoryLabel(input.vehicleCategory);
-  const locality = extractAccommodationLocality(
-    input.location,
-    input.model,
-    input.description
-  );
+  const locality = resolveAccommodationLocalityName(input);
   if (category && locality) {
     return `${category.charAt(0).toUpperCase()}${category.slice(1)} ${locality}`;
   }

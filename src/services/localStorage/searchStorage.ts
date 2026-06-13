@@ -26,6 +26,8 @@ export interface SearchCriteria {
   // Filtres Explorer
   selectedMainCategory?: string | null;
   selectedSubFilter?: string | null;
+  /** Slug location_areas — filtre quartier (Phase 2b, voir LOCATION_AREA_HOME_FILTER) */
+  locationAreaSlug?: string | null;
   /** @deprecated conservé pour restauration legacy */
   selectedVehicleTypes?: string[];
   selectedEngineCapacities?: string[];

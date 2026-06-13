@@ -1,5 +1,9 @@
 // Rentanoo Types - Type definitions for the scooter rental platform
 
+import type { LocationAreaRef } from "@/types/locationArea";
+
+export type { LocationAreaRef };
+
 export type Role = "renter" | "owner" | "admin";
 
 export type BookingStatus = 
@@ -126,7 +130,9 @@ export interface Vehicle {
   longitude: number;
   status: VehicleStatus;
   description?: string; // Description du véhicule
-  location?: string; // Localisation du véhicule
+  location?: string; // Libellé affichable (quartier ou zones pickup)
+  /** Quartier structuré (FK location_areas) */
+  locationArea?: LocationAreaRef;
   seats?: number; // Nombre de places (utile pour moto)
   engineCapacity?: string; // Cylindrée (cc) pour moto
   /** Type véhicule Supabase : 'car' | 'moto' | 'scooter' | 'accommodation' — pour H1 SEO */
