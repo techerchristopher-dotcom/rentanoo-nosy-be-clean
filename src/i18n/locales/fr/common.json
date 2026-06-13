@@ -492,8 +492,8 @@
     }
   },
   "home": {
-    "heroTitle": "Louez votre scooter à Nosy Be en quelques clics",
-    "heroSubtitle": "RENTANOO, la première plateforme de location de scooters 100 % en ligne",
+    "heroTitle": "Louez scooter, moto ou hébergement à Nosy Be",
+    "heroSubtitle": "RENTANOO, la plateforme de location 100 % en ligne — deux-roues et hébergements",
     "catalogCta": "Voir les {{count}} véhicules disponibles",
     "catalogCta_one": "Voir le véhicule disponible",
     "catalogCtaLoading": "Voir les véhicules disponibles",
@@ -547,8 +547,8 @@
         "snow": "Neige"
       }
     },
-    "seoBlockTitle": "Location scooter à Nosy Be : simple, rapide, sécurisé",
-    "seoBlock": "Rentanoo vous aide à réserver une location scooter Nosy Be en quelques clics, dès votre arrivée à Madagascar. Choisissez vos dates, comparez les modèles disponibles et confirmez en ligne. Nous proposons la livraison à l'aéroport de Nosy Be (Fascène) ou directement à votre hôtel pour gagner du temps dès le premier jour. Vous récupérez votre scooter rapidement, avec un état des lieux clair et des conseils pour circuler en toute sécurité sur l'île. Casque fourni, conseils de prise en main et assurance incluse selon l'offre sélectionnée : tout est pensé pour rouler sereinement pendant votre séjour. Que vous restiez un week-end ou plusieurs semaines, vous profitez d'une solution pratique pour explorer les plages, villages et spots incontournables de l'île. Réservez tôt en haute saison pour garantir la disponibilité de votre scooter.",
+    "seoBlockTitle": "Location scooter, moto et hébergement à Nosy Be",
+    "seoBlock": "Rentanoo vous aide à réserver votre séjour à Nosy Be en quelques clics : location de scooter ou moto avec livraison à l'aéroport Fascène ou à votre hôtel, et hébergements (appartements, villas, bungalows) sélectionnés sur l'île. Comparez les disponibilités, choisissez vos dates et confirmez en ligne. Casque et assurance inclus selon l'offre pour les deux-roues ; réservation sécurisée pour vos nuitées. Que vous restiez un week-end ou plusieurs semaines, explorez plages, villages et spots incontournables de Madagascar en toute simplicité. Réservez tôt en haute saison pour garantir disponibilité.",
     "toasts": {
       "requiredFields": {
         "title": "Champs requis",
@@ -1282,8 +1282,14 @@
   },
   "seo": {
     "home": {
-      "title": "Location scooter Nosy Be – Réservation en ligne | Rentanoo",
-      "description": "Louez votre scooter à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Casques et assurance inclus. Réservez en ligne."
+      "title": "Location Nosy Be – Scooters, motos & hébergements | Rentanoo",
+      "description": "Louez scooter, moto ou hébergement à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Réservation 100 % en ligne sur Rentanoo."
+    },
+    "accommodationHubs": {
+      "vacances": { "title": "Location vacances Nosy Be" },
+      "appartement": { "title": "Location appartement Nosy Be" },
+      "villa": { "title": "Location villa Nosy Be" },
+      "bungalow": { "title": "Location bungalow Nosy Be" }
     },
     "contact": {
       "title": "Contact – Location scooter Nosy Be | Rentanoo",

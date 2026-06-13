@@ -492,8 +492,8 @@
     }
   },
   "home": {
-    "heroTitle": "Rent your scooter in Nosy Be in just a few clicks",
-    "heroSubtitle": "RENTANOO, the first 100% online scooter rental platform",
+    "heroTitle": "Rent scooter, motorbike or accommodation in Nosy Be",
+    "heroSubtitle": "RENTANOO, the 100% online rental platform — two-wheelers and accommodations",
     "catalogCta": "View {{count}} available vehicles",
     "catalogCta_one": "View the available vehicle",
     "catalogCtaLoading": "View available vehicles",
@@ -547,8 +547,8 @@
         "snow": "Snow"
       }
     },
-    "seoBlockTitle": "Scooter rental in Nosy Be: easy, fast, secure",
-    "seoBlock": "Rentanoo helps you book a scooter rental in Nosy Be in just a few clicks, as soon as you arrive in Madagascar. Select your dates, compare available models, and confirm online. We offer delivery to Nosy Be Airport (Fascène) or directly to your hotel so you can save time on day one. A helmet is provided, and you'll get practical pickup tips; insurance is included depending on the selected offer, so you can ride with peace of mind. Whether you stay for a weekend or several weeks, it's a convenient way to explore beaches, villages, and the island's must-see spots. Book early during high season to secure availability.",
+    "seoBlockTitle": "Scooter, motorbike and accommodation rental in Nosy Be",
+    "seoBlock": "Rentanoo helps you book your stay in Nosy Be in just a few clicks: scooter or motorbike rental with delivery to Fascène airport or your hotel, plus selected accommodations (apartments, villas, bungalows) across the island. Compare availability, pick your dates and confirm online. Helmet and insurance included on two-wheeler offers; secure booking for your nights. Whether you stay for a weekend or several weeks, explore beaches, villages and must-see spots in Madagascar with ease. Book early during high season to secure availability.",
     "toasts": {
       "requiredFields": {
         "title": "Required fields",
@@ -1279,8 +1279,14 @@
   },
   "seo": {
     "home": {
-      "title": "Scooter rental Nosy Be – Online booking | Rentanoo",
-      "description": "Rent your scooter in Nosy Be in a few clicks. Delivery to airport or hotel. Helmets and insurance included. Book online."
+      "title": "Nosy Be rentals – Scooters, motorbikes & accommodations | Rentanoo",
+      "description": "Rent a scooter, motorbike or accommodation in Nosy Be in a few clicks. Airport or hotel delivery. 100% online booking on Rentanoo."
+    },
+    "accommodationHubs": {
+      "vacances": { "title": "Vacation rentals Nosy Be" },
+      "appartement": { "title": "Apartment rental Nosy Be" },
+      "villa": { "title": "Villa rental Nosy Be" },
+      "bungalow": { "title": "Bungalow rental Nosy Be" }
     },
     "contact": {
       "title": "Contact – Scooter rental Nosy Be | Rentanoo",

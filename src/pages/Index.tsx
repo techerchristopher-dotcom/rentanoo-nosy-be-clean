@@ -626,7 +626,7 @@ const Index = () => {
           url: "https://rentanoo.com",
           image: "https://rentanoo.com/og-rentanoo-nosy-be.webp",
           description:
-            "Location scooter Nosy Be avec livraison à l'aéroport ou à l'hôtel. Assurance et casque inclus.",
+            "Location scooter, moto et hébergement à Nosy Be. Livraison à l'aéroport ou à l'hôtel. Réservation en ligne.",
           areaServed: {
             "@type": "Place",
             name: "Nosy Be, Madagascar",

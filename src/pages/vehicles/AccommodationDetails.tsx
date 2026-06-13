@@ -107,7 +107,14 @@ import {
   buildAccommodationSeoTitle,
   buildAccommodationSeoDescription,
   buildAccommodationCanonical,
-} from "@/utils/vehicleSeo";
+  buildAccommodationH1Title,
+  buildAccommodationShortName,
+  buildAccommodationOgImage,
+} from "@/utils/accommodationSeo";
+import {
+  buildAccommodationVacationRentalSchema,
+  buildAccommodationBreadcrumbSchema,
+} from "@/utils/accommodationSchema";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -915,11 +922,27 @@ export default function AccommodationDetails() {
 
   const seoInput = {
     model: vehicle.model,
+    vehicleCategory: rawVehicleCategory ?? vehicle.vehicleCategory,
+    description: vehicle.description,
+    location: vehicle.location,
     pricePerDay: vehicle.dailyPrice,
     license: license || vehicle.license,
+    seats: vehicle.seats,
   };
 
   const canonical = buildAccommodationCanonical(seoInput.license);
+  const h1Title = buildAccommodationH1Title(seoInput);
+  const shortName = buildAccommodationShortName(seoInput);
+  const ogImage = buildAccommodationOgImage(primaryPhoto?.url);
+  const structuredData = buildAccommodationVacationRentalSchema({
+    ...seoInput,
+    canonical,
+    images: photos.map((p) => p.url).filter(Boolean),
+  });
+  const breadcrumbSchema = buildAccommodationBreadcrumbSchema({
+    shortName,
+    canonical,
+  });
 
   return (
     <div className={`min-h-screen flex flex-col bg-background ${hideMobileBookingBar ? "pb-0" : "pb-20"} lg:pb-0`}>
@@ -927,6 +950,9 @@ export default function AccommodationDetails() {
         title={buildAccommodationSeoTitle(seoInput)}
         description={buildAccommodationSeoDescription(seoInput)}
         canonical={canonical}
+        ogImage={ogImage}
+        structuredData={structuredData}
+        extraStructuredData={breadcrumbSchema}
       />
       <main className="flex-1 py-4 md:py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
@@ -954,7 +980,7 @@ export default function AccommodationDetails() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{vehicle.model}</BreadcrumbPage>
+                <BreadcrumbPage>{shortName}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -1037,7 +1063,7 @@ export default function AccommodationDetails() {
                 </div>
 
                 <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                  {vehicle.model}
+                  {h1Title}
                 </h1>
 
                 <AccommodationHighlights

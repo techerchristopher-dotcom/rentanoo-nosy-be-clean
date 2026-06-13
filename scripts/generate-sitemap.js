@@ -32,9 +32,19 @@ const STATIC_URLS = [
   { loc: "/vols-aeroport-nosy-be", changefreq: "hourly", priority: "0.9" },
 ];
 
+function isAccommodation(v) {
+  return v.vehicle_type?.toLowerCase() === "accommodation";
+}
+
 function isMoto(v) {
   const t = v.vehicle_type?.toLowerCase();
   return t === "moto" || t === "scooter";
+}
+
+function getVehiclePath(v) {
+  if (isAccommodation(v)) return `/hebergement/${v.license}`;
+  if (isMoto(v)) return `/moto/${v.license}`;
+  return `/vehicle/${v.license}`;
 }
 
 function escapeXml(str) {
@@ -99,7 +109,7 @@ function buildXml(vehicles) {
 
   for (const v of vehicles) {
     if (!v.license) continue;
-    const path = isMoto(v) ? `/moto/${v.license}` : `/vehicle/${v.license}`;
+    const path = getVehiclePath(v);
     lines.push("  <url>");
     lines.push(`    <loc>${escapeXml(SITE_BASE + path)}</loc>`);
     lines.push(`    <lastmod>${toLastmod(v.updated_at)}</lastmod>`);
@@ -115,9 +125,12 @@ function buildXml(vehicles) {
 async function main() {
   console.log("[generate-sitemap] Fetch véhicules Supabase...");
   const vehicles = await fetchVehicles();
+  const accommodations = vehicles.filter(isAccommodation);
   const motos = vehicles.filter(isMoto);
-  const cars = vehicles.filter((v) => !isMoto(v));
-  console.log(`[generate-sitemap] ${motos.length} moto(s), ${cars.length} véhicule(s)`);
+  const cars = vehicles.filter((v) => !isMoto(v) && !isAccommodation(v));
+  console.log(
+    `[generate-sitemap] ${motos.length} moto(s), ${cars.length} véhicule(s), ${accommodations.length} hébergement(s)`
+  );
 
   const xml = buildXml(vehicles);
   const outPath = join(ROOT, "public", "sitemap.xml");

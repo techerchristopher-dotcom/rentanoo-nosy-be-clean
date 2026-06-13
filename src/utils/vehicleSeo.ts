@@ -3,6 +3,14 @@
  */
 
 import { ariaryToEur, formatEur, FALLBACK_EXCHANGE } from "./dualCurrency";
+import type { AccommodationSeoInput } from "./accommodationSeo";
+import {
+  buildAccommodationSeoTitle as buildAccommodationSeoTitleImpl,
+  buildAccommodationSeoDescription as buildAccommodationSeoDescriptionImpl,
+  buildAccommodationCanonical as buildAccommodationCanonicalImpl,
+} from "./accommodationSeo";
+
+export type { AccommodationSeoInput };
 
 const CANONICAL_BASE = "https://rentanoo.com";
 
@@ -15,44 +23,22 @@ export interface VehicleSeoInput {
   license: string;
 }
 
-export interface AccommodationSeoInput {
-  model: string;
-  pricePerDay?: number | null;
-  license: string;
-}
-
-/**
- * Formate le prix pour la meta description (montant MGA → €).
- */
-export function formatPriceForSeo(priceMga: number, rate = FALLBACK_EXCHANGE.rate): string {
+function formatPriceForSeo(priceMga: number, rate = FALLBACK_EXCHANGE.rate): string {
   return formatEur(ariaryToEur(priceMga, rate));
 }
 
-/**
- * Construit le title SEO pour une page hébergement.
- */
+/** @deprecated Préférer buildAccommodationSeoTitle depuis accommodationSeo.ts */
 export function buildAccommodationSeoTitle(input: AccommodationSeoInput): string {
-  const name = input.model || "Hébergement";
-  return `${name} – Location hébergement Nosy Be | Rentanoo`;
+  return buildAccommodationSeoTitleImpl(input);
 }
 
-/**
- * Construit la meta description SEO pour une page hébergement.
- */
+/** @deprecated Préférer buildAccommodationSeoDescription depuis accommodationSeo.ts */
 export function buildAccommodationSeoDescription(input: AccommodationSeoInput): string {
-  const name = input.model || "hébergement";
-  const pricePart =
-    input.pricePerDay != null && input.pricePerDay > 0
-      ? `À partir de ${formatPriceForSeo(input.pricePerDay)}/nuit. `
-      : "";
-  return `Louez ${name} à Nosy Be. ${pricePart}Réservation en ligne sur Rentanoo.`;
+  return buildAccommodationSeoDescriptionImpl(input);
 }
 
-/**
- * Construit l'URL canonique pour une page hébergement.
- */
 export function buildAccommodationCanonical(license: string): string {
-  return `${CANONICAL_BASE}/hebergement/${license}`;
+  return buildAccommodationCanonicalImpl(license);
 }
 
 /**
@@ -87,18 +73,11 @@ export function buildVehicleSeoDescription(input: VehicleSeoInput): string {
 
 const QUAD_MODEL_KEYWORDS = ["maxxer", "quad", "atv"];
 
-/**
- * Détecte si le modèle indique un quad (ex: KYMCO MAXXER).
- * Priorité sur vehicle_type pour le H1 SEO.
- */
 function isQuadByModel(model?: string | null): boolean {
   const m = (model || "").toLowerCase();
   return QUAD_MODEL_KEYWORDS.some((kw) => m.includes(kw));
 }
 
-/**
- * typeLabel pour H1 selon vehicle_type : scooter | moto | voiture
- */
 function getTypeLabel(vehicleType?: string | null): string {
   const t = (vehicleType || "").toLowerCase();
   if (t === "scooter") return "scooter";
@@ -106,10 +85,6 @@ function getTypeLabel(vehicleType?: string | null): string {
   return "voiture";
 }
 
-/**
- * Retourne le typeLabel (quad / scooter / moto / voiture) pour affichage SEO.
- * Même logique que buildVehicleH1Title (quad prioritaire si model contient maxxer/quad/atv).
- */
 export function getVehicleTypeLabel(input: {
   model?: string | null;
   vehicleType?: string | null;
@@ -117,20 +92,11 @@ export function getVehicleTypeLabel(input: {
   return isQuadByModel(input.model) ? "quad" : getTypeLabel(input.vehicleType);
 }
 
-/**
- * Retourne l'article pour "Location de {article} {type} à Nosy Be".
- * moto, voiture => "cette" ; quad, scooter => "ce"
- */
 export function getLocationArticle(typeLabel: string): "ce" | "cette" {
   const t = (typeLabel || "").toLowerCase();
   return t === "moto" || t === "voiture" ? "cette" : "ce";
 }
 
-/**
- * Construit le H1 SEO pour une page véhicule.
- * Format: {brand} {model} ({engine_capacity} CC) – Location {typeLabel} à Nosy Be
- * Règle quad : si model contient maxxer/quad/atv → typeLabel = "quad"
- */
 export function buildVehicleH1Title(
   input: {
     brand: string;
@@ -147,9 +113,6 @@ export function buildVehicleH1Title(
   return `${brandModel}${enginePart} – Location ${typeLabel} à Nosy Be`;
 }
 
-/**
- * Construit l'URL canonique pour une page véhicule.
- */
 export function buildVehicleCanonical(
   license: string,
   isMoto: boolean
@@ -160,10 +123,6 @@ export function buildVehicleCanonical(
 
 const HOME_URL = `${CANONICAL_BASE}/`;
 
-/**
- * Construit le JSON-LD schema.org BreadcrumbList pour une page véhicule.
- * OPTION B : Accueil > Location {typeLabel} à Nosy Be > {brand} {model} ({year})
- */
 export function buildVehicleBreadcrumbSchema(input: {
   typeLabel: string;
   brand: string;
