@@ -15,7 +15,10 @@ import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
 import { FEATURES } from "@/config/features";
 import { getPublicListingPath } from "@/utils/vehicleType";
-import { parseEngineCapacity } from "@/utils/engineCapacity";
+import { getHomeToastKeys } from "@/utils/listingTerminology";
+import { applyExplorerFilters } from "@/utils/explorerFilterUtils";
+import type { ExplorerMainCategoryId } from "@/data/explorerFilterConfig";
+import { isExplorerMainCategoryId } from "@/utils/explorerFilterUtils";
 import { Seo } from "@/components/seo/Seo";
 import { HomeDayContextStrip } from "@/components/home/HomeDayContextStrip";
 import { HomeHeroTrustStrip } from "@/components/home/HomeHeroTrustStrip";
@@ -44,11 +47,16 @@ const Index = () => {
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState("06:30");
   const [endTime, setEndTime] = useState("06:00");
-  const [selectedVehicleTypes, setSelectedVehicleTypes] = useState<string[]>([]);
-  const [selectedEngineCapacities, setSelectedEngineCapacities] = useState<string[]>([]);
+  const [selectedMainCategory, setSelectedMainCategory] =
+    useState<ExplorerMainCategoryId | null>(null);
+  const [selectedSubFilter, setSelectedSubFilter] = useState<string | null>(
+    null
+  );
   const [showResults, setShowResults] = useState(false);
   const shouldScrollToResultsRef = useRef(false);
   const pendingCatalogScrollRef = useRef(false);
+  const selectedMainCategoryRef = useRef<ExplorerMainCategoryId | null>(null);
+  const selectedSubFilterRef = useRef<string | null>(null);
 
   const scrollToResults = useCallback(() => {
     requestAnimationFrame(() => {
@@ -65,8 +73,8 @@ const Index = () => {
   }, []);
 
   const applyCategoryFilter = useCallback((type: FilterableVehicleType) => {
-    setSelectedVehicleTypes([type]);
-    setSelectedEngineCapacities([]);
+    setSelectedMainCategory(type);
+    setSelectedSubFilter(null);
     requestCatalogScroll();
   }, [requestCatalogScroll]);
 
@@ -150,6 +158,11 @@ const Index = () => {
     minPricePerDay != null ? formatClientInline(minPricePerDay) : null;
 
   const showCatalogUi = !loading && vehicles.length > 0;
+
+  useEffect(() => {
+    selectedMainCategoryRef.current = selectedMainCategory;
+    selectedSubFilterRef.current = selectedSubFilter;
+  }, [selectedMainCategory, selectedSubFilter]);
 
   useEffect(() => {
     registerHomeCatalogHandlers({ applyCategoryFilter });
@@ -245,8 +258,16 @@ const Index = () => {
       setEndDate(savedCriteria.endDate ? new Date(savedCriteria.endDate) : undefined);
       setStartTime(savedCriteria.startTime);
       setEndTime(savedCriteria.endTime);
-      setSelectedVehicleTypes(savedCriteria.selectedVehicleTypes ?? []);
-      setSelectedEngineCapacities(savedCriteria.selectedEngineCapacities ?? []);
+      setSelectedMainCategory(
+        isExplorerMainCategoryId(savedCriteria.selectedMainCategory ?? "")
+          ? savedCriteria.selectedMainCategory
+          : isExplorerMainCategoryId(
+                savedCriteria.selectedVehicleTypes?.[0] ?? ""
+              )
+            ? (savedCriteria.selectedVehicleTypes![0] as ExplorerMainCategoryId)
+            : null
+      );
+      setSelectedSubFilter(savedCriteria.selectedSubFilter ?? null);
       
       // 🔧 NOUVEAU : Relancer automatiquement la recherche après restauration
       // Utiliser les critères sauvegardés directement au lieu des états React
@@ -257,8 +278,9 @@ const Index = () => {
         const hasValidCriteria = savedCriteria.searchText?.trim() || 
                                  savedCriteria.startDate || 
                                  savedCriteria.endDate ||
-                                 savedCriteria.selectedVehicleTypes?.length > 0 ||
-                                 savedCriteria.selectedEngineCapacities?.length > 0;
+                                 savedCriteria.selectedMainCategory ||
+                                 savedCriteria.selectedSubFilter ||
+                                 savedCriteria.selectedVehicleTypes?.length > 0;
         
         if (hasValidCriteria) {
           console.log('✅ [localStorage] Critères valides détectés, relance de la recherche');
@@ -307,23 +329,42 @@ const Index = () => {
       console.log('🔍 Recherche automatique avec filtres:', searchFilters);
 
       const results = await SupabaseVehiclesService.searchAvailableVehicles(searchFilters);
-      
-      setFilteredVehicles(results);
+
+      const restoredMain = isExplorerMainCategoryId(
+        criteria.selectedMainCategory ?? criteria.selectedVehicleTypes?.[0] ?? ""
+      )
+        ? (criteria.selectedMainCategory ??
+            criteria.selectedVehicleTypes?.[0])
+        : null;
+
+      setFilteredVehicles(
+        applyExplorerFilters(
+          results,
+          (selectedMainCategoryRef.current ??
+            restoredMain) as ExplorerMainCategoryId | null,
+          selectedSubFilterRef.current ?? criteria.selectedSubFilter ?? null
+        )
+      );
       
       if (results.length === 0) {
+        const toastKeys = getHomeToastKeys(
+          criteria.selectedMainCategory ??
+            criteria.selectedVehicleTypes?.[0] ??
+            undefined
+        );
         toast({
           title: t("home.toasts.noResults.title", "Aucun résultat"),
-          description: t(
-            "home.toasts.noResults.description",
-            "Aucun véhicule disponible pour ces critères"
-          ),
+          description: t(toastKeys.noResultsDescription),
         });
       } else {
+        const toastKeys = getHomeToastKeys(
+          criteria.selectedMainCategory ??
+            criteria.selectedVehicleTypes?.[0] ??
+            undefined
+        );
         toast({
           title: t("home.toasts.searchRestored.title", "Recherche restaurée"),
-          description: t("home.toasts.resultsFound", "{{count}} véhicule trouvé", {
-            count: results.length,
-          }),
+          description: t(toastKeys.resultsFound, { count: results.length }),
         });
       }
     } catch (error) {
@@ -404,24 +445,27 @@ const Index = () => {
 
       const results = await SupabaseVehiclesService.searchAvailableVehicles(searchFilters);
       
-      setFilteredVehicles(results);
+      setFilteredVehicles(
+        applyExplorerFilters(
+          results,
+          isExplorerMainCategoryId(selectedMainCategory ?? "")
+            ? selectedMainCategory
+            : null,
+          selectedSubFilter
+        )
+      );
       
       if (results.length === 0) {
+        const toastKeys = getHomeToastKeys(selectedMainCategory ?? undefined);
         toast({
           title: t("home.toasts.noResults.title", "Aucun résultat"),
-          description: t(
-            "home.toasts.noResults.description",
-            "Aucun véhicule disponible pour ces critères"
-          ),
+          description: t(toastKeys.noResultsDescription),
         });
       } else {
+        const toastKeys = getHomeToastKeys(selectedMainCategory ?? undefined);
         toast({
           title: t("home.toasts.searchDone.title", "Recherche effectuée"),
-          description: t(
-            "home.toasts.resultsFound",
-            "{{count}} véhicule trouvé",
-            { count: results.length }
-          ),
+          description: t(toastKeys.resultsFound, { count: results.length }),
         });
       }
     } catch (error) {
@@ -456,8 +500,8 @@ const Index = () => {
     setEndDate(undefined);
     setStartTime("06:30");
     setEndTime("06:00");
-    setSelectedVehicleTypes([]);
-    setSelectedEngineCapacities([]);
+    setSelectedMainCategory(null);
+    setSelectedSubFilter(null);
     setFilteredVehicles(vehicles);
     
     console.log("🔄 [RESET] États réinitialisés");
@@ -496,25 +540,12 @@ const Index = () => {
     examplePrice: rentalCalculation?.isCalculated ? formatRentalPrice(35) : 'Non calculé'
   });
 
-  // Appliquer les filtres
+  // Appliquer les filtres Explorer sur le catalogue
   useEffect(() => {
-    let filtered = [...vehicles];
-
-    if (selectedVehicleTypes.length > 0) {
-      filtered = filtered.filter(
-        (v) => v.vehicle_type && selectedVehicleTypes.includes(v.vehicle_type)
-      );
-    }
-
-    if (selectedEngineCapacities.length > 0) {
-      filtered = filtered.filter((v) => {
-        const cc = parseEngineCapacity(v.engine_capacity);
-        return cc != null && selectedEngineCapacities.includes(String(cc));
-      });
-    }
-
-    setFilteredVehicles(filtered);
-  }, [vehicles, selectedVehicleTypes, selectedEngineCapacities]);
+    setFilteredVehicles(
+      applyExplorerFilters(vehicles, selectedMainCategory, selectedSubFilter)
+    );
+  }, [vehicles, selectedMainCategory, selectedSubFilter]);
 
   // Calcul automatique de la location quand les dates/heures changent
   useEffect(() => {
@@ -524,23 +555,49 @@ const Index = () => {
   // Sauvegarder automatiquement les critères de recherche à chaque changement
   useEffect(() => {
     // Ne sauvegarder que si au moins un critère est défini
-    if (searchText || startDate || endDate || selectedVehicleTypes.length > 0 || selectedEngineCapacities.length > 0) {
+    if (
+      searchText ||
+      startDate ||
+      endDate ||
+      selectedMainCategory ||
+      selectedSubFilter
+    ) {
       saveSearchCriteria({
         searchText,
         startDate: startDate?.toISOString() || null,
         endDate: endDate?.toISOString() || null,
         startTime,
         endTime,
-        selectedVehicleTypes,
-        selectedEngineCapacities,
-        // Note: Les services seront ajoutés plus tard via un système de synchronisation
-        selectedServices: undefined // Pour l'instant, pas de services dans la page d'accueil
+        selectedMainCategory,
+        selectedSubFilter,
+        selectedServices: undefined
       });
     }
-  }, [searchText, startDate, endDate, startTime, endTime, selectedVehicleTypes, selectedEngineCapacities]);
+  }, [
+    searchText,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    selectedMainCategory,
+    selectedSubFilter,
+  ]);
+
+  const handleMainCategoryChange = useCallback(
+    (category: ExplorerMainCategoryId | null) => {
+      setSelectedMainCategory(category);
+      setSelectedSubFilter(null);
+    },
+    []
+  );
+
+  const handleResetExplorerFilters = useCallback(() => {
+    setSelectedMainCategory(null);
+    setSelectedSubFilter(null);
+    setFilteredVehicles(applyExplorerFilters(vehicles, null, null));
+  }, [vehicles]);
 
   const handleVehicleClick = (vehicle: SupabaseVehicle) => {
-    const license = vehicle.id.substring(0, 8).toUpperCase();
     const route = getPublicListingPath(vehicle);
     
     navigate(route, {
@@ -654,10 +711,11 @@ const Index = () => {
               filteredVehicles={filteredVehicles}
               loading={loading}
               vehicles={vehicles}
-              selectedVehicleTypes={selectedVehicleTypes}
-              setSelectedVehicleTypes={setSelectedVehicleTypes}
-              selectedEngineCapacities={selectedEngineCapacities}
-              setSelectedEngineCapacities={setSelectedEngineCapacities}
+              selectedMainCategory={selectedMainCategory}
+              selectedSubFilter={selectedSubFilter}
+              onMainCategoryChange={handleMainCategoryChange}
+              onSubFilterChange={setSelectedSubFilter}
+              onResetFilters={handleResetExplorerFilters}
               rentalCalculation={rentalCalculation}
               getVehicleRentalInfo={getVehicleRentalInfo}
               onVehicleClick={handleVehicleClick}

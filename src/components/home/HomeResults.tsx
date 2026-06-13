@@ -1,36 +1,38 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { VehicleCard } from "@/components/vehicles/vehicle-card";
 import { MotoVehicleCard } from "@/components/vehicles/moto-vehicle-card";
 import { Vehicle, VehicleRentalInfo } from "@/types";
 import { Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
-import { mapToCarVehicle, mapToMotoVehicle, mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
+import {
+  mapToCarVehicle,
+  mapToMotoVehicle,
+  mapToAccommodationVehicle,
+} from "@/mappers/vehicleMappers";
 import { isMoto, isAccommodation } from "@/utils/vehicleType";
 import { AccommodationCard } from "@/components/accommodation/AccommodationCard";
-import { getDistinctEngineCapacities } from "@/utils/engineCapacity";
+import { ExplorerVisualFilters } from "@/components/explorer/ExplorerVisualFilters";
+import { EmptyCategoryState } from "@/components/explorer/EmptyCategoryState";
+import type { ExplorerMainCategoryId } from "@/data/explorerFilterConfig";
+import { isExplorerMainCategoryId } from "@/utils/explorerFilterUtils";
 
 export interface HomeResultsProps {
   filteredVehicles: SupabaseVehicle[];
   loading: boolean;
   vehicles: SupabaseVehicle[];
-  selectedVehicleTypes: string[];
-  setSelectedVehicleTypes: (v: string[]) => void;
-  selectedEngineCapacities: string[];
-  setSelectedEngineCapacities: (v: string[]) => void;
+  selectedMainCategory: ExplorerMainCategoryId | null;
+  selectedSubFilter: string | null;
+  onMainCategoryChange: (category: ExplorerMainCategoryId | null) => void;
+  onSubFilterChange: (subFilterId: string | null) => void;
   rentalCalculation: { isCalculated: boolean } | null;
-  getVehicleRentalInfo: (vehicleId: string, pricePerDay: number) => VehicleRentalInfo;
+  getVehicleRentalInfo: (
+    vehicleId: string,
+    pricePerDay: number
+  ) => VehicleRentalInfo;
   onVehicleClick: (vehicle: SupabaseVehicle) => void;
-  /** Quand true : loading="lazy" pour toutes les images, pas de fetchPriority (0 image au 1er écran) */
+  onResetFilters: () => void;
   deferImages?: boolean;
 }
 
@@ -38,95 +40,103 @@ export function HomeResults({
   filteredVehicles,
   loading,
   vehicles,
-  selectedVehicleTypes,
-  setSelectedVehicleTypes,
-  selectedEngineCapacities,
-  setSelectedEngineCapacities,
+  selectedMainCategory,
+  selectedSubFilter,
+  onMainCategoryChange,
+  onSubFilterChange,
   rentalCalculation,
   getVehicleRentalInfo,
   onVehicleClick,
+  onResetFilters,
   deferImages = false,
 }: HomeResultsProps) {
   const { t } = useTranslation("common");
 
-  const engineCapacityOptions = useMemo(
-    () => getDistinctEngineCapacities(vehicles),
-    [vehicles]
-  );
+  const hasExplorerFilter =
+    selectedMainCategory != null || selectedSubFilter != null;
 
-  const hasActiveFilters =
-    selectedVehicleTypes.length > 0 || selectedEngineCapacities.length > 0;
+  const showExplorerEmpty =
+    !loading &&
+    hasExplorerFilter &&
+    filteredVehicles.length === 0 &&
+    selectedMainCategory != null &&
+    isExplorerMainCategoryId(selectedMainCategory);
 
-  const resetFilters = () => {
-    setSelectedVehicleTypes([]);
-    setSelectedEngineCapacities([]);
-  };
+  const resultsTitleKey = useMemo(() => {
+    switch (selectedMainCategory) {
+      case "accommodation":
+        return "homeResults.titleAccommodation";
+      case "moto":
+        return "homeResults.titleMoto";
+      case "scooter":
+        return "homeResults.titleScooter";
+      case "car":
+        return "homeResults.titleCar";
+      default:
+        return "homeResults.titleAll";
+    }
+  }, [selectedMainCategory]);
+
+  const resultsCountKey = useMemo(() => {
+    switch (selectedMainCategory) {
+      case "accommodation":
+        return "homeResults.countAccommodation";
+      case "moto":
+        return "homeResults.countMoto";
+      case "scooter":
+        return "homeResults.countScooter";
+      case "car":
+        return "homeResults.countCar";
+      default:
+        return "homeResults.countAll";
+    }
+  }, [selectedMainCategory]);
+
+  const noMatchKey = useMemo(() => {
+    if (showExplorerEmpty) return null;
+    switch (selectedMainCategory) {
+      case "accommodation":
+        return "homeResults.noMatchAccommodation";
+      case "moto":
+        return "homeResults.noMatchMoto";
+      case "scooter":
+        return "homeResults.noMatchScooter";
+      case "car":
+        return "homeResults.noMatchCar";
+      default:
+        return "homeResults.noMatchAll";
+    }
+  }, [selectedMainCategory, showExplorerEmpty]);
+
+  const emptyKey =
+    selectedMainCategory === "accommodation"
+      ? "homeResults.emptyAccommodation"
+      : "homeResults.emptyAll";
 
   return (
     <section id="search-results" className="py-12 scroll-mt-4">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Filters */}
         <div className="mb-8">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-5 w-5 text-muted-foreground" />
-              <span className="font-medium">{t("common.filtres")}</span>
-            </div>
-
-            <Select
-              value={selectedVehicleTypes[0] || ""}
-              onValueChange={(value) =>
-                setSelectedVehicleTypes(value ? [value] : [])
-              }
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="scooter">Scooter</SelectItem>
-                <SelectItem value="moto">Moto</SelectItem>
-                <SelectItem value="accommodation">
-                  {t("accommodationCard.filterLabel", "Hébergement")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={selectedEngineCapacities[0] || ""}
-              onValueChange={(value) =>
-                setSelectedEngineCapacities(value ? [value] : [])
-              }
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Cylindrée" />
-              </SelectTrigger>
-              <SelectContent>
-                {engineCapacityOptions.map((cc) => (
-                  <SelectItem key={cc} value={String(cc)}>
-                    {cc} cc
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={resetFilters}>
-                {t("common.rinitialiser")}
-              </Button>
-            )}
-          </div>
+          <ExplorerVisualFilters
+            vehicles={vehicles}
+            selectedMainCategory={selectedMainCategory}
+            selectedSubFilter={selectedSubFilter}
+            onMainCategoryChange={onMainCategoryChange}
+            onSubFilterChange={onSubFilterChange}
+            onResetFilters={onResetFilters}
+          />
         </div>
 
-        {/* Results */}
         <div>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-foreground">
-              {t("common.vhicules_disponibles")}
+              {t(resultsTitleKey)}
             </h2>
-            <p className="text-muted-foreground">
-              {filteredVehicles.length} véhicule{filteredVehicles.length > 1 ? "s" : ""}{" "}
-              trouvé{filteredVehicles.length > 1 ? "s" : ""}
-            </p>
+            {!showExplorerEmpty ? (
+              <p className="text-muted-foreground">
+                {t(resultsCountKey, { count: filteredVehicles.length })}
+              </p>
+            ) : null}
           </div>
 
           {loading ? (
@@ -146,6 +156,11 @@ export function HomeResults({
                 </Card>
               ))}
             </div>
+          ) : showExplorerEmpty ? (
+            <EmptyCategoryState
+              categoryType={selectedMainCategory}
+              subCategory={selectedSubFilter}
+            />
           ) : !loading && filteredVehicles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVehicles.map((vehicle, index) => {
@@ -158,8 +173,8 @@ export function HomeResults({
                 const mappedVehicle: Vehicle = isAccommodationVehicle
                   ? mapToAccommodationVehicle(vehicle)
                   : isMotoVehicle
-                  ? mapToMotoVehicle(vehicle)
-                  : mapToCarVehicle(vehicle);
+                    ? mapToMotoVehicle(vehicle)
+                    : mapToCarVehicle(vehicle);
 
                 const primaryPhoto = vehicle.primaryPhotoUrl
                   ? {
@@ -209,15 +224,12 @@ export function HomeResults({
           ) : !loading ? (
             <Card className="p-8 text-center">
               <p className="text-muted-foreground mb-4">
-                {filteredVehicles.length === 0 && vehicles.length > 0
-                  ? "Aucun véhicule ne correspond à vos critères."
-                  : t(
-                      "common.aucun_vhicule_disponible_pour_le_moment",
-                      "Aucun véhicule disponible pour le moment."
-                    )}
+                {filteredVehicles.length === 0 && vehicles.length > 0 && noMatchKey
+                  ? t(noMatchKey)
+                  : t(emptyKey)}
               </p>
               {filteredVehicles.length === 0 && vehicles.length > 0 ? (
-                <Button variant="outline" onClick={resetFilters}>
+                <Button variant="outline" onClick={onResetFilters}>
                   {t("common.rinitialiser_les_filtres")}
                 </Button>
               ) : (

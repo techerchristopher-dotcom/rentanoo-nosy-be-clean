@@ -23,9 +23,12 @@ export interface SearchCriteria {
   startTime: string;
   endTime: string;
   
-  // Filtres
-  selectedVehicleTypes: string[];
-  selectedEngineCapacities: string[];
+  // Filtres Explorer
+  selectedMainCategory?: string | null;
+  selectedSubFilter?: string | null;
+  /** @deprecated conservé pour restauration legacy */
+  selectedVehicleTypes?: string[];
+  selectedEngineCapacities?: string[];
   
   // Services supplémentaires sélectionnés
   selectedServices?: {

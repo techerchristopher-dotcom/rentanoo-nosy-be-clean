@@ -14,7 +14,11 @@ import { LS_CATEGORY_MODAL_KEY } from "@/data/categoryShowcaseItems";
 const AUTO_OPEN_DELAY_MS = 300;
 export const CATEGORY_MODAL_AUTO_OPEN = false;
 
-export type FilterableVehicleType = "scooter" | "moto" | "accommodation";
+export type FilterableVehicleType =
+  | "scooter"
+  | "moto"
+  | "accommodation"
+  | "car";
 
 export type HomeCatalogHandlers = {
   applyCategoryFilter: (type: FilterableVehicleType) => void;
@@ -51,8 +55,15 @@ function markModalSeen(): void {
   }
 }
 
-export function isFilterableVehicleType(value: string): value is FilterableVehicleType {
-  return value === "scooter" || value === "moto" || value === "accommodation";
+export function isFilterableVehicleType(
+  value: string
+): value is FilterableVehicleType {
+  return (
+    value === "scooter" ||
+    value === "moto" ||
+    value === "accommodation" ||
+    value === "car"
+  );
 }
 
 export function CategoryShowcaseProvider({ children }: { children: ReactNode }) {

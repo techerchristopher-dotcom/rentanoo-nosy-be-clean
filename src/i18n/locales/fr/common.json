@@ -1543,6 +1543,123 @@
     "ctaWeather": "Météo Nosy Be",
     "ctaExchange": "Taux Euro / Ariary"
   },
+  "explorerFilters": {
+    "categories": {
+      "accommodation": "Hébergements",
+      "scooter": "Scooters",
+      "moto": "Motos",
+      "car": "Voitures"
+    },
+    "sub": {
+      "accommodation": {
+        "appartement": "Appartement",
+        "villa": "Villa",
+        "bungalow": "Bungalow",
+        "maison": "Maison",
+        "chambre": "Chambre"
+      },
+      "engine": {
+        "50cc": "50cc",
+        "125cc": "125cc",
+        "150cc": "150cc",
+        "200cc": "200cc",
+        "200plus": "200cc+",
+        "250plus": "250cc+"
+      },
+      "car": {
+        "citadine": "Citadine",
+        "suv": "SUV",
+        "4x4": "4x4",
+        "van": "Van",
+        "luxe": "Luxe"
+      }
+    },
+    "comingSoon": "Bientôt disponible",
+    "listingsCount_one": "{{count}} annonce",
+    "listingsCount": "{{count}} annonces",
+    "moreFilters": "Plus de filtres",
+    "viewResults": "Voir les résultats",
+    "reset": "Réinitialiser",
+    "mainCategoryAria": "{{label}}, {{count}} annonces disponibles, filtrer",
+    "subFilterAria": "{{label}}, {{count}} annonces disponibles, filtrer",
+    "empty": {
+      "cta": {
+        "request": "Faire une demande"
+      },
+      "waPrefill": {
+        "car": "Bonjour Rentanoo,\n\nJe souhaite louer une voiture à Nosy Be. Pouvez-vous me prévenir dès qu'une offre sera disponible ?\n\nMerci.",
+        "scooter": "Bonjour Rentanoo,\n\nJe souhaite louer un scooter à Nosy Be. Pouvez-vous me prévenir des disponibilités correspondant à ma recherche ?\n\nMerci.",
+        "moto": "Bonjour Rentanoo,\n\nJe souhaite louer une moto à Nosy Be. Pouvez-vous me prévenir des disponibilités correspondant à ma recherche ?\n\nMerci.",
+        "accommodation": {
+          "generic": "Bonjour Rentanoo,\n\nJe recherche un hébergement à Nosy Be. Merci de me contacter lorsque des offres seront disponibles.",
+          "appartement": "Bonjour Rentanoo,\n\nJe recherche un appartement à Nosy Be. Merci de me contacter lorsque des offres seront disponibles.",
+          "villa": "Bonjour Rentanoo,\n\nJe recherche une villa à Nosy Be. Merci de me contacter lorsque des hébergements de ce type seront disponibles.",
+          "bungalow": "Bonjour Rentanoo,\n\nJe recherche un bungalow à Nosy Be. Revenez bientôt pour découvrir nos nouveaux hébergements — merci de me tenir informé(e).",
+          "maison": "Bonjour Rentanoo,\n\nJe recherche une maison à Nosy Be. Merci de me contacter lorsque des hébergements de ce type seront disponibles.",
+          "chambre": "Bonjour Rentanoo,\n\nJe recherche une chambre à Nosy Be. Merci de me contacter lorsque des hébergements de ce type seront disponibles."
+        }
+      },
+      "accommodation": {
+        "title": "Hébergements bientôt enrichis",
+        "description": "Nous enrichissons actuellement notre catalogue d'hébergements à Nosy Be.",
+        "appartement": {
+          "title": "Appartements bientôt disponibles",
+          "description": "Nous enrichissons actuellement notre catalogue d'appartements."
+        },
+        "villa": {
+          "title": "Villas bientôt disponibles",
+          "description": "Nous enrichissons actuellement notre catalogue d'hébergements."
+        },
+        "bungalow": {
+          "title": "Bungalows bientôt disponibles",
+          "description": "Revenez bientôt pour découvrir nos nouveaux hébergements."
+        },
+        "maison": {
+          "title": "Maisons bientôt disponibles",
+          "description": "Nous enrichissons actuellement notre catalogue de maisons."
+        },
+        "chambre": {
+          "title": "Chambres bientôt disponibles",
+          "description": "Nous enrichissons actuellement notre catalogue de chambres."
+        }
+      },
+      "scooter": {
+        "title": "Scooters bientôt disponibles",
+        "description": "Cette sélection sera disponible prochainement sur Rentanoo.",
+        "50cc": {
+          "title": "Scooters 50cc bientôt disponibles",
+          "description": "Nous préparons des scooters 50cc pour Nosy Be. Revenez prochainement."
+        }
+      },
+      "moto": {
+        "title": "Motos bientôt disponibles",
+        "description": "Cette catégorie sera disponible prochainement sur Rentanoo."
+      },
+      "car": {
+        "title": "Voitures bientôt disponibles",
+        "description": "Nous préparons actuellement notre offre de véhicules. Revenez prochainement ou contactez-nous pour être informé des disponibilités."
+      }
+    }
+  },
+  "homeResults": {
+    "titleAll": "Toutes les locations disponibles",
+    "titleAccommodation": "Hébergements disponibles",
+    "titleScooter": "Scooters disponibles",
+    "titleMoto": "Motos disponibles",
+    "titleCar": "Voitures disponibles",
+    "countAll": "{{count}} annonce(s)",
+    "countAccommodation": "{{count}} hébergement(s)",
+    "countScooter": "{{count}} scooter(s)",
+    "countMoto": "{{count}} moto(s)",
+    "countCar": "{{count}} voiture(s)",
+    "noMatchAll": "Aucune annonce ne correspond à vos filtres.",
+    "noMatchAccommodation": "Aucun hébergement ne correspond à vos filtres.",
+    "noMatchScooter": "Aucun scooter ne correspond à vos filtres.",
+    "noMatchMoto": "Aucune moto ne correspond à vos filtres.",
+    "noMatchCar": "Aucune voiture ne correspond à vos filtres.",
+    "emptyAll": "Aucune annonce disponible pour le moment.",
+    "emptyAccommodation": "Aucun hébergement disponible pour le moment."
+  },
   "categoryShowcase": {
     "title": "Que souhaitez-vous louer à Nosy Be ?",
     "subtitle": "Découvrez nos solutions de location disponibles aujourd'hui et celles qui arrivent prochainement.",

@@ -97,6 +97,7 @@ import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { PhotoService } from "@/services/supabase/photos";
 import VehicleOwnerCard from "@/components/VehicleOwnerCard";
 import { AccommodationHighlights } from "@/components/accommodation/AccommodationHighlights";
+import { ListingDescriptionContent } from "@/components/listing/ListingDescriptionContent";
 import { useToast } from "@/hooks/use-toast";
 import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
@@ -1046,15 +1047,15 @@ export default function AccommodationDetails() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="max-w-md">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <div className="w-full max-w-md">
                   {vehicle && (
                     <VehicleOwnerCard vehicleId={vehicle.id} className="w-full" />
                   )}
                 </div>
 
                 {vehicle.description && (
-                  <div className="max-w-md">
+                  <div className="w-full min-w-0">
                     <Card className="h-full overflow-hidden">
                       <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -1062,16 +1063,8 @@ export default function AccommodationDetails() {
                           {t("accommodationDetails.descriptionTitle", "Description")}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-0 p-4">
-                        <h2 className="text-lg font-semibold mb-3">
-                          {t("accommodationDetails.descriptionHeading", {
-                            name: vehicle.model,
-                            defaultValue: `Location de ${vehicle.model} à Nosy Be`,
-                          })}
-                        </h2>
-                        <p className="text-gray-700 leading-relaxed text-sm">
-                          {vehicle.description}
-                        </p>
+                      <CardContent className="pt-0 p-4 sm:p-5">
+                        <ListingDescriptionContent content={vehicle.description} />
                       </CardContent>
                     </Card>
                   </div>

@@ -1531,6 +1531,123 @@
     "ctaWeather": "Nosy Be weather",
     "ctaExchange": "Euro / Ariary rate"
   },
+  "explorerFilters": {
+    "categories": {
+      "accommodation": "Accommodation",
+      "scooter": "Scooters",
+      "moto": "Motorcycles",
+      "car": "Cars"
+    },
+    "sub": {
+      "accommodation": {
+        "appartement": "Apartment",
+        "villa": "Villa",
+        "bungalow": "Bungalow",
+        "maison": "House",
+        "chambre": "Room"
+      },
+      "engine": {
+        "50cc": "50cc",
+        "125cc": "125cc",
+        "150cc": "150cc",
+        "200cc": "200cc",
+        "200plus": "200cc+",
+        "250plus": "250cc+"
+      },
+      "car": {
+        "citadine": "City car",
+        "suv": "SUV",
+        "4x4": "4x4",
+        "van": "Van",
+        "luxe": "Luxury"
+      }
+    },
+    "comingSoon": "Coming soon",
+    "listingsCount_one": "{{count}} listing",
+    "listingsCount": "{{count}} listings",
+    "moreFilters": "More filters",
+    "viewResults": "View results",
+    "reset": "Reset",
+    "mainCategoryAria": "{{label}}, {{count}} listings available, filter",
+    "subFilterAria": "{{label}}, {{count}} listings available, filter",
+    "empty": {
+      "cta": {
+        "request": "Send a request"
+      },
+      "waPrefill": {
+        "car": "Hello Rentanoo,\n\nI would like to rent a car in Nosy Be. Please notify me when offers become available.\n\nThank you.",
+        "scooter": "Hello Rentanoo,\n\nI would like to rent a scooter in Nosy Be. Please notify me about matching availability.\n\nThank you.",
+        "moto": "Hello Rentanoo,\n\nI would like to rent a motorcycle in Nosy Be. Please notify me about matching availability.\n\nThank you.",
+        "accommodation": {
+          "generic": "Hello Rentanoo,\n\nI am looking for accommodation in Nosy Be. Please contact me when offers become available.",
+          "appartement": "Hello Rentanoo,\n\nI am looking for an apartment in Nosy Be. Please contact me when offers become available.",
+          "villa": "Hello Rentanoo,\n\nI am looking for a villa in Nosy Be. Please contact me when this type of accommodation becomes available.",
+          "bungalow": "Hello Rentanoo,\n\nI am looking for a bungalow in Nosy Be. Please keep me informed when new accommodations are published.",
+          "maison": "Hello Rentanoo,\n\nI am looking for a house in Nosy Be. Please contact me when this type of accommodation becomes available.",
+          "chambre": "Hello Rentanoo,\n\nI am looking for a room in Nosy Be. Please contact me when this type of accommodation becomes available."
+        }
+      },
+      "accommodation": {
+        "title": "More accommodation coming soon",
+        "description": "We are currently expanding our accommodation catalogue in Nosy Be.",
+        "appartement": {
+          "title": "Apartments coming soon",
+          "description": "We are currently expanding our apartment catalogue."
+        },
+        "villa": {
+          "title": "Villas coming soon",
+          "description": "We are currently expanding our accommodation catalogue."
+        },
+        "bungalow": {
+          "title": "Bungalows coming soon",
+          "description": "Come back soon to discover our new accommodations."
+        },
+        "maison": {
+          "title": "Houses coming soon",
+          "description": "We are currently expanding our house catalogue."
+        },
+        "chambre": {
+          "title": "Rooms coming soon",
+          "description": "We are currently expanding our room catalogue."
+        }
+      },
+      "scooter": {
+        "title": "Scooters coming soon",
+        "description": "This selection will be available soon on Rentanoo.",
+        "50cc": {
+          "title": "50cc scooters coming soon",
+          "description": "We are preparing 50cc scooters for Nosy Be. Check back soon."
+        }
+      },
+      "moto": {
+        "title": "Motorcycles coming soon",
+        "description": "This category will be available soon on Rentanoo."
+      },
+      "car": {
+        "title": "Cars coming soon",
+        "description": "We are preparing our vehicle offer. Check back soon or contact us to be notified."
+      }
+    }
+  },
+  "homeResults": {
+    "titleAll": "All available rentals",
+    "titleAccommodation": "Available accommodation",
+    "titleScooter": "Available scooters",
+    "titleMoto": "Available motorcycles",
+    "titleCar": "Available cars",
+    "countAll": "{{count}} listing(s)",
+    "countAccommodation": "{{count}} accommodation(s)",
+    "countScooter": "{{count}} scooter(s)",
+    "countMoto": "{{count}} motorcycle(s)",
+    "countCar": "{{count}} car(s)",
+    "noMatchAll": "No listings match your filters.",
+    "noMatchAccommodation": "No accommodation matches your filters.",
+    "noMatchScooter": "No scooter matches your filters.",
+    "noMatchMoto": "No motorcycle matches your filters.",
+    "noMatchCar": "No car matches your filters.",
+    "emptyAll": "No listings available at the moment.",
+    "emptyAccommodation": "No accommodation available at the moment."
+  },
   "categoryShowcase": {
     "title": "What would you like to rent in Nosy Be?",
     "subtitle": "Discover our rental solutions available today and those coming soon.",

@@ -16,12 +16,8 @@ import {
 import { isFilterableVehicleType, useCategoryShowcase } from "@/hooks/useCategoryShowcase";
 import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
 import { trackGa4Event } from "@/lib/analytics";
+import { buildWhatsAppUrl } from "@/utils/whatsappUrl";
 import { CategoryShowcaseCard } from "./CategoryShowcaseCard";
-
-function buildWhatsAppUrl(waUrl: string, message: string): string {
-  const separator = waUrl.includes("?") ? "&" : "?";
-  return `${waUrl}${separator}text=${encodeURIComponent(message)}`;
-}
 
 export function CategoryShowcaseModal() {
   const { t } = useTranslation("common");

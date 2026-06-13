@@ -51,6 +51,11 @@ export function getHomeToastKeys(filter: string | undefined): {
         resultsFound: "home.toasts.resultsFoundScooter",
         noResultsDescription: "home.toasts.noResults.descriptionScooter",
       };
+    case "car":
+      return {
+        resultsFound: "home.toasts.resultsFound",
+        noResultsDescription: "home.toasts.noResults.description",
+      };
     default:
       return {
         resultsFound: "home.toasts.resultsFound",
