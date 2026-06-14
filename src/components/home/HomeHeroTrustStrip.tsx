@@ -44,6 +44,8 @@ export function HomeHeroTrustStrip({
       <TrustChip>{t("home.trustStrip.airportDelivery")}</TrustChip>
       <TrustChip>{t("home.trustStrip.helmetIncluded")}</TrustChip>
       <TrustChip>{t("home.trustStrip.insuranceIncluded")}</TrustChip>
+      <TrustChip>{t("home.trustStrip.accommodationAvailable")}</TrustChip>
+      <TrustChip>{t("home.trustStrip.secureBooking")}</TrustChip>
     </div>
   );
 }
