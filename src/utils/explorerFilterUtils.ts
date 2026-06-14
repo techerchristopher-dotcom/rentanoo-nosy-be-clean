@@ -59,6 +59,12 @@ export function matchesSubFilter(
       const cc = parseEngineCapacity(v.engine_capacity);
       return cc != null && sub.engineMin != null && cc >= sub.engineMin;
     }
+    case "model_keyword": {
+      const keywords = sub.modelKeywords ?? [];
+      if (keywords.length === 0) return false;
+      const modelLower = (v.model || "").toLowerCase();
+      return keywords.some((kw) => modelLower.includes(kw.toLowerCase()));
+    }
     default:
       return false;
   }
