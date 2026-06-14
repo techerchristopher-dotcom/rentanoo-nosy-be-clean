@@ -1088,6 +1088,7 @@ export default function VehicleDetails() {
     year: vehicle.year,
     pricePerDay: vehicle.dailyPrice,
     isMoto: false,
+    vehicleType: vehicle.vehicleType,
     license: license || vehicle.license,
   };
 
@@ -1104,6 +1105,7 @@ export default function VehicleDetails() {
     currency: "EUR",
     images: photos.map((p) => p.url).filter(Boolean),
     isMoto: false,
+    vehicleType: vehicle.vehicleType,
   });
   const breadcrumbSchema = buildVehicleBreadcrumbSchema({
     typeLabel,
