@@ -1640,6 +1640,9 @@
         "4x4": "4x4",
         "van": "Van",
         "luxe": "Luxe"
+      },
+      "moto": {
+        "quad": "Quad / ATV"
       }
     },
     "comingSoon": "Bientôt disponible",
@@ -1701,7 +1704,11 @@
       },
       "moto": {
         "title": "Motos bientôt disponibles",
-        "description": "Cette catégorie sera disponible prochainement sur Rentanoo."
+        "description": "Cette catégorie sera disponible prochainement sur Rentanoo.",
+        "quad": {
+          "title": "Aucun quad disponible",
+          "description": "Aucun quad ou ATV disponible pour le moment. Contactez-nous sur WhatsApp."
+        }
       },
       "car": {
         "title": "Voitures bientôt disponibles",
