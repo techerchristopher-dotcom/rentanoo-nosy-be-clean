@@ -117,8 +117,8 @@
     }
   },
   "home": {
-    "heroTitle": "Mieten Sie Ihren Roller in Nosy Be mit nur wenigen Klicks",
-    "heroSubtitle": "RENTANOO, die erste 100 % online Scooter-Vermietungsplattform",
+    "heroTitle": "Roller, Motorrad, Auto & Unterkunft in Nosy Be mieten | Rentanoo",
+    "heroSubtitle": "RENTANOO — die 100 % online Buchungsplattform für Zweiräder und Unterkünfte in Nosy Be",
     "catalogCta": "{{count}} verfügbare Fahrzeuge ansehen",
     "catalogCta_one": "Verfügbares Fahrzeug ansehen",
     "catalogCtaLoading": "Verfügbare Fahrzeuge ansehen",
@@ -130,7 +130,9 @@
       "airportDelivery": "Flughafen-Lieferung",
       "helmetIncluded": "Helm inklusive",
       "insuranceIncluded": "Versicherung inklusive",
-      "ariaLabel": "Rentanoo Vorteile"
+      "ariaLabel": "Rentanoo Vorteile",
+      "accommodationAvailable": "Unterkünfte verfügbar",
+      "secureBooking": "Sichere Buchung"
     },
     "dayContext": {
       "ariaLabel": "Wetter und Wechselkurs heute in Nosy Be",
@@ -322,11 +324,12 @@
     }
   },
   "footer": {
-    "brand": "RENTANOO",
-    "description": "Scootervermietung in Nosy Be. 100 % online buchen – schnell und einfach.",
-    "location": "Nosy Be, Madagaskar",
-    "copyright": "© 2025 RENTANOO. Alle Rechte vorbehalten.",
-    "madeWith": "Mit ❤️ in Nosy Be gemacht"
+    "description": "Mietplattform in Nosy Be: Roller, Motorrad, Auto und Unterkunft. 100 % online buchbar.",
+    "nav": {
+      "scooters": "Roller & Motorräder",
+      "cars": "Autos",
+      "accommodation": "Unterkünfte"
+    }
   },
   "profile": {
     "hero": {
@@ -348,12 +351,24 @@
         "title": "Persönliche Daten",
         "step": "Schritt 1/3",
         "subtitle": "Ihre Basisinformationen zur Personalisierung Ihres Erlebnisses",
-        "identity": { "title": "Identität" },
-        "contact": { "title": "Kontakt" },
-        "personal": { "title": "Persönliche Daten" },
-        "bio": { "title": "Persönliche Vorstellung" },
-        "phone": { "title": "Telefon" },
-        "status": { "title": "Kontostatus" },
+        "identity": {
+          "title": "Identität"
+        },
+        "contact": {
+          "title": "Kontakt"
+        },
+        "personal": {
+          "title": "Persönliche Daten"
+        },
+        "bio": {
+          "title": "Persönliche Vorstellung"
+        },
+        "phone": {
+          "title": "Telefon"
+        },
+        "status": {
+          "title": "Kontostatus"
+        },
         "saved": "Gespeichert"
       },
       "address": {
@@ -387,9 +402,15 @@
       "birthDate": {
         "label": "Geburtsdatum",
         "placeholder": "Datum auswählen",
-        "day": { "placeholder": "Tag" },
-        "month": { "placeholder": "Monat" },
-        "year": { "placeholder": "Jahr" }
+        "day": {
+          "placeholder": "Tag"
+        },
+        "month": {
+          "placeholder": "Monat"
+        },
+        "year": {
+          "placeholder": "Jahr"
+        }
       },
       "birthPlace": {
         "label": "Geburtsort",
@@ -451,9 +472,15 @@
         "issueDate": {
           "label": "Ausstellungsdatum",
           "placeholder": "Datum auswählen",
-          "day": { "placeholder": "Tag" },
-          "month": { "placeholder": "Monat" },
-          "year": { "placeholder": "Jahr" },
+          "day": {
+            "placeholder": "Tag"
+          },
+          "month": {
+            "placeholder": "Monat"
+          },
+          "year": {
+            "placeholder": "Jahr"
+          },
           "helper": "Bei einem europäischen Führerschein das Beginn-Datum der Gültigkeit für Kategorie-B-Fahrzeuge."
         },
         "category": {
@@ -776,13 +803,13 @@
       "title": "Keine Fahrzeuge",
       "description": "Fügen Sie zunächst Ihr erstes Fahrzeug zur Plattform hinzu."
     },
-      "vehicleTypeModal": {
-        "title": "Welchen Fahrzeugtyp möchten Sie hinzufügen?",
-        "description": "Wählen Sie den Fahrzeugtyp, den Sie auf der Plattform veröffentlichen möchten.",
-        "carLabel": "Auto",
-        "motoLabel": "Motorrad / Roller",
-        "cancel": "Abbrechen"
-      },
+    "vehicleTypeModal": {
+      "title": "Welchen Fahrzeugtyp möchten Sie hinzufügen?",
+      "description": "Wählen Sie den Fahrzeugtyp, den Sie auf der Plattform veröffentlichen möchten.",
+      "carLabel": "Auto",
+      "motoLabel": "Motorrad / Roller",
+      "cancel": "Abbrechen"
+    },
     "card": {
       "pricePerDay": "Preis/Tag",
       "year": "Jahr",
@@ -796,72 +823,72 @@
       "title": "Fahrzeug hinzufügen",
       "description": "Klicken Sie hier, um ein neues Fahrzeug zu Ihrer Flotte hinzuzufügen und es zu vermieten",
       "badge": "Neues Fahrzeug"
+    },
+    "motoPlaceholder": {
+      "title": "Motorrad / Roller",
+      "description": "Das Formular zum Hinzufügen eines Motorrads oder Rollers wird in Kürze verfügbar sein.",
+      "backToVehicles": "Zurück zu meinen Fahrzeugen"
+    },
+    "motoForm": {
+      "title": "Motorrad / Roller hinzufügen",
+      "brand": "Marke",
+      "brandPlaceholder": "Z. B. Honda",
+      "model": "Modell",
+      "modelPlaceholder": "Z. B. PCX 125",
+      "year": "Baujahr",
+      "mileage": "Kilometerstand (ca.)",
+      "kind": "Typ",
+      "kindPlaceholder": "Auswählen",
+      "kindMoto": "Motorrad",
+      "kindScooter": "Roller",
+      "engineCapacity": "Hubraum (ccm)",
+      "licensePlate": "Kennzeichen (optional)",
+      "seats": "Anzahl der Plätze",
+      "fuel": "Kraftstoff",
+      "fuelPlaceholder": "Auswählen",
+      "transmission": "Getriebe",
+      "transmissionPlaceholder": "Auswählen",
+      "dailyPrice": "Preis pro Tag (€)",
+      "description": "Beschreibung (optional)",
+      "descriptionPlaceholder": "Beschreiben Sie den Zustand des Fahrzeugs und die enthaltene Ausstattung (Helm, Topcase usw.)...",
+      "cancel": "Abbrechen",
+      "submit": "Fahrzeug erstellen",
+      "saving": "Wird erstellt...",
+      "successTitle": "Motorrad / Roller erfolgreich hinzugefügt",
+      "successDescription": "Ihr Fahrzeug wurde erstellt. Sie können es jetzt in Ihrer Fahrzeugliste verwalten.",
+      "errors": {
+        "required": "Bitte geben Sie mindestens Marke, Modell, Baujahr und Tagespreis an.",
+        "year": "Bitte geben Sie ein gültiges Baujahr ein.",
+        "price": "Bitte geben Sie einen gültigen Tagespreis ein.",
+        "generic": "Das Fahrzeug konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
       },
-      "motoPlaceholder": {
-        "title": "Motorrad / Roller",
-        "description": "Das Formular zum Hinzufügen eines Motorrads oder Rollers wird in Kürze verfügbar sein.",
-        "backToVehicles": "Zurück zu meinen Fahrzeugen"
-      },
-      "motoForm": {
-        "title": "Motorrad / Roller hinzufügen",
-        "brand": "Marke",
-        "brandPlaceholder": "Z. B. Honda",
-        "model": "Modell",
-        "modelPlaceholder": "Z. B. PCX 125",
-        "year": "Baujahr",
-        "mileage": "Kilometerstand (ca.)",
-        "kind": "Typ",
-        "kindPlaceholder": "Auswählen",
-        "kindMoto": "Motorrad",
-        "kindScooter": "Roller",
-        "engineCapacity": "Hubraum (ccm)",
-        "licensePlate": "Kennzeichen (optional)",
-        "seats": "Anzahl der Plätze",
-        "fuel": "Kraftstoff",
-        "fuelPlaceholder": "Auswählen",
-        "transmission": "Getriebe",
-        "transmissionPlaceholder": "Auswählen",
-        "dailyPrice": "Preis pro Tag (€)",
-        "description": "Beschreibung (optional)",
-        "descriptionPlaceholder": "Beschreiben Sie den Zustand des Fahrzeugs und die enthaltene Ausstattung (Helm, Topcase usw.)...",
-        "cancel": "Abbrechen",
-        "submit": "Fahrzeug erstellen",
-        "saving": "Wird erstellt...",
-        "successTitle": "Motorrad / Roller erfolgreich hinzugefügt",
-        "successDescription": "Ihr Fahrzeug wurde erstellt. Sie können es jetzt in Ihrer Fahrzeugliste verwalten.",
-        "errors": {
-          "required": "Bitte geben Sie mindestens Marke, Modell, Baujahr und Tagespreis an.",
-          "year": "Bitte geben Sie ein gültiges Baujahr ein.",
-          "price": "Bitte geben Sie einen gültigen Tagespreis ein.",
-          "generic": "Das Fahrzeug konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
-        },
-        "photos": {
-          "sectionTitle": "Fahrzeugfotos",
-          "sectionSubtitle": "Fügen Sie mindestens ein Foto Ihres Motorrads oder Rollers hinzu, um mehr Mieter anzusprechen.",
-          "primaryLabel": "Hauptfoto",
-          "primaryHint": "Vorne links – empfohlener Winkel, um Ihr Motorrad/Roller hervorzuheben",
-          "profileLabel": "Seitenansicht",
-          "profileHint": "Seitenansicht, um das Profil des Fahrzeugs gut zu zeigen",
-          "interiorLabel": "Details / Ausstattung",
-          "interiorHint": "Zum Beispiel: Armaturenbrett, Sitz, Topcase, Staufächer...",
-          "addMore": "Weitere Fotos hinzufügen",
-          "addMoreLimit": "Limit erreicht (3 zusätzliche Fotos)",
-          "slotLabel": "Foto {{index}}",
-          "slotOptional": "Optional",
-          "changePhoto": "Foto ändern",
-          "deletePhoto": "Löschen",
-          "invalidType": "Bitte wählen Sie eine gültige Bilddatei aus.",
-          "tooLarge": "Das Foto darf nicht größer als 10MB sein.",
-          "minRequired": "Bitte fügen Sie mindestens ein Foto Ihres Motorrads oder Rollers hinzu.",
-          "added": "Foto hinzugefügt",
-          "addedTitle": "Foto hinzugefügt",
-          "addedDescription": "Ihr Foto wurde erfolgreich hinzugefügt.",
-          "additionalAdded": "Zusätzliches Foto hinzugefügt",
-          "additionalAddedDescription": "Ihr zusätzliches Foto wurde erfolgreich hinzugefügt.",
-          "removed": "Foto gelöscht",
-          "removedTitle": "Foto gelöscht",
-          "removedDescription": "Das Foto wurde erfolgreich gelöscht."
-        }
+      "photos": {
+        "sectionTitle": "Fahrzeugfotos",
+        "sectionSubtitle": "Fügen Sie mindestens ein Foto Ihres Motorrads oder Rollers hinzu, um mehr Mieter anzusprechen.",
+        "primaryLabel": "Hauptfoto",
+        "primaryHint": "Vorne links – empfohlener Winkel, um Ihr Motorrad/Roller hervorzuheben",
+        "profileLabel": "Seitenansicht",
+        "profileHint": "Seitenansicht, um das Profil des Fahrzeugs gut zu zeigen",
+        "interiorLabel": "Details / Ausstattung",
+        "interiorHint": "Zum Beispiel: Armaturenbrett, Sitz, Topcase, Staufächer...",
+        "addMore": "Weitere Fotos hinzufügen",
+        "addMoreLimit": "Limit erreicht (3 zusätzliche Fotos)",
+        "slotLabel": "Foto {{index}}",
+        "slotOptional": "Optional",
+        "changePhoto": "Foto ändern",
+        "deletePhoto": "Löschen",
+        "invalidType": "Bitte wählen Sie eine gültige Bilddatei aus.",
+        "tooLarge": "Das Foto darf nicht größer als 10MB sein.",
+        "minRequired": "Bitte fügen Sie mindestens ein Foto Ihres Motorrads oder Rollers hinzu.",
+        "added": "Foto hinzugefügt",
+        "addedTitle": "Foto hinzugefügt",
+        "addedDescription": "Ihr Foto wurde erfolgreich hinzugefügt.",
+        "additionalAdded": "Zusätzliches Foto hinzugefügt",
+        "additionalAddedDescription": "Ihr zusätzliches Foto wurde erfolgreich hinzugefügt.",
+        "removed": "Foto gelöscht",
+        "removedTitle": "Foto gelöscht",
+        "removedDescription": "Das Foto wurde erfolgreich gelöscht."
+      }
     },
     "availabilityDialog": {
       "title": "Änderung der Verfügbarkeit bestätigen",
@@ -1225,9 +1252,18 @@
     "faqTitle": "FAQ — Wetter Nosy Be",
     "faq": {
       "items": [
-        { "q": "Beste Reisezeit für Nosy Be?", "a": "Trockenzeit (Mai–November): klarer Himmel, ruhige See — ideal für Rollerausflüge." },
-        { "q": "Ist es immer heiß?", "a": "Etwa 25–30 °C. In der Regenzeit höhere Luftfeuchtigkeit — leichten Regenschutz einpacken." },
-        { "q": "Ist die Vorhersage zuverlässig?", "a": "24–48 h sind zuverlässig; für eine Woche als Tendenz nutzen." }
+        {
+          "q": "Beste Reisezeit für Nosy Be?",
+          "a": "Trockenzeit (Mai–November): klarer Himmel, ruhige See — ideal für Rollerausflüge."
+        },
+        {
+          "q": "Ist es immer heiß?",
+          "a": "Etwa 25–30 °C. In der Regenzeit höhere Luftfeuchtigkeit — leichten Regenschutz einpacken."
+        },
+        {
+          "q": "Ist die Vorhersage zuverlässig?",
+          "a": "24–48 h sind zuverlässig; für eine Woche als Tendenz nutzen."
+        }
       ]
     },
     "ctaTitle": "Nosy Be entdecken?",
@@ -1251,9 +1287,18 @@
     "faqTitle": "FAQ — Wechselkurs Madagaskar",
     "faq": {
       "items": [
-        { "q": "Aktueller Euro-Ariary-Kurs?", "a": "Täglich über Frankfurter aktualisiert; lokale Kurse können leicht abweichen." },
-        { "q": "Kann man in Euro zahlen?", "a": "Im Tourismus manchmal, aber Ariary ist Alltagswährung — Teil des Budgets wechseln." },
-        { "q": "Wie nutzt Rentanoo den Kurs?", "a": "Preise in Euro mit Ariary-Äquivalent zum Tageskurs für transparente Buchung." }
+        {
+          "q": "Aktueller Euro-Ariary-Kurs?",
+          "a": "Täglich über Frankfurter aktualisiert; lokale Kurse können leicht abweichen."
+        },
+        {
+          "q": "Kann man in Euro zahlen?",
+          "a": "Im Tourismus manchmal, aber Ariary ist Alltagswährung — Teil des Budgets wechseln."
+        },
+        {
+          "q": "Wie nutzt Rentanoo den Kurs?",
+          "a": "Preise in Euro mit Ariary-Äquivalent zum Tageskurs für transparente Buchung."
+        }
       ]
     },
     "ctaTitle": "Roller mit €- und Ar-Preisen buchen",
@@ -1291,9 +1336,18 @@
     "faqTitle": "FAQ — Flüge Nosy Be",
     "faq": {
       "items": [
-        { "q": "IATA-Code Nosy Be?", "a": "NOS (Fascène)." },
-        { "q": "Roller am Flughafen?", "a": "Ja, mit Rentanoo online buchbar." },
-        { "q": "Zeiten garantiert?", "a": "Nein. Indikativ über eine Drittquelle. Offizielles Programm: nosybe-airport.aero/vols/ oder Airline kontaktieren." }
+        {
+          "q": "IATA-Code Nosy Be?",
+          "a": "NOS (Fascène)."
+        },
+        {
+          "q": "Roller am Flughafen?",
+          "a": "Ja, mit Rentanoo online buchbar."
+        },
+        {
+          "q": "Zeiten garantiert?",
+          "a": "Nein. Indikativ über eine Drittquelle. Offizielles Programm: nosybe-airport.aero/vols/ oder Airline kontaktieren."
+        }
       ]
     },
     "ctaTitle": "Sorgenfrei in Nosy Be landen",
