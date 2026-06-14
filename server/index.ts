@@ -1160,42 +1160,36 @@ const SOCIAL_BOT_UA = /facebookexternalhit|facebot|twitterbot|linkedinbot|slackb
 /** Cached index.html content so we don't read the file on every bot request */
 let cachedIndexHtml: string | null = null;
 
-/** Fetch vehicle data + primary photo from Supabase given a license code (first 8 chars of UUID) */
+/** Fetch vehicle data + primary photo from Supabase given a license code (first 8 chars of UUID).
+ *  Uses a DB function to avoid PostgREST % URL-encoding issues with ilike on UUID columns. */
 async function fetchVehicleForOg(license: string) {
   try {
-    // License = upper(first 8 chars of UUID without dashes) = UUID.substring(0,8).toUpperCase()
-    // UUID format: XXXXXXXX-XXXX-... → first group is exactly 8 hex chars
-    const prefix = license.toLowerCase();
-    // UUID column cannot use ilike directly — cast to text via PostgREST filter
-    const { data: vehicles, error: vehicleError } = await supabaseAdmin
-      .from("vehicles")
-      .select("id, brand, model, vehicle_type, year, engine_capacity, description")
-      .filter("id::text", "ilike", `${prefix}-%`)
-      .limit(1);
+    const { data, error } = await supabaseAdmin
+      .rpc("get_vehicle_by_license", { p_license: license.toLowerCase() });
 
-    if (vehicleError) console.error("[OG Bot] Vehicle query error:", vehicleError);
-    if (!vehicles || vehicles.length === 0) {
-      console.log(`[OG Bot] No vehicle found for license prefix: ${prefix}`);
+    if (error) {
+      console.error("[OG Bot] RPC error:", error);
       return null;
     }
-    const vehicle = vehicles[0];
-    console.log(`[OG Bot] Vehicle found: ${vehicle.brand} ${vehicle.model} (${vehicle.vehicle_type})`);
+    if (!data || (data as unknown[]).length === 0) {
+      console.log(`[OG Bot] No vehicle found for license: ${license}`);
+      return null;
+    }
 
-    // Fetch primary photo — column is photo_url (not url)
-    const { data: photos, error: photoError } = await supabaseAdmin
-      .from("vehicle_photos")
-      .select("photo_url, is_primary, display_order")
-      .eq("vehicle_id", vehicle.id)
-      .order("is_primary", { ascending: false })
-      .order("display_order", { ascending: true })
-      .limit(1);
-
-    if (photoError) console.error("[OG Bot] Photo query error:", photoError);
-    const photoUrl = photos && photos.length > 0 ? (photos[0] as { photo_url: string }).photo_url : null;
-    console.log(`[OG Bot] Photo: ${photoUrl ?? "none"}`);
-    return { ...vehicle, photoUrl };
+    const row = (data as Record<string, unknown>[])[0];
+    console.log(`[OG Bot] Vehicle found: ${row.brand} ${row.model} (${row.vehicle_type}) | photo: ${row.photo_url ?? "none"}`);
+    return {
+      id: row.id as string,
+      brand: row.brand as string,
+      model: row.model as string,
+      vehicle_type: row.vehicle_type as string,
+      year: row.year as number,
+      engine_capacity: row.engine_capacity as string | null,
+      description: row.description as string | null,
+      photoUrl: (row.photo_url as string | null) ?? null,
+    };
   } catch (err) {
-    console.error("[OG Bot] Supabase error:", err);
+    console.error("[OG Bot] fetchVehicleForOg error:", err);
     return null;
   }
 }
