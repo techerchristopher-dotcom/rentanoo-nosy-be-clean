@@ -1,4 +1,20 @@
 /** URLs SEO fixes (slugs FR — canoniques pour le référencement). */
+
+// --- Pages catégorie véhicules ---
+export const SEO_SCOOTER_PATH = "/location-scooter-nosy-be";
+export const SEO_MOTO_PATH = "/location-moto-nosy-be";
+export const SEO_QUAD_PATH = "/location-quad-nosy-be";
+export const SEO_VOITURE_PATH = "/location-voiture-nosy-be";
+
+export const SEO_SCOOTER_URL = `https://rentanoo.com${SEO_SCOOTER_PATH}`;
+export const SEO_MOTO_URL = `https://rentanoo.com${SEO_MOTO_PATH}`;
+export const SEO_QUAD_URL = `https://rentanoo.com${SEO_QUAD_PATH}`;
+export const SEO_VOITURE_URL = `https://rentanoo.com${SEO_VOITURE_PATH}`;
+
+// --- Blog ---
+export const BLOG_PATH = "/blog";
+export const BLOG_URL = `https://rentanoo.com${BLOG_PATH}`;
+
 export const SEO_WEATHER_PATH = "/meteo-nosy-be";
 export const SEO_EXCHANGE_PATH = "/taux-change-euro-ariary-madagascar";
 export const SEO_FLIGHTS_PATH = "/vols-aeroport-nosy-be";
