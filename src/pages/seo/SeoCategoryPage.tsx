@@ -82,7 +82,7 @@ export function SeoCategoryPage({
   const [listings, setListings] = useState<SupabaseVehicle[]>([]);
 
   useEffect(() => {
-    SupabaseVehiclesService.getVehicles().then((all) => {
+    SupabaseVehiclesService.getAvailableVehicles().then((all) => {
       const QUAD_KW = ["quad", "maxxer", "atv"];
       let filtered = all.filter((v) => {
         if (vehicleType === "quad") {
