@@ -11,7 +11,8 @@ export type ExplorerMainCategoryId =
 export type ExplorerSubFilterKind =
   | "vehicle_category"
   | "engine_exact"
-  | "engine_min";
+  | "engine_min"
+  | "model_keyword";
 
 export interface ExplorerEmptyStateConfig {
   titleKey: string;
@@ -31,6 +32,8 @@ export interface ExplorerSubFilterConfig {
   engineCc?: number;
   /** Minimum cc inclusive (200+, 250+) */
   engineMin?: number;
+  /** Model name keywords for model_keyword kind */
+  modelKeywords?: string[];
   emptyState?: ExplorerEmptyStateConfig;
 }
 
@@ -214,6 +217,19 @@ export const EXPLORER_MAIN_CATEGORIES: ExplorerMainCategoryConfig[] = [
         labelKey: "explorerFilters.sub.engine.250plus",
         kind: "engine_min",
         engineMin: 250,
+      },
+      {
+        id: "quad",
+        labelKey: "explorerFilters.sub.moto.quad",
+        kind: "model_keyword",
+        modelKeywords: ["quad", "maxxer", "atv"],
+        emptyState: {
+          titleKey: "explorerFilters.empty.moto.quad.title",
+          descriptionKey: "explorerFilters.empty.moto.quad.description",
+          ctaKey: "explorerFilters.empty.cta.request",
+          waPrefillKey: "explorerFilters.empty.waPrefill.moto",
+          illustration: "moto",
+        },
       },
     ],
   },
