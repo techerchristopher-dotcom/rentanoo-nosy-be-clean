@@ -1148,10 +1148,142 @@ app.get("/moto/:license/booking/discussion", (req, res, next) => {
   next();
 });
 
+// ── OG Social Bot Middleware ─────────────────────────────────────────────────
+// Facebook, Twitter, LinkedIn crawlers hit vehicle pages before JS loads.
+// We detect bot UAs, query Supabase for the vehicle photo+title, and inject
+// proper og:image / og:title into the HTML so the share preview shows the photo.
+// Must be placed BEFORE express.static (bots don't cache assets).
+
+const SOCIAL_BOT_UA = /facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|applebot|googlebot|bingbot/i;
+
+/** Cached index.html content so we don't read the file on every bot request */
+let cachedIndexHtml: string | null = null;
+
+/** Fetch vehicle data + primary photo from Supabase given a license code (first 8 chars of UUID) */
+async function fetchVehicleForOg(license: string) {
+  try {
+    // License = upper(first 8 chars of UUID without dashes) = UUID.substring(0,8).toUpperCase()
+    // UUID format: XXXXXXXX-XXXX-... → first group is exactly 8 hex chars
+    const prefix = license.toLowerCase();
+    const { data: vehicles } = await supabaseAdmin
+      .from("vehicles")
+      .select("id, brand, model, vehicle_type, year, engine_capacity, description")
+      .ilike("id", `${prefix}-%`)
+      .limit(1);
+
+    if (!vehicles || vehicles.length === 0) return null;
+    const vehicle = vehicles[0];
+
+    // Fetch primary photo
+    const { data: photos } = await supabaseAdmin
+      .from("vehicle_photos")
+      .select("url, is_primary, display_order")
+      .eq("vehicle_id", vehicle.id)
+      .order("is_primary", { ascending: false })
+      .order("display_order", { ascending: true })
+      .limit(1);
+
+    const photoUrl = photos && photos.length > 0 ? photos[0].url : null;
+    return { ...vehicle, photoUrl };
+  } catch (err) {
+    console.error("[OG Bot] Supabase error:", err);
+    return null;
+  }
+}
+
+/** Replace OG meta tags in index.html with vehicle-specific values */
+function injectOgTags(html: string, opts: {
+  title: string;
+  description: string;
+  url: string;
+  image?: string | null;
+}): string {
+  let out = html;
+  const esc = (s: string) => s.replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // og:title
+  out = out.replace(/<meta property="og:title"[^>]*>/gi,
+    `<meta property="og:title" content="${esc(opts.title)}" />`);
+  // og:description
+  out = out.replace(/<meta property="og:description"[^>]*>/gi,
+    `<meta property="og:description" content="${esc(opts.description)}" />`);
+  // og:url
+  out = out.replace(/<meta property="og:url"[^>]*>/gi,
+    `<meta property="og:url" content="${esc(opts.url)}" />`);
+  // og:image (only if we have a photo)
+  if (opts.image) {
+    out = out.replace(/<meta property="og:image"[^>]*>/gi,
+      `<meta property="og:image" content="${esc(opts.image)}" />`);
+  }
+  // <title>
+  out = out.replace(/<title>[^<]*<\/title>/i,
+    `<title>${esc(opts.title)}</title>`);
+
+  return out;
+}
+
+// Routes handled by OG middleware
+const VEHICLE_OG_ROUTES = [
+  { pattern: /^\/vehicle\/([A-Z0-9]{8})$/i,      type: "scooter"       },
+  { pattern: /^\/moto\/([A-Z0-9]{8})$/i,          type: "moto"          },
+  { pattern: /^\/hebergement\/([A-Z0-9]{8})$/i,   type: "accommodation" },
+];
+
+app.use(async (req, res, next) => {
+  // Only intercept social crawlers
+  const ua = req.headers["user-agent"] || "";
+  if (!SOCIAL_BOT_UA.test(ua)) return next();
+
+  // Match vehicle detail route
+  let license: string | null = null;
+  for (const route of VEHICLE_OG_ROUTES) {
+    const m = req.path.match(route.pattern);
+    if (m) { license = m[1].toUpperCase(); break; }
+  }
+  if (!license) return next();
+
+  try {
+    const vehicle = await fetchVehicleForOg(license);
+    if (!vehicle) return next();
+
+    // Build readable title/description
+    const typeLabel = vehicle.vehicle_type === "accommodation" ? "Hébergement" :
+                      vehicle.vehicle_type === "moto" ? "Moto" : "Scooter";
+    const cc = vehicle.engine_capacity ? ` ${vehicle.engine_capacity}cc` : "";
+    const title = `${vehicle.brand} ${vehicle.model}${cc} — Location ${typeLabel} à Nosy Be | Rentanoo`;
+    const description = vehicle.description
+      ? vehicle.description.substring(0, 155)
+      : `Louez ${vehicle.brand} ${vehicle.model} à Nosy Be avec Rentanoo. Réservation en ligne simple et rapide.`;
+    const canonicalUrl = `https://rentanoo.com${req.path}`;
+
+    // Read index.html (cached)
+    if (!cachedIndexHtml) {
+      const fs = await import("fs");
+      const distPath = path.resolve(process.cwd(), "dist");
+      cachedIndexHtml = fs.readFileSync(path.join(distPath, "index.html"), "utf-8");
+    }
+
+    const html = injectOgTags(cachedIndexHtml, {
+      title,
+      description,
+      url: canonicalUrl,
+      image: vehicle.photoUrl,
+    });
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300"); // 5 min cache for bots
+    console.log(`🤖 [OG Bot] ${ua.substring(0, 50)} → ${req.path} | photo: ${vehicle.photoUrl ? "✅" : "❌"}`);
+    return res.send(html);
+  } catch (err) {
+    console.error("[OG Bot] Error:", err);
+    return next();
+  }
+});
+
 // 🚀 PRODUCTION : Servir le frontend buildé depuis le dossier dist/
 if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), "dist");
-  
+
   console.log(`📦 Serveur en mode PRODUCTION - Frontend servi depuis: ${distPath}`);
   
   // Servir les fichiers statiques (CSS, JS, images, etc.)
