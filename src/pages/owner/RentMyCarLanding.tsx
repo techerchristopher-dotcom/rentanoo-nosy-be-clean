@@ -51,7 +51,7 @@ const RentMyCarLanding = () => {
         {/* Header Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-lagoon bg-clip-text text-transparent animate-fade-in">
-            Louez votre scooter ou voiture à Nosy Be
+            Proposez votre véhicule ou hébergement à Nosy Be
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '200ms' }}>
             Un processus rapide en 3 étapes pour mettre votre véhicule en location sur Rentanoo et commencer à gagner de l'argent dès aujourd'hui.
