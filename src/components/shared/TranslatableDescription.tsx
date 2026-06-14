@@ -82,15 +82,7 @@ export function TranslatableDescription({
 
   return (
     <div className="space-y-3">
-      {/* Contenu */}
-      <div>
-        {renderContent
-          ? renderContent(activeText)
-          : <p className="text-gray-700 leading-relaxed text-sm">{activeText}</p>
-        }
-      </div>
-
-      {/* Boutons */}
+      {/* Boutons EN HAUT */}
       {needsButton && (
         <div className="flex items-center gap-2 flex-wrap">
           {canTranslate && (
@@ -143,6 +135,14 @@ export function TranslatableDescription({
           )}
         </div>
       )}
+
+      {/* Contenu */}
+      <div>
+        {renderContent
+          ? renderContent(activeText)
+          : <p className="text-gray-700 leading-relaxed text-sm">{activeText}</p>
+        }
+      </div>
     </div>
   );
 }

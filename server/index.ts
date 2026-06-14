@@ -1152,7 +1152,7 @@ app.post("/api/translate", express.json(), async (req, res) => {
     const data = await response.json() as { responseData?: { translatedText?: string }; responseStatus?: number };
     const translated = data?.responseData?.translatedText;
     if (!translated) return res.status(502).json({ error: "Translation service returned no result" });
-    return res.json({ translated });
+    return res.json({ translatedText: translated });
   } catch (err) {
     console.error("[Translate] Error:", err);
     return res.status(500).json({ error: "Translation failed" });
