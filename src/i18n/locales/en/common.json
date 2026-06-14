@@ -1637,6 +1637,9 @@
         "4x4": "4x4",
         "van": "Van",
         "luxe": "Luxury"
+      },
+      "moto": {
+        "quad": "Quad / ATV"
       }
     },
     "comingSoon": "Coming soon",
@@ -1698,7 +1701,11 @@
       },
       "moto": {
         "title": "Motorcycles coming soon",
-        "description": "This category will be available soon on Rentanoo."
+        "description": "This category will be available soon on Rentanoo.",
+        "quad": {
+          "title": "No quad available",
+          "description": "No quad or ATV available at the moment. Contact us on WhatsApp."
+        }
       },
       "car": {
         "title": "Cars coming soon",
