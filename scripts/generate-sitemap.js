@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Génère sitemap.xml avec les URLs statiques + pages produit véhicules/motos.
+ * Génère sitemap.xml avec URLs statiques + pages produit véhicules.
  * Les IDs viennent de Supabase (vehicles disponibles).
  *
  * Usage: node scripts/generate-sitemap.js
@@ -30,20 +30,35 @@ const STATIC_URLS = [
   { loc: "/meteo-nosy-be", changefreq: "daily", priority: "0.9" },
   { loc: "/taux-change-euro-ariary-madagascar", changefreq: "daily", priority: "0.9" },
   { loc: "/vols-aeroport-nosy-be", changefreq: "hourly", priority: "0.9" },
+  // --- Pages SEO catégories véhicules ---
+  { loc: "/location-scooter-nosy-be", changefreq: "weekly", priority: "0.95" },
+  { loc: "/location-moto-nosy-be", changefreq: "weekly", priority: "0.95" },
+  { loc: "/location-quad-nosy-be", changefreq: "weekly", priority: "0.9" },
+  { loc: "/location-voiture-nosy-be", changefreq: "weekly", priority: "0.9" },
+  // --- Pages SEO hébergement ---
+  { loc: "/location-vacances-nosy-be", changefreq: "weekly", priority: "0.95" },
+  { loc: "/location-appartement-nosy-be", changefreq: "weekly", priority: "0.9" },
+  { loc: "/location-villa-nosy-be", changefreq: "weekly", priority: "0.9" },
+  { loc: "/location-bungalow-nosy-be", changefreq: "weekly", priority: "0.85" },
+  // --- Blog ---
+  { loc: "/blog", changefreq: "weekly", priority: "0.8" },
+  { loc: "/blog/visiter-nosy-be-en-scooter", changefreq: "monthly", priority: "0.75" },
+  { loc: "/blog/itineraire-nosy-be-4-jours", changefreq: "monthly", priority: "0.75" },
+  { loc: "/blog/aeroport-fascene-guide-arrivee", changefreq: "monthly", priority: "0.75" },
 ];
 
 function isAccommodation(v) {
   return v.vehicle_type?.toLowerCase() === "accommodation";
 }
 
-function isMoto(v) {
-  const t = v.vehicle_type?.toLowerCase();
-  return t === "moto" || t === "scooter";
+function isMotoOnly(v) {
+  return v.vehicle_type?.toLowerCase() === "moto";
 }
 
+/** URL de la fiche véhicule — scooter et car → /vehicle/, moto → /moto/, hébergement → /hebergement/ */
 function getVehiclePath(v) {
   if (isAccommodation(v)) return `/hebergement/${v.license}`;
-  if (isMoto(v)) return `/moto/${v.license}`;
+  if (isMotoOnly(v)) return `/moto/${v.license}`;
   return `/vehicle/${v.license}`;
 }
 
@@ -87,7 +102,8 @@ async function fetchVehicles() {
     id: v.id,
     vehicle_type: v.vehicle_type,
     updated_at: v.updated_at,
-    license: (v.id || "").substring(0, 8).toUpperCase(),
+    // Code URL = 8 premiers chars de l'UUID (avant le premier tiret, équivalent à replace(id,'-','').substring(0,8))
+    license: (v.id || "").replace(/-/g, "").substring(0, 8).toUpperCase(),
   }));
 }
 
@@ -119,17 +135,19 @@ function buildXml(vehicles) {
   }
 
   lines.push("</urlset>");
-  return lines.join("\n");
+  return lines.join("
+");
 }
 
 async function main() {
   console.log("[generate-sitemap] Fetch véhicules Supabase...");
   const vehicles = await fetchVehicles();
   const accommodations = vehicles.filter(isAccommodation);
-  const motos = vehicles.filter(isMoto);
-  const cars = vehicles.filter((v) => !isMoto(v) && !isAccommodation(v));
+  const motos = vehicles.filter(isMotoOnly);
+  const scooters = vehicles.filter((v) => v.vehicle_type?.toLowerCase() === "scooter");
+  const cars = vehicles.filter((v) => !isMotoOnly(v) && !isAccommodation(v) && v.vehicle_type?.toLowerCase() !== "scooter");
   console.log(
-    `[generate-sitemap] ${motos.length} moto(s), ${cars.length} véhicule(s), ${accommodations.length} hébergement(s)`
+    `[generate-sitemap] ${scooters.length} scooter(s), ${motos.length} moto(s), ${cars.length} voiture(s), ${accommodations.length} hébergement(s)`
   );
 
   const xml = buildXml(vehicles);
