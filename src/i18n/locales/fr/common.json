@@ -1,6 +1,6 @@
 {
   "common": {
-    "2024_maycar_tous_droits_rservs_une_initiative_pour": "© 2025 Rentanoo. Tous droits réservés. Location de scooters à Nosy Be.",
+    "2024_maycar_tous_droits_rservs_une_initiative_pour": "© 2025 Rentanoo. Tous droits réservés. Plateforme de location à Nosy Be.",
     "actualiser_la_page": "Actualiser la page",
     "annuler": "Annuler",
     "automatique": "Automatique",
@@ -27,12 +27,12 @@
     "heures": "Heures",
     "hybride": "Hybride",
     "inscription": "Inscription",
-    "la_plateforme_dautopartage_de_mayotte_louez_et_par": "Louez votre scooter à Nosy Be. Réservation 100 % en ligne, livraison à l'hôtel ou à l'aéroport.",
+    "la_plateforme_dautopartage_de_mayotte_louez_et_par": "Réservez scooter, moto, voiture ou hébergement à Nosy Be. 100 % en ligne.",
     "lectrique": "Électrique",
     "lgal": "Légal",
     "lieu_de_prise_en_charge": "Lieu de prise en charge",
     "loading": "Chargement...",
-    "louez_des_vhicules_entre_particuliers_dans_le_plus": "Louez des scooters à Nosy Be et explorez l'île en toute liberté",
+    "louez_des_vhicules_entre_particuliers_dans_le_plus": "Louez scooter, moto, voiture ou hébergement à Nosy Be et explorez l'île en toute liberté",
     "made_with_pour_le_101me_dpartement_franais": "Made with ❤️ pour le 101ème département français",
     "manuelle": "Manuelle",
     "maycar": "Rentanoo",
@@ -46,7 +46,7 @@
     "monospace": "Monospace",
     "navigation": "Navigation",
     "par_jour": "par jour",
-    "partagez_la_route_mayotte": "Explorez Nosy Be à scooter",
+    "partagez_la_route_mayotte": "Explorez Nosy Be — scooter, moto, voiture ou hébergement",
     "pickup": "Pick-up",
     "points_stratgiques": "__STRING_NOT_TRANSLATED__",
     "politique_de_confidentialit": "Politique de confidentialité",
@@ -528,7 +528,9 @@
       "airportDelivery": "Livraison aéroport",
       "helmetIncluded": "Casque inclus",
       "insuranceIncluded": "Assurance incluse",
-      "ariaLabel": "Points forts Rentanoo"
+      "ariaLabel": "Points forts Rentanoo",
+      "accommodationAvailable": "Hébergements disponibles",
+      "secureBooking": "Réservation sécurisée"
     },
     "dayContext": {
       "ariaLabel": "Météo et taux de change du jour à Nosy Be",
@@ -614,10 +616,15 @@
   },
   "footer": {
     "brand": "RENTANOO",
-    "description": "Agence de location de scooters à Nosy Be. Réservation 100 % en ligne, rapide et simple.",
+    "description": "Plateforme de location à Nosy Be : scooter, moto, voiture et hébergement. Réservation 100 % en ligne.",
     "location": "Nosy Be, Madagascar",
     "copyright": "© 2025 RENTANOO. Tous droits réservés.",
-    "madeWith": "Made with ❤️ in Nosy Be"
+    "madeWith": "Made with ❤️ in Nosy Be",
+    "nav": {
+      "scooters": "Scooters & motos",
+      "cars": "Voitures",
+      "accommodation": "Hébergements"
+    }
   },
   "profile": {
     "hero": {
@@ -639,12 +646,24 @@
         "title": "Informations personnelles",
         "step": "Étape 1/3",
         "subtitle": "Vos informations de base pour personnaliser votre expérience",
-        "identity": { "title": "Identité" },
-        "contact": { "title": "Contact" },
-        "personal": { "title": "Informations personnelles" },
-        "bio": { "title": "Présentation personnelle" },
-        "phone": { "title": "Téléphone" },
-        "status": { "title": "Statut de votre compte" },
+        "identity": {
+          "title": "Identité"
+        },
+        "contact": {
+          "title": "Contact"
+        },
+        "personal": {
+          "title": "Informations personnelles"
+        },
+        "bio": {
+          "title": "Présentation personnelle"
+        },
+        "phone": {
+          "title": "Téléphone"
+        },
+        "status": {
+          "title": "Statut de votre compte"
+        },
         "saved": "Sauvegardé"
       },
       "address": {
@@ -678,9 +697,15 @@
       "birthDate": {
         "label": "Date de naissance",
         "placeholder": "Sélectionner une date",
-        "day": { "placeholder": "Jour" },
-        "month": { "placeholder": "Mois" },
-        "year": { "placeholder": "Année" }
+        "day": {
+          "placeholder": "Jour"
+        },
+        "month": {
+          "placeholder": "Mois"
+        },
+        "year": {
+          "placeholder": "Année"
+        }
       },
       "birthPlace": {
         "label": "Lieu de naissance",
@@ -742,9 +767,15 @@
         "issueDate": {
           "label": "Date d'obtention",
           "placeholder": "Sélectionner une date",
-          "day": { "placeholder": "Jour" },
-          "month": { "placeholder": "Mois" },
-          "year": { "placeholder": "Année" },
+          "day": {
+            "placeholder": "Jour"
+          },
+          "month": {
+            "placeholder": "Mois"
+          },
+          "year": {
+            "placeholder": "Année"
+          },
           "helper": "Pour un permis européen, sa date de début de validité pour les véhicules de catégorie B."
         },
         "category": {
@@ -1058,7 +1089,7 @@
       "close": "Fermer"
     }
   },
-    "ownerVehicles": {
+  "ownerVehicles": {
     "loading": "Chargement...",
     "header": {
       "title": "Mes véhicules",
@@ -1072,14 +1103,14 @@
       "title": "Aucun véhicule",
       "description": "Commencez par ajouter votre premier véhicule à la plateforme."
     },
-      "vehicleTypeModal": {
-        "title": "Quel type de véhicule souhaitez-vous ajouter ?",
-        "description": "Choisissez le type de véhicule que vous voulez publier sur la plateforme.",
-        "carLabel": "Voiture",
-        "motoLabel": "Moto / Scooter",
-        "accommodationLabel": "Hébergement",
-        "cancel": "Annuler"
-      },
+    "vehicleTypeModal": {
+      "title": "Quel type de véhicule souhaitez-vous ajouter ?",
+      "description": "Choisissez le type de véhicule que vous voulez publier sur la plateforme.",
+      "carLabel": "Voiture",
+      "motoLabel": "Moto / Scooter",
+      "accommodationLabel": "Hébergement",
+      "cancel": "Annuler"
+    },
     "card": {
       "pricePerDay": "Prix/jour",
       "year": "Année",
@@ -1093,72 +1124,72 @@
       "title": "Ajouter un véhicule",
       "description": "Cliquez ici pour ajouter un nouveau véhicule à votre flotte et commencer à le louer",
       "badge": "Nouveau véhicule"
+    },
+    "motoPlaceholder": {
+      "title": "Moto / Scooter",
+      "description": "Le formulaire pour ajouter une moto ou un scooter sera bientôt disponible.",
+      "backToVehicles": "Retour à mes véhicules"
+    },
+    "motoForm": {
+      "title": "Ajouter une moto / scooter",
+      "brand": "Marque",
+      "brandPlaceholder": "Ex : Honda",
+      "model": "Modèle",
+      "modelPlaceholder": "Ex : PCX 125",
+      "year": "Année",
+      "mileage": "Kilométrage (approx.)",
+      "kind": "Type",
+      "kindPlaceholder": "Sélectionner",
+      "kindMoto": "Moto",
+      "kindScooter": "Scooter",
+      "engineCapacity": "Cylindrée (cc)",
+      "licensePlate": "Immatriculation (optionnel)",
+      "seats": "Nombre de places",
+      "fuel": "Carburant",
+      "fuelPlaceholder": "Sélectionner",
+      "transmission": "Boîte",
+      "transmissionPlaceholder": "Sélectionner",
+      "dailyPrice": "Prix par jour (€)",
+      "description": "Description (optionnel)",
+      "descriptionPlaceholder": "Décrivez l'état de la moto, les équipements fournis (casque, top case, etc.)...",
+      "cancel": "Annuler",
+      "submit": "Créer le véhicule",
+      "saving": "Création en cours...",
+      "successTitle": "Moto / scooter ajouté avec succès",
+      "successDescription": "Votre véhicule a été créé. Vous pouvez maintenant le gérer dans la liste de vos véhicules.",
+      "errors": {
+        "required": "Merci de renseigner au minimum la marque, le modèle, l'année et le prix par jour.",
+        "year": "Merci de saisir une année valide.",
+        "price": "Merci de saisir un prix par jour valide.",
+        "generic": "Impossible de créer le véhicule. Veuillez réessayer."
       },
-      "motoPlaceholder": {
-        "title": "Moto / Scooter",
-        "description": "Le formulaire pour ajouter une moto ou un scooter sera bientôt disponible.",
-        "backToVehicles": "Retour à mes véhicules"
-      },
-      "motoForm": {
-        "title": "Ajouter une moto / scooter",
-        "brand": "Marque",
-        "brandPlaceholder": "Ex : Honda",
-        "model": "Modèle",
-        "modelPlaceholder": "Ex : PCX 125",
-        "year": "Année",
-        "mileage": "Kilométrage (approx.)",
-        "kind": "Type",
-        "kindPlaceholder": "Sélectionner",
-        "kindMoto": "Moto",
-        "kindScooter": "Scooter",
-        "engineCapacity": "Cylindrée (cc)",
-        "licensePlate": "Immatriculation (optionnel)",
-        "seats": "Nombre de places",
-        "fuel": "Carburant",
-        "fuelPlaceholder": "Sélectionner",
-        "transmission": "Boîte",
-        "transmissionPlaceholder": "Sélectionner",
-        "dailyPrice": "Prix par jour (€)",
-        "description": "Description (optionnel)",
-        "descriptionPlaceholder": "Décrivez l'état de la moto, les équipements fournis (casque, top case, etc.)...",
-        "cancel": "Annuler",
-        "submit": "Créer le véhicule",
-        "saving": "Création en cours...",
-        "successTitle": "Moto / scooter ajouté avec succès",
-        "successDescription": "Votre véhicule a été créé. Vous pouvez maintenant le gérer dans la liste de vos véhicules.",
-        "errors": {
-          "required": "Merci de renseigner au minimum la marque, le modèle, l'année et le prix par jour.",
-          "year": "Merci de saisir une année valide.",
-          "price": "Merci de saisir un prix par jour valide.",
-          "generic": "Impossible de créer le véhicule. Veuillez réessayer."
-        },
-        "photos": {
-          "sectionTitle": "Photos du véhicule",
-          "sectionSubtitle": "Ajoutez au moins une photo de votre moto ou scooter pour donner envie aux locataires.",
-          "primaryLabel": "Photo principale",
-          "primaryHint": "Avant gauche – angle recommandé pour mettre en valeur votre moto/scooter",
-          "profileLabel": "Profil gauche",
-          "profileHint": "Vue de côté pour bien voir la ligne de la moto/scooter",
-          "interiorLabel": "Détails / Équipements",
-          "interiorHint": "Par exemple : compteur, selle, top case, rangements...",
-          "addMore": "Ajouter des photos",
-          "addMoreLimit": "Limite atteinte (3 photos supplémentaires)",
-          "slotLabel": "Photo {{index}}",
-          "slotOptional": "Optionnel",
-          "changePhoto": "Changer ma photo",
-          "deletePhoto": "Supprimer",
-          "invalidType": "Veuillez sélectionner un fichier image valide.",
-          "tooLarge": "La photo doit faire moins de 10MB.",
-          "minRequired": "Veuillez ajouter au moins une photo de votre moto ou scooter.",
-          "added": "Photo ajoutée",
-          "addedTitle": "Photo ajoutée",
-          "addedDescription": "Votre photo a été ajoutée avec succès.",
-          "additionalAdded": "Photo supplémentaire ajoutée",
-          "additionalAddedDescription": "Votre photo supplémentaire a été ajoutée avec succès.",
-          "removed": "Photo supprimée",
-          "removedTitle": "Photo supprimée",
-          "removedDescription": "La photo a été supprimée avec succès."
-        }
+      "photos": {
+        "sectionTitle": "Photos du véhicule",
+        "sectionSubtitle": "Ajoutez au moins une photo de votre moto ou scooter pour donner envie aux locataires.",
+        "primaryLabel": "Photo principale",
+        "primaryHint": "Avant gauche – angle recommandé pour mettre en valeur votre moto/scooter",
+        "profileLabel": "Profil gauche",
+        "profileHint": "Vue de côté pour bien voir la ligne de la moto/scooter",
+        "interiorLabel": "Détails / Équipements",
+        "interiorHint": "Par exemple : compteur, selle, top case, rangements...",
+        "addMore": "Ajouter des photos",
+        "addMoreLimit": "Limite atteinte (3 photos supplémentaires)",
+        "slotLabel": "Photo {{index}}",
+        "slotOptional": "Optionnel",
+        "changePhoto": "Changer ma photo",
+        "deletePhoto": "Supprimer",
+        "invalidType": "Veuillez sélectionner un fichier image valide.",
+        "tooLarge": "La photo doit faire moins de 10MB.",
+        "minRequired": "Veuillez ajouter au moins une photo de votre moto ou scooter.",
+        "added": "Photo ajoutée",
+        "addedTitle": "Photo ajoutée",
+        "addedDescription": "Votre photo a été ajoutée avec succès.",
+        "additionalAdded": "Photo supplémentaire ajoutée",
+        "additionalAddedDescription": "Votre photo supplémentaire a été ajoutée avec succès.",
+        "removed": "Photo supprimée",
+        "removedTitle": "Photo supprimée",
+        "removedDescription": "La photo a été supprimée avec succès."
+      }
     },
     "accommodationForm": {
       "title": "Ajouter un hébergement",
@@ -1309,10 +1340,18 @@
       "description": "Louez scooter, moto ou hébergement à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Réservation 100 % en ligne sur Rentanoo."
     },
     "accommodationHubs": {
-      "vacances": { "title": "Location vacances Nosy Be" },
-      "appartement": { "title": "Location appartement Nosy Be" },
-      "villa": { "title": "Location villa Nosy Be" },
-      "bungalow": { "title": "Location bungalow Nosy Be" }
+      "vacances": {
+        "title": "Location vacances Nosy Be"
+      },
+      "appartement": {
+        "title": "Location appartement Nosy Be"
+      },
+      "villa": {
+        "title": "Location villa Nosy Be"
+      },
+      "bungalow": {
+        "title": "Location bungalow Nosy Be"
+      }
     },
     "contact": {
       "title": "Contact – Location scooter Nosy Be | Rentanoo",
