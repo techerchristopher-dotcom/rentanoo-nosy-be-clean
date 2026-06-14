@@ -38,6 +38,109 @@ import { ListingOwnersService } from "@/services/supabase/listingOwners";
 import { ListingOwnerAvatarsService } from "@/services/supabase/listingOwnerAvatars";
 import { LocationAreaSelect } from "@/components/location/LocationAreaSelect";
 
+// ── Description multilingue ──────────────────────────────────────────────────
+const LANGS = [
+  { code: "fr", label: "🇫🇷 Français" },
+  { code: "en", label: "🇬🇧 English" },
+  { code: "de", label: "🇩🇪 Deutsch" },
+  { code: "it", label: "🇮🇹 Italiano" },
+] as const;
+
+type LangCode = (typeof LANGS)[number]["code"];
+
+function DescriptionTranslationBlock({
+  valueFr, valueEn, valueDe, valueIt,
+  onChangeFr, onChangeEn, onChangeDe, onChangeIt,
+}: {
+  valueFr: string; valueEn: string; valueDe: string; valueIt: string;
+  onChangeFr: (v: string) => void; onChangeEn: (v: string) => void;
+  onChangeDe: (v: string) => void; onChangeIt: (v: string) => void;
+}) {
+  const [activeLang, setActiveLang] = useState<LangCode>("fr");
+  const [translating, setTranslating] = useState<LangCode | null>(null);
+
+  const values: Record<LangCode, string> = { fr: valueFr, en: valueEn, de: valueDe, it: valueIt };
+  const handlers: Record<LangCode, (v: string) => void> = { fr: onChangeFr, en: onChangeEn, de: onChangeDe, it: onChangeIt };
+  const placeholders: Record<LangCode, string> = {
+    fr: "Décrivez votre logement / véhicule...",
+    en: "Describe your property / vehicle...",
+    de: "Beschreiben Sie Ihre Unterkunft / Ihr Fahrzeug...",
+    it: "Descrivi il tuo alloggio / veicolo...",
+  };
+
+  const handleAutoTranslate = async (targetLang: LangCode) => {
+    if (!valueFr.trim()) return;
+    setTranslating(targetLang);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: valueFr, targetLang }),
+      });
+      const data = await res.json() as { translated?: string; error?: string };
+      if (data.translated) handlers[targetLang](data.translated);
+    } catch (err) {
+      console.error("Translation error:", err);
+    } finally {
+      setTranslating(null);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="flex items-center gap-2">
+        Description *
+        <CheckCircle className="h-4 w-4 text-green-500" />
+      </Label>
+      <Tabs value={activeLang} onValueChange={(v) => setActiveLang(v as LangCode)}>
+        <TabsList className="w-full">
+          {LANGS.map((l) => (
+            <TabsTrigger key={l.code} value={l.code} className="flex-1 text-xs">
+              {l.label}
+              {l.code !== "fr" && values[l.code].trim() && (
+                <span className="ml-1 h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {LANGS.map((l) => (
+          <TabsContent key={l.code} value={l.code} className="mt-2 space-y-2">
+            {l.code !== "fr" && (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!valueFr.trim() || translating === l.code}
+                  onClick={() => handleAutoTranslate(l.code)}
+                  className="text-xs gap-1"
+                >
+                  {translating === l.code ? (
+                    <><Loader2 className="h-3 w-3 animate-spin" /> Traduction...</>
+                  ) : (
+                    <>🔄 Traduire depuis le français</>
+                  )}
+                </Button>
+              </div>
+            )}
+            <Textarea
+              value={values[l.code]}
+              onChange={(e) => handlers[l.code](e.target.value)}
+              placeholder={placeholders[l.code]}
+              className="min-h-[120px] w-full"
+            />
+            {l.code === "fr" && (
+              <p className="text-xs text-muted-foreground">
+                La description française est la source pour la traduction automatique.
+              </p>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+}
+
 export default function ManageVehicle() {
   const { vehicleId } = useParams<{ vehicleId: string }>();
   console.log("[ManageVehicle] vehicleId from params =", vehicleId);
@@ -1457,6 +1560,9 @@ export default function ManageVehicle() {
         price_per_day: parseFloat(formData.pricePerDay),
         price_per_day_agency,
         description: formData.description,
+        description_en: formData.descriptionEn?.trim() || null,
+        description_de: formData.descriptionDe?.trim() || null,
+        description_it: formData.descriptionIt?.trim() || null,
         location: formData.location,
         available: formData.available,
         listing_owner_phone: formData.listingOwnerPhone?.trim() || null,
@@ -1910,19 +2016,17 @@ export default function ManageVehicle() {
               </CardHeader>
               <CardContent className="space-y-6">
             <div className="space-y-4">
-              <div className="space-y-2">
-                    <Label htmlFor="description" className="flex items-center gap-2">
-                      Description *
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                    </Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder="Décrivez votre véhicule, ses avantages, les conditions de location..."
-                      className="min-h-[120px] w-full"
-                    />
-                  </div>
+              {/* Description multilingue */}
+              <DescriptionTranslationBlock
+                valueFr={formData.description}
+                valueEn={formData.descriptionEn}
+                valueDe={formData.descriptionDe}
+                valueIt={formData.descriptionIt}
+                onChangeFr={(v) => handleInputChange("description", v)}
+                onChangeEn={(v) => handleInputChange("descriptionEn", v)}
+                onChangeDe={(v) => handleInputChange("descriptionDe", v)}
+                onChangeIt={(v) => handleInputChange("descriptionIt", v)}
+              />
 
                   <LocationAreaSelect
                     value={formData.locationAreaId}

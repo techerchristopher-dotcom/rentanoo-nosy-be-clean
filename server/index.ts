@@ -1134,6 +1134,31 @@ app.use(
 // déployée à: https://zykwfjxurwmputxwlkxs.functions.supabase.co/create-checkout-session
 // Le frontend utilise maintenant payerLocation() dans src/lib/payerLocation.ts
 
+// ── Translation endpoint ──────────────────────────────────────────────────────
+// Uses MyMemory free API (no key required, 5000 chars/day/IP)
+app.post("/api/translate", express.json(), async (req, res) => {
+  const { text, targetLang } = req.body as { text?: string; targetLang?: string };
+  if (!text || !targetLang) {
+    return res.status(400).json({ error: "Missing text or targetLang" });
+  }
+  const LANG_MAP: Record<string, string> = { en: "fr|en", de: "fr|de", it: "fr|it" };
+  const langPair = LANG_MAP[targetLang];
+  if (!langPair) {
+    return res.status(400).json({ error: `Unsupported targetLang: ${targetLang}` });
+  }
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+    const response = await fetch(url);
+    const data = await response.json() as { responseData?: { translatedText?: string }; responseStatus?: number };
+    const translated = data?.responseData?.translatedText;
+    if (!translated) return res.status(502).json({ error: "Translation service returned no result" });
+    return res.json({ translated });
+  } catch (err) {
+    console.error("[Translate] Error:", err);
+    return res.status(500).json({ error: "Translation failed" });
+  }
+});
+
 // 301 redirects : scooters anciennement indexés sous /moto/ → /vehicle/
 // La seule vraie moto est D395A595 (Wakaza 250cc) — tout le reste = scooter
 app.get("/moto/:license", (req, res, next) => {

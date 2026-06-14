@@ -104,6 +104,7 @@ import { isAccommodation } from "@/utils/vehicleType";
 import { useListingTerms } from "@/utils/listingTerminology";
 import { Seo } from "@/components/seo/Seo";
 import { ShareButton } from "@/components/shared/ShareButton";
+import { TranslatableDescription } from "@/components/shared/TranslatableDescription";
 import {
   buildAccommodationSeoTitle,
   buildAccommodationSeoDescription,
@@ -844,6 +845,7 @@ export default function AccommodationDetails() {
 
   const primaryPhoto = photos.find((p) => p.isPrimary) || photos[0];
   const dailyRate = vehicle.dailyPrice;
+
   const originalRate = Math.round(dailyRate * 1.2);
 
   const nextPhoto = () => {
@@ -1098,7 +1100,13 @@ export default function AccommodationDetails() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-0 p-4 sm:p-5">
-                        <ListingDescriptionContent content={vehicle.description} />
+                        <TranslatableDescription
+                          descriptionFr={vehicle.description}
+                          descriptionEn={vehicle.descriptionEn}
+                          descriptionDe={vehicle.descriptionDe}
+                          descriptionIt={vehicle.descriptionIt}
+                          renderContent={(text) => <ListingDescriptionContent content={text} />}
+                        />
                       </CardContent>
                     </Card>
                   </div>

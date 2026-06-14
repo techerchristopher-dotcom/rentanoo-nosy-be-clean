@@ -129,7 +129,10 @@ export interface Vehicle {
   latitude: number;
   longitude: number;
   status: VehicleStatus;
-  description?: string; // Description du véhicule
+  description?: string; // Description du véhicule (FR)
+  descriptionEn?: string | null;
+  descriptionDe?: string | null;
+  descriptionIt?: string | null;
   location?: string; // Libellé affichable (quartier ou zones pickup)
   /** Quartier structuré (FK location_areas) */
   locationArea?: LocationAreaRef;

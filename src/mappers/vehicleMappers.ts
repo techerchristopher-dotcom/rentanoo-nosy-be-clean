@@ -34,6 +34,10 @@ export const mapToCarVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   longitude: 0, // À ajouter dans la DB plus tard
   status: "available" as any,
   engineCapacity: vehicle.engine_capacity || undefined,
+  description: vehicle.description || undefined,
+  descriptionEn: (vehicle as any).description_en || undefined,
+  descriptionDe: (vehicle as any).description_de || undefined,
+  descriptionIt: (vehicle as any).description_it || undefined,
   vehicleType: (vehicle.vehicle_type as 'car' | 'moto' | 'scooter') || 'car',
   location:
     vehicle.pickup_zones && vehicle.pickup_zones.length > 0
@@ -83,6 +87,9 @@ export const mapToMotoVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   longitude: 0,
   status: "available" as any,
   description: vehicle.description || undefined, // Description du véhicule
+  descriptionEn: (vehicle as any).description_en || undefined,
+  descriptionDe: (vehicle as any).description_de || undefined,
+  descriptionIt: (vehicle as any).description_it || undefined,
   // Pas de fallback texte ici : si pas de pickup_zones, l'UI gère l'affichage
   location:
     vehicle.pickup_zones && vehicle.pickup_zones.length > 0
@@ -166,6 +173,9 @@ export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => 
   longitude: 0,
   status: "available" as any,
   description: vehicle.description || undefined,
+  descriptionEn: (vehicle as any).description_en || undefined,
+  descriptionDe: (vehicle as any).description_de || undefined,
+  descriptionIt: (vehicle as any).description_it || undefined,
   location: locationLabel || undefined,
   locationArea: locationArea || undefined,
   createdAt: vehicle.created_at || new Date().toISOString(),

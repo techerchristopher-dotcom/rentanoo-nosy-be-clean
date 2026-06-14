@@ -114,6 +114,7 @@ import {
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 import { ShareButton } from "@/components/shared/ShareButton";
+import { TranslatableDescription } from "@/components/shared/TranslatableDescription";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -930,6 +931,7 @@ export default function MotoVehicleDetails() {
 
   const primaryPhoto = photos.find((p) => p.isPrimary) || photos[0];
   const dailyRate = vehicle.dailyPrice;
+
   const originalRate = Math.round(dailyRate * 1.2);
 
   const nextPhoto = () => {
@@ -1298,9 +1300,12 @@ export default function MotoVehicleDetails() {
                             return `Location de ${getLocationArticle(typeLabel)} ${typeLabel} à Nosy Be`;
                           })()}
                         </h2>
-                        <p className="text-gray-700 leading-relaxed text-sm">
-                          {vehicle.description}
-                        </p>
+                        <TranslatableDescription
+                          descriptionFr={vehicle.description}
+                          descriptionEn={vehicle.descriptionEn}
+                          descriptionDe={vehicle.descriptionDe}
+                          descriptionIt={vehicle.descriptionIt}
+                        />
                       </CardContent>
                     </Card>
                   </div>

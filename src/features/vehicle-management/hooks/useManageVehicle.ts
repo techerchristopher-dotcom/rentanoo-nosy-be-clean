@@ -109,6 +109,9 @@ export function useManageVehicle(
             ? String(vehicleData.price_per_day_agency)
             : "",
         description: vehicleData.description || "",
+        descriptionEn: (vehicleData as unknown as { description_en?: string | null }).description_en || "",
+        descriptionDe: (vehicleData as unknown as { description_de?: string | null }).description_de || "",
+        descriptionIt: (vehicleData as unknown as { description_it?: string | null }).description_it || "",
         location: vehicleData.location || "",
         locationAreaId: vehicleData.location_area_id || "",
         status: (vehicleData.status as "active" | "inactive" | "review") || "active",

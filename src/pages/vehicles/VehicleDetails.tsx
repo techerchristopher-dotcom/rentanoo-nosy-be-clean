@@ -90,6 +90,7 @@ import {
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 import { ShareButton } from "@/components/shared/ShareButton";
+import { TranslatableDescription } from "@/components/shared/TranslatableDescription";
 import { isMoto, isAccommodation } from "@/utils/vehicleType";
 import { getCarEquipmentItems, mapSupabaseEquipment } from "@/utils/vehicleEquipment";
 import {
@@ -121,7 +122,7 @@ export default function VehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
 
   const fuelLabels = {
@@ -961,7 +962,7 @@ export default function VehicleDetails() {
     : restoredNavState ?? routerNavState;
   
   // Calculer les informations de location pour ce véhicule
-  const vehicleRentalInfo: VehicleRentalInfo | null = navigationState?.rentalCalculation 
+  const vehicleRentalInfo: VehicleRentalInfo | null = navigationState?.rentalCalculation
     ? createVehicleRentalInfo(vehicle.id, dailyRate, navigationState.rentalCalculation)
     : null;
   
@@ -1377,9 +1378,12 @@ export default function VehicleDetails() {
                             return `Location de ${getLocationArticle(typeLabel)} ${typeLabel} à Nosy Be`;
                           })()}
                         </h2>
-                        <p className="text-gray-700 leading-relaxed text-sm">
-                          {vehicle.description}
-                        </p>
+                        <TranslatableDescription
+                          descriptionFr={vehicle.description}
+                          descriptionEn={vehicle.descriptionEn}
+                          descriptionDe={vehicle.descriptionDe}
+                          descriptionIt={vehicle.descriptionIt}
+                        />
                       </CardContent>
                     </Card>
                   </div>

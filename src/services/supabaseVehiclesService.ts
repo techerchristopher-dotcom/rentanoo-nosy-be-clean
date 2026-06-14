@@ -408,6 +408,9 @@ export const SupabaseVehiclesService = {
     pickup_zones?: string[] | null;
     listing_owner_id?: string | null;
     listing_owner_phone?: string | null;
+    description_en?: string | null;
+    description_de?: string | null;
+    description_it?: string | null;
     has_ac?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
