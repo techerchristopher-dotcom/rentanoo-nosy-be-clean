@@ -292,6 +292,7 @@ export const SupabaseVehiclesService = {
           pickup_zones: vehicleData.pickup_zones ?? null,
           description: vehicleData.description ?? null,
           engine_capacity: vehicleData.engine_capacity ?? null,
+          location_area_id: vehicleData.location_area_id ?? null,
           available: vehicleData.available ?? true,
         })
         .select()
