@@ -135,8 +135,7 @@ function buildXml(vehicles) {
   }
 
   lines.push("</urlset>");
-  return lines.join("
-");
+  return lines.join("\n");
 }
 
 async function main() {
