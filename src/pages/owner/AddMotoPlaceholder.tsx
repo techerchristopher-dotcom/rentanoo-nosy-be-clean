@@ -681,6 +681,7 @@ export default function AddMotoPlaceholder() {
                           <SelectItem value="b5c87c3b-f425-4e71-8cc2-c4e5d23b3ee5">Hell-Ville</SelectItem>
                           <SelectItem value="d82c4403-8ae7-4fe9-99fb-e42fb22fa419">Madirokely</SelectItem>
                           <SelectItem value="ff030478-f4d5-4b90-a096-7f966f7c563f">Palm Beach</SelectItem>
+                          <SelectItem value="ababa367-8a66-4a3a-9f54-ba07e6028841">Diego Hely</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
