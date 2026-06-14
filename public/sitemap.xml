@@ -1,35 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Home -->
   <url>
     <loc>https://rentanoo.com/</loc>
     <lastmod>2026-06-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+  <!-- Pages catégorie véhicules -->
   <url>
-    <loc>https://rentanoo.com/legal</loc>
-    <lastmod>2026-06-13</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/contact</loc>
-    <lastmod>2026-06-13</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/rent-my-car</loc>
+    <loc>https://rentanoo.com/location-scooter-nosy-be</loc>
     <lastmod>2026-06-14</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/location-moto-nosy-be</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/location-quad-nosy-be</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/location-voiture-nosy-be</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <!-- Pages catégorie hébergements -->
+  <url>
+    <loc>https://rentanoo.com/location-vacances-nosy-be</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/location-appartement-nosy-be</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/location-villa-nosy-be</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/location-bungalow-nosy-be</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <!-- Blog -->
+  <url>
+    <loc>https://rentanoo.com/blog</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/blog/visiter-nosy-be-en-scooter</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rentanoo.com/sinistre-caution</loc>
-    <lastmod>2026-06-13</lastmod>
+    <loc>https://rentanoo.com/blog/itineraire-nosy-be-4-jours</loc>
+    <lastmod>2026-05-15</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://rentanoo.com/blog/aeroport-fascene-guide-arrivee</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- Pages SEO info -->
   <url>
     <loc>https://rentanoo.com/meteo-nosy-be</loc>
     <lastmod>2026-06-14</lastmod>
@@ -47,6 +100,31 @@
     <lastmod>2026-06-14</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
+  </url>
+  <!-- Pages statiques -->
+  <url>
+    <loc>https://rentanoo.com/contact</loc>
+    <lastmod>2026-06-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/legal</loc>
+    <lastmod>2026-06-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/sinistre-caution</loc>
+    <lastmod>2026-06-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://rentanoo.com/rent-my-car</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <!-- Hébergements -->
   <url>
@@ -69,130 +147,25 @@
     <priority>0.8</priority>
   </url>
   <!-- Scooters -->
-  <url>
-    <loc>https://rentanoo.com/vehicle/C7B6931F</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/9BB89913</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/4B0802DA</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/A3570211</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/F563120F</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/9F364AD9</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/5C18D3E0</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/D8FF5FB6</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/DCCF9CC1</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/F3238EA4</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/11542354</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/339C31B7</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/4FFAEB90</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/8E704000</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/A12A906A</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/6D1D1635</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/8CF0FE86</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/AD531416</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/B6D383ED</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/DBAA07C1</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://rentanoo.com/vehicle/E5A04AF9</loc>
-    <lastmod>2026-06-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  <url><loc>https://rentanoo.com/vehicle/C7B6931F</loc><lastmod>2026-06-11</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/9BB89913</loc><lastmod>2026-06-11</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/4B0802DA</loc><lastmod>2026-06-11</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/A3570211</loc><lastmod>2026-06-11</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/F563120F</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/9F364AD9</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/5C18D3E0</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/D8FF5FB6</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/DCCF9CC1</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/F3238EA4</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/11542354</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/339C31B7</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/4FFAEB90</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/8E704000</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/A12A906A</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/6D1D1635</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/8CF0FE86</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/AD531416</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/B6D383ED</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/DBAA07C1</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://rentanoo.com/vehicle/E5A04AF9</loc><lastmod>2026-06-04</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
 </urlset>
