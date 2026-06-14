@@ -1385,5 +1385,20 @@
         "waPrefillMessage": "Ciao Rentanoo,\n\nSono interessato/a agli alloggi proposti su Rentanoo (villa, casa, bungalow).\n\nPotete avvisarmi non appena questo servizio sarà disponibile?\n\nGrazie."
       }
     }
+  },
+  "explorerFilters": {
+    "sub": {
+      "moto": {
+        "quad": "Quad / ATV"
+      }
+    },
+    "empty": {
+      "moto": {
+        "quad": {
+          "title": "Nessun quad disponibile",
+          "description": "Nessun quad o ATV disponibile al momento. Contattaci su WhatsApp."
+        }
+      }
+    }
   }
 }
