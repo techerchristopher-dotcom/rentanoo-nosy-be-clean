@@ -1147,7 +1147,12 @@ app.post("/api/translate", express.json(), async (req, res) => {
     return res.status(400).json({ error: `Unsupported targetLang: ${targetLang}` });
   }
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+    // MyMemory free tier: 500 chars/query max — truncate cleanly at last space
+    const MAX_CHARS = 490;
+    const safeText = text.length > MAX_CHARS
+      ? text.substring(0, text.lastIndexOf(" ", MAX_CHARS)) + "…"
+      : text;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(safeText)}&langpair=${langPair}`;
     const response = await fetch(url);
     const data = await response.json() as { responseData?: { translatedText?: string }; responseStatus?: number };
     const translated = data?.responseData?.translatedText;
