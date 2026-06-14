@@ -1,32 +1,13 @@
 # Force Nixpacks to use Node.js 22 avec npm (inclus)
-# chromium + deps requis par react-snap (puppeteer) pour le prerendering SSG au build
 
 [phases.setup]
-nixPkgs = [
-  "nodejs_22",
-  "chromium",
-  "nss",
-  "freetype",
-  "harfbuzz",
-  "ca-certificates",
-  "pango",
-  "libdrm",
-  "mesa",
-  "expat",
-  "libxkbcommon",
-]
+nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = ["npm ci --include=dev"]
 
 [phases.build]
-# PUPPETEER_SKIP_CHROMIUM_DOWNLOAD : puppeteer utilise le chromium nixpkg au lieu de télécharger le sien
-# PUPPETEER_EXECUTABLE_PATH : chemin du binaire chromium dans lenv nix
 cmds = ["npm run build"]
-
-[variables]
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "chromium"
 
 [start]
 cmd = "npm run start:prod"
