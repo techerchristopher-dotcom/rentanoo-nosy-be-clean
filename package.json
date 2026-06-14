@@ -32,7 +32,8 @@
     "i18n:codemod:dry-run": "jscodeshift --parser=tsx -t codemods/i18n-transform.js --dry --print",
     "i18n:codemod:pages": "jscodeshift --parser=tsx -t codemods/i18n-transform.js src/pages",
     "i18n:codemod:components": "jscodeshift --parser=tsx -t codemods/i18n-transform.js src/components",
-    "test:unit": "tsx --test src/utils/rentalPriceFromDates.test.ts"
+    "test:unit": "tsx --test src/utils/rentalPriceFromDates.test.ts",
+    "postbuild": "node scripts/generate-static-pages.js"
   },
   "dependencies": {
     "@google-analytics/data": "^6.1.0",
