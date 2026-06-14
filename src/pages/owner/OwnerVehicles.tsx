@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Car, Calendar, Settings, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Car, Calendar, Settings, Loader2, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Footer } from "@/components/layout/footer";
 import { ProfileService } from "@/services/supabase/profile";
@@ -17,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { VehicleTypeModal } from "@/components/owner/VehicleTypeModal";
 import { getPublicListingPath } from "@/utils/vehicleType";
 import { getOptimizedImageUrl } from "@/utils/imageOptimization";
+import { MdHotel, MdMoped, MdTwoWheeler } from "react-icons/md";
 
 const LOCKED_OPERATIONAL_STATUSES = new Set([
   "rented",
@@ -39,7 +41,39 @@ const PUBLICATION_BADGE: Record<string, { label: string; className: string }> = 
 type OwnerVehicleRow = Vehicle & {
   operationalStatus: string;
   isPublished: boolean;
+  vehicleCategory: string | null;
 };
+
+// ── Filter config ────────────────────────────────────────────────────────────
+const TYPE_FILTERS = [
+  { id: "accommodation", label: "Hébergements", Icon: MdHotel },
+  { id: "scooter",       label: "Scooters",     Icon: MdMoped },
+  { id: "moto",          label: "Motos",        Icon: MdTwoWheeler },
+  { id: "car",           label: "Voitures",     Icon: Car },
+] as const;
+
+const SUB_CATEGORY_FILTERS: Record<string, { id: string; label: string }[]> = {
+  accommodation: [
+    { id: "Appartement", label: "Appartement" },
+    { id: "Villa",       label: "Villa" },
+    { id: "Bungalow",   label: "Bungalow" },
+    { id: "Maison",     label: "Maison" },
+    { id: "Chambre",    label: "Chambre" },
+  ],
+  car: [
+    { id: "Citadine",    label: "Citadine" },
+    { id: "SUV",         label: "SUV" },
+    { id: "Pick-up",     label: "Pick-up" },
+    { id: "Minibus",     label: "Minibus" },
+    { id: "Berline",     label: "Berline" },
+  ],
+};
+
+function vehicleMatchesType(v: OwnerVehicleRow, typeId: string): boolean {
+  const vt = v.vehicleType as string;
+  if (typeId === "car") return !["scooter", "moto", "accommodation"].includes(vt);
+  return vt === typeId;
+}
 
 function PublicationBadge({
   operationalStatus,
@@ -70,8 +104,53 @@ const OwnerVehicles = () => {
   const [pendingAvailabilityChange, setPendingAvailabilityChange] = useState<{vehicleId: string, newValue: boolean} | null>(null);
   const [updatingVehicle, setUpdatingVehicle] = useState<string | null>(null);
   const [showVehicleTypeModal, setShowVehicleTypeModal] = useState(false);
+  const [activeType, setActiveType] = useState<string | null>(null);
+  const [activeSubCat, setActiveSubCat] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Computed counts per type
+  const typeCounts = useMemo(() =>
+    Object.fromEntries(TYPE_FILTERS.map(f => [f.id, vehicles.filter(v => vehicleMatchesType(v, f.id)).length])),
+    [vehicles]
+  );
+
+  // Sub-cat counts for the active type
+  const subCatCounts = useMemo(() => {
+    if (!activeType || !SUB_CATEGORY_FILTERS[activeType]) return {} as Record<string, number>;
+    const typeVehicles = vehicles.filter(v => vehicleMatchesType(v, activeType));
+    return Object.fromEntries(
+      SUB_CATEGORY_FILTERS[activeType].map(s => [s.id, typeVehicles.filter(v => v.vehicleCategory === s.id).length])
+    );
+  }, [vehicles, activeType]);
+
+  // Filtered list for display
+  const displayVehicles = useMemo(() => {
+    let result = activeType ? vehicles.filter(v => vehicleMatchesType(v, activeType)) : vehicles;
+    if (activeType && activeSubCat && SUB_CATEGORY_FILTERS[activeType]) {
+      result = result.filter(v => v.vehicleCategory === activeSubCat);
+    }
+    return result;
+  }, [vehicles, activeType, activeSubCat]);
+
+  const handleTypeClick = (typeId: string) => {
+    if (activeType === typeId) {
+      setActiveType(null);
+      setActiveSubCat(null);
+    } else {
+      setActiveType(typeId);
+      setActiveSubCat(null);
+    }
+  };
+
+  const handleSubCatClick = (subId: string) => {
+    setActiveSubCat(prev => prev === subId ? null : subId);
+  };
+
+  const handleResetFilters = () => {
+    setActiveType(null);
+    setActiveSubCat(null);
+  };
 
   useEffect(() => {
     loadData();
@@ -294,6 +373,7 @@ const OwnerVehicles = () => {
           createdAt: supabaseVehicle.created_at || new Date().toISOString(),
           updatedAt: supabaseVehicle.updated_at || new Date().toISOString(),
           vehicleType: (supabaseVehicle.vehicle_type as Vehicle["vehicleType"]) ?? "car",
+          vehicleCategory: supabaseVehicle.vehicle_category ?? null,
         }));
 
         // Enrichir avec les photos uploadées (vehicle_photos table)
@@ -404,6 +484,75 @@ const OwnerVehicles = () => {
             )}
           </div>
 
+          {/* ── Type filter cards ── */}
+          {vehicles.length > 0 && (
+            <div className="mb-6 space-y-3">
+              {(activeType || activeSubCat) && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground font-medium">Filtres :</span>
+                  <button
+                    onClick={handleResetFilters}
+                    className="flex items-center gap-1 text-primary font-semibold hover:underline"
+                  >
+                    <X className="h-3 w-3" /> Réinitialiser
+                  </button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {TYPE_FILTERS.map(({ id, label, Icon }) => {
+                  const count = typeCounts[id] ?? 0;
+                  const isActive = activeType === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => handleTypeClick(id)}
+                      className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 text-center cursor-pointer ${
+                        isActive
+                          ? "border-primary bg-primary/5 shadow-md"
+                          : "border-border bg-card hover:border-primary/40 hover:shadow-sm"
+                      }`}
+                    >
+                      <div className={`rounded-full p-2 ${isActive ? "bg-primary/10" : "bg-muted"}`}>
+                        <Icon className={`h-6 w-6 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <span className={`font-semibold text-sm ${isActive ? "text-primary" : "text-foreground"}`}>{label}</span>
+                      <span className={`text-xs ${count === 0 ? "text-muted-foreground/60" : isActive ? "text-primary" : "text-muted-foreground"}`}>
+                        {count} annonce{count !== 1 ? "s" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sub-category chips */}
+              {activeType && SUB_CATEGORY_FILTERS[activeType] && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {SUB_CATEGORY_FILTERS[activeType].map(({ id, label }) => {
+                    const count = subCatCounts[id] ?? 0;
+                    const isActive = activeSubCat === id;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => handleSubCatClick(id)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-all ${
+                          isActive
+                            ? "border-primary bg-primary text-white"
+                            : "border-border bg-background text-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        {label}
+                        <span className={`text-xs ${isActive ? "text-white/80" : "text-muted-foreground"}`}>
+                          ({count})
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {currentUser.kycStatus !== "verified" && (
             <Card className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
               <CardContent className="pt-6">
@@ -458,7 +607,7 @@ const OwnerVehicles = () => {
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {vehicles.map((vehicle) => (
+              {displayVehicles.map((vehicle) => (
                 <Card key={vehicle.id} className="hover:shadow-xl hover:scale-105 transition-all duration-300 relative overflow-hidden group border-0 shadow-lg">
                   {/* Fond avec photo — img + lazy au lieu de background-image pour optimiser */}
                   {vehicle.imageUrl && (
@@ -580,8 +729,16 @@ const OwnerVehicles = () => {
                 </Card>
               ))}
               
-              {/* Carte d'ajout de véhicule */}
-              <Card 
+              {/* Empty state when filter gives 0 results */}
+              {displayVehicles.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+                  <p className="text-lg font-semibold mb-2">Aucune annonce pour ce filtre</p>
+                  <button onClick={handleResetFilters} className="text-sm text-primary underline">Voir toutes les annonces</button>
+                </div>
+              )}
+
+              {/* Carte d'ajout de véhicule — masquée si filtre actif */}
+              {!activeType && <Card
                 className="hover:shadow-xl hover:scale-105 transition-all duration-300 relative overflow-hidden group border-2 border-dashed border-gray-300 hover:border-primary/50 bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer"
                 onClick={handleAddVehicleClick}
               >
@@ -616,7 +773,7 @@ const OwnerVehicles = () => {
                     </div>
                   </div>
                 </div>
-              </Card>
+              </Card>}
             </div>
           )}
         </div>
