@@ -1,7 +1,7 @@
 {
   "name": "Rentanoo",
   "short_name": "Rentanoo",
-  "description": "Louez votre scooter à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Casques et assurance inclus.",
+  "description": "Plateforme de location à Nosy Be : scooter, moto, voiture et hébergement. Réservation 100 % en ligne.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
