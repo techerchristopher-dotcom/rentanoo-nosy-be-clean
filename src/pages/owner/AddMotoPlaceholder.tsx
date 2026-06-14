@@ -45,6 +45,7 @@ export default function AddMotoPlaceholder() {
   const [engineCapacity, setEngineCapacity] = useState("");
   const [vehicleKind, setVehicleKind] = useState<"moto" | "scooter" | "">("");
   const [accommodationCategory, setAccommodationCategory] = useState<AccommodationCategory | "">("");
+  const [locationAreaId, setLocationAreaId] = useState<string>("");
   const [licensePlate, setLicensePlate] = useState("");
   const [dailyPrice, setDailyPrice] = useState("");
   const [mileage, setMileage] = useState("");
@@ -264,7 +265,7 @@ export default function AddMotoPlaceholder() {
     }
 
     if (isAccommodationMode) {
-      if (!accommodationCategory || !model.trim() || !dailyPrice.trim() || !seats.trim()) {
+      if (!accommodationCategory || !model.trim() || !dailyPrice.trim() || !seats.trim() || !locationAreaId) {
         toast({
           title: t("common.error", "Erreur"),
           description: t(
@@ -316,6 +317,7 @@ export default function AddMotoPlaceholder() {
           seats: parsedSeats,
           vehicle_type: "accommodation",
           vehicle_category: accommodationCategory,
+          location_area_id: locationAreaId,
           available: true,
           status: "active",
         });
@@ -648,6 +650,37 @@ export default function AddMotoPlaceholder() {
                           <SelectItem value="Appartement">
                             {t("ownerVehicles.accommodationForm.categoryAppartement", "Appartement")}
                           </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label>
+                        {t("ownerVehicles.accommodationForm.locationArea", "Quartier / Localisation")}
+                        <span className="text-destructive ml-1">*</span>
+                      </Label>
+                      <Select
+                        value={locationAreaId}
+                        onValueChange={(v) => setLocationAreaId(v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t(
+                              "ownerVehicles.accommodationForm.locationAreaPlaceholder",
+                              "Sélectionner un quartier"
+                            )}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="2fbc8909-381d-4bdb-baea-9789e2f7b28a">Ambatoloaka</SelectItem>
+                          <SelectItem value="bb7a3d32-79c8-4d33-af04-834b3eabcf97">Ambondrona</SelectItem>
+                          <SelectItem value="5879bc28-3903-481b-a0dc-d7f44f2982f1">Andilana</SelectItem>
+                          <SelectItem value="cc91659e-92ae-48b7-ad1a-55e7f82ec377">Dar Es Salam</SelectItem>
+                          <SelectItem value="ed8d772e-d58e-49f7-b223-94400ef507b3">Dzamandzar</SelectItem>
+                          <SelectItem value="8f9e7dfd-18a1-4eb0-8175-bfb326855dcb">Fascène</SelectItem>
+                          <SelectItem value="b5c87c3b-f425-4e71-8cc2-c4e5d23b3ee5">Hell-Ville</SelectItem>
+                          <SelectItem value="d82c4403-8ae7-4fe9-99fb-e42fb22fa419">Madirokely</SelectItem>
+                          <SelectItem value="ff030478-f4d5-4b90-a096-7f966f7c563f">Palm Beach</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
