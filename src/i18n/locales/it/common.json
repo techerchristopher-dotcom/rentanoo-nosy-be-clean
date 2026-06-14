@@ -117,8 +117,8 @@
     }
   },
   "home": {
-    "heroTitle": "Noleggia il tuo scooter a Nosy Be in pochi clic",
-    "heroSubtitle": "RENTANOO, la prima piattaforma di noleggio scooter 100% online",
+    "heroTitle": "Noleggio scooter, moto, auto & alloggio a Nosy Be | Rentanoo",
+    "heroSubtitle": "RENTANOO — la piattaforma di prenotazione 100% online per due ruote e alloggi a Nosy Be",
     "catalogCta": "Vedi {{count}} veicoli disponibili",
     "catalogCta_one": "Vedi il veicolo disponibile",
     "catalogCtaLoading": "Vedi i veicoli disponibili",
@@ -130,7 +130,9 @@
       "airportDelivery": "Consegna aeroporto",
       "helmetIncluded": "Casco incluso",
       "insuranceIncluded": "Assicurazione inclusa",
-      "ariaLabel": "Punti di forza Rentanoo"
+      "ariaLabel": "Punti di forza Rentanoo",
+      "accommodationAvailable": "Alloggi disponibili",
+      "secureBooking": "Prenotazione sicura"
     },
     "dayContext": {
       "ariaLabel": "Meteo e tasso di cambio di oggi a Nosy Be",
@@ -322,11 +324,12 @@
     }
   },
   "footer": {
-    "brand": "RENTANOO",
-    "description": "Agenzia di noleggio scooter a Nosy Be. Prenotazione 100% online, facile e veloce.",
-    "location": "Nosy Be, Madagascar",
-    "copyright": "© 2025 RENTANOO. Tutti i diritti riservati.",
-    "madeWith": "Realizzato con ❤️ a Nosy Be"
+    "description": "Piattaforma di noleggio a Nosy Be: scooter, moto, auto e alloggio. Prenotazione 100% online.",
+    "nav": {
+      "scooters": "Scooter & moto",
+      "cars": "Auto",
+      "accommodation": "Alloggi"
+    }
   },
   "profile": {
     "hero": {
@@ -348,12 +351,24 @@
         "title": "Informazioni personali",
         "step": "Passo 1/3",
         "subtitle": "Le tue informazioni di base per personalizzare la tua esperienza",
-        "identity": { "title": "Identità" },
-        "contact": { "title": "Contatti" },
-        "personal": { "title": "Informazioni personali" },
-        "bio": { "title": "Presentazione personale" },
-        "phone": { "title": "Telefono" },
-        "status": { "title": "Stato dell'account" },
+        "identity": {
+          "title": "Identità"
+        },
+        "contact": {
+          "title": "Contatti"
+        },
+        "personal": {
+          "title": "Informazioni personali"
+        },
+        "bio": {
+          "title": "Presentazione personale"
+        },
+        "phone": {
+          "title": "Telefono"
+        },
+        "status": {
+          "title": "Stato dell'account"
+        },
         "saved": "Salvato"
       },
       "address": {
@@ -387,9 +402,15 @@
       "birthDate": {
         "label": "Data di nascita",
         "placeholder": "Seleziona una data",
-        "day": { "placeholder": "Giorno" },
-        "month": { "placeholder": "Mese" },
-        "year": { "placeholder": "Anno" }
+        "day": {
+          "placeholder": "Giorno"
+        },
+        "month": {
+          "placeholder": "Mese"
+        },
+        "year": {
+          "placeholder": "Anno"
+        }
       },
       "birthPlace": {
         "label": "Luogo di nascita",
@@ -451,9 +472,15 @@
         "issueDate": {
           "label": "Data di rilascio",
           "placeholder": "Seleziona una data",
-          "day": { "placeholder": "Giorno" },
-          "month": { "placeholder": "Mese" },
-          "year": { "placeholder": "Anno" },
+          "day": {
+            "placeholder": "Giorno"
+          },
+          "month": {
+            "placeholder": "Mese"
+          },
+          "year": {
+            "placeholder": "Anno"
+          },
           "helper": "Per una patente europea, la data di inizio validità per i veicoli di categoria B."
         },
         "category": {
@@ -776,13 +803,13 @@
       "title": "Nessun veicolo",
       "description": "Inizia aggiungendo il tuo primo veicolo alla piattaforma."
     },
-      "vehicleTypeModal": {
-        "title": "Che tipo di veicolo desideri aggiungere?",
-        "description": "Scegli il tipo di veicolo che vuoi pubblicare sulla piattaforma.",
-        "carLabel": "Auto",
-        "motoLabel": "Moto / Scooter",
-        "cancel": "Annulla"
-      },
+    "vehicleTypeModal": {
+      "title": "Che tipo di veicolo desideri aggiungere?",
+      "description": "Scegli il tipo di veicolo che vuoi pubblicare sulla piattaforma.",
+      "carLabel": "Auto",
+      "motoLabel": "Moto / Scooter",
+      "cancel": "Annulla"
+    },
     "card": {
       "pricePerDay": "Prezzo/giorno",
       "year": "Anno",
@@ -796,72 +823,72 @@
       "title": "Aggiungi un veicolo",
       "description": "Clicca qui per aggiungere un nuovo veicolo alla tua flotta e iniziare a noleggiarlo",
       "badge": "Nuovo veicolo"
+    },
+    "motoPlaceholder": {
+      "title": "Moto / Scooter",
+      "description": "Il modulo per aggiungere una moto o uno scooter sarà disponibile a breve.",
+      "backToVehicles": "Torna ai miei veicoli"
+    },
+    "motoForm": {
+      "title": "Aggiungi una moto / scooter",
+      "brand": "Marca",
+      "brandPlaceholder": "Es: Honda",
+      "model": "Modello",
+      "modelPlaceholder": "Es: PCX 125",
+      "year": "Anno",
+      "mileage": "Chilometraggio (approx.)",
+      "kind": "Tipo",
+      "kindPlaceholder": "Seleziona",
+      "kindMoto": "Moto",
+      "kindScooter": "Scooter",
+      "engineCapacity": "Cilindrata (cc)",
+      "licensePlate": "Targa (opzionale)",
+      "seats": "Numero di posti",
+      "fuel": "Carburante",
+      "fuelPlaceholder": "Seleziona",
+      "transmission": "Cambio",
+      "transmissionPlaceholder": "Seleziona",
+      "dailyPrice": "Prezzo al giorno (€)",
+      "description": "Descrizione (opzionale)",
+      "descriptionPlaceholder": "Descrivi lo stato della moto, le dotazioni incluse (casco, top case, ecc.)...",
+      "cancel": "Annulla",
+      "submit": "Crea veicolo",
+      "saving": "Creazione in corso...",
+      "successTitle": "Moto / scooter aggiunto con successo",
+      "successDescription": "Il tuo veicolo è stato creato. Ora puoi gestirlo nell'elenco dei tuoi veicoli.",
+      "errors": {
+        "required": "Compila almeno marca, modello, anno e prezzo al giorno.",
+        "year": "Inserisci un anno valido.",
+        "price": "Inserisci un prezzo al giorno valido.",
+        "generic": "Impossibile creare il veicolo. Riprova."
       },
-      "motoPlaceholder": {
-        "title": "Moto / Scooter",
-        "description": "Il modulo per aggiungere una moto o uno scooter sarà disponibile a breve.",
-        "backToVehicles": "Torna ai miei veicoli"
-      },
-      "motoForm": {
-        "title": "Aggiungi una moto / scooter",
-        "brand": "Marca",
-        "brandPlaceholder": "Es: Honda",
-        "model": "Modello",
-        "modelPlaceholder": "Es: PCX 125",
-        "year": "Anno",
-        "mileage": "Chilometraggio (approx.)",
-        "kind": "Tipo",
-        "kindPlaceholder": "Seleziona",
-        "kindMoto": "Moto",
-        "kindScooter": "Scooter",
-        "engineCapacity": "Cilindrata (cc)",
-        "licensePlate": "Targa (opzionale)",
-        "seats": "Numero di posti",
-        "fuel": "Carburante",
-        "fuelPlaceholder": "Seleziona",
-        "transmission": "Cambio",
-        "transmissionPlaceholder": "Seleziona",
-        "dailyPrice": "Prezzo al giorno (€)",
-        "description": "Descrizione (opzionale)",
-        "descriptionPlaceholder": "Descrivi lo stato della moto, le dotazioni incluse (casco, top case, ecc.)...",
-        "cancel": "Annulla",
-        "submit": "Crea veicolo",
-        "saving": "Creazione in corso...",
-        "successTitle": "Moto / scooter aggiunto con successo",
-        "successDescription": "Il tuo veicolo è stato creato. Ora puoi gestirlo nell'elenco dei tuoi veicoli.",
-        "errors": {
-          "required": "Compila almeno marca, modello, anno e prezzo al giorno.",
-          "year": "Inserisci un anno valido.",
-          "price": "Inserisci un prezzo al giorno valido.",
-          "generic": "Impossibile creare il veicolo. Riprova."
-        },
-        "photos": {
-          "sectionTitle": "Foto del veicolo",
-          "sectionSubtitle": "Aggiungi almeno una foto della tua moto o scooter per attirare più locatari.",
-          "primaryLabel": "Foto principale",
-          "primaryHint": "Anteriore sinistra – angolo consigliato per valorizzare la moto/scooter",
-          "profileLabel": "Profilo sinistro",
-          "profileHint": "Vista laterale per mostrare bene la linea della moto/scooter",
-          "interiorLabel": "Dettagli / Dotazioni",
-          "interiorHint": "Ad esempio: cruscotto, sella, top case, vani portaoggetti...",
-          "addMore": "Aggiungi foto",
-          "addMoreLimit": "Limite raggiunto (3 foto aggiuntive)",
-          "slotLabel": "Foto {{index}}",
-          "slotOptional": "Opzionale",
-          "changePhoto": "Cambia foto",
-          "deletePhoto": "Elimina",
-          "invalidType": "Seleziona un file immagine valido.",
-          "tooLarge": "La foto deve essere inferiore a 10MB.",
-          "minRequired": "Aggiungi almeno una foto della tua moto o scooter.",
-          "added": "Foto aggiunta",
-          "addedTitle": "Foto aggiunta",
-          "addedDescription": "La tua foto è stata aggiunta con successo.",
-          "additionalAdded": "Foto aggiuntiva aggiunta",
-          "additionalAddedDescription": "La tua foto aggiuntiva è stata aggiunta con successo.",
-          "removed": "Foto eliminata",
-          "removedTitle": "Foto eliminata",
-          "removedDescription": "La foto è stata eliminata con successo."
-        }
+      "photos": {
+        "sectionTitle": "Foto del veicolo",
+        "sectionSubtitle": "Aggiungi almeno una foto della tua moto o scooter per attirare più locatari.",
+        "primaryLabel": "Foto principale",
+        "primaryHint": "Anteriore sinistra – angolo consigliato per valorizzare la moto/scooter",
+        "profileLabel": "Profilo sinistro",
+        "profileHint": "Vista laterale per mostrare bene la linea della moto/scooter",
+        "interiorLabel": "Dettagli / Dotazioni",
+        "interiorHint": "Ad esempio: cruscotto, sella, top case, vani portaoggetti...",
+        "addMore": "Aggiungi foto",
+        "addMoreLimit": "Limite raggiunto (3 foto aggiuntive)",
+        "slotLabel": "Foto {{index}}",
+        "slotOptional": "Opzionale",
+        "changePhoto": "Cambia foto",
+        "deletePhoto": "Elimina",
+        "invalidType": "Seleziona un file immagine valido.",
+        "tooLarge": "La foto deve essere inferiore a 10MB.",
+        "minRequired": "Aggiungi almeno una foto della tua moto o scooter.",
+        "added": "Foto aggiunta",
+        "addedTitle": "Foto aggiunta",
+        "addedDescription": "La tua foto è stata aggiunta con successo.",
+        "additionalAdded": "Foto aggiuntiva aggiunta",
+        "additionalAddedDescription": "La tua foto aggiuntiva è stata aggiunta con successo.",
+        "removed": "Foto eliminata",
+        "removedTitle": "Foto eliminata",
+        "removedDescription": "La foto è stata eliminata con successo."
+      }
     },
     "availabilityDialog": {
       "title": "Conferma modifica disponibilità",
@@ -1225,9 +1252,18 @@
     "faqTitle": "FAQ — Meteo Nosy Be",
     "faq": {
       "items": [
-        { "q": "Periodo migliore per visitare Nosy Be?", "a": "Stagione secca (maggio–novembre): cielo più sereno e mare calmo, ideale per esplorare in scooter." },
-        { "q": "Fa sempre caldo?", "a": "Circa 25–30 °C. In stagione piovosa più umidità — porta una protezione leggera dalla pioggia." },
-        { "q": "Le previsioni sono affidabili?", "a": "24–48 ore sono affidabili; per una settimana usale come tendenza." }
+        {
+          "q": "Periodo migliore per visitare Nosy Be?",
+          "a": "Stagione secca (maggio–novembre): cielo più sereno e mare calmo, ideale per esplorare in scooter."
+        },
+        {
+          "q": "Fa sempre caldo?",
+          "a": "Circa 25–30 °C. In stagione piovosa più umidità — porta una protezione leggera dalla pioggia."
+        },
+        {
+          "q": "Le previsioni sono affidabili?",
+          "a": "24–48 ore sono affidabili; per una settimana usale come tendenza."
+        }
       ]
     },
     "ctaTitle": "Pronto a esplorare Nosy Be?",
@@ -1251,9 +1287,18 @@
     "faqTitle": "FAQ — Cambio Madagascar",
     "faq": {
       "items": [
-        { "q": "Qual è il cambio Euro Ariary oggi?", "a": "Aggiornato quotidianamente via Frankfurter; i cambi locali possono differire di qualche ariary." },
-        { "q": "Si può pagare in euro a Nosy Be?", "a": "A volte nel turismo, ma l'ariary resta la moneta corrente — cambia parte del budget in MGA." },
-        { "q": "Come usa Rentanoo questo tasso?", "a": "Prezzi in euro con equivalente ariary al tasso del giorno per una prenotazione trasparente." }
+        {
+          "q": "Qual è il cambio Euro Ariary oggi?",
+          "a": "Aggiornato quotidianamente via Frankfurter; i cambi locali possono differire di qualche ariary."
+        },
+        {
+          "q": "Si può pagare in euro a Nosy Be?",
+          "a": "A volte nel turismo, ma l'ariary resta la moneta corrente — cambia parte del budget in MGA."
+        },
+        {
+          "q": "Come usa Rentanoo questo tasso?",
+          "a": "Prezzi in euro con equivalente ariary al tasso del giorno per una prenotazione trasparente."
+        }
       ]
     },
     "ctaTitle": "Prenota lo scooter con prezzi in € e Ar",
@@ -1291,9 +1336,18 @@
     "faqTitle": "FAQ — Voli Nosy Be",
     "faq": {
       "items": [
-        { "q": "Codice IATA Nosy Be?", "a": "NOS (Fascène)." },
-        { "q": "Scooter in aeroporto?", "a": "Sì, con Rentanoo prenotabile online." },
-        { "q": "Orari garantiti?", "a": "No. Indicativi da fonte terza. Programma ufficiale: nosybe-airport.aero/vols/ o contatta la compagnia." }
+        {
+          "q": "Codice IATA Nosy Be?",
+          "a": "NOS (Fascène)."
+        },
+        {
+          "q": "Scooter in aeroporto?",
+          "a": "Sì, con Rentanoo prenotabile online."
+        },
+        {
+          "q": "Orari garantiti?",
+          "a": "No. Indicativi da fonte terza. Programma ufficiale: nosybe-airport.aero/vols/ o contatta la compagnia."
+        }
       ]
     },
     "ctaTitle": "Atterra sereno a Nosy Be",
