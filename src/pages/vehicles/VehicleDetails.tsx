@@ -89,6 +89,7 @@ import {
   buildVehicleBreadcrumbSchema,
 } from "@/utils/vehicleSeo";
 import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
+import { ShareButton } from "@/components/shared/ShareButton";
 import { isMoto, isAccommodation } from "@/utils/vehicleType";
 import { getCarEquipmentItems, mapSupabaseEquipment } from "@/utils/vehicleEquipment";
 import {
@@ -1259,10 +1260,15 @@ export default function VehicleDetails() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <Badge variant="secondary" className="text-sm">{vehicle.license}</Badge>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">5.0</span>
-                    <span className="text-muted-foreground">(24 avis)</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">5.0</span>
+                      <span className="text-muted-foreground">(24 avis)</span>
+                    </div>
+                    <ShareButton
+                      title={`${vehicle.brand} ${vehicle.model} — Location à Nosy Be`}
+                    />
                   </div>
                 </div>
                 

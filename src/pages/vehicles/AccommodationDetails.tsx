@@ -103,6 +103,7 @@ import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
 import { useListingTerms } from "@/utils/listingTerminology";
 import { Seo } from "@/components/seo/Seo";
+import { ShareButton } from "@/components/shared/ShareButton";
 import {
   buildAccommodationSeoTitle,
   buildAccommodationSeoDescription,
@@ -1056,10 +1057,15 @@ export default function AccommodationDetails() {
                   <Badge variant="secondary" className="text-sm">
                     {vehicle.license}
                   </Badge>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">5.0</span>
-                    <span className="text-muted-foreground">(24 avis)</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">5.0</span>
+                      <span className="text-muted-foreground">(24 avis)</span>
+                    </div>
+                    <ShareButton
+                      title={`${vehicle.brand} ${vehicle.model} — Hébergement à Nosy Be`}
+                    />
                   </div>
                 </div>
 
