@@ -1,3 +1,4 @@
+import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Clock, Tag } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
