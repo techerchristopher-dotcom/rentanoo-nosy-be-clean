@@ -1,8 +1,8 @@
 import { Helmet } from "react-helmet-async";
 
-export const DEFAULT_TITLE = "Location scooter Nosy Be – Louer un scooter en ligne | Rentanoo";
+export const DEFAULT_TITLE = "Location scooter, moto, voiture & hébergement à Nosy Be | Rentanoo";
 export const DEFAULT_DESCRIPTION =
-  "Louez votre scooter à Nosy Be en quelques clics. Livraison à l'aéroport ou à l'hôtel. Casques et assurance inclus. Réservation 100 % en ligne.";
+  "Réservez en ligne scooter, moto, voiture ou hébergement à Nosy Be. Livraison à l'aéroport Fascène ou à votre hôtel. Assurance incluse. Plateforme 100 % en ligne.";
 export const DEFAULT_OG_IMAGE = "https://rentanoo.com/og-rentanoo-nosy-be.webp";
 
 export interface SeoProps {
