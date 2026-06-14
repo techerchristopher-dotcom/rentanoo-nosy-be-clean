@@ -189,6 +189,7 @@ export function useManageVehicle(
         listingOwnerDisplayName: "",
         listingOwnerAvatarUrl: "",
         listingOwnerType: "individual",
+        listingOwnerPhone: (vehicleData as unknown as { listing_owner_phone?: string | null }).listing_owner_phone || "",
       });
 
       if (vehicleData.listing_owner_id) {

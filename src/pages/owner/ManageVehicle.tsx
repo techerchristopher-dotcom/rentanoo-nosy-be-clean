@@ -1459,6 +1459,7 @@ export default function ManageVehicle() {
         description: formData.description,
         location: formData.location,
         available: formData.available,
+        listing_owner_phone: formData.listingOwnerPhone?.trim() || null,
       };
 
       // Préparer les données optionnelles (peuvent ne pas exister encore)
@@ -2400,6 +2401,23 @@ export default function ManageVehicle() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Téléphone du propriétaire — admin uniquement, jamais affiché aux clients */}
+                <div className="space-y-2 rounded-lg border border-dashed border-orange-300 bg-orange-50 dark:bg-orange-950/20 p-4">
+                  <Label htmlFor="listingOwnerPhone" className="flex items-center gap-2 text-orange-800 dark:text-orange-300 font-semibold">
+                    🔒 Téléphone du propriétaire (usage interne)
+                  </Label>
+                  <Input
+                    id="listingOwnerPhone"
+                    type="tel"
+                    value={formData.listingOwnerPhone}
+                    onChange={(e) => handleInputChange("listingOwnerPhone", e.target.value)}
+                    placeholder="Ex. +261 34 12 345 67"
+                  />
+                  <p className="text-xs text-orange-700 dark:text-orange-400">
+                    Ce numéro est visible uniquement dans cet écran de gestion. Il n'est jamais affiché aux clients.
+                  </p>
                 </div>
 
                 {formData.listingOwnerDisplayName.trim() && (

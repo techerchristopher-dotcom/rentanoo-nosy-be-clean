@@ -112,6 +112,8 @@ export interface VehicleFormData {
   listingOwnerDisplayName: string;
   listingOwnerAvatarUrl: string;
   listingOwnerType: "individual" | "agency" | "residence" | "platform_managed";
+  /** Téléphone interne du propriétaire pour cette annonce (admin uniquement) */
+  listingOwnerPhone: string;
 }
 
 /**
@@ -228,5 +230,6 @@ export const initialFormData: VehicleFormData = {
   listingOwnerDisplayName: "",
   listingOwnerAvatarUrl: "",
   listingOwnerType: "individual",
+  listingOwnerPhone: "",
 };
 

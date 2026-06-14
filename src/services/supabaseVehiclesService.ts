@@ -407,6 +407,7 @@ export const SupabaseVehiclesService = {
     status?: 'active' | 'inactive' | 'review';
     pickup_zones?: string[] | null;
     listing_owner_id?: string | null;
+    listing_owner_phone?: string | null;
     has_ac?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
