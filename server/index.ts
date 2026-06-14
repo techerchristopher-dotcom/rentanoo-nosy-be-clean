@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
@@ -1171,7 +1172,10 @@ async function fetchVehicleForOg(license: string) {
       .ilike("id", `${prefix}-%`)
       .limit(1);
 
-    if (!vehicles || vehicles.length === 0) return null;
+    if (!vehicles || vehicles.length === 0) {
+      console.log(`[OG Bot] No vehicle found for license prefix: ${prefix}`);
+      return null;
+    }
     const vehicle = vehicles[0];
 
     // Fetch primary photo
@@ -1233,6 +1237,7 @@ app.use(async (req, res, next) => {
   // Only intercept social crawlers
   const ua = req.headers["user-agent"] || "";
   if (!SOCIAL_BOT_UA.test(ua)) return next();
+  console.log(`[OG Bot] Bot detected: "${ua.substring(0, 80)}" → ${req.path}`);
 
   // Match vehicle detail route
   let license: string | null = null;
@@ -1256,11 +1261,13 @@ app.use(async (req, res, next) => {
       : `Louez ${vehicle.brand} ${vehicle.model} à Nosy Be avec Rentanoo. Réservation en ligne simple et rapide.`;
     const canonicalUrl = `https://rentanoo.com${req.path}`;
 
-    // Read index.html (cached)
+    // Read index.html (cached in memory — static fs import at top of file)
     if (!cachedIndexHtml) {
-      const fs = await import("fs");
       const distPath = path.resolve(process.cwd(), "dist");
-      cachedIndexHtml = fs.readFileSync(path.join(distPath, "index.html"), "utf-8");
+      const htmlPath = path.join(distPath, "index.html");
+      console.log(`[OG Bot] Reading index.html from ${htmlPath}`);
+      cachedIndexHtml = fs.readFileSync(htmlPath, "utf-8");
+      console.log(`[OG Bot] index.html cached (${cachedIndexHtml.length} chars)`);
     }
 
     const html = injectOgTags(cachedIndexHtml, {
