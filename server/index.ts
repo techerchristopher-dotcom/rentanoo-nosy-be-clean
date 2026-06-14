@@ -1166,28 +1166,33 @@ async function fetchVehicleForOg(license: string) {
     // License = upper(first 8 chars of UUID without dashes) = UUID.substring(0,8).toUpperCase()
     // UUID format: XXXXXXXX-XXXX-... → first group is exactly 8 hex chars
     const prefix = license.toLowerCase();
-    const { data: vehicles } = await supabaseAdmin
+    // UUID column cannot use ilike directly — cast to text via PostgREST filter
+    const { data: vehicles, error: vehicleError } = await supabaseAdmin
       .from("vehicles")
       .select("id, brand, model, vehicle_type, year, engine_capacity, description")
-      .ilike("id", `${prefix}-%`)
+      .filter("id::text", "ilike", `${prefix}-%`)
       .limit(1);
 
+    if (vehicleError) console.error("[OG Bot] Vehicle query error:", vehicleError);
     if (!vehicles || vehicles.length === 0) {
       console.log(`[OG Bot] No vehicle found for license prefix: ${prefix}`);
       return null;
     }
     const vehicle = vehicles[0];
+    console.log(`[OG Bot] Vehicle found: ${vehicle.brand} ${vehicle.model} (${vehicle.vehicle_type})`);
 
-    // Fetch primary photo
-    const { data: photos } = await supabaseAdmin
+    // Fetch primary photo — column is photo_url (not url)
+    const { data: photos, error: photoError } = await supabaseAdmin
       .from("vehicle_photos")
-      .select("url, is_primary, display_order")
+      .select("photo_url, is_primary, display_order")
       .eq("vehicle_id", vehicle.id)
       .order("is_primary", { ascending: false })
       .order("display_order", { ascending: true })
       .limit(1);
 
-    const photoUrl = photos && photos.length > 0 ? photos[0].url : null;
+    if (photoError) console.error("[OG Bot] Photo query error:", photoError);
+    const photoUrl = photos && photos.length > 0 ? (photos[0] as { photo_url: string }).photo_url : null;
+    console.log(`[OG Bot] Photo: ${photoUrl ?? "none"}`);
     return { ...vehicle, photoUrl };
   } catch (err) {
     console.error("[OG Bot] Supabase error:", err);
