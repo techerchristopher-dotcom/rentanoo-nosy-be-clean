@@ -36,6 +36,16 @@ const Contact = lazy(() => import("./pages/Contact"));
 const MeteoNosyBePage = lazy(() => import("./pages/seo/MeteoNosyBePage"));
 const TauxChangeMadagascarPage = lazy(() => import("./pages/seo/TauxChangeMadagascarPage"));
 const VolsNosyBePage = lazy(() => import("./pages/seo/VolsNosyBePage"));
+const LocationScooterNosyBePage = lazy(() => import("./pages/seo/LocationScooterNosyBePage"));
+const LocationMotoNosyBePage = lazy(() => import("./pages/seo/LocationMotoNosyBePage"));
+const LocationQuadNosyBePage = lazy(() => import("./pages/seo/LocationQuadNosyBePage"));
+const LocationVoitureNosyBePage = lazy(() => import("./pages/seo/LocationVoitureNosyBePage"));
+const LocationVacancesNosyBePage = lazy(() => import("./pages/seo/LocationVacancesNosyBePage"));
+const LocationAppartementNosyBePage = lazy(() => import("./pages/seo/LocationAppartementNosyBePage"));
+const LocationVillaNosyBePage = lazy(() => import("./pages/seo/LocationVillaNosyBePage"));
+const LocationBungalowNosyBePage = lazy(() => import("./pages/seo/LocationBungalowNosyBePage"));
+const BlogIndex = lazy(() => import("./pages/blog/BlogIndex"));
+const BlogPost = lazy(() => import("./pages/blog/BlogPost"));
 
 // Autres routes lourdes (déjà lazy)
 const VehicleDetails = lazy(() => import("./pages/vehicles/VehicleDetails"));
@@ -166,6 +176,16 @@ const App = () => (
             <Route path="/meteo-nosy-be" element={<Suspense fallback={<PageLoader />}><MeteoNosyBePage /></Suspense>} />
             <Route path="/taux-change-euro-ariary-madagascar" element={<Suspense fallback={<PageLoader />}><TauxChangeMadagascarPage /></Suspense>} />
             <Route path="/vols-aeroport-nosy-be" element={<Suspense fallback={<PageLoader />}><VolsNosyBePage /></Suspense>} />
+            <Route path="/location-scooter-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationScooterNosyBePage /></Suspense>} />
+            <Route path="/location-moto-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationMotoNosyBePage /></Suspense>} />
+            <Route path="/location-quad-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationQuadNosyBePage /></Suspense>} />
+            <Route path="/location-voiture-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationVoitureNosyBePage /></Suspense>} />
+            <Route path="/location-vacances-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationVacancesNosyBePage /></Suspense>} />
+            <Route path="/location-appartement-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationAppartementNosyBePage /></Suspense>} />
+            <Route path="/location-villa-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationVillaNosyBePage /></Suspense>} />
+            <Route path="/location-bungalow-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationBungalowNosyBePage /></Suspense>} />
+            <Route path="/blog" element={<Suspense fallback={<PageLoader />}><BlogIndex /></Suspense>} />
+            <Route path="/blog/:slug" element={<Suspense fallback={<PageLoader />}><BlogPost /></Suspense>} />
             <Route path="/contact" element={<Suspense fallback={<PageLoader />}><Contact /></Suspense>} />
             
             {/* Routes non critiques (lazy-loaded) */}
