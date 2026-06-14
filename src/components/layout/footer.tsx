@@ -28,7 +28,7 @@ export function Footer() {
             <p className="text-muted-foreground text-xs md:text-sm mb-3 md:mb-4 max-w-md">
               {t(
                 "footer.description",
-                "Agence de location de scooters à Nosy Be. Réservation 100 % en ligne, rapide et simple."
+                "Plateforme de location à Nosy Be : scooter, moto, voiture et hébergement. Réservation 100 % en ligne."
               )}
             </p>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -46,7 +46,13 @@ export function Footer() {
             <h3 className="font-semibold text-foreground mb-2 md:mb-4 text-sm md:text-base">{t('common.navigation')}</h3>
             <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">{t('common.rechercher_un_vhicule')}</Link>
+                <Link to="/?cat=scooter" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.nav.scooters', 'Scooters & motos')}</Link>
+              </li>
+              <li>
+                <Link to="/?cat=car" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.nav.cars', 'Voitures')}</Link>
+              </li>
+              <li>
+                <Link to="/?cat=accommodation" className="text-muted-foreground hover:text-primary transition-colors">{t('footer.nav.accommodation', 'Hébergements')}</Link>
               </li>
               <li>
                 <Link to="/auth/register" className="text-muted-foreground hover:text-primary transition-colors">{t('common.devenir_propritaire')}</Link>
