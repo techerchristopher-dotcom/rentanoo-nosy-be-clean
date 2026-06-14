@@ -4,7 +4,7 @@
  */
 
 const DESCRIPTION_FALLBACK =
-  "Location de scooter à Nosy Be (Madagascar). Livraison à l'aéroport ou à l'hôtel selon disponibilité.";
+  "Location de véhicule à Nosy Be (Madagascar). Livraison à l'aéroport ou à l'hôtel selon disponibilité.";
 
 const MAX_IMAGES = 5;
 
@@ -19,6 +19,7 @@ export interface VehicleProductSchemaInput {
   currency: "EUR";
   images: string[];
   isMoto: boolean;
+  vehicleType?: string | null;
 }
 
 /**
@@ -60,12 +61,21 @@ export function buildVehicleProductSchema(
     pricePerDay,
     currency,
     images,
-    isMoto,
+    vehicleType,
   } = input;
+
+  const QUAD_KEYWORDS = ["maxxer", "quad", "atv"];
+  const isQuad = QUAD_KEYWORDS.some((kw) => (model || "").toLowerCase().includes(kw));
+  const typeLabel = isQuad ? "quad" : (() => {
+    const t = (vehicleType || "").toLowerCase();
+    if (t === "scooter") return "scooter";
+    if (t === "moto") return "moto";
+    return "voiture";
+  })();
 
   const brandModel = [brand, model].filter(Boolean).join(" ") || "Véhicule";
   const yearPart = year ? ` (${year})` : "";
-  const name = `${brandModel}${yearPart} - Location à Nosy Be`;
+  const name = `${brandModel}${yearPart} – Location ${typeLabel} Nosy Be`;
 
   let imageUrls = images
     .filter((u): u is string => !!u && typeof u === "string")
