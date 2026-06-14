@@ -528,7 +528,9 @@
       "airportDelivery": "Airport delivery",
       "helmetIncluded": "Helmet included",
       "insuranceIncluded": "Insurance included",
-      "ariaLabel": "Rentanoo highlights"
+      "ariaLabel": "Rentanoo highlights",
+      "accommodationAvailable": "Accommodations available",
+      "secureBooking": "Secure booking"
     },
     "dayContext": {
       "ariaLabel": "Today's weather and exchange rate in Nosy Be",
@@ -614,10 +616,15 @@
   },
   "footer": {
     "brand": "RENTANOO",
-    "description": "Scooter rental agency in Nosy Be. 100% online booking — fast and easy.",
+    "description": "Rental platform in Nosy Be: scooter, motorcycle, car and accommodation. 100% online booking.",
     "location": "Nosy Be, Madagascar",
     "copyright": "© 2025 RENTANOO. All rights reserved.",
-    "madeWith": "Made with ❤️ in Nosy Be"
+    "madeWith": "Made with ❤️ in Nosy Be",
+    "nav": {
+      "scooters": "Scooters & motorcycles",
+      "cars": "Cars",
+      "accommodation": "Accommodations"
+    }
   },
   "profile": {
     "hero": {
@@ -639,12 +646,24 @@
         "title": "Personal information",
         "step": "Step 1/3",
         "subtitle": "Your basic information to personalize your experience",
-        "identity": { "title": "Identity" },
-        "contact": { "title": "Contact" },
-        "personal": { "title": "Personal information" },
-        "bio": { "title": "Personal introduction" },
-        "phone": { "title": "Phone" },
-        "status": { "title": "Account status" },
+        "identity": {
+          "title": "Identity"
+        },
+        "contact": {
+          "title": "Contact"
+        },
+        "personal": {
+          "title": "Personal information"
+        },
+        "bio": {
+          "title": "Personal introduction"
+        },
+        "phone": {
+          "title": "Phone"
+        },
+        "status": {
+          "title": "Account status"
+        },
         "saved": "Saved"
       },
       "address": {
@@ -678,9 +697,15 @@
       "birthDate": {
         "label": "Date of birth",
         "placeholder": "Select a date",
-        "day": { "placeholder": "Day" },
-        "month": { "placeholder": "Month" },
-        "year": { "placeholder": "Year" }
+        "day": {
+          "placeholder": "Day"
+        },
+        "month": {
+          "placeholder": "Month"
+        },
+        "year": {
+          "placeholder": "Year"
+        }
       },
       "birthPlace": {
         "label": "Place of birth",
@@ -742,9 +767,15 @@
         "issueDate": {
           "label": "Issue date",
           "placeholder": "Select a date",
-          "day": { "placeholder": "Day" },
-          "month": { "placeholder": "Month" },
-          "year": { "placeholder": "Year" },
+          "day": {
+            "placeholder": "Day"
+          },
+          "month": {
+            "placeholder": "Month"
+          },
+          "year": {
+            "placeholder": "Year"
+          },
           "helper": "For a European licence, its start of validity date for category B vehicles."
         },
         "category": {
@@ -1069,14 +1100,14 @@
       "title": "No vehicles",
       "description": "Start by adding your first vehicle to the platform."
     },
-      "vehicleTypeModal": {
-        "title": "Which type of vehicle would you like to add?",
-        "description": "Choose the type of vehicle you want to publish on the platform.",
-        "carLabel": "Car",
-        "motoLabel": "Moto / Scooter",
-        "accommodationLabel": "Accommodation",
-        "cancel": "Cancel"
-      },
+    "vehicleTypeModal": {
+      "title": "Which type of vehicle would you like to add?",
+      "description": "Choose the type of vehicle you want to publish on the platform.",
+      "carLabel": "Car",
+      "motoLabel": "Moto / Scooter",
+      "accommodationLabel": "Accommodation",
+      "cancel": "Cancel"
+    },
     "card": {
       "pricePerDay": "Price/day",
       "year": "Year",
@@ -1090,72 +1121,72 @@
       "title": "Add a vehicle",
       "description": "Click here to add a new vehicle to your fleet and start renting it",
       "badge": "New vehicle"
+    },
+    "motoPlaceholder": {
+      "title": "Moto / Scooter",
+      "description": "The form to add a motorbike or scooter will be available soon.",
+      "backToVehicles": "Back to my vehicles"
+    },
+    "motoForm": {
+      "title": "Add a motorbike / scooter",
+      "brand": "Brand",
+      "brandPlaceholder": "e.g. Honda",
+      "model": "Model",
+      "modelPlaceholder": "e.g. PCX 125",
+      "year": "Year",
+      "mileage": "Mileage (approx.)",
+      "kind": "Type",
+      "kindPlaceholder": "Select",
+      "kindMoto": "Motorbike",
+      "kindScooter": "Scooter",
+      "engineCapacity": "Engine capacity (cc)",
+      "licensePlate": "Licence plate (optional)",
+      "seats": "Number of seats",
+      "fuel": "Fuel",
+      "fuelPlaceholder": "Select",
+      "transmission": "Transmission",
+      "transmissionPlaceholder": "Select",
+      "dailyPrice": "Price per day (€)",
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "Describe the condition of the bike, included equipment (helmet, top case, etc.)...",
+      "cancel": "Cancel",
+      "submit": "Create vehicle",
+      "saving": "Creating...",
+      "successTitle": "Motorbike / scooter added successfully",
+      "successDescription": "Your vehicle has been created. You can now manage it in your vehicles list.",
+      "errors": {
+        "required": "Please fill at least brand, model, year and daily price.",
+        "year": "Please enter a valid year.",
+        "price": "Please enter a valid daily price.",
+        "generic": "Unable to create the vehicle. Please try again."
       },
-      "motoPlaceholder": {
-        "title": "Moto / Scooter",
-        "description": "The form to add a motorbike or scooter will be available soon.",
-        "backToVehicles": "Back to my vehicles"
-      },
-      "motoForm": {
-        "title": "Add a motorbike / scooter",
-        "brand": "Brand",
-        "brandPlaceholder": "e.g. Honda",
-        "model": "Model",
-        "modelPlaceholder": "e.g. PCX 125",
-        "year": "Year",
-        "mileage": "Mileage (approx.)",
-        "kind": "Type",
-        "kindPlaceholder": "Select",
-        "kindMoto": "Motorbike",
-        "kindScooter": "Scooter",
-        "engineCapacity": "Engine capacity (cc)",
-        "licensePlate": "Licence plate (optional)",
-        "seats": "Number of seats",
-        "fuel": "Fuel",
-        "fuelPlaceholder": "Select",
-        "transmission": "Transmission",
-        "transmissionPlaceholder": "Select",
-        "dailyPrice": "Price per day (€)",
-        "description": "Description (optional)",
-        "descriptionPlaceholder": "Describe the condition of the bike, included equipment (helmet, top case, etc.)...",
-        "cancel": "Cancel",
-        "submit": "Create vehicle",
-        "saving": "Creating...",
-        "successTitle": "Motorbike / scooter added successfully",
-        "successDescription": "Your vehicle has been created. You can now manage it in your vehicles list.",
-        "errors": {
-          "required": "Please fill at least brand, model, year and daily price.",
-          "year": "Please enter a valid year.",
-          "price": "Please enter a valid daily price.",
-          "generic": "Unable to create the vehicle. Please try again."
-        },
-        "photos": {
-          "sectionTitle": "Vehicle photos",
-          "sectionSubtitle": "Add at least one photo of your motorbike or scooter to attract more renters.",
-          "primaryLabel": "Main photo",
-          "primaryHint": "Front-left – recommended angle to highlight your motorbike/scooter",
-          "profileLabel": "Side view",
-          "profileHint": "Side view to clearly show the bike’s profile",
-          "interiorLabel": "Details / Equipment",
-          "interiorHint": "For example: dashboard, seat, top case, storage, etc.",
-          "addMore": "Add photos",
-          "addMoreLimit": "Limit reached (3 extra photos)",
-          "slotLabel": "Photo {{index}}",
-          "slotOptional": "Optional",
-          "changePhoto": "Change photo",
-          "deletePhoto": "Delete",
-          "invalidType": "Please select a valid image file.",
-          "tooLarge": "The photo must be smaller than 10MB.",
-          "minRequired": "Please add at least one photo of your motorbike or scooter.",
-          "added": "Photo added",
-          "addedTitle": "Photo added",
-          "addedDescription": "Your photo has been added successfully.",
-          "additionalAdded": "Additional photo added",
-          "additionalAddedDescription": "Your additional photo has been added successfully.",
-          "removed": "Photo removed",
-          "removedTitle": "Photo removed",
-          "removedDescription": "The photo has been removed successfully."
-        }
+      "photos": {
+        "sectionTitle": "Vehicle photos",
+        "sectionSubtitle": "Add at least one photo of your motorbike or scooter to attract more renters.",
+        "primaryLabel": "Main photo",
+        "primaryHint": "Front-left – recommended angle to highlight your motorbike/scooter",
+        "profileLabel": "Side view",
+        "profileHint": "Side view to clearly show the bike’s profile",
+        "interiorLabel": "Details / Equipment",
+        "interiorHint": "For example: dashboard, seat, top case, storage, etc.",
+        "addMore": "Add photos",
+        "addMoreLimit": "Limit reached (3 extra photos)",
+        "slotLabel": "Photo {{index}}",
+        "slotOptional": "Optional",
+        "changePhoto": "Change photo",
+        "deletePhoto": "Delete",
+        "invalidType": "Please select a valid image file.",
+        "tooLarge": "The photo must be smaller than 10MB.",
+        "minRequired": "Please add at least one photo of your motorbike or scooter.",
+        "added": "Photo added",
+        "addedTitle": "Photo added",
+        "addedDescription": "Your photo has been added successfully.",
+        "additionalAdded": "Additional photo added",
+        "additionalAddedDescription": "Your additional photo has been added successfully.",
+        "removed": "Photo removed",
+        "removedTitle": "Photo removed",
+        "removedDescription": "The photo has been removed successfully."
+      }
     },
     "accommodationForm": {
       "title": "Add accommodation",
@@ -1306,10 +1337,18 @@
       "description": "Rent a scooter, motorbike or accommodation in Nosy Be in a few clicks. Airport or hotel delivery. 100% online booking on Rentanoo."
     },
     "accommodationHubs": {
-      "vacances": { "title": "Vacation rentals Nosy Be" },
-      "appartement": { "title": "Apartment rental Nosy Be" },
-      "villa": { "title": "Villa rental Nosy Be" },
-      "bungalow": { "title": "Bungalow rental Nosy Be" }
+      "vacances": {
+        "title": "Vacation rentals Nosy Be"
+      },
+      "appartement": {
+        "title": "Apartment rental Nosy Be"
+      },
+      "villa": {
+        "title": "Villa rental Nosy Be"
+      },
+      "bungalow": {
+        "title": "Bungalow rental Nosy Be"
+      }
     },
     "contact": {
       "title": "Contact – Scooter rental Nosy Be | Rentanoo",
@@ -1549,9 +1588,18 @@
     "faqTitle": "FAQ — Nosy Be flights",
     "faq": {
       "items": [
-        { "q": "What is Nosy Be airport IATA code?", "a": "NOS (Fascène). Main airport on Nosy Be island, about 20 minutes from Hell-Ville." },
-        { "q": "Can I pick up my scooter at the airport?", "a": "Yes. Rentanoo offers airport pickup at Fascène when booking online." },
-        { "q": "Are displayed times guaranteed?", "a": "No. These are indicative schedules from a third-party source. For the official programme and live status, see nosybe-airport.aero/vols/ or contact your airline." }
+        {
+          "q": "What is Nosy Be airport IATA code?",
+          "a": "NOS (Fascène). Main airport on Nosy Be island, about 20 minutes from Hell-Ville."
+        },
+        {
+          "q": "Can I pick up my scooter at the airport?",
+          "a": "Yes. Rentanoo offers airport pickup at Fascène when booking online."
+        },
+        {
+          "q": "Are displayed times guaranteed?",
+          "a": "No. These are indicative schedules from a third-party source. For the official programme and live status, see nosybe-airport.aero/vols/ or contact your airline."
+        }
       ]
     },
     "ctaTitle": "Land in Nosy Be with peace of mind",
