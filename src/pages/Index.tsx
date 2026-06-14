@@ -676,29 +676,6 @@ const Index = () => {
               onResetSearch={handleResetSearch}
             />
 
-            {showCatalogUi ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCatalogCtaClick}
-                aria-label={t("home.catalogCtaAria")}
-                className="mt-6 min-h-[48px] border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-              >
-                {vehicles.length === 1
-                  ? t("home.catalogCta_one")
-                  : t("home.catalogCta", { count: vehicles.length })}
-                <ChevronDown className="ml-2 h-4 w-4" aria-hidden="true" />
-              </Button>
-            ) : !loading ? null : (
-              <Button
-                type="button"
-                variant="outline"
-                disabled
-                className="mt-6 min-h-[48px] border-white/40 bg-white/10 text-white/70"
-              >
-                {t("home.catalogCtaLoading")}
-              </Button>
-            )}
           </div>
         </section>
 
