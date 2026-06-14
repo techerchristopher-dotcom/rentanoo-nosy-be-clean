@@ -1133,6 +1133,21 @@ app.use(
 // déployée à: https://zykwfjxurwmputxwlkxs.functions.supabase.co/create-checkout-session
 // Le frontend utilise maintenant payerLocation() dans src/lib/payerLocation.ts
 
+// 301 redirects : scooters anciennement indexés sous /moto/ → /vehicle/
+// La seule vraie moto est D395A595 (Wakaza 250cc) — tout le reste = scooter
+app.get("/moto/:license", (req, res, next) => {
+  if (req.params.license.toUpperCase() !== "D395A595") {
+    return res.redirect(301, `/vehicle/${req.params.license}`);
+  }
+  next();
+});
+app.get("/moto/:license/booking/discussion", (req, res, next) => {
+  if (req.params.license.toUpperCase() !== "D395A595") {
+    return res.redirect(301, `/vehicle/${req.params.license}/booking/discussion`);
+  }
+  next();
+});
+
 // 🚀 PRODUCTION : Servir le frontend buildé depuis le dossier dist/
 if (process.env.NODE_ENV === "production") {
   const distPath = path.resolve(process.cwd(), "dist");
