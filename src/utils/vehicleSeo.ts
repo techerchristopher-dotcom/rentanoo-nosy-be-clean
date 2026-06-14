@@ -20,6 +20,7 @@ export interface VehicleSeoInput {
   year?: number | null;
   pricePerDay?: number | null;
   isMoto: boolean;
+  vehicleType?: string | null;
   license: string;
 }
 
@@ -48,27 +49,27 @@ export function buildVehicleSeoTitle(
   input: VehicleSeoInput,
   options?: { yearInTitle?: boolean }
 ): string {
-  const { brand, model, year, isMoto } = input;
+  const { brand, model, year, vehicleType } = input;
   const brandModel = [brand, model].filter(Boolean).join(" ") || "Véhicule";
   const yearSuffix =
     options?.yearInTitle !== false && year ? ` (${year})` : "";
-  const suffix = isMoto
-    ? "– Location scooter Nosy Be | Rentanoo"
-    : "– Location à Nosy Be | Rentanoo";
-  return `${brandModel}${yearSuffix} ${suffix}`;
+  const typeLabel = getVehicleTypeLabel({ model, vehicleType });
+  return `${brandModel}${yearSuffix} – Location ${typeLabel} Nosy Be | Rentanoo`;
 }
 
 /**
  * Construit la meta description SEO pour une page véhicule.
  */
 export function buildVehicleSeoDescription(input: VehicleSeoInput): string {
-  const { brand, model, pricePerDay } = input;
+  const { brand, model, pricePerDay, vehicleType } = input;
   const brandModel = [brand, model].filter(Boolean).join(" ") || "véhicule";
+  const typeLabel = getVehicleTypeLabel({ model, vehicleType });
+  const article = getLocationArticle(typeLabel);
   const pricePart =
     pricePerDay != null && pricePerDay > 0
       ? `À partir de ${formatPriceForSeo(pricePerDay)}/jour. `
       : "";
-  return `Louez ce ${brandModel} à Nosy Be. ${pricePart}Réservation en ligne, livraison possible à l'hôtel ou à l'aéroport. Rentanoo.`;
+  return `Louez ${article} ${brandModel} (${typeLabel}) à Nosy Be. ${pricePart}Réservation en ligne, livraison à l'hôtel ou à l'aéroport. Rentanoo.`;
 }
 
 const QUAD_MODEL_KEYWORDS = ["maxxer", "quad", "atv"];
