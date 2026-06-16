@@ -83,6 +83,8 @@ function getTypeLabel(vehicleType?: string | null): string {
   const t = (vehicleType || "").toLowerCase();
   if (t === "scooter") return "scooter";
   if (t === "moto") return "moto";
+  if (t === "accommodation") return "hébergement";
+  // "car" ou toute valeur inconnue → voiture
   return "voiture";
 }
 
