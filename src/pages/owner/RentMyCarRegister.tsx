@@ -39,12 +39,12 @@ const LOCATION_AREAS = [
 ];
 
 const CAR_CATEGORIES = [
-  { value: "citadine", label: "Citadine", icon: "🚗" },
-  { value: "suv", label: "SUV / 4x4", icon: "🚙" },
-  { value: "berline", label: "Berline", icon: "🚘" },
-  { value: "monospace", label: "Monospace", icon: "🚐" },
-  { value: "pickup", label: "Pick-up", icon: "🛻" },
-  { value: "van", label: "Van / Minibus", icon: "🚌" },
+  { value: "Citadine", label: "Citadine", icon: "🚗" },
+  { value: "SUV", label: "SUV / 4x4", icon: "🚙" },
+  { value: "Berline", label: "Berline", icon: "🚘" },
+  { value: "Minibus", label: "Monospace / Minibus", icon: "🚐" },
+  { value: "Pick-up", label: "Pick-up", icon: "🛻" },
+  { value: "Utilitaire", label: "Van / Utilitaire", icon: "🚌" },
 ];
 
 const EQUIPMENT_LIST = [
