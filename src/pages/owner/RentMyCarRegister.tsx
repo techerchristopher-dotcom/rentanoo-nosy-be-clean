@@ -1,926 +1,376 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/contexts/AuthContext';
-import { Seo } from '@/components/seo/Seo';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Footer } from '@/components/layout/footer';
-import { OwnerLocationDropdown } from '@/components/ui/owner-location-dropdown';
-import { PickupZonesModal } from '@/components/ui/pickup-zones-modal';
-import EquipmentSelector from '@/components/ui/equipment-selector';
-import { Car, Upload, FileText, Calendar as CalendarIcon, Camera, CheckCircle, ArrowLeft, ArrowRight, Trash2, Plus, Edit, Save, MapPin, Plane, Ship, Clock, AlertTriangle, Truck, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Info, Gift, Euro, X, HelpCircle, AlertCircle, ChevronDown } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
-import { ProfileService } from "@/services/supabase/profile";
+import { FormEvent, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Footer } from "@/components/layout/footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { PhotoService } from "@/services/supabase/photos";
+import { ProfileService } from "@/services/supabase/profile";
 import { UserRoleUtils } from "@/types";
-import { CAR_BRANDS } from '@/data/brands';
-import { CAR_COLORS } from '@/data/colors';
-import { VEHICLE_CATEGORIES } from '@/data/vehicleCategories';
-import { FUEL_TYPES } from '@/data/fuelTypes';
-import { TRANSMISSION_TYPES } from '@/data/transmissionTypes';
-import BrandCombobox from '@/components/ui/BrandCombobox';
-import ColorCombobox from '@/components/ui/ColorCombobox';
-import VehicleCategoryCombobox from '@/components/ui/VehicleCategoryCombobox';
-import FuelTypeCombobox from '@/components/ui/FuelTypeCombobox';
-import TransmissionTypeCombobox from '@/components/ui/TransmissionTypeCombobox';
-import { useExchangeRate } from '@/contexts/ExchangeRateContext';
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { OwnerDualCurrencyInput } from "@/components/currency/OwnerDualCurrencyInput";
+import { Car, Camera, Upload, CheckCircle, Trash2, ArrowRight } from "lucide-react";
 
-// Import placeholder images
-import photoAvGauchePlaceholder from "@/assets/photo-av-gauche-placeholder.png";
+// ─── Constants ───────────────────────────────────────────────────────────────
 
+const LOCATION_AREAS = [
+  { id: "2fbc8909-381d-4bdb-baea-9789e2f7b28a", name: "Ambatoloaka" },
+  { id: "bb7a3d32-79c8-4d33-af04-834b3eabcf97", name: "Ambondrona" },
+  { id: "5879bc28-3903-481b-a0dc-d7f44f2982f1", name: "Andilana" },
+  { id: "cc91659e-92ae-48b7-ad1a-55e7f82ec377", name: "Dar Es Salam" },
+  { id: "ed8d772e-d58e-49f7-b223-94400ef507b3", name: "Dzamandzar" },
+  { id: "8f9e7dfd-18a1-4eb0-8175-bfb326855dcb", name: "Fascène / Aéroport" },
+  { id: "b5c87c3b-f425-4e71-8cc2-c4e5d23b3ee5", name: "Hell-Ville" },
+  { id: "d82c4403-8ae7-4fe9-99fb-e42fb22fa419", name: "Madirokely" },
+  { id: "ff030478-f4d5-4b90-a096-7f966f7c563f", name: "Palm Beach" },
+  { id: "ababa367-8a66-4a3a-9f54-ba07e6028841", name: "Diego Hely" },
+];
 
-const RentMyCar = () => {
+const CAR_CATEGORIES = [
+  { value: "citadine", label: "Citadine", icon: "🚗" },
+  { value: "suv", label: "SUV / 4x4", icon: "🚙" },
+  { value: "berline", label: "Berline", icon: "🚘" },
+  { value: "monospace", label: "Monospace", icon: "🚐" },
+  { value: "pickup", label: "Pick-up", icon: "🛻" },
+  { value: "van", label: "Van / Minibus", icon: "🚌" },
+];
+
+const EQUIPMENT_LIST = [
+  { key: "hasAC", label: "Climatisation" },
+  { key: "hasGPS", label: "GPS" },
+  { key: "hasBluetooth", label: "Bluetooth" },
+  { key: "hasCarPlay", label: "CarPlay / Android Auto" },
+  { key: "hasBackupCamera", label: "Caméra de recul" },
+  { key: "hasUSBPort", label: "Port USB" },
+  { key: "hasLeatherSeats", label: "Sièges cuir" },
+  { key: "hasSunroof", label: "Toit ouvrant" },
+  { key: "hasParkingSensors", label: "Capteurs stationnement" },
+  { key: "hasLargeTrunk", label: "Grand coffre" },
+];
+
+// ─── ServiceRow ───────────────────────────────────────────────────────────────
+
+interface ServiceField {
+  enabled: boolean;
+  free: boolean;
+  price: string;
+}
+
+function ServiceRow({
+  label,
+  icon,
+  value,
+  onChange,
+  perDay = false,
+}: {
+  label: string;
+  icon: string;
+  value: ServiceField;
+  onChange: (v: ServiceField) => void;
+  perDay?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2 py-3 border-b border-slate-100 last:border-0">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium flex items-center gap-2">{icon} {label}</span>
+        <Switch
+          checked={value.enabled}
+          onCheckedChange={(checked) => onChange({ ...value, enabled: checked })}
+        />
+      </div>
+      {value.enabled && (
+        <div className="flex items-center gap-3 pl-6">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              className="rounded"
+              checked={value.free}
+              onChange={(e) => onChange({ ...value, free: e.target.checked, price: "" })}
+            />
+            Gratuit
+          </label>
+          {!value.free && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="0"
+                value={value.price}
+                onChange={(e) => onChange({ ...value, price: e.target.value })}
+                className="w-24 h-8 text-sm"
+              />
+              <span className="text-xs text-muted-foreground">{perDay ? "€/jour" : "€ flat"}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export default function RentMyCar() {
+  const { t } = useTranslation("common");
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useTranslation('common');
-  const { formatAdminInline } = useExchangeRate();
-  const [searchParams] = useSearchParams();
-  const isExistingOwner = searchParams.get('existingOwner') === 'true';
-  const [currentStep, setCurrentStep] = useState(1);
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isPickupZonesModalOpen, setIsPickupZonesModalOpen] = useState(false);
-  const [missingFields, setMissingFields] = useState<string[]>([]);
-  const [vehiclePhotos, setVehiclePhotos] = useState({
-    frontLeft: null as File | null,
-    profileLeft: null as File | null,
-    interior: null as File | null
-  });
+
+  // Identity
+  const [category, setCategory] = useState("");
+  const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState("");
+  const [color, setColor] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
+  const [mileage, setMileage] = useState("");
+  const [fuelType, setFuelType] = useState("");
+  const [transmission, setTransmission] = useState("");
+  const [seats, setSeats] = useState("");
+  const [doors, setDoors] = useState("");
+  const [locationAreaId, setLocationAreaId] = useState("");
+
+  // Price
+  const [dailyPriceMga, setDailyPriceMga] = useState("");
+
+  // Equipment
+  const [equipment, setEquipment] = useState<Record<string, boolean>>(
+    Object.fromEntries(EQUIPMENT_LIST.map((e) => [e.key, false]))
+  );
+
+  // Services
+  const emptyService = (): ServiceField => ({ enabled: false, free: false, price: "" });
+  const [svcAirportPickup, setSvcAirportPickup] = useState(emptyService());
+  const [svcAirportReturn, setSvcAirportReturn] = useState(emptyService());
+  const [svcBargePT, setSvcBargePT] = useState(emptyService());
+  const [svcBargeGT, setSvcBargeGT] = useState(emptyService());
+  const [svcDelivery, setSvcDelivery] = useState(emptyService());
+  const [svcBabySeat, setSvcBabySeat] = useState(emptyService());
+  const [svcExtraDriver, setSvcExtraDriver] = useState(emptyService());
+
+  // Description
+  const [description, setDescription] = useState("");
+
+  // Photos
+  const [vehiclePhotos, setVehiclePhotos] = useState<{
+    frontLeft: File | null;
+    profileLeft: File | null;
+    interior: File | null;
+  }>({ frontLeft: null, profileLeft: null, interior: null });
   const [additionalPhotos, setAdditionalPhotos] = useState<(File | null)[]>([]);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [vehicleDescription, setVehicleDescription] = useState('');
-  const [isDescriptionEditing, setIsDescriptionEditing] = useState(true);
-  const [descriptionError, setDescriptionError] = useState('');
-  const [profileAvatar, setProfileAvatar] = useState<File | null>(null);
-  const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null);
-  const [isPersonalSectionExpanded, setIsPersonalSectionExpanded] = useState(false);
-  const [isIdentitySectionExpanded, setIsIdentitySectionExpanded] = useState(false);
-  const [equipment, setEquipment] = useState({
-    hasAC: false,
-    hasGPS: false,
-    hasCruiseControl: false,
-    hasBluetooth: false,
-    hasCarPlay: false,
-    hasAudioInput: false,
-    hasBackupCamera: false,
-    hasUSBPort: false,
-    hasLeatherSeats: false,
-    hasSunroof: false,
-    hasPremiumAudio: false,
-    hasRoofRack: false,
-    hasWirelessCharger: false,
-    hasParkingSensors: false,
-    hasABS: false,
-    hasLargeTrunk: false,
-    hasRoofBox: false,
-    hasBikeRack: false,
-    hasAndroidAuto: false,
-  });
-  const [formData, setFormData] = useState({
-    // Étape 1 - Véhicule & infos
-    licensePlate: '',
-    brand: '',
-    model: '',
-    color: '',
-    year: '',
-    mileage: '',
-    fuel: '',
-    transmission: '',
-    seats: '',
-    doors: '',
-    vehicleCategory: '',
-    hasAC: false,
-    // Infos personnelles
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    parkingLocation: '',
-    // Étape 2 - Conditions
-    dailyPrice: '',
-    lowSeasonDiscount: '',
-    highSeasonSurcharge: '',
-    longTermDiscount14: '',
-    longTermDiscount60: '',
-    minAdvanceHours: '24',
-    minRentalDays: '1',
-    maxRentalDays: '',
-    // Zones de prise en charge
-    pickupZones: [],
-    // Options supplémentaires payantes
-    airportPickupService: false,
-    airportPickupRetrieval: false, // Retrait véhicule à l'aéroport
-    airportPickupRetrievalFree: true, // Service gratuit par défaut
-    airportPickupRetrievalPrice: '25', // Prix retrait aéroport
-    airportPickupReturn: false,    // Restitution véhicule à l'aéroport
-    airportPickupReturnFree: true, // Service gratuit par défaut
-    airportPickupReturnPrice: '25', // Prix restitution aéroport
-    bargePetiteTerreService: false,
-    bargePetiteTerreRetrieval: false, // Retrait véhicule à la barge Petite Terre
-    bargePetiteTerreRetrievalFree: true, // Service gratuit par défaut
-    bargePetiteTerreRetrievalPrice: '15', // Prix retrait barge Petite Terre
-    bargePetiteTerreReturn: false,    // Restitution véhicule à la barge Petite Terre
-    bargePetiteTerreReturnFree: true, // Service gratuit par défaut
-    bargePetiteTerreReturnPrice: '15', // Prix restitution barge Petite Terre
-    bargeGrandeTerreService: false,
-    bargeGrandeTerreRetrieval: false, // Retrait véhicule à la barge Grande Terre
-    bargeGrandeTerreRetrievalFree: true, // Service gratuit par défaut
-    bargeGrandeTerreRetrievalPrice: '15', // Prix retrait barge Grande Terre
-    bargeGrandeTerreReturn: false,    // Restitution véhicule à la barge Grande Terre
-    bargeGrandeTerreReturnFree: true, // Service gratuit par défaut
-    bargeGrandeTerreReturnPrice: '15', // Prix restitution barge Grande Terre
-    homeDeliveryService: false,
-    homeDeliveryPickup: false, // Livraison à domicile (prise en charge)
-    homeDeliveryPickupFree: true, // Service gratuit par défaut
-    homeDeliveryPickupPrice: '20', // Prix livraison à domicile
-    homeDeliveryReturn: false, // Récupération à domicile
-    homeDeliveryReturnFree: true, // Service gratuit par défaut
-    homeDeliveryReturnPrice: '20', // Prix récupération à domicile
-    babySeatService: false,
-    babySeatFree: false, // Service payant par défaut
-    babySeatPrice: '1', // Prix siège bébé par jour
-    additionalDriverService: false,
-    additionalDriverFree: false, // Service payant par défaut
-    additionalDriverPrice: '15', // Prix conducteur additionnel par jour
-    photos: [],
-    identityFiles: []
-  });
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
-  // Mapping des champs vers leurs labels
-  const fieldLabels: Record<string, string> = {
-    licensePlate: 'Plaque d\'immatriculation',
-    brand: 'Marque',
-    model: 'Modèle',
-    color: 'Couleur',
-    year: 'Année',
-    vehicleCategory: 'Catégorie véhicule',
-    mileage: 'Kilométrage',
-    fuel: 'Carburant',
-    transmission: 'Transmission',
-    seats: 'Nombre de sièges',
-    doors: 'Nombre de portes',
-    firstName: 'Prénom',
-    lastName: 'Nom',
-    email: 'Email',
-    phone: 'Téléphone',
-    city: 'Ville',
-    dailyPrice: 'Prix journalier',
-    minAdvanceHours: 'Délai minimum avant réservation',
-    minRentalDays: 'Durée minimum de réservation',
-    maxRentalDays: 'Durée maximum de réservation'
-  };
+  // ── Photo helpers ────────────────────────────────────────────────────────
 
-  // useEffect pour charger le profil de l'utilisateur existant
-  useEffect(() => {
-    const loadExistingProfile = async () => {
-      if (isExistingOwner && user) {
-        try {
-          console.log('🔍 Chargement du profil pour propriétaire existant:', user.id);
-          const profileResult = await ProfileService.getCurrentUserProfile();
-          
-          if (profileResult.data) {
-            const profile = profileResult.data;
-            console.log('✅ Profil chargé:', profile);
-            
-            // Pré-remplir les champs personnels
-            setFormData(prev => ({
-              ...prev,
-              firstName: profile.firstName || '',
-              lastName: profile.lastName || '',
-              email: profile.email || user.email || '',
-              phone: profile.phone || '',
-              address: profile.addressLine1 || '',
-              city: profile.city || '',
-              postalCode: profile.postalCode || '',
-            }));
-
-            // Pré-remplir l'avatar existant
-            if (profile.avatarUrl) {
-              setExistingAvatarUrl(profile.avatarUrl);
-              console.log('✅ Avatar existant chargé:', profile.avatarUrl);
-            }
-            
-            toast({
-              title: "Profil chargé",
-              description: "Vos informations personnelles ont été pré-remplies",
-            });
-          }
-        } catch (error) {
-          console.error('❌ Erreur chargement profil:', error);
-          toast({
-            title: "Erreur",
-            description: "Impossible de charger votre profil",
-            variant: "destructive",
-          });
-        }
-      }
-    };
-    
-    loadExistingProfile();
-  }, [isExistingOwner, user]);
-
-  // useEffect pour scroll automatique vers le haut à chaque changement d'étape
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentStep]);
-
-  // Fonction pour retirer un champ de la liste des champs manquants
-  const clearFieldError = (field: string) => {
-    const fieldLabel = fieldLabels[field];
-    if (fieldLabel && missingFields.includes(fieldLabel)) {
-      setMissingFields(prev => prev.filter(f => f !== fieldLabel));
-    }
-  };
-
-  const updateField = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Retirer le champ de la liste des champs manquants si il est maintenant rempli
-    if (value && value.toString().trim()) {
-      clearFieldError(field);
-    }
-  };
-
-  const handleAvatarUpload = (file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier image valide.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Erreur", 
-        description: "La photo de profil doit faire moins de 5MB.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setProfileAvatar(file);
-    toast({
-      title: "Photo de profil ajoutée",
-      description: "Votre photo de profil a été mise à jour.",
-    });
-  };
-
-  const getAvatarPreview = () => {
-    if (profileAvatar) {
-      return URL.createObjectURL(profileAvatar);
-    }
-    if (existingAvatarUrl) {
-      return existingAvatarUrl;
-    }
-    return null;
-  };
-
-  const triggerAvatarFileInput = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        handleAvatarUpload(file);
-      }
-    };
-    input.click();
-  };
-
-  const handlePhotoUpload = (photoType: 'frontLeft' | 'profileLeft' | 'interior', file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier image valide.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "Erreur", 
-        description: "La photo doit faire moins de 10MB.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setVehiclePhotos(prev => ({
-      ...prev,
-      [photoType]: file
-    }));
-
-    setFeedbackMessage('Photo ajoutée');
-    toast({
-      title: "Photo ajoutée",
-      description: "Votre photo a été ajoutée avec succès.",
-    });
-  };
-
-  const triggerFileInput = (photoType: 'frontLeft' | 'profileLeft' | 'interior') => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        handlePhotoUpload(photoType, file);
-      }
-    };
-    input.click();
-  };
-
-  const getPhotoPreview = (file: File | null) => {
-    if (!file) return null;
-    return URL.createObjectURL(file);
-  };
-
-  // Vérifier si les 3 photos obligatoires sont uploadées
-  const areRequiredPhotosUploaded = () => {
-    return vehiclePhotos.frontLeft && vehiclePhotos.profileLeft && vehiclePhotos.interior;
-  };
-
-  // Gérer l'upload des photos supplémentaires
-  const handleAdditionalPhotoUpload = (file: File, index: number) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier image valide.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "Erreur", 
-        description: "La photo doit faire moins de 10MB.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setAdditionalPhotos(prev => {
-      const newPhotos = [...prev];
-      newPhotos[index] = file;
-      return newPhotos;
-    });
-
-    setFeedbackMessage('Photo ajoutée');
-    toast({
-      title: "Photo ajoutée",
-      description: "Votre photo supplémentaire a été ajoutée avec succès.",
-    });
-  };
-
-  // Supprimer une photo supplémentaire
-  const removeAdditionalPhoto = (index: number) => {
-    setAdditionalPhotos(prev => {
-      const newPhotos = [...prev];
-      newPhotos.splice(index, 1);
-      return newPhotos;
-    });
-
-    setFeedbackMessage('Photo supprimée');
-    toast({
-      title: "Photo supprimée",
-      description: "La photo a été supprimée avec succès.",
-    });
-  };
-
-  // Déclencher l'input file pour les photos supplémentaires
-  const triggerAdditionalFileInput = (index: number) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        handleAdditionalPhotoUpload(file, index);
-      }
-    };
-    input.click();
-  };
-
-  // Ajouter une nouvelle photo supplémentaire (max 3)
-  const addNewAdditionalPhoto = () => {
-    if (additionalPhotos.length < 3) {
-      triggerAdditionalFileInput(additionalPhotos.length);
-    }
-  };
-
-  // Fonctions pour la description du véhicule
-  const handleDescriptionSave = () => {
-    setDescriptionError('');
-    
-    if (vehicleDescription.length > 800) {
-      setDescriptionError('La description ne peut pas dépasser 800 caractères.');
-      return;
-    }
-    
-    setIsDescriptionEditing(false);
-    toast({
-      title: "Description enregistrée",
-      description: "La description de votre véhicule a été sauvegardée.",
-    });
-  };
-
-  const handleDescriptionClear = () => {
-    if (window.confirm('Effacer la description ?')) {
-      setVehicleDescription('');
-      setDescriptionError('');
-      toast({
-        title: "Description effacée",
-        description: "La description a été supprimée.",
-      });
-    }
-  };
-
-  const handleDescriptionEdit = () => {
-    setIsDescriptionEditing(true);
-  };
-
-  // Validation des champs obligatoires par étape
-  const validateCurrentStep = (): boolean => {
-    const missingFields: string[] = [];
-    const missingFieldsWithIds: Array<{ label: string; fieldId: string }> = [];
-    
-    if (currentStep === 1) {
-      // Étape 1 : Identification et caractéristiques du véhicule
-      if (!formData.licensePlate.trim()) {
-        missingFields.push('Plaque d\'immatriculation');
-        missingFieldsWithIds.push({ label: 'Plaque d\'immatriculation', fieldId: 'licensePlate' });
-      }
-      if (!formData.brand) {
-        missingFields.push('Marque');
-        missingFieldsWithIds.push({ label: 'Marque', fieldId: 'brand' });
-      }
-      if (!formData.model.trim()) {
-        missingFields.push('Modèle');
-        missingFieldsWithIds.push({ label: 'Modèle', fieldId: 'model' });
-      }
-      if (!formData.color) {
-        missingFields.push('Couleur');
-        missingFieldsWithIds.push({ label: 'Couleur', fieldId: 'color' });
-      }
-      if (!formData.year) {
-        missingFields.push('Année');
-        missingFieldsWithIds.push({ label: 'Année', fieldId: 'year' });
-      }
-      if (!formData.vehicleCategory) {
-        missingFields.push('Catégorie véhicule');
-        missingFieldsWithIds.push({ label: 'Catégorie véhicule', fieldId: 'vehicleCategory' });
-      }
-      if (!formData.mileage) {
-        missingFields.push('Kilométrage');
-        missingFieldsWithIds.push({ label: 'Kilométrage', fieldId: 'mileage' });
-      }
-      if (!formData.fuel) {
-        missingFields.push('Carburant');
-        missingFieldsWithIds.push({ label: 'Carburant', fieldId: 'fuel' });
-      }
-      if (!formData.transmission) {
-        missingFields.push('Transmission');
-        missingFieldsWithIds.push({ label: 'Transmission', fieldId: 'transmission' });
-      }
-      if (!formData.seats) {
-        missingFields.push('Nombre de sièges');
-        missingFieldsWithIds.push({ label: 'Nombre de sièges', fieldId: 'seats' });
-      }
-      if (!formData.doors) {
-        missingFields.push('Nombre de portes');
-        missingFieldsWithIds.push({ label: 'Nombre de portes', fieldId: 'doors' });
-      }
-      
-      // Informations personnelles
-      if (!formData.firstName.trim()) {
-        missingFields.push('Prénom');
-        missingFieldsWithIds.push({ label: 'Prénom', fieldId: 'firstName' });
-      }
-      if (!formData.lastName.trim()) {
-        missingFields.push('Nom');
-        missingFieldsWithIds.push({ label: 'Nom', fieldId: 'lastName' });
-      }
-      if (!formData.email.trim()) {
-        missingFields.push('Email');
-        missingFieldsWithIds.push({ label: 'Email', fieldId: 'email' });
-      }
-      if (!formData.phone.trim()) {
-        missingFields.push('Téléphone');
-        missingFieldsWithIds.push({ label: 'Téléphone', fieldId: 'phone' });
-      }
-      if (!formData.city.trim()) {
-        missingFields.push('Ville');
-        missingFieldsWithIds.push({ label: 'Ville', fieldId: 'city' });
-      }
-    }
-    
-    if (currentStep === 2) {
-      // Étape 2 : Conditions et tarifs
-      if (!formData.dailyPrice) {
-        missingFields.push('Prix journalier');
-        missingFieldsWithIds.push({ label: 'Prix journalier', fieldId: 'dailyPrice' });
-      }
-      // Paramètres de réservation - champs obligatoires
-      if (!formData.minAdvanceHours) {
-        missingFields.push('Délai minimum avant réservation');
-        missingFieldsWithIds.push({ label: 'Délai minimum avant réservation', fieldId: 'minAdvanceHours' });
-      }
-      if (!formData.minRentalDays) {
-        missingFields.push('Durée minimum de réservation');
-        missingFieldsWithIds.push({ label: 'Durée minimum de réservation', fieldId: 'minRentalDays' });
-      }
-      if (!formData.maxRentalDays) {
-        missingFields.push('Durée maximum de réservation');
-        missingFieldsWithIds.push({ label: 'Durée maximum de réservation', fieldId: 'maxRentalDays' });
-      }
-    }
-    
-    if (missingFields.length > 0) {
-      setMissingFields(missingFields);
-      
-      // Scroll automatique vers le premier champ manquant
-      setTimeout(() => {
-        const firstMissingField = missingFieldsWithIds[0];
-        if (firstMissingField) {
-          const element = document.getElementById(firstMissingField.fieldId);
-          if (element) {
-            element.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'center' 
-            });
-            // Focus sur le champ pour une meilleure UX
-            element.focus();
-          }
-        }
-      }, 100);
-      
-      toast({
-        title: "Champs obligatoires manquants",
-        description: `Veuillez remplir les champs suivants : ${missingFields.join(', ')}`,
-        variant: "destructive",
-      });
+  const validateFile = (file: File): boolean => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Erreur", description: "Fichier image requis.", variant: "destructive" });
       return false;
     }
-    
-    setMissingFields([]);
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Erreur", description: "Photo max 10 MB.", variant: "destructive" });
+      return false;
+    }
     return true;
   };
 
-  const nextStep = () => {
-    if (currentStep < 4) {
-      // Valider l'étape actuelle avant de passer à la suivante
-      if (!validateCurrentStep()) {
-        return; // Ne pas passer à l'étape suivante si validation échoue
-      }
-      setCurrentStep(currentStep + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleMainPhotoChange = (
+    type: "frontLeft" | "profileLeft" | "interior",
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file && validateFile(file)) {
+      setVehiclePhotos((prev) => ({ ...prev, [type]: file }));
+      setFeedbackMessage("Photo ajoutée");
+      toast({ title: "Photo ajoutée" });
     }
+    e.target.value = "";
   };
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  // Fonction pour valider les champs obligatoires par étape
-  const validateStepFields = (step: number) => {
-    const missingFields: string[] = [];
-    
-    switch (step) {
-      case 1:
-        // Champs obligatoires étape 1 - Véhicule & infos
-        if (!formData.licensePlate) missingFields.push('Plaque d\'immatriculation');
-        if (!formData.brand) missingFields.push('Marque');
-        if (!formData.model) missingFields.push('Modèle');
-        if (!formData.color) missingFields.push('Couleur');
-        if (!formData.year) missingFields.push('Année');
-        if (!formData.fuel) missingFields.push('Type de carburant');
-        if (!formData.transmission) missingFields.push('Transmission');
-        if (!formData.seats) missingFields.push('Nombre de places');
-        if (!formData.firstName) missingFields.push('Prénom');
-        if (!formData.lastName) missingFields.push('Nom');
-        if (!formData.email) missingFields.push('Email');
-        if (!formData.phone) missingFields.push('Téléphone');
-        if (!formData.address) missingFields.push('Adresse');
-        break;
-        
-      case 2:
-        // Champs obligatoires étape 2 - Conditions
-        if (!formData.dailyPrice) missingFields.push('Prix journalier');
-        break;
-        
-      case 3:
-        // Champs obligatoires étape 3 - Photos
-        if (!vehiclePhotos.frontLeft) missingFields.push('Photo avant gauche');
-        if (!vehiclePhotos.profileLeft) missingFields.push('Photo de profil');
-        if (!vehiclePhotos.interior) missingFields.push('Photo de l\'habitacle');
-        break;
-        
-      case 4:
-        // Étape 4 - Résumé (pas de champs obligatoires supplémentaires)
-        break;
-    }
-    
-    return missingFields;
-  };
-
-  // Fonction pour trouver la première étape avec des champs manquants
-  const findFirstStepWithMissingFields = () => {
-    for (let step = 1; step <= 3; step++) {
-      const missingFields = validateStepFields(step);
-      if (missingFields.length > 0) {
-        return { step, missingFields };
-      }
-    }
-    return null;
-  };
-
-  // Fonction utilitaire pour vérifier si un champ est manquant
-  const isFieldMissing = (fieldName: string) => {
-    return missingFields.includes(fieldName);
-  };
-
-  // Fonction pour obtenir les classes CSS d'un champ selon son état
-  const getFieldClasses = (fieldName: string, baseClasses: string = "") => {
-    if (isFieldMissing(fieldName)) {
-      return `${baseClasses} border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500`;
-    }
-    return baseClasses;
-  };
-
-  // Calcul du taux de complétion par section - FORMULES SPÉCIFIQUES
-  const calculateSectionCompletion = (section: 'vehicle' | 'personal' | 'identity' | 'pricing'): number => {
-    let totalFields = 0;
-    let filledFields = 0;
-
-    if (section === 'vehicle') {
-      // SECTION VÉHICULE - FORMULE SPÉCIFIQUE (12 champs)
-      const vehicleFields = [
-        // IDENTIFICATION (6 champs)
-        formData.licensePlate,
-        formData.brand,
-        formData.model,
-        formData.color,
-        formData.year,
-        formData.vehicleCategory,
-        // CARACTÉRISTIQUES TECHNIQUES (3 champs)
-        formData.mileage,
-        formData.fuel,
-        formData.transmission,
-        // DIMENSIONS (2 champs)
-        formData.seats,
-        formData.doors,
-        // ÉQUIPEMENTS (1 champ) - considéré comme rempli si au moins 1 équipement est sélectionné
-        Object.values(equipment).some(hasEquipment => hasEquipment === true) ? 'equipment_selected' : ''
-      ];
-      totalFields = vehicleFields.length; // 12 champs
-      filledFields = vehicleFields.filter(field => {
-        if (field === 'equipment_selected') return true; // Équipement sélectionné
-        return field && field.toString().trim(); // Autres champs
-      }).length;
-    }
-
-    if (section === 'personal') {
-      // SECTION VOS INFORMATIONS - FORMULE SPÉCIFIQUE (7 champs)
-      const personalFields = [
-        // Champs textuels (6 champs)
-        formData.firstName,
-        formData.lastName,
-        formData.email,
-        formData.phone,
-        formData.city,
-        formData.address,
-        // Photo de profil (1 champ) - vérifier si une photo a été uploadée
-        profileAvatar ? 'profile_photo_uploaded' : ''
-      ];
-      totalFields = personalFields.length; // 7 champs
-      filledFields = personalFields.filter(field => {
-        if (field === 'profile_photo_uploaded') return true; // Photo uploadée
-        return field && field.toString().trim(); // Autres champs
-      }).length;
-    }
-
-    if (section === 'identity') {
-      // SECTION VÉRIFICATION IDENTITÉ - FORMULE SPÉCIFIQUE (1 champ)
-      const identityFields = [
-        formData.identityFiles && formData.identityFiles.length > 0 // Documents uploadés
-      ];
-      totalFields = identityFields.length; // 1 champ
-      filledFields = identityFields.filter(field => field === true).length;
-    }
-
-    if (section === 'pricing') {
-      // SECTION TARIFICATION - FORMULE SPÉCIFIQUE (5 champs)
-      const pricingFields = [
-        // Prix journalier (obligatoire)
-        formData.dailyPrice,
-        // Réductions et surcharges (optionnels)
-        formData.lowSeasonDiscount,
-        formData.highSeasonSurcharge,
-        formData.longTermDiscount14,
-        formData.longTermDiscount60
-      ];
-      totalFields = pricingFields.length; // 5 champs
-      filledFields = pricingFields.filter(field => field && field.toString().trim()).length;
-    }
-
-    return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
-  };
-
-  // Obtenir la couleur du badge selon le pourcentage
-  const getCompletionColor = (percentage: number): string => {
-    if (percentage === 100) return 'bg-green-500 text-white';
-    if (percentage >= 70) return 'bg-yellow-500 text-white';
-    if (percentage >= 40) return 'bg-orange-500 text-white';
-    return 'bg-red-500 text-white';
-  };
-
-  // Obtenir le texte du statut
-  const getCompletionStatus = (percentage: number): string => {
-    if (percentage === 100) return 'Complet';
-    if (percentage >= 70) return 'Presque terminé';
-    if (percentage >= 40) return 'En cours';
-    return 'À compléter';
-  };
-
-  // Fonction pour rediriger vers les champs manquants
-  const redirectToMissingFields = () => {
-    const result = findFirstStepWithMissingFields();
-    
-    if (result) {
-      const { step, missingFields } = result;
-      
-      // Mettre à jour l'état des champs manquants
-      setMissingFields(missingFields);
-      
-      // Rediriger vers l'étape avec des champs manquants
-      setCurrentStep(step);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
-      // Afficher un toast avec les champs manquants
-      toast({
-        title: "Champs manquants",
-        description: `Veuillez remplir tous les champs obligatoires: ${missingFields.join(', ')}`,
-        variant: "destructive",
+  const handleAdditionalPhotoChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file && validateFile(file)) {
+      setAdditionalPhotos((prev) => {
+        const next = [...prev];
+        next[index] = file;
+        return next;
       });
-      
-      return false; // Indique qu'il y a des champs manquants
+      toast({ title: "Photo ajoutée" });
     }
-    
-    // Réinitialiser les champs manquants si tout est rempli
-    setMissingFields([]);
-    return true; // Tous les champs sont remplis
+    e.target.value = "";
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    
-    try {
-      // Vérifier d'abord s'il y a des champs manquants
-      if (!redirectToMissingFields()) {
-        setLoading(false);
-        return; // Arrêter ici si des champs manquants sont détectés
-      }
-
-      // Récupérer l'utilisateur actuel depuis Supabase
-      const userResult = await ProfileService.getCurrentUserProfile();
-      
-      if (!userResult.data) {
-        toast({
-          title: "Erreur",
-          description: "Vous devez être connecté pour publier un véhicule",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const currentUser = userResult.data;
-
-      // Vérifier si l'utilisateur peut créer des véhicules
-      if (!UserRoleUtils.canCreateVehicles(currentUser)) {
-        // Mettre à jour le rôle vers 'owner' si l'utilisateur n'a pas déjà un rôle élevé
-        if (currentUser.roles.includes('renter') || !currentUser.roles.includes('admin')) {
-          const roleResult = await ProfileService.updateUserRole(currentUser.id, 'owner');
-          if (roleResult.error) {
-            toast({
-              title: "Erreur",
-              description: "Impossible de mettre à jour le rôle propriétaire",
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          toast({
-            title: "Rôle mis à jour",
-            description: "Vous êtes maintenant propriétaire !",
+  const handleAddMorePhotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    Array.from(files)
+      .slice(0, 3 - additionalPhotos.length)
+      .forEach((file, i) => {
+        if (validateFile(file)) {
+          setAdditionalPhotos((prev) => {
+            const next = [...prev];
+            next[prev.length + i] = file;
+            return next;
           });
         }
+      });
+    e.target.value = "";
+  };
+
+  const removeAdditionalPhoto = (index: number) => {
+    setAdditionalPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const getPhotoPreview = (file: File | null) =>
+    file ? URL.createObjectURL(file) : null;
+
+  const clickInput = (id: string) =>
+    (document.getElementById(id) as HTMLInputElement)?.click();
+
+  // ── Submit ───────────────────────────────────────────────────────────────
+
+  const svcPrice = (s: ServiceField) =>
+    !s.enabled ? null : s.free ? null : parseFloat(s.price) || null;
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!brand.trim() || !model.trim() || !year.trim() || !fuelType || !transmission || !dailyPriceMga) {
+      toast({
+        title: "Champs manquants",
+        description: "Marque, modèle, année, carburant, boîte et prix sont requis.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const hasPhoto =
+      vehiclePhotos.frontLeft ||
+      vehiclePhotos.profileLeft ||
+      vehiclePhotos.interior ||
+      additionalPhotos.some(Boolean);
+
+    if (!hasPhoto) {
+      toast({
+        title: "Photo requise",
+        description: "Ajoutez au moins une photo du véhicule.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const parsedYear = parseInt(year, 10);
+    const parsedPrice = parseFloat(dailyPriceMga.replace(",", "."));
+
+    if (Number.isNaN(parsedYear) || parsedYear < 1990 || parsedYear > 2030) {
+      toast({ title: "Erreur", description: "Année invalide.", variant: "destructive" });
+      return;
+    }
+    if (Number.isNaN(parsedPrice) || parsedPrice < 1000) {
+      toast({ title: "Erreur", description: "Prix invalide (min 1 000 Ar).", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Récupère profil + met à jour rôle si nécessaire
+      const userResult = await ProfileService.getCurrentUserProfile();
+      if (!userResult.data) {
+        toast({ title: "Erreur", description: "Vous devez être connecté.", variant: "destructive" });
+        return;
+      }
+      const currentUser = userResult.data;
+      if (!UserRoleUtils.canCreateVehicles(currentUser)) {
+        await ProfileService.updateUserRole(currentUser.id, "owner");
       }
 
-      // La validation des champs obligatoires est maintenant gérée par redirectToMissingFields()
-
-      // Créer le véhicule dans Supabase
       const vehicleResult = await SupabaseVehiclesService.createVehicle({
         owner_id: currentUser.id,
-        brand: formData.brand,
-        model: formData.model,
-        color: formData.color,
-        year: parseInt(formData.year, 10), // Base 10 explicite
-        mileage: parseInt(formData.mileage) || undefined,
-        price_per_day: parseFloat(formData.dailyPrice),
-        description: vehicleDescription || undefined,
-        location: formData.address || undefined,
-        seats: parseInt(formData.seats) || undefined,
-        transmission: formData.transmission || undefined,
-        fuel_type: formData.fuel || undefined,
-        image_url: null, // Sera mis à jour après l'upload des photos
-        
-        // NOUVEAUX CHAMPS - Réductions et surcharges
-        low_season_discount: formData.lowSeasonDiscount ? parseFloat(formData.lowSeasonDiscount) : null,
-        high_season_surcharge: formData.highSeasonSurcharge ? parseFloat(formData.highSeasonSurcharge) : null,
-        long_duration_discount_14: formData.longTermDiscount14 ? parseFloat(formData.longTermDiscount14) : null,
-        long_duration_discount_60: formData.longTermDiscount60 ? parseFloat(formData.longTermDiscount60) : null,
-        
-        // NOUVEAUX CHAMPS - Services Aéroport
-        airport_pickup_service: formData.airportPickupService || null,
-        airport_pickup_retrieval: formData.airportPickupRetrieval || null,
-        airport_pickup_return: formData.airportPickupReturn || null,
-        airport_pickup_retrieval_free: formData.airportPickupRetrievalFree || null,
-        airport_pickup_retrieval_price: formData.airportPickupRetrievalPrice ? parseFloat(formData.airportPickupRetrievalPrice) : null,
-        airport_pickup_return_free: formData.airportPickupReturnFree || null,
-        airport_pickup_return_price: formData.airportPickupReturnPrice ? parseFloat(formData.airportPickupReturnPrice) : null,
-        
-        // NOUVEAUX CHAMPS - Services Barge Petite Terre
-        barge_petite_terre_service: formData.bargePetiteTerreService || null,
-        barge_petite_terre_retrieval: formData.bargePetiteTerreRetrieval || null,
-        barge_petite_terre_return: formData.bargePetiteTerreReturn || null,
-        barge_petite_terre_retrieval_free: formData.bargePetiteTerreRetrievalFree || null,
-        barge_petite_terre_retrieval_price: formData.bargePetiteTerreRetrievalPrice ? parseFloat(formData.bargePetiteTerreRetrievalPrice) : null,
-        barge_petite_terre_return_free: formData.bargePetiteTerreReturnFree || null,
-        barge_petite_terre_return_price: formData.bargePetiteTerreReturnPrice ? parseFloat(formData.bargePetiteTerreReturnPrice) : null,
-        
-        // NOUVEAUX CHAMPS - Services Barge Grande Terre
-        barge_grande_terre_service: formData.bargeGrandeTerreService || null,
-        barge_grande_terre_retrieval: formData.bargeGrandeTerreRetrieval || null,
-        barge_grande_terre_return: formData.bargeGrandeTerreReturn || null,
-        barge_grande_terre_retrieval_free: formData.bargeGrandeTerreRetrievalFree || null,
-        barge_grande_terre_retrieval_price: formData.bargeGrandeTerreRetrievalPrice ? parseFloat(formData.bargeGrandeTerreRetrievalPrice) : null,
-        barge_grande_terre_return_free: formData.bargeGrandeTerreReturnFree || null,
-        barge_grande_terre_return_price: formData.bargeGrandeTerreReturnPrice ? parseFloat(formData.bargeGrandeTerreReturnPrice) : null,
-        
-        // NOUVEAUX CHAMPS - Zones de prise en charge
-        pickup_zones: formData.pickupZones && formData.pickupZones.length > 0 ? formData.pickupZones : null,
-        
-        // NOUVEAUX CHAMPS - Équipements
+        brand: brand.trim(),
+        model: model.trim(),
+        color: color || undefined,
+        year: parsedYear,
+        mileage: mileage ? parseInt(mileage, 10) : undefined,
+        price_per_day: parsedPrice,
+        description: description || undefined,
+        vehicle_type: "car",
+        vehicle_category: category || undefined,
+        location_area_id: locationAreaId || null,
+        seats: seats ? parseInt(seats, 10) : undefined,
+        doors: doors ? parseInt(doors, 10) : undefined,
+        transmission: (transmission || "manual") as any,
+        fuel_type: (fuelType || "gasoline") as any,
+        // Équipements
         has_ac: equipment.hasAC,
         has_gps: equipment.hasGPS,
-        has_cruise_control: equipment.hasCruiseControl,
         has_bluetooth: equipment.hasBluetooth,
         has_carplay: equipment.hasCarPlay,
-        has_audio_input: equipment.hasAudioInput,
+        has_audio_input: false,
+        has_cruise_control: false,
         has_backup_camera: equipment.hasBackupCamera,
         has_usb_port: equipment.hasUSBPort,
         has_leather_seats: equipment.hasLeatherSeats,
         has_sunroof: equipment.hasSunroof,
-        has_premium_audio: equipment.hasPremiumAudio,
-        has_roof_rack: equipment.hasRoofRack,
-        has_wireless_charger: equipment.hasWirelessCharger,
         has_parking_sensors: equipment.hasParkingSensors,
-        has_abs: equipment.hasABS,
         has_large_trunk: equipment.hasLargeTrunk,
-        has_roof_box: equipment.hasRoofBox,
-        has_bike_rack: equipment.hasBikeRack,
-        has_android_auto: equipment.hasAndroidAuto,
+        // Services aéroport
+        airport_pickup_service: svcAirportPickup.enabled || svcAirportReturn.enabled || null,
+        airport_pickup_retrieval: svcAirportPickup.enabled || null,
+        airport_pickup_retrieval_free: svcAirportPickup.enabled ? svcAirportPickup.free : null,
+        airport_pickup_retrieval_price: svcAirportPickup.enabled ? svcPrice(svcAirportPickup) : null,
+        airport_pickup_return: svcAirportReturn.enabled || null,
+        airport_pickup_return_free: svcAirportReturn.enabled ? svcAirportReturn.free : null,
+        airport_pickup_return_price: svcAirportReturn.enabled ? svcPrice(svcAirportReturn) : null,
+        // Services barge Petite Terre
+        barge_petite_terre_service: svcBargePT.enabled || null,
+        barge_petite_terre_retrieval: svcBargePT.enabled || null,
+        barge_petite_terre_retrieval_free: svcBargePT.enabled ? svcBargePT.free : null,
+        barge_petite_terre_retrieval_price: svcBargePT.enabled ? svcPrice(svcBargePT) : null,
+        barge_petite_terre_return: svcBargePT.enabled || null,
+        barge_petite_terre_return_free: svcBargePT.enabled ? svcBargePT.free : null,
+        barge_petite_terre_return_price: svcBargePT.enabled ? svcPrice(svcBargePT) : null,
+        // Services barge Grande Terre
+        barge_grande_terre_service: svcBargeGT.enabled || null,
+        barge_grande_terre_retrieval: svcBargeGT.enabled || null,
+        barge_grande_terre_retrieval_free: svcBargeGT.enabled ? svcBargeGT.free : null,
+        barge_grande_terre_retrieval_price: svcBargeGT.enabled ? svcPrice(svcBargeGT) : null,
+        barge_grande_terre_return: svcBargeGT.enabled || null,
+        barge_grande_terre_return_free: svcBargeGT.enabled ? svcBargeGT.free : null,
+        barge_grande_terre_return_price: svcBargeGT.enabled ? svcPrice(svcBargeGT) : null,
+        // Livraison
+        home_delivery_service: svcDelivery.enabled || null,
+        home_delivery_pickup: svcDelivery.enabled || null,
+        home_delivery_pickup_free: svcDelivery.enabled ? svcDelivery.free : null,
+        home_delivery_pickup_price: svcDelivery.enabled ? svcPrice(svcDelivery) : null,
+        home_delivery_return: svcDelivery.enabled || null,
+        home_delivery_return_free: svcDelivery.enabled ? svcDelivery.free : null,
+        home_delivery_return_price: svcDelivery.enabled ? svcPrice(svcDelivery) : null,
+        // Extras
+        baby_seat_service: svcBabySeat.enabled || null,
+        baby_seat_free: svcBabySeat.enabled ? svcBabySeat.free : null,
+        baby_seat_price: svcBabySeat.enabled ? svcPrice(svcBabySeat) : null,
+        additional_driver_service: svcExtraDriver.enabled || null,
+        additional_driver_free: svcExtraDriver.enabled ? svcExtraDriver.free : null,
+        additional_driver_price: svcExtraDriver.enabled ? svcPrice(svcExtraDriver) : null,
+        available: true,
+        status: "active",
       });
-      
+
       if (!vehicleResult.data) {
         toast({
           title: "Erreur",
@@ -931,492 +381,150 @@ const RentMyCar = () => {
       }
 
       const vehicleId = vehicleResult.data.id;
-      let primaryImageUrl: string | null = null;
 
-      // Upload des photos obligatoires
-      const photoUploads = [];
-      
-      if (vehiclePhotos.frontLeft) {
-        photoUploads.push({
-          file: vehiclePhotos.frontLeft,
-          vehicleId,
-          photoType: 'frontLeft' as const,
-        });
-      }
-      
-      if (vehiclePhotos.profileLeft) {
-        photoUploads.push({
-          file: vehiclePhotos.profileLeft,
-          vehicleId,
-          photoType: 'profileLeft' as const,
-        });
-      }
-      
-      if (vehiclePhotos.interior) {
-        photoUploads.push({
-          file: vehiclePhotos.interior,
-          vehicleId,
-          photoType: 'interior' as const,
-        });
-      }
-
-      // Upload des photos supplémentaires
-      additionalPhotos.forEach((photo, index) => {
-        if (photo) {
-          photoUploads.push({
-            file: photo,
-            vehicleId,
-            photoType: 'additional' as const,
-          });
-        }
+      // Upload photos
+      const photoUploads: { file: File; vehicleId: string; photoType: any }[] = [];
+      if (vehiclePhotos.frontLeft) photoUploads.push({ file: vehiclePhotos.frontLeft, vehicleId, photoType: "frontLeft" });
+      if (vehiclePhotos.profileLeft) photoUploads.push({ file: vehiclePhotos.profileLeft, vehicleId, photoType: "profileLeft" });
+      if (vehiclePhotos.interior) photoUploads.push({ file: vehiclePhotos.interior, vehicleId, photoType: "interior" });
+      additionalPhotos.forEach((photo) => {
+        if (photo) photoUploads.push({ file: photo, vehicleId, photoType: "additional" });
       });
 
-      // Upload de toutes les photos
       if (photoUploads.length > 0) {
         const photoResult = await PhotoService.uploadMultiplePhotos(photoUploads);
-        
         if (photoResult.data.length > 0) {
-          // Utiliser la première photo (frontLeft) comme image principale
-          primaryImageUrl = photoResult.data[0].url;
-          
-          // Mettre à jour le véhicule avec l'image principale
-          await SupabaseVehiclesService.updateVehicleImage(vehicleId, primaryImageUrl);
-        }
-
-        if (photoResult.errors.length > 0) {
-          console.warn('Erreurs lors de l\'upload de certaines photos:', photoResult.errors);
-          toast({
-            title: "Attention",
-            description: `${photoResult.errors.length} photo(s) n'ont pas pu être uploadées`,
-            variant: "destructive",
-          });
+          await SupabaseVehiclesService.updateVehicleImage(vehicleId, photoResult.data[0].url);
         }
       }
 
-      toast({
-        title: "Succès",
-        description: "Votre véhicule a été publié avec succès !",
-      });
-      
-      // Afficher les données dans la console pour debug
-      console.log('Véhicule créé:', vehicleResult.data);
-      console.log('Photos uploadées:', photoUploads.length);
-      console.log('Image principale:', primaryImageUrl);
-      console.log('Données du formulaire:', formData);
-      console.log('Description:', vehicleDescription);
-      
-      // Redirection vers la liste des véhicules
-      navigate('/me/owner/vehicles');
-    } catch (error) {
-      console.error("Erreur lors de la publication du véhicule:", error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur inattendue s'est produite",
-        variant: "destructive",
-      });
+      toast({ title: "Véhicule publié !", description: "Gérez-le depuis votre tableau de bord." });
+      navigate("/me/owner/vehicles");
+    } catch (err: any) {
+      console.error("Erreur création voiture:", err);
+      toast({ title: "Erreur", description: err?.message || "Erreur inattendue.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 1: return 'Mon véhicule & mes infos';
-      case 2: return 'Mes conditions de location';
-      case 3: return 'Mes disponibilités & mes photos';
-      case 4: return 'Confirmation finale';
-      default: return '';
-    }
-  };
+  // ── Render ───────────────────────────────────────────────────────────────
 
-  const renderStep1 = () => {
-    const vehicleCompletion = calculateSectionCompletion('vehicle');
-    const personalCompletion = calculateSectionCompletion('personal');
-    
-    return (
-    <div className="space-y-8">
-      {/* Informations véhicule */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Car className="h-5 w-5 text-primary" />
-              Informations du véhicule
-            </div>
-            <Badge className={`${getCompletionColor(vehicleCompletion)} px-3 py-1 text-sm font-semibold`}>
-              {vehicleCompletion}% - {getCompletionStatus(vehicleCompletion)}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Explication upload carte grise */}
-          <div className="bg-primary-soft p-4 rounded-lg border border-primary/20">
-            <div className="flex items-start gap-3">
-              <div className="bg-primary text-primary-foreground p-2 rounded-full shrink-0">
-                <FileText className="h-4 w-4" />
-              </div>
-              <div>
-                <h4 className="font-medium text-primary mb-1">Gagnez du temps !</h4>
-                <p className="text-sm text-primary/80">
-                  Uploadez votre carte grise pour remplir automatiquement toutes les informations de votre véhicule. 
-                  Plus rapide et sans erreur !
-                </p>
-              </div>
-            </div>
-          </div>
+  return (
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
+        <div className="container mx-auto px-4 py-8 max-w-3xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Car className="h-8 w-8 text-primary" />
+                <span>Ajouter une voiture</span>
+              </CardTitle>
+            </CardHeader>
 
-          {/* Upload carte grise */}
-          <div>
-            <Label className="text-base font-medium">1. Carte grise (recommandé)</Label>
-            <div className="mt-3 border-2 border-dashed border-primary/30 rounded-lg p-6 text-center hover:border-primary/60 transition-colors cursor-pointer bg-primary/5">
-              <Upload className="h-10 w-10 mx-auto text-primary mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">
-                Cliquez pour télécharger ou glissez votre carte grise
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Format accepté: PDF, JPG, PNG (max 5MB)
-              </p>
-            </div>
-          </div>
+            <CardContent>
+              {/* Hidden file inputs — pattern identique scooter */}
+              <input id="car-photo-frontLeft" type="file" accept="image/*"
+                style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+                onChange={(e) => handleMainPhotoChange("frontLeft", e)} />
+              <input id="car-photo-profileLeft" type="file" accept="image/*"
+                style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+                onChange={(e) => handleMainPhotoChange("profileLeft", e)} />
+              <input id="car-photo-interior" type="file" accept="image/*"
+                style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+                onChange={(e) => handleMainPhotoChange("interior", e)} />
+              <input id="car-photo-additional" type="file" accept="image/*" multiple
+                style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+                disabled={additionalPhotos.length >= 3}
+                onChange={handleAddMorePhotosChange} />
 
-          {/* Séparateur */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-border"></div>
-            <span className="text-xs text-muted-foreground bg-background px-2">OU</span>
-            <div className="flex-1 h-px bg-border"></div>
-          </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
 
-          {/* Saisie manuelle */}
-          <div>
-            <Label className="text-base font-medium mb-6 block">2. Saisie manuelle des informations</Label>
-            
-            <div className="space-y-8">
-              {/* Section Identification */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide border-b border-slate-200 pb-2">
-                  Identification
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Plaque d\'immatriculation') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Plaque d\'immatriculation') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Plaque d'immatriculation (A) *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Correspond au champ A de la carte grise (numéro officiel d'immatriculation).</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Input 
-                      id="licensePlate"
-                      value={formData.licensePlate}
-                      onChange={(e) => updateField('licensePlate', e.target.value)}
-                      placeholder="AB-123-CD"
-                      className={getFieldClasses('Plaque d\'immatriculation', 'h-12 text-base')}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Marque') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Marque') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Marque (D.1) *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Correspond au champ D.1 de la carte grise (marque constructeur).</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    {/* Remplacement du Select par une Combobox recherchable */}
-                    <BrandCombobox
-                      value={formData.brand}
-                      onChange={(v) => updateField('brand', v)}
-                      options={CAR_BRANDS}
-                      placeholder="Sélectionner la marque"
-                      buttonClassName={getFieldClasses('Marque', 'h-12 text-base')}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Modèle') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Modèle') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Modèle (D.3) *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Correspond au champ D.3 de la carte grise<br/>(dénomination commerciale du véhicule).</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Input 
-                      id="model"
-                      value={formData.model}
-                      onChange={(e) => updateField('model', e.target.value)}
-                      placeholder="ex: 208, Clio..."
-                      className={getFieldClasses('Modèle', 'h-12 text-base')}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Couleur') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Couleur') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Couleur *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">La couleur n'apparaît pas sur la carte grise,<br/>c'est une information supplémentaire.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <ColorCombobox
-                      value={formData.color}
-                      onChange={(v) => updateField('color', v)}
-                      options={CAR_COLORS}
-                      placeholder="Sélectionner la couleur"
-                      buttonClassName={getFieldClasses('Couleur', 'h-12 text-base')}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Année') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Année') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Année (B) *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Correspond au champ B de la carte grise<br/>(date de première immatriculation).</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Input 
-                      id="year"
-                      type="number"
-                      value={formData.year}
-                      onChange={(e) => updateField('year', e.target.value)}
-                      placeholder="2020"
-                      className={getFieldClasses('Année', 'h-12 text-base')}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Catégorie véhicule') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Catégorie véhicule') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Catégorie véhicule (J.1 + J.3) *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Correspond aux champs J.1 (genre national)<br/>et J.3 (carrosserie nationale) de la carte grise.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <VehicleCategoryCombobox
-                      value={formData.vehicleCategory}
-                      onChange={(v) => updateField('vehicleCategory', v)}
-                      options={VEHICLE_CATEGORIES}
-                      placeholder="Sélectionner la catégorie"
-                      buttonClassName={getFieldClasses('Catégorie véhicule', 'h-12 text-base')}
-                    />
+                {/* Catégorie */}
+                <div className="space-y-2">
+                  <Label>Catégorie</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {CAR_CATEGORIES.map((cat) => (
+                      <button key={cat.value} type="button"
+                        onClick={() => setCategory(cat.value)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                          category === cat.value
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border hover:border-primary/50"
+                        }`}>
+                        {cat.icon} {cat.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Section Caractéristiques techniques */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide border-b border-slate-200 pb-2">
-                  Caractéristiques techniques
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Kilométrage') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Kilométrage') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Kilométrage *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Le kilométrage n'est pas indiqué sur la carte grise,<br/>c'est une information supplémentaire.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Input 
-                      id="mileage"
-                      type="number"
-                      value={formData.mileage}
-                      onChange={(e) => updateField('mileage', e.target.value)}
-                      placeholder="50000"
-                      className={getFieldClasses('Kilométrage', 'h-12 text-base')}
-                      required
-                    />
+                {/* Marque / Modèle */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="brand">Marque *</Label>
+                    <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Ex : Toyota" />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Carburant') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Carburant') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Carburant (P.3) *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Correspond au champ P.3 de la carte grise<br/>(type de carburant/énergie).</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <FuelTypeCombobox
-                      value={formData.fuel}
-                      onChange={(v) => updateField('fuel', v)}
-                      options={FUEL_TYPES}
-                      placeholder="Sélectionner"
-                      buttonClassName={getFieldClasses('Carburant', 'h-12 text-base')}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Transmission') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Transmission') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Transmission *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">La transmission n'est pas indiquée sur la carte grise,<br/>c'est une information supplémentaire.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <TransmissionTypeCombobox
-                      value={formData.transmission}
-                      onChange={(v) => updateField('transmission', v)}
-                      options={TRANSMISSION_TYPES}
-                      placeholder="Sélectionner"
-                      buttonClassName={getFieldClasses('Transmission', 'h-12 text-base')}
-                    />
+                  <div className="space-y-1">
+                    <Label htmlFor="model">Modèle *</Label>
+                    <Input id="model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Ex : RAV4" />
                   </div>
                 </div>
-              </div>
 
-              {/* Section Dimensions */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide border-b border-slate-200 pb-2">
-                  Dimensions
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Nombre de sièges') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Nombre de sièges') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Nombre de sièges (S.1) *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Correspond au champ S.1 de la carte grise<br/>(nombre de places assises).</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Select value={formData.seats} onValueChange={(value) => updateField('seats', value)} required>
-                      <SelectTrigger id="seats" className={getFieldClasses('Nombre de sièges', 'h-12 text-base')}>
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
+                {/* Année / Kilométrage */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="year">Année *</Label>
+                    <Input id="year" type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="2022" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="mileage">Kilométrage (approx.)</Label>
+                    <Input id="mileage" type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+
+                {/* Carburant / Boîte */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>Carburant *</Label>
+                    <Select value={fuelType} onValueChange={setFuelType}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="2">2 places</SelectItem>
-                        <SelectItem value="4">4 places</SelectItem>
-                        <SelectItem value="5">5 places</SelectItem>
-                        <SelectItem value="7">7 places</SelectItem>
-                        <SelectItem value="9">9 places</SelectItem>
+                        <SelectItem value="gasoline">Essence</SelectItem>
+                        <SelectItem value="diesel">Diesel</SelectItem>
+                        <SelectItem value="electric">Électrique</SelectItem>
+                        <SelectItem value="hybrid">Hybride</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between h-6">
-                      <Label className={`text-sm font-medium ${isFieldMissing('Nombre de portes') ? 'text-red-600' : 'text-slate-600'} flex items-center`}>
-                        {isFieldMissing('Nombre de portes') && (
-                          <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                        )}
-                        Nombre de portes *
-                      </Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">Le nombre de portes n'est pas indiqué sur la carte grise,<br/>c'est une information supplémentaire.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <Select value={formData.doors} onValueChange={(value) => updateField('doors', value)} required>
-                      <SelectTrigger id="doors" className={getFieldClasses('Nombre de portes', 'h-12 text-base')}>
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
+                  <div className="space-y-1">
+                    <Label>Boîte *</Label>
+                    <Select value={transmission} onValueChange={setTransmission}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="manual">Manuelle</SelectItem>
+                        <SelectItem value="automatic">Automatique</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Places / Portes */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>Places</Label>
+                    <Select value={seats} onValueChange={setSeats}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                      <SelectContent>
+                        {["4", "5", "7", "9"].map((n) => (
+                          <SelectItem key={n} value={n}>{n} places</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Portes</Label>
+                    <Select value={doors} onValueChange={setDoors}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="3">3 portes</SelectItem>
                         <SelectItem value="5">5 portes</SelectItem>
@@ -1424,2507 +532,211 @@ const RentMyCar = () => {
                     </Select>
                   </div>
                 </div>
-              </div>
 
-              {/* Section Équipements */}
-              <EquipmentSelector 
-                equipment={equipment}
-                onEquipmentChange={setEquipment}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Informations personnelles */}
-      <Card>
-        <CardHeader 
-          className={isExistingOwner ? "cursor-pointer hover:bg-gray-50 transition-colors" : ""}
-          onClick={() => isExistingOwner && setIsPersonalSectionExpanded(!isPersonalSectionExpanded)}
-        >
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span>Vos informations</span>
-              {isExistingOwner && (
-                <ChevronDown className={`h-4 w-4 transition-transform ${isPersonalSectionExpanded ? 'rotate-180' : ''}`} />
-              )}
-            </div>
-            {isExistingOwner ? (
-              <Badge className="bg-green-500 text-white px-3 py-1 text-sm font-semibold">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Profil vérifié
-              </Badge>
-            ) : (
-              <Badge className={`${getCompletionColor(personalCompletion)} px-3 py-1 text-sm font-semibold`}>
-                {personalCompletion}% - {getCompletionStatus(personalCompletion)}
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        {(!isExistingOwner || isPersonalSectionExpanded) && (
-          <CardContent className="space-y-6">
-            {/* Avatar Section */}
-          <div className="flex flex-col items-center space-y-4 pb-6 border-b border-slate-200">
-            <div className="relative">
-              <div 
-                className="w-24 h-24 rounded-full border-2 border-slate-300 overflow-hidden bg-slate-50 flex items-center justify-center cursor-pointer hover:border-slate-400 transition-colors"
-                onClick={triggerAvatarFileInput}
-              >
-                {getAvatarPreview() ? (
-                  <img 
-                    src={getAvatarPreview()!} 
-                    alt="Photo de profil du propriétaire" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-100">
-                    <Camera className="h-8 w-8 text-slate-400" />
+                {/* Couleur / Immatriculation */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="color">Couleur</Label>
+                    <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Ex : Blanc" />
                   </div>
-                )}
-              </div>
-              <button
-                onClick={triggerAvatarFileInput}
-                className="absolute -bottom-1 -right-1 bg-primary text-white rounded-full p-1.5 hover:bg-primary/90 transition-colors"
-                aria-label="Changer la photo de profil"
-              >
-                <Camera className="h-3 w-3" />
-              </button>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-slate-700">Photo de profil</p>
-              <p className="text-xs text-slate-500">Cliquez pour changer</p>
-            </div>
-          </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="licensePlate">Immatriculation (optionnel)</Label>
+                    <Input id="licensePlate" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} placeholder="Ex : 1234 NB" />
+                  </div>
+                </div>
 
-          {/* Personal Info Form */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="firstName" className={`${isFieldMissing('Prénom') ? 'text-red-600' : ''}`}>
-                {isFieldMissing('Prénom') && (
-                  <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                )}
-                Prénom *
-              </Label>
-              <Input
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => {
-                  setFormData(prev => ({ ...prev, firstName: e.target.value }));
-                  if (e.target.value.trim()) clearFieldError('firstName');
-                }}
-                placeholder="Votre prénom"
-                className={getFieldClasses('Prénom', 'w-full')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName" className={`${isFieldMissing('Nom') ? 'text-red-600' : ''}`}>
-                {isFieldMissing('Nom') && (
-                  <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                )}
-                Nom *
-              </Label>
-              <Input
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => {
-                  setFormData(prev => ({ ...prev, lastName: e.target.value }));
-                  if (e.target.value.trim()) clearFieldError('lastName');
-                }}
-                placeholder="Votre nom"
-                className={getFieldClasses('Nom', 'w-full')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className={`${isFieldMissing('Email') ? 'text-red-600' : ''}`}>
-                {isFieldMissing('Email') && (
-                  <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                )}
-                Email *
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => {
-                  setFormData(prev => ({ ...prev, email: e.target.value }));
-                  if (e.target.value.trim()) clearFieldError('email');
-                }}
-                placeholder="votre@email.com"
-                className={getFieldClasses('Email', 'w-full')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone" className={`${isFieldMissing('Téléphone') ? 'text-red-600' : ''}`}>
-                {isFieldMissing('Téléphone') && (
-                  <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                )}
-                Téléphone *
-              </Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => {
-                  setFormData(prev => ({ ...prev, phone: e.target.value }));
-                  if (e.target.value.trim()) clearFieldError('phone');
-                }}
-                placeholder="06 12 34 56 78"
-                className={getFieldClasses('Téléphone', 'w-full')}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="address">Adresse *</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="123 Rue de la Paix, 75001 Paris"
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="city" className={`${isFieldMissing('Ville') ? 'text-red-600' : ''}`}>
-                {isFieldMissing('Ville') && (
-                  <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                )}
-                Ville *
-              </Label>
-              <OwnerLocationDropdown
-                value={formData.city}
-                onChange={(value) => updateField('city', value)}
-                placeholder="Sélectionner votre ville"
-                className={getFieldClasses('Ville', 'w-full')}
-              />
-            </div>
-          </div>
-          </CardContent>
-        )}
-      </Card>
-
-
-      {/* Vérification identité */}
-      <Card>
-        <CardHeader 
-          className={isExistingOwner ? "cursor-pointer hover:bg-gray-50 transition-colors" : ""}
-          onClick={() => isExistingOwner && setIsIdentitySectionExpanded(!isIdentitySectionExpanded)}
-        >
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Vérification d'identité
-              {isExistingOwner && (
-                <ChevronDown className={`h-4 w-4 transition-transform ${isIdentitySectionExpanded ? 'rotate-180' : ''}`} />
-              )}
-            </div>
-            {isExistingOwner ? (
-              <Badge className="bg-green-500 text-white px-3 py-1 text-sm font-semibold">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Identité vérifiée
-              </Badge>
-            ) : (
-              <Badge className={`${getCompletionColor(calculateSectionCompletion('identity'))} px-3 py-1 text-sm font-semibold`}>
-                {calculateSectionCompletion('identity')}% - {getCompletionStatus(calculateSectionCompletion('identity'))}
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        {(!isExistingOwner || isIdentitySectionExpanded) && (
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              🔒 Vos documents sont chiffrés et stockés de manière sécurisée conformément au RGPD. 
-              Ils ne sont utilisés que pour la vérification d'identité.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm font-medium">Pièce d'identité (recto)</p>
-                <p className="text-xs text-muted-foreground">CNI, Passeport</p>
-              </div>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm font-medium">Pièce d'identité (verso)</p>
-                <p className="text-xs text-muted-foreground">Si applicable</p>
-              </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
-    </div>
-    );
-  };
-
-  // Fonction utilitaire pour calculer les prix avec validation
-  const calculatePrice = (basePrice: string, percentage: string, isDiscount: boolean = true) => {
-    const base = parseFloat(basePrice) || 0;
-    let percent = parseFloat(percentage) || 0;
-    
-    if (base <= 0) return null;
-    
-    // Clamping des pourcentages
-    if (isDiscount) {
-      percent = Math.max(0, Math.min(100, percent));
-    } else {
-      percent = Math.max(0, Math.min(200, percent));
-    }
-    
-    const calculation = isDiscount 
-      ? base * (1 - percent / 100)
-      : base * (1 + percent / 100);
-    
-    return Math.round(calculation * 100) / 100;
-  };
-
-  // Fonction pour formater le prix avec 2 décimales
-  const formatPrice = (price: number | null) => {
-    if (price === null) return null;
-    return price.toFixed(2);
-  };
-
-  const renderStep2 = () => {
-    const pricingCompletion = calculateSectionCompletion('pricing');
-    
-    return (
-    <div className="space-y-8">
-      {/* Tarifs */}
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-background to-muted/20 border-b">
-          <CardTitle className="flex items-center justify-between">
-            <span className="text-[22px] font-semibold text-foreground">Tarification</span>
-            <Badge className={`${getCompletionColor(pricingCompletion)} px-3 py-1 text-sm font-semibold`}>
-              {pricingCompletion}% - {getCompletionStatus(pricingCompletion)}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="max-w-4xl space-y-6">
-            {/* Prix de base - largeur réduite et centré */}
-            <div className="space-y-3 max-w-md mx-auto">
-              <Label className={`text-sm font-medium ${isFieldMissing('Prix journalier') ? 'text-red-600' : 'text-slate-600'} text-center block`}>
-                {isFieldMissing('Prix journalier') && (
-                  <AlertTriangle className="inline-block w-4 h-4 mr-1 mb-0.5" />
-                )}
-                Prix journalier de base (€) *
-              </Label>
-              <div className="relative">
-                <Input 
-                  id="dailyPrice"
-                  type="number"
-                  value={formData.dailyPrice}
-                  onChange={(e) => updateField('dailyPrice', e.target.value)}
-                  placeholder="35"
-                  className={getFieldClasses('Prix journalier', 'h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 pr-8 text-center')}
-                  min="0"
-                  step="0.01"
+                {/* Prix */}
+                <OwnerDualCurrencyInput
+                  id="daily-price"
+                  label="Prix par jour *"
+                  valueMga={dailyPriceMga}
+                  onChangeMga={setDailyPriceMga}
+                  required
+                  minMga={1000}
+                  arPlaceholder="200000"
+                  eurPlaceholder="40"
+                  hint="Saisissez en Ariary ou en € — équivalent affiché selon le taux du jour"
                 />
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium text-sm">€</span>
-              </div>
-            </div>
-            
-            {/* Grille 2x2 avec aperçus intégrés */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-              {/* Réduction basse saison */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  <div className="flex items-center justify-between h-6">
-                    <span>Réduction basse saison (%)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-sm">
-                            <strong>Réduction basse saison</strong><br/>
-                            Pourcentage de réduction appliqué pendant les périodes creuses (ex: septembre, octobre, janvier à mars).<br/>
-                            <span className="text-muted-foreground italic">Exemple : 10% de réduction → si votre prix est 50€/jour, le tarif basse saison sera de 45€/jour.</span>
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </Label>
-                <div className="flex flex-col gap-2">
-                  <div className="w-full max-w-xs relative">
-                    <Input 
-                      type="number"
-                      value={formData.lowSeasonDiscount}
-                      onChange={(e) => updateField('lowSeasonDiscount', e.target.value)}
-                      placeholder="10"
-                      min="0"
-                      max="100"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium text-sm">%</span>
-                  </div>
-                  <div className="text-left">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200/50 text-lg font-semibold text-green-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.lowSeasonDiscount, true)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
+
+                {/* Localisation */}
+                <div className="space-y-1">
+                  <Label>Localisation</Label>
+                  <Select value={locationAreaId} onValueChange={setLocationAreaId}>
+                    <SelectTrigger><SelectValue placeholder="Sélectionner un quartier" /></SelectTrigger>
+                    <SelectContent>
+                      {LOCATION_AREAS.map((area) => (
+                        <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Équipements */}
+                <div className="space-y-3">
+                  <Label>Équipements</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {EQUIPMENT_LIST.map((item) => (
+                      <label key={item.key}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors">
+                        <span className="text-sm">{item.label}</span>
+                        <Switch
+                          checked={equipment[item.key] ?? false}
+                          onCheckedChange={(checked) =>
+                            setEquipment((prev) => ({ ...prev, [item.key]: checked }))
+                          }
+                        />
+                      </label>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Supplément haute saison */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  <div className="flex items-center justify-between h-6">
-                    <span>Supplément haute saison (%)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-sm">
-                            <strong>Supplément haute saison</strong><br/>
-                            Pourcentage d'augmentation appliqué pendant les périodes de forte demande (ex: juillet, août, vacances scolaires, jours fériés).<br/>
-                            <span className="text-muted-foreground italic">Exemple : 20% de supplément → si votre prix est 50€/jour, le tarif haute saison sera de 60€/jour.</span>
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </Label>
-                <div className="flex flex-col gap-2">
-                  <div className="w-full max-w-xs relative">
-                    <Input 
-                      type="number"
-                      value={formData.highSeasonSurcharge}
-                      onChange={(e) => updateField('highSeasonSurcharge', e.target.value)}
-                      placeholder="20"
-                      min="0"
-                      max="200"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium text-sm">%</span>
-                  </div>
-                  <div className="text-left">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-orange-50 border border-orange-200/50 text-lg font-semibold text-orange-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.highSeasonSurcharge, false)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
+                {/* Services */}
+                <div className="space-y-1">
+                  <Label>Services proposés</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Activez les services que vous offrez.</p>
+                  <div className="rounded-lg border border-slate-200 px-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-3 pb-1">✈️ Aéroport Fascène</p>
+                    <ServiceRow label="Prise en charge" icon="🛬" value={svcAirportPickup} onChange={setSvcAirportPickup} />
+                    <ServiceRow label="Restitution" icon="🛫" value={svcAirportReturn} onChange={setSvcAirportReturn} />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-3 pb-1">🚢 Barge Petite Terre</p>
+                    <ServiceRow label="Aller / retour" icon="⛴️" value={svcBargePT} onChange={setSvcBargePT} />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-3 pb-1">🚢 Barge Grande Terre</p>
+                    <ServiceRow label="Aller / retour" icon="⛴️" value={svcBargeGT} onChange={setSvcBargeGT} />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-3 pb-1">🚗 Livraison à domicile</p>
+                    <ServiceRow label="Aller / retour" icon="📍" value={svcDelivery} onChange={setSvcDelivery} />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-3 pb-1">Extras</p>
+                    <ServiceRow label="Siège bébé" icon="👶" value={svcBabySeat} onChange={setSvcBabySeat} perDay />
+                    <ServiceRow label="Conducteur supplémentaire" icon="👨‍✈️" value={svcExtraDriver} onChange={setSvcExtraDriver} perDay />
                   </div>
                 </div>
-              </div>
 
-              {/* Réduction longue durée ≥14j */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  <div className="flex items-center justify-between h-6">
-                    <span>Réduction longue durée ≥14j (%)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-sm">
-                            <strong>Réduction longue durée ≥14 jours</strong><br/>
-                            Réduction accordée automatiquement pour les locations de 14 jours ou plus. Incite les clients à louer sur une période plus longue.<br/>
-                            <span className="text-muted-foreground italic">Exemple : 15% de réduction → pour une location de 14 jours à 50€/jour (700€ total), le client paiera 595€ au lieu de 700€.</span>
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </Label>
-                <div className="flex flex-col gap-2">
-                  <div className="w-full max-w-xs relative">
-                    <Input 
-                      type="number"
-                      value={formData.longTermDiscount14}
-                      onChange={(e) => updateField('longTermDiscount14', e.target.value)}
-                      placeholder="15"
-                      min="0"
-                      max="100"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium text-sm">%</span>
-                  </div>
-                  <div className="text-left">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200/50 text-lg font-semibold text-green-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.longTermDiscount14, true)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
-                  </div>
+                {/* Description */}
+                <div className="space-y-1">
+                  <Label htmlFor="description">Description (optionnel)</Label>
+                  <textarea
+                    id="description"
+                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Décrivez votre véhicule — état, options, restrictions..."
+                  />
                 </div>
-              </div>
 
-              {/* Réduction longue durée ≥60j */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  <div className="flex items-center justify-between h-6">
-                    <span>Réduction longue durée ≥60j (%)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-sm">
-                            <strong>Réduction longue durée ≥60 jours</strong><br/>
-                            Réduction majorée pour les locations de 2 mois ou plus. Idéal pour attirer des locations longue durée (expatriés, travailleurs temporaires, etc.).<br/>
-                            <span className="text-muted-foreground italic">Exemple : 25% de réduction → pour une location de 60 jours à 50€/jour (3000€ total), le client paiera 2250€ au lieu de 3000€, soit 750€ d'économie.</span>
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                {/* Photos */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Camera className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Photos du véhicule</p>
+                      <p className="text-xs text-muted-foreground">Au moins une photo requise.</p>
+                    </div>
                   </div>
-                </Label>
-                <div className="flex flex-col gap-2">
-                  <div className="w-full max-w-xs relative">
-                    <Input 
-                      type="number"
-                      value={formData.longTermDiscount60}
-                      onChange={(e) => updateField('longTermDiscount60', e.target.value)}
-                      placeholder="25"
-                      min="0"
-                      max="100"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 font-medium text-sm">%</span>
-                  </div>
-                  <div className="text-left">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200/50 text-lg font-semibold text-green-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.longTermDiscount60, true)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Texte d'aide */}
-            <p className="text-sm text-slate-500 mt-8 leading-relaxed bg-slate-50 rounded-lg p-4 border border-slate-200 text-center">
-              💡 Calculs indicatifs, arrondis à 2 décimales. Les frais/assurances s'ajoutent ensuite.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+                  <div className="sr-only" aria-live="polite" aria-atomic="true">{feedbackMessage}</div>
 
-      {/* Paramètres de réservation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-[22px] font-semibold text-foreground">Paramètres de réservation</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-3">
-              <Label className={`text-sm font-medium text-center block ${isFieldMissing('Délai minimum avant réservation') ? 'text-red-600' : 'text-slate-600'}`}>
-                <div className="flex items-center justify-center gap-1">
-                  <span>Délai min. avant réservation (H)</span>
-                  <span className="text-red-500">*</span>
-                  {isFieldMissing('Délai minimum avant réservation') && (
-                    <AlertTriangle className="inline-block w-4 h-4 ml-1 mb-0.5" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(
+                      [
+                        { type: "frontLeft" as const, id: "car-photo-frontLeft", label: "Photo principale", hint: "Avant gauche" },
+                        { type: "profileLeft" as const, id: "car-photo-profileLeft", label: "Profil gauche", hint: "Vue de côté" },
+                        { type: "interior" as const, id: "car-photo-interior", label: "Intérieur", hint: "Tableau de bord" },
+                      ]
+                    ).map(({ type, id, label, hint }) => {
+                      const preview = getPhotoPreview(vehiclePhotos[type]);
+                      return (
+                        <div key={type} className="group border-2 border-dashed border-muted-foreground/25 rounded-lg overflow-hidden hover:border-primary/50 transition-colors">
+                          <div className="relative h-32 w-full bg-muted/40 flex flex-col items-center justify-center gap-2">
+                            {type === "frontLeft" && (
+                              <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[11px] px-2 py-1 rounded-md z-10">
+                                {label}
+                              </div>
+                            )}
+                            {preview ? (
+                              <>
+                                <img src={preview} alt={label} className="w-full h-full object-cover" />
+                                <button type="button" onClick={() => clickInput(id)}
+                                  className="absolute bottom-2 right-2 px-2 py-1 text-xs bg-background/90 border rounded hover:bg-background">
+                                  Changer
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button type="button" onClick={() => clickInput(id)}
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 text-xs border rounded-md bg-background hover:bg-muted">
+                                  <Upload className="h-4 w-4" />Ajouter
+                                </button>
+                                <span className="text-xs text-muted-foreground text-center px-2">{hint}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button type="button" onClick={() => clickInput("car-photo-additional")}
+                    disabled={additionalPhotos.length >= 3}
+                    className={`flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md transition-colors ${
+                      additionalPhotos.length >= 3 ? "opacity-50 cursor-not-allowed" : "bg-background hover:bg-muted"
+                    }`}>
+                    <Upload className="h-4 w-4" />Ajouter des photos
+                  </button>
+
+                  {additionalPhotos.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {additionalPhotos.map((photo, index) => (
+                        <div key={index} className="relative border rounded-lg overflow-hidden bg-muted/40">
+                          <input id={`car-photo-additional-${index}`} type="file" accept="image/*"
+                            style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+                            onChange={(e) => handleAdditionalPhotoChange(index, e)} />
+                          <button type="button" onClick={() => clickInput(`car-photo-additional-${index}`)}
+                            className="h-28 w-full cursor-pointer flex items-center justify-center">
+                            {photo ? (
+                              <img src={getPhotoPreview(photo) || ""} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                <Upload className="h-5 w-5" /><span className="text-xs">Optionnel</span>
+                              </div>
+                            )}
+                          </button>
+                          {photo && (
+                            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-2 py-1 bg-black/50 text-[11px] text-white">
+                              <button type="button" onClick={() => clickInput(`car-photo-additional-${index}`)}
+                                className="inline-flex items-center gap-1">
+                                <ArrowRight className="h-3 w-3 rotate-180" />Changer
+                              </button>
+                              <button type="button" onClick={() => removeAdditionalPhoto(index)}
+                                className="inline-flex items-center gap-1">
+                                <Trash2 className="h-3 w-3" />Supprimer
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-sm">
-                          <strong>Délai minimum avant réservation</strong><br/>
-                          Nombre d'heures minimum entre la demande de réservation et le début de la location.<br/>
-                          <span className="text-muted-foreground italic">Exemple : 24h signifie que le client doit réserver au moins 24 heures à l'avance.</span>
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
-              </Label>
-              <Input 
-                id="minAdvanceHours"
-                type="number"
-                value={formData.minAdvanceHours}
-                onChange={(e) => updateField('minAdvanceHours', e.target.value)}
-                placeholder="24 heures"
-                min="1"
-                max="168"
-                className={getFieldClasses('Délai minimum avant réservation', 'h-12 text-center text-lg font-semibold rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400')}
-              />
-            </div>
-            <div className="space-y-3">
-              <Label className={`text-sm font-medium text-center block ${isFieldMissing('Durée minimum de réservation') ? 'text-red-600' : 'text-slate-600'}`}>
-                <div className="flex items-center justify-center gap-1">
-                  <span>Durée min. de réservation (J)</span>
-                  <span className="text-red-500">*</span>
-                  {isFieldMissing('Durée minimum de réservation') && (
-                    <AlertTriangle className="inline-block w-4 h-4 ml-1 mb-0.5" />
-                  )}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-sm">
-                          <strong>Durée minimum de réservation</strong><br/>
-                          Nombre de jours minimum pour une location.<br/>
-                          <span className="text-muted-foreground italic">Exemple : 1 jour signifie que le client doit louer votre véhicule pour au moins une journée complète.</span>
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </Label>
-              <Input 
-                id="minRentalDays"
-                type="number"
-                value={formData.minRentalDays}
-                onChange={(e) => updateField('minRentalDays', e.target.value)}
-                placeholder="1 jour"
-                min="1"
-                className={getFieldClasses('Durée minimum de réservation', 'h-12 text-center text-lg font-semibold rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400')}
-              />
-            </div>
-            <div className="space-y-3">
-              <Label className={`text-sm font-medium text-center block ${isFieldMissing('Durée maximum de réservation') ? 'text-red-600' : 'text-slate-600'}`}>
-                <div className="flex items-center justify-center gap-1">
-                  <span>Durée max. de réservation (J)</span>
-                  <span className="text-red-500">*</span>
-                  {isFieldMissing('Durée maximum de réservation') && <span className="text-red-500">⚠️</span>}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-slate-400 cursor-help hover:text-primary transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-sm">
-                          <strong>Durée maximum de réservation</strong><br/>
-                          Nombre de jours maximum pour une location. Utile pour la location courte durée ou si vous souhaitez limiter la durée d'indisponibilité de votre véhicule.<br/>
-                          <span className="text-muted-foreground italic">Exemple : 30 jours signifie que le client peut louer votre véhicule pour un maximum d'un mois.</span>
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </Label>
-              <Input 
-                id="maxRentalDays"
-                type="number"
-                value={formData.maxRentalDays}
-                onChange={(e) => updateField('maxRentalDays', e.target.value)}
-                placeholder="30 jours"
-                min="1"
-                className={getFieldClasses('Durée maximum de réservation', 'h-12 text-center text-lg font-semibold rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400')}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Zones de prise en charge */}
-      <Card className="overflow-hidden border-2 border-primary/20 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-secondary/5 border-b border-primary/20">
-          <CardTitle className="flex items-center gap-3 text-[22px] font-semibold text-foreground">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <MapPin className="h-6 w-6 text-primary" />
-            </div>
-            Zones de prise en charge
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 bg-gradient-to-br from-background to-muted/5">
-          <div className="space-y-6">
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-              <p className="text-sm text-blue-800 font-medium">
-                🎯 Sélectionnez les villes où vous acceptez de prendre en charge vos clients pour la location de votre véhicule.
-              </p>
-            </div>
-            
-            {/* Bouton de sélection - visible seulement si aucune zone n'est sélectionnée */}
-            {formData.pickupZones.length === 0 && (
-              <PickupZonesModal
-                selectedZones={formData.pickupZones}
-                onZonesChange={(zones) => {
-                  updateField('pickupZones', zones);
-                  
-                  // Activer automatiquement les services correspondants
-                  if (zones.includes("Aéroport")) {
-                    updateField('airportPickupService', true);
-                    updateField('airportPickupRetrieval', true);
-                    updateField('airportPickupReturn', true);
-                  } else {
-                    updateField('airportPickupService', false);
-                    updateField('airportPickupRetrieval', false);
-                    updateField('airportPickupReturn', false);
-                  }
-                  
-                  if (zones.includes("Barge Petite Terre")) {
-                    updateField('bargePetiteTerreService', true);
-                    updateField('bargePetiteTerreRetrieval', true);
-                    updateField('bargePetiteTerreReturn', true);
-                  } else {
-                    updateField('bargePetiteTerreService', false);
-                    updateField('bargePetiteTerreRetrieval', false);
-                    updateField('bargePetiteTerreReturn', false);
-                  }
-                  
-                  if (zones.includes("Barge Grande Terre")) {
-                    updateField('bargeGrandeTerreService', true);
-                    updateField('bargeGrandeTerreRetrieval', true);
-                    updateField('bargeGrandeTerreReturn', true);
-                  } else {
-                    updateField('bargeGrandeTerreService', false);
-                    updateField('bargeGrandeTerreRetrieval', false);
-                    updateField('bargeGrandeTerreReturn', false);
-                  }
-                }}
-                trigger={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 justify-start text-left font-normal"
-                  >
-                    <MapPin className="mr-2 h-4 w-4" />
-                    Sélectionner les zones de prise en charge
+                {/* Actions */}
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => navigate("/me/owner/vehicles")}>
+                    Annuler
                   </Button>
-                }
-              />
-            )}
-            
-            {/* Zones sélectionnées visibles */}
-            {formData.pickupZones.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-success" />
-                  <h4 className="text-sm font-semibold text-foreground">
-                    Zones de prise en charge sélectionnées ({formData.pickupZones.length})
-                  </h4>
-                </div>
-                <div 
-                  className="flex flex-wrap gap-2 p-4 bg-primary/8 rounded-lg border border-primary/25 shadow-sm cursor-pointer hover:bg-primary/12 hover:border-primary/35 transition-all duration-200"
-                  onClick={() => setIsPickupZonesModalOpen(true)}
-                  title="Cliquez pour modifier les zones de prise en charge"
-                >
-                  {formData.pickupZones.map((zone, index) => {
-                    const getZoneIcon = (zoneName: string) => {
-                      switch (zoneName) {
-                        case "Aéroport":
-                          return Plane;
-                        case "Barge Petite Terre":
-                        case "Barge Grande Terre":
-                          return Ship;
-                        default:
-                          return MapPin;
-                      }
-                    };
-                    const IconComponent = getZoneIcon(zone);
-                    
-                    return (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground border border-primary/30 shadow-sm hover:bg-primary/90 transition-all duration-200"
-                      >
-                        <IconComponent className="h-3.5 w-3.5" />
-                        <span className="font-medium">{zone}</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation(); // Empêcher l'ouverture de la modale
-                            const newZones = formData.pickupZones.filter(z => z !== zone);
-                            updateField('pickupZones', newZones);
-                            
-                            // Désactiver les services correspondants si la zone est retirée
-                            if (zone === "Aéroport") {
-                              updateField('airportPickupService', false);
-                              updateField('airportPickupRetrieval', false);
-                              updateField('airportPickupReturn', false);
-                            }
-                            if (zone === "Barge Petite Terre") {
-                              updateField('bargePetiteTerreService', false);
-                              updateField('bargePetiteTerreRetrieval', false);
-                              updateField('bargePetiteTerreReturn', false);
-                            }
-                            if (zone === "Barge Grande Terre") {
-                              updateField('bargeGrandeTerreService', false);
-                              updateField('bargeGrandeTerreRetrieval', false);
-                              updateField('bargeGrandeTerreReturn', false);
-                            }
-                          }}
-                          className="ml-1 hover:bg-destructive/30 rounded-full p-0.5 transition-colors duration-200"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                  
-                  {/* Badge "+" pour ajouter plus de zones - visible seulement si toutes les zones ne sont pas sélectionnées */}
-                  {formData.pickupZones.length < 20 && (
-                    <Badge
-                      variant="outline"
-                      className="flex items-center gap-1 px-3 py-1.5 bg-muted/50 text-muted-foreground border-2 border-dashed border-primary/40 hover:bg-primary/10 hover:border-primary/60 hover:text-primary transition-all duration-200 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Empêcher l'ouverture de la modale via le clic sur la zone
-                        setIsPickupZonesModalOpen(true);
-                      }}
-                      title="Ajouter plus de zones de prise en charge"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span className="font-medium">Ajouter</span>
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Modale contrôlée pour les zones sélectionnées */}
-            {formData.pickupZones.length > 0 && (
-              <PickupZonesModal
-                selectedZones={formData.pickupZones}
-                onZonesChange={(zones) => {
-                  updateField('pickupZones', zones);
-                  
-                  // Activer automatiquement les services correspondants
-                  if (zones.includes("Aéroport")) {
-                    updateField('airportPickupService', true);
-                    updateField('airportPickupRetrieval', true);
-                    updateField('airportPickupReturn', true);
-                  } else {
-                    updateField('airportPickupService', false);
-                    updateField('airportPickupRetrieval', false);
-                    updateField('airportPickupReturn', false);
-                  }
-                  
-                  if (zones.includes("Barge Petite Terre")) {
-                    updateField('bargePetiteTerreService', true);
-                    updateField('bargePetiteTerreRetrieval', true);
-                    updateField('bargePetiteTerreReturn', true);
-                  } else {
-                    updateField('bargePetiteTerreService', false);
-                    updateField('bargePetiteTerreRetrieval', false);
-                    updateField('bargePetiteTerreReturn', false);
-                  }
-                  
-                  if (zones.includes("Barge Grande Terre")) {
-                    updateField('bargeGrandeTerreService', true);
-                    updateField('bargeGrandeTerreRetrieval', true);
-                    updateField('bargeGrandeTerreReturn', true);
-                  } else {
-                    updateField('bargeGrandeTerreService', false);
-                    updateField('bargeGrandeTerreRetrieval', false);
-                    updateField('bargeGrandeTerreReturn', false);
-                  }
-                }}
-                open={isPickupZonesModalOpen}
-                onOpenChange={setIsPickupZonesModalOpen}
-              />
-            )}
-            
-            {/* Aide avec design moderne */}
-            <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-slate-50 to-green-50/20 rounded-xl border border-slate-200">
-              <div className="flex-shrink-0 w-8 h-8 bg-green-100/50 rounded-full flex items-center justify-center">
-                <span className="text-green-600 text-sm">💡</span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-800 mb-1">Conseil d'expert</p>
-                <p className="text-xs text-slate-600">
-                  Sélectionnez les villes où vous pouvez facilement vous déplacer pour récupérer et rendre votre véhicule. 
-                  Cela améliore significativement votre visibilité dans les résultats de recherche et augmente vos chances de réservation.
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Options supplémentaires payantes */}
-      <Card className="relative z-10 overflow-hidden border-2 border-primary/20 shadow-lg mb-8">
-        <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/10 to-secondary/5 border-b border-primary/20">
-          <CardTitle className="flex items-center gap-3 text-[22px] font-semibold text-foreground">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Plus className="h-6 w-6 text-primary" />
-            </div>
-            Options supplémentaires payantes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 pb-8 bg-gradient-to-br from-background to-muted/5">
-          <div className="space-y-6">
-            <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
-              <p className="text-sm text-amber-800 font-medium">
-                💰 Proposez des services premium à vos clients contre un supplément tarifaire
-              </p>
-            </div>
-            
-            {/* Services disponibles uniquement si des zones sont sélectionnées */}
-            {formData.pickupZones.length > 0 ? (
-              <div className="space-y-4">
-              {/* Services conditionnels selon les zones sélectionnées */}
-              
-              {/* Service Aéroport - Design Maquette */}
-              {formData.pickupZones.includes("Aéroport") && (
-                <Card className="bg-white rounded-lg border border-border shadow-sm">
-                  {/* Section 1: Dépôt / Restitution Aéroport */}
-                  <div className="flex items-center justify-between p-4 border-b border-border">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-success/10 rounded-md">
-                        <Plane className="h-4 w-4 text-success" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-foreground">Dépôt / Restitution Aéroport</h4>
-                        <p className="text-xs text-muted-foreground">Service de prise en charge et retour à l'aéroport</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={formData.airportPickupService}
-                      onCheckedChange={(checked) => {
-                        updateField('airportPickupService', checked);
-                        if (!checked) {
-                          updateField('airportPickupRetrieval', false);
-                          updateField('airportPickupReturn', false);
-                        }
-                      }}
-                      className="data-[state=checked]:bg-success"
-                    />
-                  </div>
-
-                  {/* Sous-services - visibles seulement si le service principal est activé */}
-                  {formData.airportPickupService && (
-                    <>
-                      {/* Section 2: Retrait à l'aéroport */}
-                      <div className="flex items-center justify-between p-4 pl-8 border-b border-border">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-success/10 rounded-md">
-                            <ArrowDownToLine className="h-4 w-4 text-success" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-semibold text-foreground">Retrait à l'aéroport</h4>
-                            <p className="text-xs text-muted-foreground">Le client récupère le véhicule.</p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={formData.airportPickupRetrieval}
-                          onCheckedChange={(checked) => updateField('airportPickupRetrieval', checked)}
-                          className="data-[state=checked]:bg-[#52B788]"
-                        />
-                      </div>
-
-                      {/* Options de paiement pour Retrait */}
-                      {formData.airportPickupRetrieval && (
-                        <div className="p-4 pl-8 border-b border-border bg-muted/20">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant={formData.airportPickupRetrievalFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('airportPickupRetrievalFree', true)}
-                              className={formData.airportPickupRetrievalFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Gift className="h-3 w-3 mr-1" />
-                              Gratuit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={!formData.airportPickupRetrievalFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('airportPickupRetrievalFree', false)}
-                              className={!formData.airportPickupRetrievalFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Euro className="h-3 w-3 mr-1" />
-                              Payant
-                            </Button>
-                            
-                            {/* Champ de prix - à droite du bouton Payant */}
-                            {!formData.airportPickupRetrievalFree && (
-                              <div className="flex items-center gap-2 ml-3">
-                                <Input
-                                  type="number"
-                                  value={formData.airportPickupRetrievalPrice}
-                                  onChange={(e) => updateField('airportPickupRetrievalPrice', e.target.value)}
-                                  min="0"
-                                  step="1"
-                                  className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                                  placeholder="25"
-                                />
-                                <span className="text-base font-bold text-primary">€</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Alerte dynamique pour prix élevé */}
-                          {!formData.airportPickupRetrievalFree && parseFloat(formData.airportPickupRetrievalPrice) > 25 && (
-                            <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-muted-foreground">
-                                Prix supérieur au tarif standard de 25€. Un prix trop élevé peut décourager les clients.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Section 3: Restitution à l'aéroport */}
-                      <div className="flex items-center justify-between p-4 pl-8">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-success/10 rounded-md">
-                            <ArrowUpFromLine className="h-4 w-4 text-success" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-semibold text-foreground">Restitution à l'aéroport</h4>
-                            <p className="text-xs text-muted-foreground">Le client dépose le véhicule.</p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={formData.airportPickupReturn}
-                          onCheckedChange={(checked) => updateField('airportPickupReturn', checked)}
-                          className="data-[state=checked]:bg-[#52B788]"
-                        />
-                      </div>
-
-                      {/* Options de paiement pour Restitution */}
-                      {formData.airportPickupReturn && (
-                        <div className="p-4 pl-8 bg-muted/20">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant={formData.airportPickupReturnFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('airportPickupReturnFree', true)}
-                              className={formData.airportPickupReturnFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Gift className="h-3 w-3 mr-1" />
-                              Gratuit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={!formData.airportPickupReturnFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('airportPickupReturnFree', false)}
-                              className={!formData.airportPickupReturnFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Euro className="h-3 w-3 mr-1" />
-                              Payant
-                            </Button>
-                            
-                            {/* Champ de prix - à droite du bouton Payant */}
-                            {!formData.airportPickupReturnFree && (
-                              <div className="flex items-center gap-2 ml-3">
-                                <Input
-                                  type="number"
-                                  value={formData.airportPickupReturnPrice}
-                                  onChange={(e) => updateField('airportPickupReturnPrice', e.target.value)}
-                                  min="0"
-                                  step="1"
-                                  className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                                  placeholder="20"
-                                />
-                                <span className="text-base font-bold text-primary">€</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Alerte dynamique pour prix élevé */}
-                          {!formData.airportPickupReturnFree && parseFloat(formData.airportPickupReturnPrice) > 20 && (
-                            <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-muted-foreground">
-                                Prix supérieur au tarif standard de 20€. Un prix trop élevé peut décourager les clients.
-                              </p>
-                            </div>
-                          )}
-                          
-                          <p className="text-xs text-muted-foreground mt-2">par retrait</p>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </Card>
-              )}
-
-              {/* Service Barge Petite Terre - Design Maquette */}
-              {formData.pickupZones.includes("Barge Petite Terre") && (
-                <Card className="bg-white rounded-lg border border-border shadow-sm">
-                  {/* Section 1: Dépôt / Restitution Barge Petite Terre */}
-                  <div className="flex items-center justify-between p-4 border-b border-border">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-success/10 rounded-md">
-                        <Ship className="h-4 w-4 text-success" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-foreground">Dépôt / Restitution Barge Petite Terre</h4>
-                        <p className="text-xs text-muted-foreground">Service de prise en charge et retour à la barge Petite Terre</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={formData.bargePetiteTerreService}
-                      onCheckedChange={(checked) => {
-                        updateField('bargePetiteTerreService', checked);
-                        if (!checked) {
-                          updateField('bargePetiteTerreRetrieval', false);
-                          updateField('bargePetiteTerreReturn', false);
-                        }
-                      }}
-                      className="data-[state=checked]:bg-success"
-                    />
-                  </div>
-
-                  {/* Sous-services - visibles seulement si le service principal est activé */}
-                  {formData.bargePetiteTerreService && (
-                    <>
-                      {/* Section 2: Retrait à la barge Petite Terre */}
-                      <div className="flex items-center justify-between p-4 pl-8 border-b border-border">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-success/10 rounded-md">
-                            <ArrowDownToLine className="h-4 w-4 text-success" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-semibold text-foreground">Retrait à la barge Petite Terre</h4>
-                            <p className="text-xs text-muted-foreground">Le client récupère le véhicule.</p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={formData.bargePetiteTerreRetrieval}
-                          onCheckedChange={(checked) => updateField('bargePetiteTerreRetrieval', checked)}
-                          className="data-[state=checked]:bg-[#52B788]"
-                        />
-                      </div>
-
-                      {/* Options de paiement pour Retrait */}
-                      {formData.bargePetiteTerreRetrieval && (
-                        <div className="p-4 pl-8 border-b border-border bg-muted/20">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant={formData.bargePetiteTerreRetrievalFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargePetiteTerreRetrievalFree', true)}
-                              className={formData.bargePetiteTerreRetrievalFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Gift className="h-3 w-3 mr-1" />
-                              Gratuit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={!formData.bargePetiteTerreRetrievalFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargePetiteTerreRetrievalFree', false)}
-                              className={!formData.bargePetiteTerreRetrievalFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Euro className="h-3 w-3 mr-1" />
-                              Payant
-                            </Button>
-                            
-                            {/* Champ de prix - à droite du bouton Payant */}
-                            {!formData.bargePetiteTerreRetrievalFree && (
-                              <div className="flex items-center gap-2 ml-3">
-                                <Input
-                                  type="number"
-                                  value={formData.bargePetiteTerreRetrievalPrice}
-                                  onChange={(e) => updateField('bargePetiteTerreRetrievalPrice', e.target.value)}
-                                  min="0"
-                                  step="1"
-                                  className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                                  placeholder="20"
-                                />
-                                <span className="text-base font-bold text-primary">€</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Alerte dynamique pour prix élevé */}
-                          {!formData.bargePetiteTerreRetrievalFree && parseFloat(formData.bargePetiteTerreRetrievalPrice) > 20 && (
-                            <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-muted-foreground">
-                                Prix supérieur au tarif standard de 20€. Un prix trop élevé peut décourager les clients.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Section 3: Restitution à la barge Petite Terre */}
-                      <div className="flex items-center justify-between p-4 pl-8">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-success/10 rounded-md">
-                            <ArrowUpFromLine className="h-4 w-4 text-success" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-semibold text-foreground">Restitution à la barge Petite Terre</h4>
-                            <p className="text-xs text-muted-foreground">Le client dépose le véhicule.</p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={formData.bargePetiteTerreReturn}
-                          onCheckedChange={(checked) => updateField('bargePetiteTerreReturn', checked)}
-                          className="data-[state=checked]:bg-[#52B788]"
-                        />
-                      </div>
-
-                      {/* Options de paiement pour Restitution */}
-                      {formData.bargePetiteTerreReturn && (
-                        <div className="p-4 pl-8 bg-muted/20">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant={formData.bargePetiteTerreReturnFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargePetiteTerreReturnFree', true)}
-                              className={formData.bargePetiteTerreReturnFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Gift className="h-3 w-3 mr-1" />
-                              Gratuit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={!formData.bargePetiteTerreReturnFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargePetiteTerreReturnFree', false)}
-                              className={!formData.bargePetiteTerreReturnFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Euro className="h-3 w-3 mr-1" />
-                              Payant
-                            </Button>
-                            
-                            {/* Champ de prix - à droite du bouton Payant */}
-                            {!formData.bargePetiteTerreReturnFree && (
-                              <div className="flex items-center gap-2 ml-3">
-                                <Input
-                                  type="number"
-                                  value={formData.bargePetiteTerreReturnPrice}
-                                  onChange={(e) => updateField('bargePetiteTerreReturnPrice', e.target.value)}
-                                  min="0"
-                                  step="1"
-                                  className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                                  placeholder="20"
-                                />
-                                <span className="text-base font-bold text-primary">€</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Alerte dynamique pour prix élevé */}
-                          {!formData.bargePetiteTerreReturnFree && parseFloat(formData.bargePetiteTerreReturnPrice) > 20 && (
-                            <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-muted-foreground">
-                                Prix supérieur au tarif standard de 20€. Un prix trop élevé peut décourager les clients.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </Card>
-              )}
-
-              {/* Service Barge Grande Terre - Design Maquette */}
-              {formData.pickupZones.includes("Barge Grande Terre") && (
-                <Card className="bg-white rounded-lg border border-border shadow-sm">
-                  {/* Section 1: Dépôt / Restitution Barge Grande Terre */}
-                  <div className="flex items-center justify-between p-4 border-b border-border">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-success/10 rounded-md">
-                        <Ship className="h-4 w-4 text-success" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-foreground">Dépôt / Restitution Barge Grande Terre</h4>
-                        <p className="text-xs text-muted-foreground">Service de prise en charge et retour à la barge Grande Terre</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={formData.bargeGrandeTerreService}
-                      onCheckedChange={(checked) => {
-                        updateField('bargeGrandeTerreService', checked);
-                        if (!checked) {
-                          updateField('bargeGrandeTerreRetrieval', false);
-                          updateField('bargeGrandeTerreReturn', false);
-                        }
-                      }}
-                      className="data-[state=checked]:bg-success"
-                    />
-                  </div>
-
-                  {/* Sous-services - visibles seulement si le service principal est activé */}
-                  {formData.bargeGrandeTerreService && (
-                    <>
-                      {/* Section 2: Retrait à la barge Grande Terre */}
-                      <div className="flex items-center justify-between p-4 pl-8 border-b border-border">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-success/10 rounded-md">
-                            <ArrowDownToLine className="h-4 w-4 text-success" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-semibold text-foreground">Retrait à la barge Grande Terre</h4>
-                            <p className="text-xs text-muted-foreground">Le client récupère le véhicule.</p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={formData.bargeGrandeTerreRetrieval}
-                          onCheckedChange={(checked) => updateField('bargeGrandeTerreRetrieval', checked)}
-                          className="data-[state=checked]:bg-[#52B788]"
-                        />
-                      </div>
-
-                      {/* Options de paiement pour Retrait */}
-                      {formData.bargeGrandeTerreRetrieval && (
-                        <div className="p-4 pl-8 border-b border-border bg-muted/20">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant={formData.bargeGrandeTerreRetrievalFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargeGrandeTerreRetrievalFree', true)}
-                              className={formData.bargeGrandeTerreRetrievalFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Gift className="h-3 w-3 mr-1" />
-                              Gratuit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={!formData.bargeGrandeTerreRetrievalFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargeGrandeTerreRetrievalFree', false)}
-                              className={!formData.bargeGrandeTerreRetrievalFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Euro className="h-3 w-3 mr-1" />
-                              Payant
-                            </Button>
-                            
-                            {/* Champ de prix - à droite du bouton Payant */}
-                            {!formData.bargeGrandeTerreRetrievalFree && (
-                              <div className="flex items-center gap-2 ml-3">
-                                <Input
-                                  type="number"
-                                  value={formData.bargeGrandeTerreRetrievalPrice}
-                                  onChange={(e) => updateField('bargeGrandeTerreRetrievalPrice', e.target.value)}
-                                  min="0"
-                                  step="1"
-                                  className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                                  placeholder="15"
-                                />
-                                <span className="text-base font-bold text-primary">€</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Alerte dynamique pour prix élevé */}
-                          {!formData.bargeGrandeTerreRetrievalFree && parseFloat(formData.bargeGrandeTerreRetrievalPrice) > 15 && (
-                            <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-muted-foreground">
-                                Prix supérieur au tarif standard de 15€. Un prix trop élevé peut décourager les clients.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Section 3: Restitution à la barge Grande Terre */}
-                      <div className="flex items-center justify-between p-4 pl-8">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-success/10 rounded-md">
-                            <ArrowUpFromLine className="h-4 w-4 text-success" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-semibold text-foreground">Restitution à la barge Grande Terre</h4>
-                            <p className="text-xs text-muted-foreground">Le client dépose le véhicule.</p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={formData.bargeGrandeTerreReturn}
-                          onCheckedChange={(checked) => updateField('bargeGrandeTerreReturn', checked)}
-                          className="data-[state=checked]:bg-[#52B788]"
-                        />
-                      </div>
-
-                      {/* Options de paiement pour Restitution */}
-                      {formData.bargeGrandeTerreReturn && (
-                        <div className="p-4 pl-8 bg-muted/20">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant={formData.bargeGrandeTerreReturnFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargeGrandeTerreReturnFree', true)}
-                              className={formData.bargeGrandeTerreReturnFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Gift className="h-3 w-3 mr-1" />
-                              Gratuit
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={!formData.bargeGrandeTerreReturnFree ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => updateField('bargeGrandeTerreReturnFree', false)}
-                              className={!formData.bargeGrandeTerreReturnFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                            >
-                              <Euro className="h-3 w-3 mr-1" />
-                              Payant
-                            </Button>
-                            
-                            {/* Champ de prix - à droite du bouton Payant */}
-                            {!formData.bargeGrandeTerreReturnFree && (
-                              <div className="flex items-center gap-2 ml-3">
-                                <Input
-                                  type="number"
-                                  value={formData.bargeGrandeTerreReturnPrice}
-                                  onChange={(e) => updateField('bargeGrandeTerreReturnPrice', e.target.value)}
-                                  min="0"
-                                  step="1"
-                                  className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                                  placeholder="15"
-                                />
-                                <span className="text-base font-bold text-primary">€</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Alerte dynamique pour prix élevé */}
-                          {!formData.bargeGrandeTerreReturnFree && parseFloat(formData.bargeGrandeTerreReturnPrice) > 15 && (
-                            <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-muted-foreground">
-                                Prix supérieur au tarif standard de 15€. Un prix trop élevé peut décourager les clients.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </Card>
-              )}
-
-              {/* Service Livraison à domicile - Design Maquette */}
-              <Card className="bg-white rounded-lg border border-border shadow-sm">
-                {/* Section: Livraison à domicile */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-success/10 rounded-md">
-                      <Truck className="h-4 w-4 text-success" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">Livraison à domicile</h4>
-                      <p className="text-xs text-muted-foreground">Service de livraison et récupération de véhicule à domicile</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={formData.homeDeliveryService}
-                    onCheckedChange={(checked) => {
-                      updateField('homeDeliveryService', checked);
-                      if (!checked) {
-                        updateField('homeDeliveryPickup', false);
-                        updateField('homeDeliveryReturn', false);
-                      } else {
-                        updateField('homeDeliveryPickup', true);
-                        updateField('homeDeliveryReturn', true);
-                      }
-                    }}
-                    className="data-[state=checked]:bg-success"
-                  />
-                </div>
-
-                {/* Options de paiement - visibles seulement si le service est activé */}
-                {formData.homeDeliveryService && (
-                  <div className="p-4 bg-muted/20">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant={formData.homeDeliveryPickupFree ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateField('homeDeliveryPickupFree', true)}
-                        className={formData.homeDeliveryPickupFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                      >
-                        <Gift className="h-3 w-3 mr-1" />
-                        Gratuit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={!formData.homeDeliveryPickupFree ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateField('homeDeliveryPickupFree', false)}
-                        className={!formData.homeDeliveryPickupFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                      >
-                        <Euro className="h-3 w-3 mr-1" />
-                        Payant
-                      </Button>
-                      
-                      {/* Champ de prix - à droite du bouton Payant */}
-                      {!formData.homeDeliveryPickupFree && (
-                        <div className="flex items-center gap-2 ml-3">
-                          <Input
-                            type="number"
-                            value={formData.homeDeliveryPickupPrice}
-                            onChange={(e) => updateField('homeDeliveryPickupPrice', e.target.value)}
-                            min="0"
-                            step="1"
-                            className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                            placeholder="20"
-                          />
-                          <span className="text-base font-bold text-primary">€</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Alerte dynamique pour prix élevé */}
-                    {!formData.homeDeliveryPickupFree && parseFloat(formData.homeDeliveryPickupPrice) > 20 && (
-                      <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                        <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-muted-foreground">
-                          Prix supérieur au tarif standard de 20€. Un prix trop élevé peut décourager les clients.
-                        </p>
-                      </div>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Création en cours..." : (
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />Publier le véhicule
+                      </span>
                     )}
-                  </div>
-                )}
-              </Card>
-
-              {/* Service Siège bébé - Design Maquette */}
-              <Card className="bg-white rounded-lg border border-border shadow-sm">
-                {/* Section: Siège bébé */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-success/10 rounded-md">
-                      <Baby className="h-4 w-4 text-success" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">Siège bébé</h4>
-                      <p className="text-xs text-muted-foreground">Fourniture d'un siège bébé pour la location</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={formData.babySeatService}
-                    onCheckedChange={(checked) => updateField('babySeatService', checked)}
-                    className="data-[state=checked]:bg-success"
-                  />
+                  </Button>
                 </div>
 
-                {/* Options de paiement - visibles seulement si le service est activé */}
-                {formData.babySeatService && (
-                  <div className="p-4 bg-muted/20">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant={formData.babySeatFree ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateField('babySeatFree', true)}
-                        className={formData.babySeatFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                      >
-                        <Gift className="h-3 w-3 mr-1" />
-                        Gratuit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={!formData.babySeatFree ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateField('babySeatFree', false)}
-                        className={!formData.babySeatFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                      >
-                        <Euro className="h-3 w-3 mr-1" />
-                        Payant
-                      </Button>
-                      
-                      {/* Champ de prix - à droite du bouton Payant */}
-                      {!formData.babySeatFree && (
-                        <div className="flex items-center gap-2 ml-3">
-                          <Input
-                            type="number"
-                            value={formData.babySeatPrice}
-                            onChange={(e) => updateField('babySeatPrice', e.target.value)}
-                            min="0"
-                            step="1"
-                            className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                            placeholder="1"
-                          />
-                          <span className="text-base font-bold text-primary">€/jour</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Alerte dynamique pour prix élevé */}
-                    {!formData.babySeatFree && parseFloat(formData.babySeatPrice) > 1 && (
-                      <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                        <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-muted-foreground">
-                          Prix supérieur au tarif standard de 1€/jour. Un prix trop élevé peut décourager les clients.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
-
-              {/* Service Conducteur additionnel - Design Maquette */}
-              <Card className="bg-white rounded-lg border border-border shadow-sm">
-                {/* Section: Conducteur additionnel */}
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-success/10 rounded-md">
-                      <UserPlus className="h-4 w-4 text-success" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">Conducteur additionnel</h4>
-                      <p className="text-xs text-muted-foreground">Ajout d'un conducteur supplémentaire à la location</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={formData.additionalDriverService}
-                    onCheckedChange={(checked) => updateField('additionalDriverService', checked)}
-                    className="data-[state=checked]:bg-success"
-                  />
-                </div>
-
-                {/* Options de paiement - visibles seulement si le service est activé */}
-                {formData.additionalDriverService && (
-                  <div className="p-4 bg-muted/20">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant={formData.additionalDriverFree ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateField('additionalDriverFree', true)}
-                        className={formData.additionalDriverFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                      >
-                        <Gift className="h-3 w-3 mr-1" />
-                        Gratuit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={!formData.additionalDriverFree ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => updateField('additionalDriverFree', false)}
-                        className={!formData.additionalDriverFree ? "bg-success text-white hover:bg-success/90" : "bg-white"}
-                      >
-                        <Euro className="h-3 w-3 mr-1" />
-                        Payant
-                      </Button>
-                      
-                      {/* Champ de prix - à droite du bouton Payant */}
-                      {!formData.additionalDriverFree && (
-                        <div className="flex items-center gap-2 ml-3">
-                          <Input
-                            type="number"
-                            value={formData.additionalDriverPrice}
-                            onChange={(e) => updateField('additionalDriverPrice', e.target.value)}
-                            min="0"
-                            step="1"
-                            className="w-20 h-9 text-center text-base font-semibold border-2 border-primary/30 focus:border-primary bg-white shadow-sm"
-                            placeholder="15"
-                          />
-                          <span className="text-base font-bold text-primary">€/jour</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Alerte dynamique pour prix élevé */}
-                    {!formData.additionalDriverFree && parseFloat(formData.additionalDriverPrice) > 15 && (
-                      <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-md mt-2">
-                        <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-muted-foreground">
-                          Prix supérieur au tarif standard de 15€/jour. Un prix trop élevé peut décourager les clients.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
-
-            </div>
-            ) : (
-              <div className="text-center py-8 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 mt-6">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="p-3 bg-slate-100 rounded-full">
-                    <MapPin className="h-6 w-6 text-slate-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-700 mb-1">Aucune option disponible</p>
-                    <p className="text-xs text-slate-500 max-w-xs">
-                      Sélectionnez d'abord vos zones de prise en charge pour voir les services disponibles
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-    );
-  };
-
-  const renderStep3 = () => (
-    <div className="space-y-8 pt-4">
-
-      {/* Photos du véhicule */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Camera className="h-5 w-5 text-primary" />
-              Photos du véhicule (minimum 3)
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <span className="text-sm text-muted-foreground">{additionalPhotos.length}/3</span>
-              {additionalPhotos.length < 3 && (
-                <Button 
-                  onClick={addNewAdditionalPhoto}
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Ajouter des photos
-                </Button>
-              )}
-              {additionalPhotos.length >= 3 && (
-                <span className="text-xs text-muted-foreground">Limite atteinte (3 photos)</span>
-              )}
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div 
-            className="sr-only" 
-            aria-live="polite" 
-            aria-atomic="true"
-          >
-            {feedbackMessage}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Avant Gauche */}
-            <div className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-              <div 
-                onClick={() => triggerFileInput('frontLeft')}
-                className="relative h-32 w-full cursor-pointer"
-              >
-                {/* Bandeau Photo principale */}
-                <div className="absolute top-2 left-2 bg-[#16A34A] text-white text-xs font-bold px-2 py-1 rounded-br-md z-10 md:text-xs md:px-2 md:py-1 sm:text-[11px] sm:px-1.5 sm:py-0.5" 
-                     aria-label="Photo principale de l'annonce">
-                  Photo principale
-                </div>
-                {vehiclePhotos.frontLeft ? (
-                  <img 
-                    src={getPhotoPreview(vehiclePhotos.frontLeft)} 
-                    alt="Avant gauche" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full p-4 relative bg-slate-50/50">
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                      <Camera className="h-12 w-12 mb-2 opacity-50" />
-                      <span className="text-sm font-medium">Avant Gauche</span>
-                      <span className="text-xs text-center">Cliquez pour ajouter une photo</span>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-                      <div className="bg-primary/90 text-white rounded-full p-2">
-                        <Upload className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-white rounded-b-xl">
-                <p className="text-sm font-medium text-slate-700 mb-1">Avant Gauche</p>
-                {vehiclePhotos.frontLeft ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                      <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                    </div>
-                    <button
-                      onClick={(e) => {e.stopPropagation(); triggerFileInput('frontLeft');}}
-                      className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                    >
-                      <ArrowRight className="h-3 w-3 rotate-180" />
-                      Changer ma photo
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Avant Gauche – Angle de vue recommandé</p>
-                )}
-              </div>
-            </div>
-
-            {/* Profil gauche */}
-            <div className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-              <div 
-                onClick={() => triggerFileInput('profileLeft')}
-                className="relative h-32 w-full cursor-pointer"
-              >
-                {vehiclePhotos.profileLeft ? (
-                  <img 
-                    src={getPhotoPreview(vehiclePhotos.profileLeft)} 
-                    alt="Profil gauche" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full p-4 relative bg-slate-50/50">
-                    <svg 
-                      viewBox="0 0 120 120" 
-                      className="w-full h-full absolute inset-0 opacity-60 group-hover:opacity-80 transition-opacity"
-                      style={{ imageRendering: 'auto', shapeRendering: 'geometricPrecision' }}
-                    >
-                      {/* Contour de voiture vue profil gauche */}
-                      <g stroke="currentColor" strokeWidth="1.5" fill="none" className="text-muted-foreground">
-                        {/* Carrosserie principale */}
-                        <path d="M20 70 L25 50 L35 40 L85 40 L95 50 L100 70 L100 80 L20 80 Z" />
-                        {/* Toit */}
-                        <path d="M35 40 L40 25 L80 25 L85 40" />
-                        {/* Portes */}
-                        <line x1="45" y1="40" x2="45" y2="80" strokeDasharray="2,2" />
-                        <line x1="75" y1="40" x2="75" y2="80" strokeDasharray="2,2" />
-                        {/* Fenêtres */}
-                        <path d="M40 25 L42 30 L78 30 L80 25" />
-                        <rect x="35" y="45" width="20" height="15" rx="2" />
-                        <rect x="65" y="45" width="20" height="15" rx="2" />
-                        {/* Roues */}
-                        <circle cx="35" cy="85" r="8" />
-                        <circle cx="85" cy="85" r="8" />
-                        {/* Phares */}
-                        <circle cx="95" cy="55" r="3" />
-                        {/* Feux arrière */}
-                        <circle cx="25" cy="55" r="3" />
-                      </g>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-                      <div className="bg-primary/90 text-white rounded-full p-2">
-                        <Upload className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-white rounded-b-xl">
-                <p className="text-sm font-medium text-slate-700 mb-1">Profil gauche</p>
-                {vehiclePhotos.profileLeft ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                      <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                    </div>
-                    <button
-                      onClick={(e) => {e.stopPropagation(); triggerFileInput('profileLeft');}}
-                      className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                    >
-                      <ArrowRight className="h-3 w-3 rotate-180" />
-                      Changer ma photo
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Profil gauche – Angle de vue recommandé</p>
-                )}
-              </div>
-            </div>
-
-            {/* Habitacle intérieur */}
-            <div className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-              <div 
-                onClick={() => triggerFileInput('interior')}
-                className="relative h-32 w-full cursor-pointer"
-              >
-                {vehiclePhotos.interior ? (
-                  <img 
-                    src={getPhotoPreview(vehiclePhotos.interior)} 
-                    alt="Habitacle intérieur" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full p-4 relative bg-slate-50/50">
-                    <svg 
-                      viewBox="0 0 120 120" 
-                      className="w-full h-full absolute inset-0 opacity-60 group-hover:opacity-80 transition-opacity"
-                      style={{ imageRendering: 'auto', shapeRendering: 'geometricPrecision' }}
-                    >
-                      {/* Contour habitacle intérieur */}
-                      <g stroke="currentColor" strokeWidth="1.5" fill="none" className="text-muted-foreground">
-                        {/* Contour habitacle */}
-                        <rect x="20" y="25" width="80" height="70" rx="8" />
-                        {/* Sièges avant */}
-                        <rect x="30" y="35" width="15" height="20" rx="3" />
-                        <rect x="75" y="35" width="15" height="20" rx="3" />
-                        {/* Sièges arrière */}
-                        <rect x="30" y="70" width="60" height="15" rx="3" />
-                        {/* Volant */}
-                        <circle cx="82" cy="45" r="8" />
-                        <circle cx="82" cy="45" r="5" />
-                        {/* Tableau de bord */}
-                        <path d="M25 30 L95 30 L90 40 L30 40 Z" />
-                        {/* Console centrale */}
-                        <rect x="50" y="50" width="20" height="25" rx="2" />
-                        {/* Portes */}
-                        <line x1="20" y1="45" x2="30" y2="45" strokeWidth="2" />
-                        <line x1="90" y1="45" x2="100" y2="45" strokeWidth="2" />
-                        {/* Vitres */}
-                        <rect x="25" y="15" width="70" height="8" rx="2" opacity="0.3" />
-                      </g>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-                      <div className="bg-primary/90 text-white rounded-full p-2">
-                        <Upload className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-white rounded-b-xl">
-                <p className="text-sm font-medium text-slate-700 mb-1">Habitacle intérieur</p>
-                {vehiclePhotos.interior ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                      <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                    </div>
-                    <button
-                      onClick={(e) => {e.stopPropagation(); triggerFileInput('interior');}}
-                      className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                    >
-                      <ArrowRight className="h-3 w-3 rotate-180" />
-                      Changer ma photo
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Habitacle intérieur – Angle de vue recommandé</p>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Photos supplémentaires intégrées */}
-          {additionalPhotos.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              {additionalPhotos.map((photo, index) => (
-                <div key={index} className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-                  <div 
-                    onClick={() => triggerAdditionalFileInput(index)}
-                    className="relative h-32 w-full cursor-pointer"
-                  >
-                    {photo ? (
-                      <img 
-                        src={getPhotoPreview(photo)} 
-                        alt={`Photo supplémentaire ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full p-4 bg-slate-50">
-                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-xs text-muted-foreground">Ajouter une photo</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3 bg-white rounded-b-xl">
-                    <p className="text-sm font-medium text-slate-700 mb-1">Photo {index + 1}</p>
-                    {photo ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                          <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={(e) => {e.stopPropagation(); triggerAdditionalFileInput(index);}}
-                            className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                          >
-                            <ArrowRight className="h-3 w-3 rotate-180" />
-                            Changer ma photo
-                          </button>
-                          <button
-                            onClick={(e) => {e.stopPropagation(); removeAdditionalPhoto(index);}}
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-slate-600 hover:underline transition-all duration-150"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Supprimer
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Optionnel</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Description du véhicule */}
-          <div className="mt-8 p-4 border border-slate-200 rounded-xl bg-slate-50/30">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-              <div>
-                <h4 className="text-base font-medium text-slate-900 mb-1">Description du véhicule</h4>
-                <p className="text-xs text-muted-foreground">
-                  Conseil : soyez précis (entretien, options, équipements, restrictions). Évitez les informations personnelles.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleDescriptionEdit}
-                  className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-all duration-150"
-                  aria-label="Modifier la description"
-                >
-                  <Edit className="h-3.5 w-3.5" />
-                  Modifier
-                </button>
-                <button
-                  onClick={handleDescriptionClear}
-                  className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-150"
-                  aria-label="Supprimer la description"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Effacer
-                </button>
-                <Button
-                  onClick={handleDescriptionSave}
-                  size="sm"
-                  className="flex items-center gap-1.5 text-xs h-8 px-3 bg-primary hover:bg-primary/90"
-                  aria-label="Sauvegarder la description"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  Enregistrer
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Textarea
-                value={vehicleDescription}
-                onChange={(e) => {
-                  setVehicleDescription(e.target.value);
-                  if (e.target.value.length <= 800) {
-                    setDescriptionError('');
-                  }
-                }}
-                placeholder={`Bonjour,
-Mon véhicule est en excellent état, confortable et économique.
-Climatisation, Bluetooth, support téléphone et 3 prises USB disponibles.
-Idéal pour vos déplacements en ville comme pour de longs trajets.
-N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo flexible, sièges enfants sur demande, etc.).`}
-                className="min-h-[140px] max-h-[300px] resize-none bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                style={{ 
-                  resize: 'vertical',
-                  minHeight: '140px'
-                }}
-                readOnly={!isDescriptionEditing}
-              />
-              
-              <div className="flex justify-between items-center">
-                {descriptionError && (
-                  <p className="text-xs text-red-600">{descriptionError}</p>
-                )}
-                <div className="ml-auto">
-                  <span className={`text-xs ${vehicleDescription.length > 800 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                    {vehicleDescription.length}/800
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <p className="text-xs text-muted-foreground mt-4">
-            💡 Ajoutez des photos de qualité pour attirer plus de locataires
-          </p>
-        </CardContent>
-      </Card>
-
-    </div>
-  );
-
-  const renderStep4 = () => (
-    <div className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            Récapitulatif de votre véhicule
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Infos véhicule */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">Véhicule</h4>
-              <button
-                onClick={() => {
-                  setCurrentStep(1);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline cursor-pointer transition-colors"
-                aria-label="Modifier la section véhicule"
-              >
-                <Edit className="h-4 w-4" />
-                Modifier
-              </button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {formData.brand || '-'} {formData.model || '-'} ({formData.year || '-'}) - {formData.licensePlate || '-'}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {formData.color || '-'} • {formData.fuel || '-'} • {formData.transmission || '-'} • {formData.seats || '-'} places
-            </p>
-          </div>
-
-          {/* Tarifs */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">Tarification</h4>
-              <button
-                onClick={() => {
-                  setCurrentStep(2);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline cursor-pointer transition-colors"
-                aria-label="Modifier la section tarification"
-              >
-                <Edit className="h-4 w-4" />
-                Modifier
-              </button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Prix de base: {formData.dailyPrice ? `${formatAdminInline(Number(formData.dailyPrice))}/jour` : '-'}
-            </p>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">Contact</h4>
-              <button
-                onClick={() => {
-                  setCurrentStep(3);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline cursor-pointer transition-colors"
-                aria-label="Modifier la section contact"
-              >
-                <Edit className="h-4 w-4" />
-                Modifier
-              </button>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Avatar */}
-              <div className="w-12 h-12 rounded-full border border-slate-300 overflow-hidden bg-slate-100 flex-shrink-0">
-                {getAvatarPreview() ? (
-                  <img 
-                    src={getAvatarPreview()!} 
-                    alt="Photo de profil du propriétaire" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {/* Contact Info */}
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">
-                  {formData.firstName || '-'} {formData.lastName || '-'} - {formData.phone || '-'}
-                </p>
-                {formData.address && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formData.address}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Zones de prise en charge */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-blue-500" />
-                Zones de prise en charge
-              </h4>
-              <button
-                onClick={() => {
-                  setCurrentStep(2);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline cursor-pointer transition-colors"
-                aria-label="Modifier les zones de prise en charge"
-              >
-                <Edit className="h-4 w-4" />
-                Modifier
-              </button>
-            </div>
-            {formData.pickupZones && formData.pickupZones.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {formData.pickupZones.map((zone, index) => {
-                  // Définir les couleurs selon le type de zone
-                  let badgeColor = "bg-blue-100 text-blue-800 border-blue-200";
-                  if (zone === "Aéroport") {
-                    badgeColor = "bg-orange-100 text-orange-800 border-orange-200";
-                  } else if (zone.includes("Barge")) {
-                    badgeColor = "bg-green-100 text-green-800 border-green-200";
-                  }
-                  
-                  return (
-                    <Badge 
-                      key={index} 
-                      variant="outline" 
-                      className={`${badgeColor} border`}
-                    >
-                      {zone}
-                    </Badge>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Aucune zone sélectionnée</p>
-            )}
-          </div>
-
-          {/* Services payants */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium flex items-center gap-2">
-                <Euro className="h-4 w-4 text-green-500" />
-                Services payants
-              </h4>
-              <button
-                onClick={() => {
-                  setCurrentStep(2);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline cursor-pointer transition-colors"
-                aria-label="Modifier les services payants"
-              >
-                <Edit className="h-4 w-4" />
-                Modifier
-              </button>
-            </div>
-            <div className="space-y-3">
-              {/* Service Aéroport */}
-              {formData.airportPickupService && (
-                <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Plane className="h-4 w-4 text-orange-600" />
-                    <span className="font-medium text-orange-800 dark:text-orange-200">Service Aéroport</span>
-                  </div>
-                  <div className="space-y-1 text-sm text-orange-700 dark:text-orange-300">
-                    {formData.airportPickupRetrieval && (
-                      <div className="flex justify-between">
-                        <span>Retrait à l'aéroport:</span>
-                        <span className="font-medium">
-                          {formData.airportPickupRetrievalFree ? 'Gratuit' : formatAdminInline(Number(formData.airportPickupRetrievalPrice || 0))}
-                        </span>
-                      </div>
-                    )}
-                    {formData.airportPickupReturn && (
-                      <div className="flex justify-between">
-                        <span>Retour à l'aéroport:</span>
-                        <span className="font-medium">
-                          {formData.airportPickupReturnFree ? 'Gratuit' : formatAdminInline(Number(formData.airportPickupReturnPrice || 0))}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Service Barge Petite Terre */}
-              {formData.bargePetiteTerreService && (
-                <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Ship className="h-4 w-4 text-green-600" />
-                    <span className="font-medium text-green-800 dark:text-green-200">Service Barge Petite Terre</span>
-                  </div>
-                  <div className="space-y-1 text-sm text-green-700 dark:text-green-300">
-                    {formData.bargePetiteTerreRetrieval && (
-                      <div className="flex justify-between">
-                        <span>Retrait à la barge:</span>
-                        <span className="font-medium">
-                          {formData.bargePetiteTerreRetrievalFree ? 'Gratuit' : formatAdminInline(Number(formData.bargePetiteTerreRetrievalPrice || 0))}
-                        </span>
-                      </div>
-                    )}
-                    {formData.bargePetiteTerreReturn && (
-                      <div className="flex justify-between">
-                        <span>Retour à la barge:</span>
-                        <span className="font-medium">
-                          {formData.bargePetiteTerreReturnFree ? 'Gratuit' : formatAdminInline(Number(formData.bargePetiteTerreReturnPrice || 0))}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Service Barge Grande Terre */}
-              {formData.bargeGrandeTerreService && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Ship className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium text-blue-800 dark:text-blue-200">Service Barge Grande Terre</span>
-                  </div>
-                  <div className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                    {formData.bargeGrandeTerreRetrieval && (
-                      <div className="flex justify-between">
-                        <span>Retrait à la barge:</span>
-                        <span className="font-medium">
-                          {formData.bargeGrandeTerreRetrievalFree ? 'Gratuit' : formatAdminInline(Number(formData.bargeGrandeTerreRetrievalPrice || 0))}
-                        </span>
-                      </div>
-                    )}
-                    {formData.bargeGrandeTerreReturn && (
-                      <div className="flex justify-between">
-                        <span>Retour à la barge:</span>
-                        <span className="font-medium">
-                          {formData.bargeGrandeTerreReturnFree ? 'Gratuit' : formatAdminInline(Number(formData.bargeGrandeTerreReturnPrice || 0))}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Aucun service activé */}
-              {!formData.airportPickupService && !formData.bargePetiteTerreService && !formData.bargeGrandeTerreService && (
-                <p className="text-sm text-muted-foreground">Aucun service payant activé</p>
-              )}
-            </div>
-          </div>
-
-          {/* Conditions de location */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4 text-purple-500" />
-                Conditions de location
-              </h4>
-              <button
-                onClick={() => {
-                  setCurrentStep(2);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline cursor-pointer transition-colors"
-                aria-label="Modifier les conditions de location"
-              >
-                <Edit className="h-4 w-4" />
-                Modifier
-              </button>
-            </div>
-            <div className="space-y-3">
-              {/* Réductions et surcharges */}
-              <div className="p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                <h5 className="font-medium text-purple-800 dark:text-purple-200 mb-2">Tarification</h5>
-                <div className="space-y-1 text-sm text-purple-700 dark:text-purple-300">
-                  {formData.lowSeasonDiscount && (
-                    <div className="flex justify-between">
-                      <span>Réduction basse saison:</span>
-                      <span className="font-medium text-green-600">-{formData.lowSeasonDiscount}%</span>
-                    </div>
-                  )}
-                  {formData.highSeasonSurcharge && (
-                    <div className="flex justify-between">
-                      <span>Supplément haute saison:</span>
-                      <span className="font-medium text-orange-600">+{formData.highSeasonSurcharge}%</span>
-                    </div>
-                  )}
-                  {formData.longTermDiscount14 && (
-                    <div className="flex justify-between">
-                      <span>Réduction 14+ jours:</span>
-                      <span className="font-medium text-green-600">-{formData.longTermDiscount14}%</span>
-                    </div>
-                  )}
-                  {formData.longTermDiscount60 && (
-                    <div className="flex justify-between">
-                      <span>Réduction 60+ jours:</span>
-                      <span className="font-medium text-green-600">-{formData.longTermDiscount60}%</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Règles de réservation */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                <h5 className="font-medium text-slate-800 dark:text-slate-200 mb-2">Règles de réservation</h5>
-                <div className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                  {formData.minAdvanceHours && (
-                    <div className="flex justify-between">
-                      <span>Délai minimum:</span>
-                      <span className="font-medium">{formData.minAdvanceHours}h avant</span>
-                    </div>
-                  )}
-                  {formData.minRentalDays && (
-                    <div className="flex justify-between">
-                      <span>Durée minimum:</span>
-                      <span className="font-medium">{formData.minRentalDays} jour(s)</span>
-                    </div>
-                  )}
-                  {formData.maxRentalDays && (
-                    <div className="flex justify-between">
-                      <span>Durée maximum:</span>
-                      <span className="font-medium">{formData.maxRentalDays} jour(s)</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <p className="text-sm text-green-700 dark:text-green-400">
-              Votre véhicule est prêt à être publié !
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Seo
-        title={t("seo.rentMyCarRegister.title")}
-        description={t("seo.rentMyCarRegister.description")}
-        canonical="https://rentanoo.com/rent-my-car/register"
-      />
-      {/* Bouton de développement temporaire - À SUPPRIMER EN PRODUCTION */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-20 right-4 z-50 bg-yellow-400 text-black p-2 rounded-lg shadow-lg">
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setCurrentStep(1)}
-              className="px-2 py-1 bg-white rounded text-xs hover:bg-gray-100"
-            >
-              Étape 1
-            </button>
-            <button 
-              onClick={() => setCurrentStep(2)}
-              className="px-2 py-1 bg-white rounded text-xs hover:bg-gray-100"
-            >
-              Étape 2
-            </button>
-            <button 
-              onClick={() => setCurrentStep(3)}
-              className="px-2 py-1 bg-white rounded text-xs hover:bg-gray-100"
-            >
-              Étape 3
-            </button>
-            <button 
-              onClick={() => setCurrentStep(4)}
-              className="px-2 py-1 bg-white rounded text-xs hover:bg-gray-100"
-            >
-              Étape 4
-            </button>
-          </div>
-          <div className="text-xs mt-1">DEV: Navigation rapide</div>
-        </div>
-      )}
-      
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            {isExistingOwner ? 'Ajouter un véhicule' : 'Louer mon véhicule'}
-          </h1>
-          <p className="text-muted-foreground">
-            {isExistingOwner 
-              ? 'Ajoutez un nouveau véhicule à votre flotte en quelques minutes'
-              : 'Inscrivez votre véhicule en quelques minutes et commencez à gagner de l\'argent'
-            }
-          </p>
-        </div>
-
-        {/* Badge propriétaire existant */}
-        {isExistingOwner && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">
-                Propriétaire existant - Profil déjà vérifié
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Barre de progression */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">
-              Étape {currentStep} sur 4
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {getStepTitle()}
-            </span>
-          </div>
-          <Progress value={(currentStep / 4) * 100} className="h-2" />
-        </div>
-
-        {/* Contenu des étapes */}
-        <div className="mb-8">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
-        </div>
-
-        {/* Boutons de navigation */}
-        <div className="px-4 sm:px-0">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-between sm:items-center">
-            {currentStep > 1 ? (
-              <Button 
-                variant="outline" 
-                onClick={prevStep}
-                className="flex items-center justify-center gap-2 h-12 w-full sm:w-auto sm:min-w-[180px] order-2 sm:order-1 border-slate-300 text-slate-600 hover:bg-slate-50"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Étape précédente
-              </Button>
-            ) : (
-              <div className="hidden sm:block"></div>
-            )}
-            
-            <div className="order-1 sm:order-2 w-full sm:w-auto">
-              {currentStep < 4 ? (
-                <Button 
-                  onClick={nextStep}
-                  className="w-full sm:w-auto sm:min-w-[180px] bg-gradient-lagoon hover:opacity-90 text-white flex items-center justify-center gap-2 h-12"
-                >
-                  {currentStep === 1 && "Étape suivante"}
-                  {currentStep === 2 && "Étape suivante"}
-                  {currentStep === 3 && "Confirmer"}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="w-full sm:w-auto sm:min-w-[180px] bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 h-12 disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Publication...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4" />
-                      Publier mon véhicule
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
       <Footer />
-    </div>
+    </>
   );
-};
-
-export default RentMyCar;
+}
