@@ -1,93 +1,200 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { SupabaseVehiclesService } from '@/services/supabaseVehiclesService';
-import { supabase } from '@/integrations/supabase/client';
-import { DEFAULT_VEHICLE_TEMPLATE, populateAddVehicleForm, convertToSupabaseFormat, validateVehicleField, calculateVehiclePricing, uploadVehiclePhotos } from '@/templates/vehicleTemplate';
-import { Footer } from '@/components/layout/footer';
-import EquipmentSelector from '@/components/ui/equipment-selector';
-import { 
-  ArrowLeft, 
-  ArrowRight,
-  Car, 
-  Camera, 
-  Upload, 
-  Save, 
-  Loader2,
-  MapPin,
-  Euro,
-  Calendar,
-  Gauge,
-  Fuel,
-  Settings,
-  Users,
-  Car as CarIcon,
-  FileText,
-  CheckCircle,
-  Edit,
-  Trash2,
-  Plus
-} from 'lucide-react';
+import { FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Footer } from "@/components/layout/footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
+import { uploadVehiclePhotos } from "@/templates/vehicleTemplate";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { OwnerDualCurrencyInput } from "@/components/currency/OwnerDualCurrencyInput";
+import { Car, Camera, Upload, CheckCircle, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
 
-interface FormData {
-  // Étape 1 - Véhicule
-  licensePlate: string;
-  brand: string;
-  model: string;
-  color: string; // ✅ Champ color présent
-  year: string;
-  mileage: string;
-  fuel: string;
-  transmission: string;
-  seats: string;
-  doors: string;
-  hasAC: boolean;
-  hasGPS: boolean;
-  hasCruiseControl: boolean;
-  hasBluetooth: boolean;
-  hasCarPlay: boolean;
-  hasAudioInput: boolean;
-  // Étape 2 - Tarifs
-  dailyPrice: string;
-  lowSeasonDiscount: string;
-  highSeasonSurcharge: string;
-  longTermDiscount14: string;
-  longTermDiscount60: string;
-  minAdvanceHours: string;
-  minRentalDays: string;
-  maxRentalDays: string;
-  // Étape 3 - Description & Photos
-  description: string;
-  location: string;
-  imageUrl: string | null; // ✅ Champ imageUrl ajouté
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type CarCategory = "citadine" | "suv" | "berline" | "monospace" | "pickup" | "van";
+type FuelType = "gasoline" | "diesel" | "electric" | "hybrid";
+type Transmission = "manual" | "automatic";
+
+interface ServiceField {
+  enabled: boolean;
+  free: boolean;
+  price: string;
 }
 
-const AddVehicle: React.FC = () => {
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const LOCATION_AREAS = [
+  { id: "2fbc8909-381d-4bdb-baea-9789e2f7b28a", name: "Ambatoloaka" },
+  { id: "bb7a3d32-79c8-4d33-af04-834b3eabcf97", name: "Ambondrona" },
+  { id: "5879bc28-3903-481b-a0dc-d7f44f2982f1", name: "Andilana" },
+  { id: "cc91659e-92ae-48b7-ad1a-55e7f82ec377", name: "Dar Es Salam" },
+  { id: "ed8d772e-d58e-49f7-b223-94400ef507b3", name: "Dzamandzar" },
+  { id: "8f9e7dfd-18a1-4eb0-8175-bfb326855dcb", name: "Fascène / Aéroport" },
+  { id: "b5c87c3b-f425-4e71-8cc2-c4e5d23b3ee5", name: "Hell-Ville" },
+  { id: "d82c4403-8ae7-4fe9-99fb-e42fb22fa419", name: "Madirokely" },
+  { id: "ff030478-f4d5-4b90-a096-7f966f7c563f", name: "Palm Beach" },
+  { id: "ababa367-8a66-4a3a-9f54-ba07e6028841", name: "Diego Hely" },
+];
+
+const CAR_CATEGORIES: { value: CarCategory; label: string; icon: string }[] = [
+  { value: "citadine", label: "Citadine", icon: "🚗" },
+  { value: "suv", label: "SUV / 4x4", icon: "🚙" },
+  { value: "berline", label: "Berline", icon: "🚘" },
+  { value: "monospace", label: "Monospace", icon: "🚐" },
+  { value: "pickup", label: "Pick-up", icon: "🛻" },
+  { value: "van", label: "Van / Minibus", icon: "🚌" },
+];
+
+const COLORS = [
+  { value: "white", label: "Blanc" },
+  { value: "black", label: "Noir" },
+  { value: "gray", label: "Gris" },
+  { value: "silver", label: "Argent" },
+  { value: "blue", label: "Bleu" },
+  { value: "red", label: "Rouge" },
+  { value: "green", label: "Vert" },
+  { value: "beige", label: "Beige" },
+  { value: "brown", label: "Marron" },
+  { value: "other", label: "Autre" },
+];
+
+const EQUIPMENT_GROUPS = [
+  {
+    label: "Confort",
+    items: [
+      { key: "hasAC", label: "Climatisation" },
+      { key: "hasLeatherSeats", label: "Sièges cuir" },
+      { key: "hasSunroof", label: "Toit ouvrant" },
+      { key: "hasGPS", label: "GPS" },
+      { key: "hasCruiseControl", label: "Régulateur de vitesse" },
+    ],
+  },
+  {
+    label: "Connectivité",
+    items: [
+      { key: "hasBluetooth", label: "Bluetooth" },
+      { key: "hasCarPlay", label: "CarPlay" },
+      { key: "hasAndroidAuto", label: "Android Auto" },
+      { key: "hasAudioInput", label: "Entrée audio (jack)" },
+      { key: "hasUSBPort", label: "Port USB" },
+      { key: "hasWirelessCharger", label: "Chargeur sans fil" },
+      { key: "hasPremiumAudio", label: "Sono premium" },
+    ],
+  },
+  {
+    label: "Sécurité",
+    items: [
+      { key: "hasBackupCamera", label: "Caméra de recul" },
+      { key: "hasABS", label: "ABS" },
+      { key: "hasParkingSensors", label: "Capteurs de stationnement" },
+    ],
+  },
+  {
+    label: "Praticité",
+    items: [
+      { key: "hasLargeTrunk", label: "Grand coffre" },
+      { key: "hasRoofRack", label: "Porte-bagages toit" },
+      { key: "hasRoofBox", label: "Boîte de toit" },
+      { key: "hasBikeRack", label: "Porte-vélos" },
+    ],
+  },
+];
+
+// ─── ServiceRow component ────────────────────────────────────────────────────
+
+function ServiceRow({
+  label,
+  icon,
+  value,
+  onChange,
+  priceLabel = "Prix (€ flat)",
+  perDay = false,
+}: {
+  label: string;
+  icon: string;
+  value: ServiceField;
+  onChange: (v: ServiceField) => void;
+  priceLabel?: string;
+  perDay?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2 py-3 border-b border-slate-100 last:border-0">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium flex items-center gap-2">
+          {icon} {label}
+        </span>
+        <Switch
+          checked={value.enabled}
+          onCheckedChange={(checked) => onChange({ ...value, enabled: checked })}
+        />
+      </div>
+      {value.enabled && (
+        <div className="flex items-center gap-3 pl-6">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              className="rounded"
+              checked={value.free}
+              onChange={(e) => onChange({ ...value, free: e.target.checked, price: "" })}
+            />
+            Gratuit
+          </label>
+          {!value.free && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="0"
+                value={value.price}
+                onChange={(e) => onChange({ ...value, price: e.target.value })}
+                className="w-24 h-8 text-sm"
+              />
+              <span className="text-xs text-muted-foreground">{perDay ? "€/jour" : "€"}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
+
+export default function AddVehicle() {
+  const { t } = useTranslation("common");
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [vehiclePhotos, setVehiclePhotos] = useState({
-    frontLeft: null as File | null,
-    profileLeft: null as File | null,
-    interior: null as File | null
-  });
-  const [additionalPhotos, setAdditionalPhotos] = useState<(File | null)[]>([]);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [vehicleDescription, setVehicleDescription] = useState('');
-  const [isDescriptionEditing, setIsDescriptionEditing] = useState(true);
-  const [descriptionError, setDescriptionError] = useState('');
-  const [equipment, setEquipment] = useState({
+
+  // ── Step 1: Identity ─────────────────────────────────────────────────────
+  const [category, setCategory] = useState<CarCategory | "">("");
+  const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState("");
+  const [color, setColor] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
+  const [mileage, setMileage] = useState("");
+  const [fuelType, setFuelType] = useState<FuelType | "">("");
+  const [transmission, setTransmission] = useState<Transmission | "">("");
+  const [seats, setSeats] = useState("");
+  const [doors, setDoors] = useState("");
+
+  // ── Step 2: Equipment ────────────────────────────────────────────────────
+  const [equipment, setEquipment] = useState<Record<string, boolean>>({
     hasAC: false,
     hasGPS: false,
     hasCruiseControl: false,
@@ -109,275 +216,270 @@ const AddVehicle: React.FC = () => {
     hasAndroidAuto: false,
   });
 
-  // Synchroniser l'état equipment avec formData
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      hasAC: equipment.hasAC,
-      hasGPS: equipment.hasGPS,
-      hasCruiseControl: equipment.hasCruiseControl,
-      hasBluetooth: equipment.hasBluetooth,
-      hasCarPlay: equipment.hasCarPlay,
-      hasAudioInput: equipment.hasAudioInput,
-      hasBackupCamera: equipment.hasBackupCamera,
-      hasUSBPort: equipment.hasUSBPort,
-      hasLeatherSeats: equipment.hasLeatherSeats,
-      hasSunroof: equipment.hasSunroof,
-      hasPremiumAudio: equipment.hasPremiumAudio,
-      hasRoofRack: equipment.hasRoofRack,
-      hasWirelessCharger: equipment.hasWirelessCharger,
-      hasParkingSensors: equipment.hasParkingSensors,
-      hasABS: equipment.hasABS,
-      hasLargeTrunk: equipment.hasLargeTrunk,
-      hasRoofBox: equipment.hasRoofBox,
-      hasBikeRack: equipment.hasBikeRack,
-      hasAndroidAuto: equipment.hasAndroidAuto,
-    }));
-  }, [equipment]);
-  // Initialiser le formulaire avec le template par défaut (basé sur la première carte)
-  const [formData, setFormData] = useState<FormData>(() => {
-    return populateAddVehicleForm(DEFAULT_VEHICLE_TEMPLATE);
-  });
+  // ── Step 2: Services ─────────────────────────────────────────────────────
+  const emptyService = (): ServiceField => ({ enabled: false, free: false, price: "" });
+  const [svcAirportPickup, setSvcAirportPickup] = useState(emptyService());
+  const [svcAirportReturn, setSvcAirportReturn] = useState(emptyService());
+  const [svcBargePTPickup, setSvcBargePTPickup] = useState(emptyService());
+  const [svcBargePTReturn, setSvcBargePTReturn] = useState(emptyService());
+  const [svcBargeGTPickup, setSvcBargeGTPickup] = useState(emptyService());
+  const [svcBargeGTReturn, setSvcBargeGTReturn] = useState(emptyService());
+  const [svcDeliveryPickup, setSvcDeliveryPickup] = useState(emptyService());
+  const [svcDeliveryReturn, setSvcDeliveryReturn] = useState(emptyService());
+  const [svcBabySeat, setSvcBabySeat] = useState(emptyService());
+  const [svcExtraDriver, setSvcExtraDriver] = useState(emptyService());
 
-  const updateField = (field: keyof FormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Validation en temps réel (identique à ManageVehicle.tsx)
-    const error = validateVehicleField(field, value);
-    if (error) {
-      console.warn(`Erreur de validation pour ${field}:`, error);
+  // ── Step 3: Price, location, photos, description ─────────────────────────
+  const [dailyPriceMga, setDailyPriceMga] = useState("");
+  const [locationAreaId, setLocationAreaId] = useState("");
+  const [description, setDescription] = useState("");
+  const [vehiclePhotos, setVehiclePhotos] = useState<{
+    frontLeft: File | null;
+    profileLeft: File | null;
+    interior: File | null;
+  }>({ frontLeft: null, profileLeft: null, interior: null });
+  const [additionalPhotos, setAdditionalPhotos] = useState<(File | null)[]>([]);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  // ── Photo handlers ───────────────────────────────────────────────────────
+
+  const validatePhotoFile = (file: File): boolean => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Erreur", description: "Fichier image requis.", variant: "destructive" });
+      return false;
     }
-  };
-
-  // Fonctions pour gérer les photos
-  const handlePhotoUpload = (photoType: 'frontLeft' | 'profileLeft' | 'interior', file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier image valide.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "Erreur", 
-        description: "La photo doit faire moins de 10MB.",
-        variant: "destructive"
-      });
-      return;
+      toast({ title: "Erreur", description: "Photo max 10 MB.", variant: "destructive" });
+      return false;
     }
-
-    setVehiclePhotos(prev => ({
-      ...prev,
-      [photoType]: file
-    }));
-
-    setFeedbackMessage('Photo ajoutée');
-    toast({
-      title: "Photo ajoutée",
-      description: "Votre photo a été ajoutée avec succès.",
-    });
+    return true;
   };
 
-  const triggerFileInput = (photoType: 'frontLeft' | 'profileLeft' | 'interior') => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        handlePhotoUpload(photoType, file);
-      }
-    };
-    input.click();
-  };
-
-  const getPhotoPreview = (file: File | null) => {
-    if (!file) return null;
-    return URL.createObjectURL(file);
-  };
-
-  // Gérer l'upload des photos supplémentaires
-  const handleAdditionalPhotoUpload = (file: File, index: number) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier image valide.",
-        variant: "destructive"
-      });
-      return;
+  const handleMainPhotoChange = (
+    type: "frontLeft" | "profileLeft" | "interior",
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file && validatePhotoFile(file)) {
+      setVehiclePhotos((prev) => ({ ...prev, [type]: file }));
+      setFeedbackMessage("Photo ajoutée");
+      toast({ title: "Photo ajoutée", description: "Photo ajoutée avec succès." });
     }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "Erreur", 
-        description: "La photo doit faire moins de 10MB.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setAdditionalPhotos(prev => {
-      const newPhotos = [...prev];
-      newPhotos[index] = file;
-      return newPhotos;
-    });
-
-    setFeedbackMessage('Photo ajoutée');
-    toast({
-      title: "Photo ajoutée",
-      description: "Votre photo supplémentaire a été ajoutée avec succès.",
-    });
+    e.target.value = "";
   };
 
-  // Supprimer une photo supplémentaire
+  const handleAdditionalPhotoChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file && validatePhotoFile(file)) {
+      setAdditionalPhotos((prev) => {
+        const next = [...prev];
+        next[index] = file;
+        return next;
+      });
+      setFeedbackMessage("Photo ajoutée");
+      toast({ title: "Photo ajoutée", description: "Photo supplémentaire ajoutée." });
+    }
+    e.target.value = "";
+  };
+
+  const handleAddMorePhotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    Array.from(files)
+      .slice(0, 3 - additionalPhotos.length)
+      .forEach((file, i) => {
+        if (validatePhotoFile(file)) {
+          setAdditionalPhotos((prev) => {
+            const next = [...prev];
+            next[prev.length + i] = file;
+            return next;
+          });
+        }
+      });
+    e.target.value = "";
+  };
+
   const removeAdditionalPhoto = (index: number) => {
-    setAdditionalPhotos(prev => {
-      const newPhotos = [...prev];
-      newPhotos.splice(index, 1);
-      return newPhotos;
-    });
-
-    setFeedbackMessage('Photo supprimée');
-    toast({
-      title: "Photo supprimée",
-      description: "La photo a été supprimée avec succès.",
-    });
+    setAdditionalPhotos((prev) => prev.filter((_, i) => i !== index));
+    toast({ title: "Photo supprimée", description: "Photo retirée." });
   };
 
-  // Déclencher l'input file pour les photos supplémentaires
-  const triggerAdditionalFileInput = (index: number) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        handleAdditionalPhotoUpload(file, index);
+  const getPhotoPreview = (file: File | null) =>
+    file ? URL.createObjectURL(file) : null;
+
+  const clickInput = (id: string) => {
+    (document.getElementById(id) as HTMLInputElement)?.click();
+  };
+
+  // ── Navigation ───────────────────────────────────────────────────────────
+
+  const nextStep = () => {
+    if (currentStep === 1) {
+      if (!category || !brand.trim() || !model.trim() || !year.trim() || !fuelType || !transmission) {
+        toast({
+          title: "Champs manquants",
+          description: "Catégorie, marque, modèle, année, carburant et boîte sont requis.",
+          variant: "destructive",
+        });
+        return;
       }
-    };
-    input.click();
-  };
-
-  // Ajouter une nouvelle photo supplémentaire (max 3)
-  const addNewAdditionalPhoto = () => {
-    if (additionalPhotos.length < 3) {
-      triggerAdditionalFileInput(additionalPhotos.length);
     }
+    setCurrentStep((s) => Math.min(s + 1, 3));
   };
 
-  // Fonctions pour la description du véhicule
-  const handleDescriptionSave = () => {
-    setDescriptionError('');
-    
-    if (vehicleDescription.length > 800) {
-      setDescriptionError('La description ne peut pas dépasser 800 caractères.');
+  const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 1));
+
+  // ── Submit ───────────────────────────────────────────────────────────────
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      toast({ title: "Erreur", description: "Vous devez être connecté.", variant: "destructive" });
       return;
     }
 
-    updateField('description', vehicleDescription);
-    setIsDescriptionEditing(false);
-    setFeedbackMessage('Description sauvegardée');
-    toast({
-      title: "Description sauvegardée",
-      description: "Votre description a été mise à jour.",
-    });
-  };
+    const hasPhoto =
+      vehiclePhotos.frontLeft ||
+      vehiclePhotos.profileLeft ||
+      vehiclePhotos.interior ||
+      additionalPhotos.some(Boolean);
 
-  const handleDescriptionEdit = () => {
-    setIsDescriptionEditing(true);
-  };
-
-  const handleDescriptionClear = () => {
-    setVehicleDescription('');
-    updateField('description', '');
-    setDescriptionError('');
-    setFeedbackMessage('Description effacée');
-    toast({
-      title: "Description effacée",
-      description: "La description a été supprimée.",
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (!user) {
+    if (!hasPhoto) {
       toast({
-        title: "Erreur",
-        description: "Vous devez être connecté pour ajouter un véhicule",
+        title: "Photo requise",
+        description: "Ajoutez au moins une photo du véhicule.",
         variant: "destructive",
       });
       return;
     }
 
+    const parsedYear = parseInt(year, 10);
+    const parsedPrice = parseFloat(dailyPriceMga.replace(",", "."));
+    const parsedMileage = mileage ? parseInt(mileage, 10) : 0;
+    const parsedSeats = seats ? parseInt(seats, 10) : undefined;
+    const parsedDoors = doors ? parseInt(doors, 10) : undefined;
+
+    if (Number.isNaN(parsedYear) || parsedYear < 1990 || parsedYear > 2030) {
+      toast({ title: "Erreur", description: "Année invalide.", variant: "destructive" });
+      return;
+    }
+    if (Number.isNaN(parsedPrice) || parsedPrice < 1000) {
+      toast({ title: "Erreur", description: "Prix invalide (min 1 000 Ar).", variant: "destructive" });
+      return;
+    }
+
+    const svcPrice = (s: ServiceField) =>
+      !s.enabled ? null : s.free ? null : parseFloat(s.price) || null;
+
     setLoading(true);
     try {
-      // Utiliser le template pour convertir les données vers le format Supabase
-      // Cela garantit que la structure est identique à la première carte
-      const vehicleData = convertToSupabaseFormat(formData, user.id);
-      
-      // Utiliser la description du formulaire si disponible, sinon celle du template
-      if (formData.description) {
-        vehicleData.description = formData.description;
-      } else if (vehicleDescription) {
-        vehicleData.description = vehicleDescription;
-      }
-
-      console.log("Données du véhicule à créer (basées sur le template de la première carte):", vehicleData);
-
-      // Utiliser directement le client Supabase pour éviter les problèmes de types
-      const { data, error } = await supabase
-        .from('vehicles')
-        .insert(vehicleData)
-        .select()
-        .single();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log("Véhicule créé avec succès - Structure identique à la première carte:", data);
-
-      // Upload des photos après création du véhicule
-      const hasPhotos = vehiclePhotos.frontLeft || vehiclePhotos.profileLeft || vehiclePhotos.interior || additionalPhotos.some(photo => photo !== null);
-      
-      if (hasPhotos) {
-        console.log("Upload des photos en cours...");
-        
-        const photoResult = await uploadVehiclePhotos(
-          data.id,
-          vehiclePhotos,
-          additionalPhotos,
-          toast
-        );
-
-        if (photoResult.uploadedPhotos.length > 0) {
-          console.log(`${photoResult.uploadedPhotos.length} photos uploadées avec succès`);
-        }
-        
-        if (photoResult.errors.length > 0) {
-          console.warn("Erreurs d'upload de photos:", photoResult.errors);
-        }
-      }
-
-      toast({
-        title: "Succès !",
-        description: "Votre véhicule a été ajouté avec succès - Structure identique à votre première carte",
+      const { data, error } = await SupabaseVehiclesService.createVehicle({
+        owner_id: user.id,
+        brand: brand.trim(),
+        model: model.trim(),
+        color: color || undefined,
+        year: parsedYear,
+        mileage: parsedMileage,
+        price_per_day: parsedPrice,
+        description: description || undefined,
+        vehicle_type: "car",
+        vehicle_category: category || undefined,
+        location_area_id: locationAreaId || null,
+        seats: parsedSeats,
+        doors: parsedDoors,
+        transmission: (transmission || "manual") as any,
+        fuel_type: (fuelType || "gasoline") as any,
+        license_plate: licensePlate || undefined,
+        has_ac: equipment.hasAC,
+        has_gps: equipment.hasGPS,
+        has_cruise_control: equipment.hasCruiseControl,
+        has_bluetooth: equipment.hasBluetooth,
+        has_carplay: equipment.hasCarPlay,
+        has_audio_input: equipment.hasAudioInput,
+        // Services aéroport
+        airport_pickup_service: svcAirportPickup.enabled || svcAirportReturn.enabled || null,
+        airport_pickup_retrieval: svcAirportPickup.enabled || null,
+        airport_pickup_retrieval_free: svcAirportPickup.enabled ? svcAirportPickup.free : null,
+        airport_pickup_retrieval_price: svcAirportPickup.enabled ? svcPrice(svcAirportPickup) : null,
+        airport_pickup_return: svcAirportReturn.enabled || null,
+        airport_pickup_return_free: svcAirportReturn.enabled ? svcAirportReturn.free : null,
+        airport_pickup_return_price: svcAirportReturn.enabled ? svcPrice(svcAirportReturn) : null,
+        // Services barge Petite Terre
+        barge_petite_terre_service: svcBargePTPickup.enabled || svcBargePTReturn.enabled || null,
+        barge_petite_terre_retrieval: svcBargePTPickup.enabled || null,
+        barge_petite_terre_retrieval_free: svcBargePTPickup.enabled ? svcBargePTPickup.free : null,
+        barge_petite_terre_retrieval_price: svcBargePTPickup.enabled ? svcPrice(svcBargePTPickup) : null,
+        barge_petite_terre_return: svcBargePTReturn.enabled || null,
+        barge_petite_terre_return_free: svcBargePTReturn.enabled ? svcBargePTReturn.free : null,
+        barge_petite_terre_return_price: svcBargePTReturn.enabled ? svcPrice(svcBargePTReturn) : null,
+        // Services barge Grande Terre
+        barge_grande_terre_service: svcBargeGTPickup.enabled || svcBargeGTReturn.enabled || null,
+        barge_grande_terre_retrieval: svcBargeGTPickup.enabled || null,
+        barge_grande_terre_retrieval_free: svcBargeGTPickup.enabled ? svcBargeGTPickup.free : null,
+        barge_grande_terre_retrieval_price: svcBargeGTPickup.enabled ? svcPrice(svcBargeGTPickup) : null,
+        barge_grande_terre_return: svcBargeGTReturn.enabled || null,
+        barge_grande_terre_return_free: svcBargeGTReturn.enabled ? svcBargeGTReturn.free : null,
+        barge_grande_terre_return_price: svcBargeGTReturn.enabled ? svcPrice(svcBargeGTReturn) : null,
+        // Livraison
+        home_delivery_service: svcDeliveryPickup.enabled || svcDeliveryReturn.enabled || null,
+        home_delivery_pickup: svcDeliveryPickup.enabled || null,
+        home_delivery_pickup_free: svcDeliveryPickup.enabled ? svcDeliveryPickup.free : null,
+        home_delivery_pickup_price: svcDeliveryPickup.enabled ? svcPrice(svcDeliveryPickup) : null,
+        home_delivery_return: svcDeliveryReturn.enabled || null,
+        home_delivery_return_free: svcDeliveryReturn.enabled ? svcDeliveryReturn.free : null,
+        home_delivery_return_price: svcDeliveryReturn.enabled ? svcPrice(svcDeliveryReturn) : null,
+        // Siège bébé
+        baby_seat_service: svcBabySeat.enabled || null,
+        baby_seat_free: svcBabySeat.enabled ? svcBabySeat.free : null,
+        baby_seat_price: svcBabySeat.enabled ? svcPrice(svcBabySeat) : null,
+        // Conducteur supp.
+        additional_driver_service: svcExtraDriver.enabled || null,
+        additional_driver_free: svcExtraDriver.enabled ? svcExtraDriver.free : null,
+        additional_driver_price: svcExtraDriver.enabled ? svcPrice(svcExtraDriver) : null,
+        available: true,
+        status: "active",
       });
 
-      // Redirection vers la liste des véhicules
-      navigate('/me/owner/vehicles');
-      
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout du véhicule:', error);
+      if (error || !data) throw new Error(error || "Erreur création véhicule");
+
+      // Équipements supplémentaires non couverts par createVehicle
+      const extraEquip = {
+        has_backup_camera: equipment.hasBackupCamera,
+        has_usb_port: equipment.hasUSBPort,
+        has_leather_seats: equipment.hasLeatherSeats,
+        has_sunroof: equipment.hasSunroof,
+        has_premium_audio: equipment.hasPremiumAudio,
+        has_roof_rack: equipment.hasRoofRack,
+        has_wireless_charger: equipment.hasWirelessCharger,
+        has_parking_sensors: equipment.hasParkingSensors,
+        has_abs: equipment.hasABS,
+        has_large_trunk: equipment.hasLargeTrunk,
+        has_roof_box: equipment.hasRoofBox,
+        has_bike_rack: equipment.hasBikeRack,
+        has_android_auto: equipment.hasAndroidAuto,
+      };
+      const hasExtraEquip = Object.values(extraEquip).some(Boolean);
+      if (hasExtraEquip) {
+        await supabase.from("vehicles").update(extraEquip).eq("id", data.id);
+      }
+
+      // Upload photos
+      await uploadVehiclePhotos(data.id, vehiclePhotos, additionalPhotos, toast);
+
+      toast({
+        title: "Véhicule ajouté !",
+        description: "Votre annonce a été créée. Gérez-la depuis votre tableau de bord.",
+      });
+      navigate("/me/owner/vehicles");
+    } catch (err: any) {
+      console.error("Erreur création voiture:", err);
       toast({
         title: "Erreur",
-        description: `Impossible d'ajouter le véhicule: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        description: err?.message || "Impossible de créer le véhicule. Réessayez.",
         variant: "destructive",
       });
     } finally {
@@ -385,969 +487,464 @@ const AddVehicle: React.FC = () => {
     }
   };
 
-  const nextStep = () => {
-    if (currentStep < 3) setCurrentStep(currentStep + 1);
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
-  };
-
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 1: return 'Informations du véhicule';
-      case 2: return 'Tarifs et conditions';
-      case 3: return 'Description et photos';
-      default: return '';
-    }
-  };
+  // ── Render steps ─────────────────────────────────────────────────────────
 
   const renderStep1 = () => (
-    <div className="space-y-8">
-      {/* Informations véhicule */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Car className="h-5 w-5 text-primary" />
-            Informations du véhicule
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Explication upload carte grise */}
-          <div className="bg-primary-soft p-4 rounded-lg border border-primary/20">
-            <div className="flex items-start gap-3">
-              <div className="bg-primary text-primary-foreground p-2 rounded-full shrink-0">
-                <FileText className="h-4 w-4" />
-              </div>
-              <div>
-                <h4 className="font-medium text-primary mb-1">Gagnez du temps !</h4>
-                <p className="text-sm text-primary/80">
-                  Uploadez votre carte grise pour remplir automatiquement toutes les informations de votre véhicule. 
-                  Plus rapide et sans erreur !
-                </p>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Catégorie */}
+      <div className="space-y-2">
+        <Label>Catégorie du véhicule *</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {CAR_CATEGORIES.map((cat) => (
+            <button
+              key={cat.value}
+              type="button"
+              onClick={() => setCategory(cat.value)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                category === cat.value
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <span>{cat.icon}</span>
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {/* Upload carte grise */}
-          <div>
-            <Label className="text-base font-medium">1. Carte grise (recommandé)</Label>
-            <div className="mt-3 border-2 border-dashed border-primary/30 rounded-lg p-6 text-center hover:border-primary/60 transition-colors cursor-pointer bg-primary/5">
-              <Upload className="h-10 w-10 mx-auto text-primary mb-3" />
-              <p className="text-sm font-medium text-foreground mb-1">
-                Cliquez pour télécharger ou glissez votre carte grise
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Format accepté: PDF, JPG, PNG (max 5MB)
-              </p>
-            </div>
-          </div>
+      {/* Marque / Modèle */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="brand">Marque *</Label>
+          <Input
+            id="brand"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            placeholder="Ex : Toyota"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="model">Modèle *</Label>
+          <Input
+            id="model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder="Ex : RAV4"
+          />
+        </div>
+      </div>
 
-          {/* Séparateur */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-border"></div>
-            <span className="text-xs text-muted-foreground bg-background px-2">OU</span>
-            <div className="flex-1 h-px bg-border"></div>
-          </div>
+      {/* Année / Kilométrage */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="year">Année *</Label>
+          <Input
+            id="year"
+            type="number"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            placeholder="2022"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="mileage">Kilométrage (approx.)</Label>
+          <Input
+            id="mileage"
+            type="number"
+            value={mileage}
+            onChange={(e) => setMileage(e.target.value)}
+            placeholder="0"
+          />
+        </div>
+      </div>
 
-          {/* Saisie manuelle */}
-          <div>
-            <Label className="text-base font-medium mb-6 block">2. Saisie manuelle des informations</Label>
-            
-            <div className="space-y-8">
-              {/* Section Identification */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide border-b border-slate-200 pb-2">
-                  Identification
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Plaque d'immatriculation *</Label>
-                    <Input 
-                      value={formData.licensePlate}
-                      onChange={(e) => updateField('licensePlate', e.target.value)}
-                      placeholder="AB-123-CD"
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Marque *</Label>
-                    <Select value={formData.brand} onValueChange={(value) => updateField('brand', value)}>
-                      <SelectTrigger className="h-12 text-base">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Peugeot">Peugeot</SelectItem>
-                        <SelectItem value="Renault">Renault</SelectItem>
-                        <SelectItem value="Citroën">Citroën</SelectItem>
-                        <SelectItem value="Dacia">Dacia</SelectItem>
-                        <SelectItem value="Toyota">Toyota</SelectItem>
-                        <SelectItem value="autre">Autre</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Modèle *</Label>
-                    <Input 
-                      value={formData.model}
-                      onChange={(e) => updateField('model', e.target.value)}
-                      placeholder="ex: 208, Clio..."
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Couleur *</Label>
-                    <Select value={formData.color} onValueChange={(value) => updateField('color', value)}>
-                      <SelectTrigger className="h-12 text-base">
-                        <SelectValue placeholder="Sélectionner la couleur" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Blanc">Blanc</SelectItem>
-                        <SelectItem value="Noir">Noir</SelectItem>
-                        <SelectItem value="Gris">Gris</SelectItem>
-                        <SelectItem value="Argent">Argent</SelectItem>
-                        <SelectItem value="Bleu">Bleu</SelectItem>
-                        <SelectItem value="Rouge">Rouge</SelectItem>
-                        <SelectItem value="Vert">Vert</SelectItem>
-                        <SelectItem value="Jaune">Jaune</SelectItem>
-                        <SelectItem value="Orange">Orange</SelectItem>
-                        <SelectItem value="Marron">Marron</SelectItem>
-                        <SelectItem value="Beige">Beige</SelectItem>
-                        <SelectItem value="Violet">Violet</SelectItem>
-                        <SelectItem value="Rose">Rose</SelectItem>
-                        <SelectItem value="Doré">Doré</SelectItem>
-                        <SelectItem value="Autre">Autre</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Année *</Label>
-                    <Input 
-                      type="number"
-                      value={formData.year}
-                      onChange={(e) => updateField('year', e.target.value)}
-                      placeholder="2020"
-                      className="h-12 text-base"
-                    />
-                  </div>
-                </div>
-              </div>
+      {/* Carburant / Boîte */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1">
+          <Label>Carburant *</Label>
+          <Select value={fuelType} onValueChange={(v: FuelType) => setFuelType(v)}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gasoline">Essence</SelectItem>
+              <SelectItem value="diesel">Diesel</SelectItem>
+              <SelectItem value="electric">Électrique</SelectItem>
+              <SelectItem value="hybrid">Hybride</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label>Boîte *</Label>
+          <Select value={transmission} onValueChange={(v: Transmission) => setTransmission(v)}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="manual">Manuelle</SelectItem>
+              <SelectItem value="automatic">Automatique</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-              {/* Section Caractéristiques techniques */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide border-b border-slate-200 pb-2">
-                  Caractéristiques techniques
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Kilométrage</Label>
-                    <Input 
-                      type="number"
-                      value={formData.mileage}
-                      onChange={(e) => updateField('mileage', e.target.value)}
-                      placeholder="50000"
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Carburant *</Label>
-                    <Select value={formData.fuel} onValueChange={(value) => updateField('fuel', value)}>
-                      <SelectTrigger className="h-12 text-base">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="gasoline">Essence</SelectItem>
-                        <SelectItem value="diesel">Diesel</SelectItem>
-                        <SelectItem value="electric">Électrique</SelectItem>
-                        <SelectItem value="hybrid">Hybride</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label className="text-sm font-medium text-slate-600">Transmission *</Label>
-                    <Select value={formData.transmission} onValueChange={(value) => updateField('transmission', value)}>
-                      <SelectTrigger className="h-12 text-base">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="manual">Manuelle</SelectItem>
-                        <SelectItem value="automatic">Automatique</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
+      {/* Places / Portes */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1">
+          <Label>Nombre de places</Label>
+          <Select value={seats} onValueChange={setSeats}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              {["2", "4", "5", "7", "9"].map((n) => (
+                <SelectItem key={n} value={n}>{n} places</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label>Nombre de portes</Label>
+          <Select value={doors} onValueChange={setDoors}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">3 portes</SelectItem>
+              <SelectItem value="5">5 portes</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-              {/* Section Dimensions */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide border-b border-slate-200 pb-2">
-                  Dimensions
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Nombre de sièges</Label>
-                    <Select value={formData.seats} onValueChange={(value) => updateField('seats', value)}>
-                      <SelectTrigger className="h-12 text-base">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="2">2 places</SelectItem>
-                        <SelectItem value="4">4 places</SelectItem>
-                        <SelectItem value="5">5 places</SelectItem>
-                        <SelectItem value="7">7 places</SelectItem>
-                        <SelectItem value="9">9 places</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-600">Nombre de portes</Label>
-                    <Select value={formData.doors} onValueChange={(value) => updateField('doors', value)}>
-                      <SelectTrigger className="h-12 text-base">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="3">3 portes</SelectItem>
-                        <SelectItem value="5">5 portes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section Équipements */}
-              <EquipmentSelector 
-                equipment={equipment}
-                onEquipmentChange={setEquipment}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Couleur / Immatriculation */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1">
+          <Label>Couleur</Label>
+          <Select value={color} onValueChange={setColor}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              {COLORS.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="licensePlate">Immatriculation (optionnel)</Label>
+          <Input
+            id="licensePlate"
+            value={licensePlate}
+            onChange={(e) => setLicensePlate(e.target.value)}
+            placeholder="Ex : 1234 NB"
+          />
+        </div>
+      </div>
     </div>
   );
 
-  // Fonction utilitaire pour calculer les prix avec validation
-  const calculatePrice = (basePrice: string, percentage: string, isDiscount: boolean = true) => {
-    const base = parseFloat(basePrice);
-    const percent = parseFloat(percentage);
-    
-    if (isNaN(base) || isNaN(percent) || base <= 0) return 0;
-    
-    if (isDiscount) {
-      return base * (1 - percent / 100);
-    } else {
-      return base * (1 + percent / 100);
-    }
-  };
-
-  // Fonction pour formater les prix
-  const formatPrice = (price: number) => {
-    if (isNaN(price) || price <= 0) return '0,00';
-    return price.toFixed(2);
-  };
-
   const renderStep2 = () => (
-    <div className="space-y-8">
-      {/* Tarifs */}
-      <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-background to-muted/20 border-b">
-          <CardTitle className="text-[22px] font-semibold text-foreground">Tarification</CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="max-w-4xl space-y-6">
-            {/* Prix de base - pleine largeur */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-slate-600">Prix journalier de base (€) *</Label>
-              <Input 
-                type="number"
-                value={formData.dailyPrice}
-                onChange={(e) => updateField('dailyPrice', e.target.value)}
-                placeholder="35"
-                min="0"
-                step="0.01"
-                className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-              />
-            </div>
-            
-            {/* Grille 2x2 avec aperçus intégrés */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-              {/* Réduction basse saison */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  Réduction basse saison (%)
-                </Label>
-                <div className="flex flex-col md:flex-row md:items-center gap-2">
-                  <div className="md:w-[70%]">
-                    <Input 
-                      type="number"
-                      value={formData.lowSeasonDiscount}
-                      onChange={(e) => updateField('lowSeasonDiscount', e.target.value)}
-                      placeholder="10"
-                      min="0"
-                      max="100"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
+    <div className="space-y-6">
+      {/* Équipements */}
+      <div>
+        <h3 className="text-base font-semibold mb-4">Équipements du véhicule</h3>
+        <div className="space-y-6">
+          {EQUIPMENT_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                {group.label}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {group.items.map((item) => (
+                  <label
+                    key={item.key}
+                    className="flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer hover:bg-muted/30 transition-colors"
+                  >
+                    <span className="text-sm">{item.label}</span>
+                    <Switch
+                      checked={equipment[item.key] ?? false}
+                      onCheckedChange={(checked) =>
+                        setEquipment((prev) => ({ ...prev, [item.key]: checked }))
+                      }
                     />
-                  </div>
-                  <div className="md:w-[30%] md:text-right">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200/50 text-lg font-semibold text-green-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.lowSeasonDiscount, true)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Supplément haute saison */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  Supplément haute saison (%)
-                </Label>
-                <div className="flex flex-col md:flex-row md:items-center gap-2">
-                  <div className="md:w-[70%]">
-                    <Input 
-                      type="number"
-                      value={formData.highSeasonSurcharge}
-                      onChange={(e) => updateField('highSeasonSurcharge', e.target.value)}
-                      placeholder="20"
-                      min="0"
-                      max="200"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-                    />
-                  </div>
-                  <div className="md:w-[30%] md:text-right">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-orange-50 border border-orange-200/50 text-lg font-semibold text-orange-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.highSeasonSurcharge, false)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Réduction longue durée ≥14j */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  Réduction longue durée ≥14j (%)
-                </Label>
-                <div className="flex flex-col md:flex-row md:items-center gap-2">
-                  <div className="md:w-[70%]">
-                    <Input 
-                      type="number"
-                      value={formData.longTermDiscount14}
-                      onChange={(e) => updateField('longTermDiscount14', e.target.value)}
-                      placeholder="15"
-                      min="0"
-                      max="100"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-                    />
-                  </div>
-                  <div className="md:w-[30%] md:text-right">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200/50 text-lg font-semibold text-green-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.longTermDiscount14, true)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Réduction longue durée ≥60j */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-slate-600 block">
-                  Réduction longue durée ≥60j (%)
-                </Label>
-                <div className="flex flex-col md:flex-row md:items-center gap-2">
-                  <div className="md:w-[70%]">
-                    <Input 
-                      type="number"
-                      value={formData.longTermDiscount60}
-                      onChange={(e) => updateField('longTermDiscount60', e.target.value)}
-                      placeholder="25"
-                      min="0"
-                      max="100"
-                      step="1"
-                      className="h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-                    />
-                  </div>
-                  <div className="md:w-[30%] md:text-right">
-                    {parseFloat(formData.dailyPrice) > 0 ? (
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-50 border border-green-200/50 text-lg font-semibold text-green-700 transition-all duration-150 ease-out">
-                        {formatPrice(calculatePrice(formData.dailyPrice, formData.longTermDiscount60, true)) || '0,00'} €
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-400">— €</span>
-                    )}
-                  </div>
-                </div>
+                  </label>
+                ))}
               </div>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Texte d'aide */}
-            <p className="text-sm text-slate-500 mt-8 leading-relaxed bg-slate-50 rounded-lg p-4 border border-slate-200">
-              💡 Calculs indicatifs, arrondis à 2 décimales. Les frais/assurances s'ajoutent ensuite.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Services */}
+      <div>
+        <h3 className="text-base font-semibold mb-1">Services proposés</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Activez les services que vous offrez et indiquez leur tarif.
+        </p>
 
-      {/* Paramètres de réservation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-[22px] font-semibold text-foreground">Paramètres de réservation</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-6">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-600">
-                Délai min. (heures) avant réservation
-              </Label>
-              <Input 
-                type="number"
-                value={formData.minAdvanceHours}
-                onChange={(e) => updateField('minAdvanceHours', e.target.value)}
-                placeholder="2"
-                className="h-11 rounded-lg bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-600">
-                Durée min. (jours) de réservation
-              </Label>
-              <Input 
-                type="number"
-                value={formData.minRentalDays}
-                onChange={(e) => updateField('minRentalDays', e.target.value)}
-                placeholder="1"
-                className="h-11 rounded-lg bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-slate-600">
-                Durée max. (jours) de réservation
-              </Label>
-              <Input 
-                type="number"
-                value={formData.maxRentalDays}
-                onChange={(e) => updateField('maxRentalDays', e.target.value)}
-                placeholder="30"
-                className="h-11 rounded-lg bg-slate-50 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="rounded-lg border border-slate-200 px-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-4 pb-2">
+            ✈️ Aéroport de Fascène
+          </p>
+          <ServiceRow label="Prise en charge" icon="🛬" value={svcAirportPickup} onChange={setSvcAirportPickup} />
+          <ServiceRow label="Restitution" icon="🛫" value={svcAirportReturn} onChange={setSvcAirportReturn} />
+
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-4 pb-2">
+            🚢 Barge Petite Terre
+          </p>
+          <ServiceRow label="Prise en charge" icon="⬇️" value={svcBargePTPickup} onChange={setSvcBargePTPickup} />
+          <ServiceRow label="Restitution" icon="⬆️" value={svcBargePTReturn} onChange={setSvcBargePTReturn} />
+
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-4 pb-2">
+            🚢 Barge Grande Terre
+          </p>
+          <ServiceRow label="Prise en charge" icon="⬇️" value={svcBargeGTPickup} onChange={setSvcBargeGTPickup} />
+          <ServiceRow label="Restitution" icon="⬆️" value={svcBargeGTReturn} onChange={setSvcBargeGTReturn} />
+
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-4 pb-2">
+            🚗 Livraison à domicile
+          </p>
+          <ServiceRow label="Prise en charge" icon="📍" value={svcDeliveryPickup} onChange={setSvcDeliveryPickup} />
+          <ServiceRow label="Restitution" icon="🏠" value={svcDeliveryReturn} onChange={setSvcDeliveryReturn} />
+
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pt-4 pb-2">
+            Extras
+          </p>
+          <ServiceRow label="Siège bébé" icon="👶" value={svcBabySeat} onChange={setSvcBabySeat} perDay />
+          <ServiceRow label="Conducteur supplémentaire" icon="👨‍✈️" value={svcExtraDriver} onChange={setSvcExtraDriver} perDay />
+        </div>
+      </div>
     </div>
   );
 
   const renderStep3 = () => (
-    <div className="space-y-8">
-      {/* Localisation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
-            Localisation
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="space-y-6">
+      {/* Prix */}
+      <OwnerDualCurrencyInput
+        id="daily-price"
+        label="Prix par jour *"
+        valueMga={dailyPriceMga}
+        onChangeMga={setDailyPriceMga}
+        required
+        minMga={1000}
+        arPlaceholder="200000"
+        eurPlaceholder="40"
+        hint="Saisissez en Ariary ou en € — équivalent affiché selon le taux du jour"
+      />
+
+      {/* Zone */}
+      <div className="space-y-1">
+        <Label>Localisation *</Label>
+        <Select value={locationAreaId} onValueChange={setLocationAreaId}>
+          <SelectTrigger><SelectValue placeholder="Sélectionner un quartier" /></SelectTrigger>
+          <SelectContent>
+            {LOCATION_AREAS.map((area) => (
+              <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Photos – hidden file inputs (pattern identique scooter) */}
+      <input id="car-photo-frontLeft" type="file" accept="image/*"
+        style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+        onChange={(e) => handleMainPhotoChange("frontLeft", e)} />
+      <input id="car-photo-profileLeft" type="file" accept="image/*"
+        style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+        onChange={(e) => handleMainPhotoChange("profileLeft", e)} />
+      <input id="car-photo-interior" type="file" accept="image/*"
+        style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+        onChange={(e) => handleMainPhotoChange("interior", e)} />
+      <input id="car-photo-additional" type="file" accept="image/*" multiple
+        style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+        disabled={additionalPhotos.length >= 3}
+        onChange={handleAddMorePhotosChange} />
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Camera className="h-5 w-5 text-primary" />
           <div>
-            <Label className="text-sm font-medium text-slate-600">Localisation</Label>
-            <Input 
-              value={formData.location}
-              onChange={(e) => updateField('location', e.target.value)}
-              placeholder="Ville, quartier, adresse approximative..."
-              className="mt-2 h-12 text-base rounded-xl border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400"
-            />
-            <p className="text-xs text-slate-500 mt-2">
-              📍 Indiquez où se trouve votre véhicule pour les locataires
-            </p>
+            <p className="text-sm font-medium">Photos du véhicule</p>
+            <p className="text-xs text-muted-foreground">Ajoutez au moins une photo pour attirer plus de locataires.</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Photos du véhicule */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Camera className="h-5 w-5 text-primary" />
-              Photos du véhicule (minimum 3)
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <span className="text-sm text-muted-foreground">{additionalPhotos.length}/3</span>
-              {additionalPhotos.length < 3 && (
-                <Button 
-                  onClick={addNewAdditionalPhoto}
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Ajouter des photos
-                </Button>
-              )}
-              {additionalPhotos.length >= 3 && (
-                <span className="text-xs text-muted-foreground">Limite atteinte (3 photos)</span>
-              )}
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div 
-            className="sr-only" 
-            aria-live="polite" 
-            aria-atomic="true"
-          >
-            {feedbackMessage}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Avant Gauche */}
-            <div className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-              <div 
-                onClick={() => triggerFileInput('frontLeft')}
-                className="relative h-32 w-full cursor-pointer"
-              >
-                {/* Bandeau Photo principale */}
-                <div className="absolute top-2 left-2 bg-[#16A34A] text-white text-xs font-bold px-2 py-1 rounded-br-md z-10 md:text-xs md:px-2 md:py-1 sm:text-[11px] sm:px-1.5 sm:py-0.5" 
-                     aria-label="Photo principale de l'annonce">
-                  Photo principale
-                </div>
-                {vehiclePhotos.frontLeft ? (
-                  <img 
-                    src={getPhotoPreview(vehiclePhotos.frontLeft)} 
-                    alt="Avant gauche" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full p-4 relative bg-slate-50/50">
-                    <svg 
-                      viewBox="0 0 120 120" 
-                      className="w-full h-full absolute inset-0 opacity-60 group-hover:opacity-80 transition-opacity"
-                      style={{ imageRendering: 'auto', shapeRendering: 'geometricPrecision' }}
-                    >
-                      {/* Contour de voiture vue avant gauche */}
-                      <g stroke="currentColor" strokeWidth="1.5" fill="none" className="text-muted-foreground">
-                        {/* Carrosserie principale */}
-                        <rect x="25" y="40" width="70" height="45" rx="8" />
-                        {/* Pare-brise */}
-                        <path d="M30 40 L35 30 L85 30 L90 40" />
-                        {/* Phares */}
-                        <circle cx="35" cy="50" r="4" />
-                        <circle cx="85" cy="50" r="4" />
-                        {/* Roues */}
-                        <circle cx="35" cy="90" r="8" />
-                        <circle cx="85" cy="90" r="8" />
-                        {/* Grille */}
-                        <rect x="40" y="65" width="40" height="15" rx="2" />
-                        <line x1="45" y1="68" x2="75" y2="68" />
-                        <line x1="45" y1="72" x2="75" y2="72" />
-                        <line x1="45" y1="76" x2="75" y2="76" />
-                      </g>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-                      <div className="bg-primary/90 text-white rounded-full p-2">
-                        <Upload className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-white rounded-b-xl">
-                <p className="text-sm font-medium text-slate-700 mb-1">Avant Gauche</p>
-                {vehiclePhotos.frontLeft ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                      <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                    </div>
-                    <button
-                      onClick={(e) => {e.stopPropagation(); triggerFileInput('frontLeft');}}
-                      className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                    >
-                      <ArrowRight className="h-3 w-3 rotate-180" />
-                      Changer ma photo
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Avant Gauche – Angle de vue recommandé</p>
-                )}
-              </div>
-            </div>
-
-            {/* Profil gauche */}
-            <div className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-              <div 
-                onClick={() => triggerFileInput('profileLeft')}
-                className="relative h-32 w-full cursor-pointer"
-              >
-                {vehiclePhotos.profileLeft ? (
-                  <img 
-                    src={getPhotoPreview(vehiclePhotos.profileLeft)} 
-                    alt="Profil gauche" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full p-4 relative bg-slate-50/50">
-                    <svg 
-                      viewBox="0 0 120 120" 
-                      className="w-full h-full absolute inset-0 opacity-60 group-hover:opacity-80 transition-opacity"
-                      style={{ imageRendering: 'auto', shapeRendering: 'geometricPrecision' }}
-                    >
-                      {/* Contour de voiture vue profil gauche */}
-                      <g stroke="currentColor" strokeWidth="1.5" fill="none" className="text-muted-foreground">
-                        {/* Carrosserie principale */}
-                        <path d="M20 70 L25 50 L35 40 L85 40 L95 50 L100 70 L100 80 L20 80 Z" />
-                        {/* Toit */}
-                        <path d="M35 40 L40 25 L80 25 L85 40" />
-                        {/* Portes */}
-                        <line x1="45" y1="40" x2="45" y2="80" strokeDasharray="2,2" />
-                        <line x1="75" y1="40" x2="75" y2="80" strokeDasharray="2,2" />
-                        {/* Fenêtres */}
-                        <path d="M40 25 L42 30 L78 30 L80 25" />
-                        <rect x="35" y="45" width="20" height="15" rx="2" />
-                        <rect x="65" y="45" width="20" height="15" rx="2" />
-                        {/* Roues */}
-                        <circle cx="35" cy="85" r="8" />
-                        <circle cx="85" cy="85" r="8" />
-                        {/* Phares */}
-                        <circle cx="95" cy="55" r="3" />
-                        {/* Feux arrière */}
-                        <circle cx="25" cy="55" r="3" />
-                      </g>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-                      <div className="bg-primary/90 text-white rounded-full p-2">
-                        <Upload className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-white rounded-b-xl">
-                <p className="text-sm font-medium text-slate-700 mb-1">Profil gauche</p>
-                {vehiclePhotos.profileLeft ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                      <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                    </div>
-                    <button
-                      onClick={(e) => {e.stopPropagation(); triggerFileInput('profileLeft');}}
-                      className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                    >
-                      <ArrowRight className="h-3 w-3 rotate-180" />
-                      Changer ma photo
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Profil gauche – Angle de vue recommandé</p>
-                )}
-              </div>
-            </div>
-
-            {/* Habitacle intérieur */}
-            <div className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-              <div 
-                onClick={() => triggerFileInput('interior')}
-                className="relative h-32 w-full cursor-pointer"
-              >
-                {vehiclePhotos.interior ? (
-                  <img 
-                    src={getPhotoPreview(vehiclePhotos.interior)} 
-                    alt="Habitacle intérieur" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full p-4 relative bg-slate-50/50">
-                    <svg 
-                      viewBox="0 0 120 120" 
-                      className="w-full h-full absolute inset-0 opacity-60 group-hover:opacity-80 transition-opacity"
-                      style={{ imageRendering: 'auto', shapeRendering: 'geometricPrecision' }}
-                    >
-                      {/* Contour habitacle intérieur */}
-                      <g stroke="currentColor" strokeWidth="1.5" fill="none" className="text-muted-foreground">
-                        {/* Contour habitacle */}
-                        <rect x="20" y="25" width="80" height="70" rx="8" />
-                        {/* Sièges avant */}
-                        <rect x="30" y="35" width="15" height="20" rx="3" />
-                        <rect x="75" y="35" width="15" height="20" rx="3" />
-                        {/* Sièges arrière */}
-                        <rect x="30" y="70" width="60" height="15" rx="3" />
-                        {/* Volant */}
-                        <circle cx="82" cy="45" r="8" />
-                        <circle cx="82" cy="45" r="5" />
-                        {/* Tableau de bord */}
-                        <path d="M25 30 L95 30 L90 40 L30 40 Z" />
-                        {/* Console centrale */}
-                        <rect x="50" y="50" width="20" height="25" rx="2" />
-                        {/* Portes */}
-                        <line x1="20" y1="45" x2="30" y2="45" strokeWidth="2" />
-                        <line x1="90" y1="45" x2="100" y2="45" strokeWidth="2" />
-                        {/* Vitres */}
-                        <rect x="25" y="15" width="70" height="8" rx="2" opacity="0.3" />
-                      </g>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
-                      <div className="bg-primary/90 text-white rounded-full p-2">
-                        <Upload className="h-5 w-5" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-3 bg-white rounded-b-xl">
-                <p className="text-sm font-medium text-slate-700 mb-1">Habitacle intérieur</p>
-                {vehiclePhotos.interior ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                      <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                    </div>
-                    <button
-                      onClick={(e) => {e.stopPropagation(); triggerFileInput('interior');}}
-                      className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                    >
-                      <ArrowRight className="h-3 w-3 rotate-180" />
-                      Changer ma photo
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Habitacle intérieur – Angle de vue recommandé</p>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Photos supplémentaires intégrées */}
-          {additionalPhotos.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              {additionalPhotos.map((photo, index) => (
-                <div key={index} className="group relative border-2 border-dashed border-muted-foreground/25 rounded-xl overflow-hidden transition-all duration-200 hover:border-primary/50">
-                  <div 
-                    onClick={() => triggerAdditionalFileInput(index)}
-                    className="relative h-32 w-full cursor-pointer"
-                  >
-                    {photo ? (
-                      <img 
-                        src={getPhotoPreview(photo)} 
-                        alt={`Photo supplémentaire ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full p-4 bg-slate-50">
-                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-xs text-muted-foreground">Ajouter une photo</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3 bg-white rounded-b-xl">
-                    <p className="text-sm font-medium text-slate-700 mb-1">Photo {index + 1}</p>
-                    {photo ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-[#16A34A]" />
-                          <span className="text-xs text-[#16A34A] font-medium">Ajoutée</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={(e) => {e.stopPropagation(); triggerAdditionalFileInput(index);}}
-                            className="flex items-center gap-1 text-xs text-[#DC2626] hover:text-red-700 hover:underline transition-all duration-150"
-                          >
-                            <ArrowRight className="h-3 w-3 rotate-180" />
-                            Changer ma photo
-                          </button>
-                          <button
-                            onClick={(e) => {e.stopPropagation(); removeAdditionalPhoto(index);}}
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-slate-600 hover:underline transition-all duration-150"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Supprimer
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Optionnel</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Description du véhicule */}
-          <div className="mt-8 p-4 border border-slate-200 rounded-xl bg-slate-50/30">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-              <div>
-                <h4 className="text-base font-medium text-slate-900 mb-1">Description du véhicule</h4>
-                <p className="text-xs text-muted-foreground">
-                  Conseil : soyez précis (entretien, options, équipements, restrictions). Évitez les informations personnelles.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleDescriptionEdit}
-                  className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-all duration-150"
-                  aria-label="Modifier la description"
-                >
-                  <Edit className="h-3.5 w-3.5" />
-                  Modifier
-                </button>
-                <button
-                  onClick={handleDescriptionClear}
-                  className="flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-150"
-                  aria-label="Supprimer la description"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Effacer
-                </button>
-                <Button
-                  onClick={handleDescriptionSave}
-                  size="sm"
-                  className="flex items-center gap-1.5 text-xs h-8 px-3 bg-primary hover:bg-primary/90"
-                  aria-label="Sauvegarder la description"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  Enregistrer
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Textarea
-                value={vehicleDescription}
-                onChange={(e) => {
-                  setVehicleDescription(e.target.value);
-                  if (e.target.value.length <= 800) {
-                    setDescriptionError('');
-                  }
-                }}
-                placeholder={`Bonjour,
-Mon véhicule est en excellent état, confortable et économique.
-Climatisation, Bluetooth, support téléphone et 3 prises USB disponibles.
-Idéal pour vos déplacements en ville comme pour de longs trajets.
-N'hésitez pas à me contacter pour toute demande spécifique (mise à dispo flexible, sièges enfants sur demande, etc.).`}
-                className="min-h-[140px] max-h-[300px] resize-none bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                style={{ 
-                  resize: 'vertical',
-                  minHeight: '140px'
-                }}
-                readOnly={!isDescriptionEditing}
-              />
-              
-              <div className="flex justify-between items-center">
-                {descriptionError && (
-                  <p className="text-xs text-red-600">{descriptionError}</p>
-                )}
-                <div className="ml-auto">
-                  <span className={`text-xs ${vehicleDescription.length > 800 ? 'text-red-600' : 'text-muted-foreground'}`}>
-                    {vehicleDescription.length}/800
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <p className="text-xs text-muted-foreground mt-4">
-            💡 Ajoutez des photos de qualité pour attirer plus de locataires
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Ajouter un véhicule</h1>
-          <p className="text-muted-foreground">
-            Remplissez les informations de votre nouveau véhicule en quelques minutes
-          </p>
         </div>
 
-        {/* Barre de progression */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">
-              Étape {currentStep} sur 3
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {getStepTitle()}
-            </span>
-          </div>
-          <Progress value={(currentStep / 3) * 100} className="h-2" />
-        </div>
+        <div className="sr-only" aria-live="polite" aria-atomic="true">{feedbackMessage}</div>
 
-        {/* Contenu des étapes */}
-        <div className="mb-8">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-        </div>
-
-        {/* Boutons de navigation */}
-        <div className="px-4 sm:px-0">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-between sm:items-center">
-            {currentStep > 1 ? (
-              <Button 
-                variant="outline" 
-                onClick={prevStep}
-                className="flex items-center justify-center gap-2 h-12 w-full sm:w-auto sm:min-w-[180px] order-2 sm:order-1 border-slate-300 text-slate-600 hover:bg-slate-50"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Étape précédente
-              </Button>
-            ) : (
-              <div className="hidden sm:block"></div>
-            )}
-            
-            <div className="order-1 sm:order-2 w-full sm:w-auto">
-              {currentStep < 3 ? (
-                <Button 
-                  onClick={nextStep}
-                  className="w-full sm:w-auto sm:min-w-[180px] bg-gradient-lagoon hover:opacity-90 text-white flex items-center justify-center gap-2 h-12"
-                >
-                  Étape suivante
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="w-full sm:w-auto sm:min-w-[180px] bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 h-12 disabled:opacity-50"
-                >
-                  {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(
+            [
+              { type: "frontLeft" as const, inputId: "car-photo-frontLeft", label: "Photo principale", hint: "Avant gauche – angle recommandé" },
+              { type: "profileLeft" as const, inputId: "car-photo-profileLeft", label: "Profil gauche", hint: "Vue de côté" },
+              { type: "interior" as const, inputId: "car-photo-interior", label: "Intérieur", hint: "Tableau de bord, habitacle" },
+            ] as const
+          ).map(({ type, inputId, label, hint }) => {
+            const preview = getPhotoPreview(vehiclePhotos[type]);
+            return (
+              <div key={type} className="group border-2 border-dashed border-muted-foreground/25 rounded-lg overflow-hidden transition-colors hover:border-primary/50">
+                <div className="relative h-32 w-full bg-muted/40 flex flex-col items-center justify-center gap-2">
+                  {type === "frontLeft" && (
+                    <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[11px] px-2 py-1 rounded-md z-10">
+                      {label}
+                    </div>
+                  )}
+                  {preview ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Ajout en cours...
+                      <img src={preview} alt={label} className="w-full h-full object-cover" />
+                      <button type="button"
+                        onClick={() => clickInput(inputId)}
+                        className="absolute bottom-2 right-2 px-2 py-1 text-xs bg-background/90 border rounded hover:bg-background transition-colors">
+                        Changer
+                      </button>
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4" />
-                      Ajouter le véhicule
+                      <button type="button" onClick={() => clickInput(inputId)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 text-xs border rounded-md bg-background hover:bg-muted transition-colors">
+                        <Upload className="h-4 w-4" />
+                        Ajouter une photo
+                      </button>
+                      <span className="text-xs text-muted-foreground text-center px-2">{hint}</span>
                     </>
                   )}
-                </Button>
-              )}
-            </div>
-          </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {/* Photos supplémentaires */}
+        <button type="button" onClick={() => clickInput("car-photo-additional")}
+          disabled={additionalPhotos.length >= 3}
+          className={`flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md transition-colors ${
+            additionalPhotos.length >= 3 ? "opacity-50 cursor-not-allowed" : "bg-background hover:bg-muted cursor-pointer"
+          }`}>
+          <Upload className="h-4 w-4" />
+          Ajouter des photos
+        </button>
+
+        {additionalPhotos.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {additionalPhotos.map((photo, index) => (
+              <div key={index} className="relative border rounded-lg overflow-hidden bg-muted/40">
+                <input id={`car-photo-additional-${index}`} type="file" accept="image/*"
+                  style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none", width: "1px", height: "1px" }}
+                  onChange={(e) => handleAdditionalPhotoChange(index, e)} />
+                <button type="button" onClick={() => clickInput(`car-photo-additional-${index}`)}
+                  className="h-28 w-full cursor-pointer flex items-center justify-center">
+                  {photo ? (
+                    <img src={getPhotoPreview(photo) || ""} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <Upload className="h-5 w-5" /><span className="text-xs">Optionnel</span>
+                    </div>
+                  )}
+                </button>
+                {photo && (
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-2 py-1 bg-black/50 text-[11px] text-white">
+                    <button type="button" onClick={() => clickInput(`car-photo-additional-${index}`)}
+                      className="inline-flex items-center gap-1">
+                      <ArrowRight className="h-3 w-3 rotate-180" />Changer
+                    </button>
+                    <button type="button" onClick={() => removeAdditionalPhoto(index)}
+                      className="inline-flex items-center gap-1">
+                      <Trash2 className="h-3 w-3" />Supprimer
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Footer />
+      {/* Description */}
+      <div className="space-y-1">
+        <Label htmlFor="description">Description (optionnel)</Label>
+        <textarea
+          id="description"
+          className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Décrivez votre véhicule — état, options incluses, disponibilité, restrictions..."
+        />
+        <span className={`text-xs ${description.length > 800 ? "text-red-600" : "text-muted-foreground"}`}>
+          {description.length}/800
+        </span>
+      </div>
     </div>
   );
-};
 
-export default AddVehicle;
+  const STEP_LABELS = ["Votre véhicule", "Équipements & Services", "Prix & Photos"];
+
+  return (
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
+        <div className="container mx-auto px-4 py-8 max-w-3xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Car className="h-8 w-8 text-primary" />
+                <span>Ajouter une voiture</span>
+              </CardTitle>
+
+              {/* Progress */}
+              <div className="mt-4">
+                <div className="flex justify-between mb-2">
+                  {STEP_LABELS.map((label, i) => (
+                    <span
+                      key={label}
+                      className={`text-xs font-medium ${i + 1 === currentStep ? "text-primary" : "text-muted-foreground"}`}
+                    >
+                      {i + 1}. {label}
+                    </span>
+                  ))}
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                  <div
+                    className="bg-primary h-1.5 rounded-full transition-all"
+                    style={{ width: `${(currentStep / 3) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {currentStep === 1 && renderStep1()}
+                {currentStep === 2 && renderStep2()}
+                {currentStep === 3 && renderStep3()}
+
+                {/* Navigation */}
+                <div className="flex justify-between gap-3 pt-4">
+                  {currentStep > 1 ? (
+                    <Button type="button" variant="outline" onClick={prevStep}
+                      className="flex items-center gap-2">
+                      <ArrowLeft className="h-4 w-4" />
+                      Précédent
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="outline" onClick={() => navigate("/me/owner/vehicles")}>
+                      Annuler
+                    </Button>
+                  )}
+
+                  {currentStep < 3 ? (
+                    <Button type="button" onClick={nextStep}
+                      className="flex items-center gap-2 bg-gradient-lagoon hover:opacity-90 text-white">
+                      Suivant
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button type="submit" disabled={loading}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white">
+                      {loading ? (
+                        <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Création...</>
+                      ) : (
+                        <><CheckCircle className="h-4 w-4" />Créer le véhicule</>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      <Footer />
+    </>
+  );
+}
