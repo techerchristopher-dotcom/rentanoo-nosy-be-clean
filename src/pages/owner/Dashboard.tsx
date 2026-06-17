@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@/types";
 import { DualPrice } from "@/components/currency/DualPrice";
+import { OwnerSidebar } from "@/features/owner-portal/components/OwnerSidebar";
 
 interface DashboardStats {
   totalVehicles: number;
@@ -152,11 +153,14 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <main className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Chargement...</p>
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="flex flex-col lg:flex-row gap-6">
+            <OwnerSidebar />
+            <main className="flex-1 min-w-0 flex items-center justify-center h-64">
+              <p className="text-muted-foreground">Chargement...</p>
+            </main>
           </div>
-        </main>
+        </div>
         <Footer />
       </div>
     );
@@ -164,7 +168,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <OwnerSidebar />
+          <main className="flex-1 min-w-0">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-800 mb-2">
@@ -327,7 +334,9 @@ export default function Dashboard() {
           </Card>
 
         </div>
-      </main>
+          </main>
+        </div>
+      </div>
 
       <Footer />
     </div>
