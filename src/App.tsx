@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { WhatsAppContactProvider } from "@/contexts/WhatsAppContactContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { CategoryShowcaseProvider } from "@/hooks/useCategoryShowcase";
 import { CategoryShowcaseModal } from "@/components/categories/CategoryShowcaseModal";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
@@ -136,6 +137,7 @@ const App = () => (
       <AuthProvider>
         <ExchangeRateProvider>
         <WhatsAppContactProvider>
+        <CartProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -604,6 +606,7 @@ const App = () => (
             </CategoryShowcaseProvider>
           </BrowserRouter>
         </TooltipProvider>
+        </CartProvider>
         </WhatsAppContactProvider>
         </ExchangeRateProvider>
       </AuthProvider>
