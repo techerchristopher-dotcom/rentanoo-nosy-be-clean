@@ -1200,6 +1200,7 @@ app.get("/sitemap.xml", async (_req, res) => {
       { loc: "https://rentanoo.com/rent-my-car", changefreq: "weekly", priority: "0.8", lastmod: today },
       { loc: "https://rentanoo.com/contact", changefreq: "monthly", priority: "0.5", lastmod: today },
       { loc: "https://rentanoo.com/legal", changefreq: "monthly", priority: "0.4", lastmod: today },
+      // sinistre-caution intentionally excluded — app-internal page, noindex
     ];
 
     // Build vehicle URLs
@@ -1210,7 +1211,8 @@ app.get("/sitemap.xml", async (_req, res) => {
       let loc: string;
       if (v.vehicle_type === "accommodation") {
         loc = `https://rentanoo.com/hebergement/${license}`;
-      } else if (v.vehicle_type === "moto") {
+      } else if (v.vehicle_type === "moto" && license === "D395A595") {
+        // Only the real moto (Wakaza 250cc) uses /moto/ — all others redirect to /vehicle/
         loc = `https://rentanoo.com/moto/${license}`;
       } else {
         loc = `https://rentanoo.com/vehicle/${license}`;

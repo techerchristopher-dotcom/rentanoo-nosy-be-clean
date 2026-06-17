@@ -10,6 +10,8 @@ export interface SeoProps {
   description?: string;
   canonical?: string;
   ogImage?: string;
+  /** Prevent Google from indexing this page (noindex, nofollow) */
+  noIndex?: boolean;
   /** JSON-LD structured data (Schema.org) — injecté en script type="application/ld+json" */
   structuredData?: object;
   /** Second JSON-LD script (ex: BreadcrumbList) — rendu en plus de structuredData */
@@ -21,7 +23,7 @@ export interface SeoProps {
  * Uses defaults from index.html when props are absent.
  * Optionally injects JSON-LD structured data when structuredData / extraStructuredData are provided.
  */
-export function Seo({ title, description, canonical, ogImage, structuredData, extraStructuredData }: SeoProps) {
+export function Seo({ title, description, canonical, ogImage, noIndex, structuredData, extraStructuredData }: SeoProps) {
   const effectiveTitle = title ?? DEFAULT_TITLE;
   const effectiveDescription = description ?? DEFAULT_DESCRIPTION;
   const effectiveOgImage = ogImage ?? DEFAULT_OG_IMAGE;
@@ -29,6 +31,7 @@ export function Seo({ title, description, canonical, ogImage, structuredData, ex
   return (
     <Helmet>
       <title>{effectiveTitle}</title>
+      {noIndex && <meta name="robots" content="noindex, nofollow" />}
       <meta name="description" content={effectiveDescription} />
       <meta property="og:title" content={effectiveTitle} />
       <meta property="og:description" content={effectiveDescription} />

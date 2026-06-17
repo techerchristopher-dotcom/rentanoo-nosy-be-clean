@@ -57,6 +57,7 @@ export default function SinistreCaution() {
         title={t("seo.sinistreCaution.title")}
         description={t("seo.sinistreCaution.description")}
         canonical="https://rentanoo.com/sinistre-caution"
+        noIndex
       />
       {/* HERO */}
       <section className="relative overflow-hidden">
