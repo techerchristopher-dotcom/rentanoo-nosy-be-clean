@@ -99,6 +99,8 @@ import VehicleOwnerCard from "@/components/VehicleOwnerCard";
 import { AccommodationHighlights } from "@/components/accommodation/AccommodationHighlights";
 import { ListingDescriptionContent } from "@/components/listing/ListingDescriptionContent";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
+import { ShoppingCart } from "lucide-react";
 import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
 import { useListingTerms } from "@/utils/listingTerminology";
@@ -126,12 +128,16 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+// Réactivable si besoin de basculer en mode réservation directe
+const DIRECT_BOOKING_ENABLED = false;
+
 export default function AccommodationDetails() {
 
   const { license } = useParams<{ license: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { addItem: addToCart, isFull: isCartFull } = useCart();
   const { t, i18n } = useTranslation();
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
   const listingTerms = useListingTerms("accommodation");
@@ -571,6 +577,67 @@ export default function AccommodationDetails() {
     }
   };
   
+  const handleAddToCart = () => {
+    if (!vehicle) return;
+
+    if (isCartFull) {
+      toast({
+        title: "Panier plein (10/10)",
+        description: "Soumets d'abord ta demande actuelle avant d'ajouter un autre élément.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!navigationState?.rentalCalculation) {
+      toast({
+        title: t("booking.funnel.missingDates.title"),
+        description: t("booking.funnel.missingDates.description"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { startDate, endDate, startTime, endTime } = navigationState.rentalCalculation;
+
+    const pricing = getBookingRentalPricing({
+      pricePerDay: vehicle.dailyPrice,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+    });
+
+    if (!pricing) {
+      toast({
+        title: "Dates invalides",
+        description: "L'heure de fin doit être après l'heure de départ.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const added = addToCart({
+      vehicleId: vehicle.id,
+      vehicleType: "accommodation",
+      vehicleLabel: vehicle.model,
+      vehicleThumbnail: photos.length > 0 ? photos[0].url : undefined,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      startTime,
+      endTime,
+      pickupLocation: navigationState.pickupLocation || undefined,
+      estimatedPrice: pricing.basePrice,
+    });
+
+    if (added) {
+      toast({
+        title: "Ajouté au panier",
+        description: `${vehicle.model} ajouté à votre demande groupée.`,
+      });
+    }
+  };
+
   const handleConfirmBooking = async (
     paymentMethod: BookingPaymentMethod = 'card_online',
   ) => {
@@ -905,13 +972,25 @@ export default function AccommodationDetails() {
             )}
           </div>
 
+          {DIRECT_BOOKING_ENABLED && (
+            <Button
+              size="lg"
+              onClick={() => handleBooking()}
+              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
+            >
+              <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
+              {t("booking.reserve")}
+            </Button>
+          )}
+
           <Button
             size="lg"
-            onClick={() => handleBooking()}
+            onClick={handleAddToCart}
+            disabled={isCartFull}
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
-            <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
-            {t("booking.reserve")}
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            {isCartFull ? "Panier plein (10/10)" : "Ajouter au panier"}
           </Button>
 
           <Badge variant="secondary" className="w-full justify-center py-1">
@@ -1304,11 +1383,12 @@ export default function AccommodationDetails() {
             </div>
             <Button
               size="lg"
-              onClick={() => handleBooking()}
+              onClick={handleAddToCart}
+              disabled={isCartFull}
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >
-              <Zap className="h-4 w-4 mr-2 text-yellow-400" fill="currentColor" />
-              {t("booking.reserve")}
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              {isCartFull ? "Panier plein" : "Ajouter au panier"}
             </Button>
           </div>
         </div>
