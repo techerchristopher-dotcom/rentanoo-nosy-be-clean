@@ -9,6 +9,7 @@ import {
   Menu,
   MessageCircle,
   Package,
+  Percent,
   Receipt,
   Settings2,
   Truck,
@@ -58,6 +59,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: "/admin/settings/exchange", label: "Taux EUR / Ar", icon: Settings2 },
       { to: "/admin/settings/whatsapp", label: "Contact WhatsApp", icon: MessageCircle },
+      { to: "/admin/settings/pricing", label: "Tarification & options", icon: Percent },
     ],
   },
   {
