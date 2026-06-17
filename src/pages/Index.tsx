@@ -11,6 +11,7 @@ import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/
 
 const Footer = lazy(() => import("@/components/layout/footer").then((m) => ({ default: m.Footer })));
 const HomeResults = lazy(() => import("@/components/home/HomeResults").then((m) => ({ default: m.HomeResults })));
+import { HomeBlogPreview } from "@/components/home/HomeBlogPreview";
 import { useToast } from "@/hooks/use-toast";
 import { saveSearchCriteria, getSearchCriteria, clearSearchCriteria, cleanupExpiredSearchCriteria, markPageRefresh } from "@/services/localStorage/searchStorage";
 import { FEATURES } from "@/config/features";
@@ -714,6 +715,9 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        {/* Blog preview — 3 derniers articles */}
+        <HomeBlogPreview />
       </main>
       <Suspense fallback={null}>
         <Footer />
