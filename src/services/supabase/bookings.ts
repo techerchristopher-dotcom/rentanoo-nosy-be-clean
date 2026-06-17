@@ -446,7 +446,9 @@ export class SupabaseBookingsService {
   }
 
   /**
-   * Annuler automatiquement les réservations en attente de paiement expirées
+   * Annuler automatiquement les réservations en attente de paiement expirées.
+   * Les réservations 'pending' (en attente de décision propriétaire) ne sont PLUS annulées
+   * automatiquement — elles restent visibles jusqu'à action manuelle.
    */
   static async cancelExpiredPayments(): Promise<{
     cancelled: number;
@@ -455,11 +457,11 @@ export class SupabaseBookingsService {
     try {
       console.log('⏰ [BookingsService] Vérification des paiements expirés...');
 
-      // Récupérer toutes les réservations en attente de paiement OU en attente de décision propriétaire
+      // Uniquement pending_payment — les 'pending' ne sont plus auto-annulées
       const { data: bookings, error: fetchError } = await supabase
         .from('bookings')
         .select('*')
-        .in('status', ['pending_payment', 'pending']);
+        .in('status', ['pending_payment']);
 
       if (fetchError) {
         console.error('❌ [BookingsService] Erreur lors de la récupération:', fetchError);
@@ -475,28 +477,23 @@ export class SupabaseBookingsService {
 
       // Vérifier chaque réservation
       for (const booking of bookings) {
-        // Réservations admin : pas de délai 24h (encaissement hors Stripe)
+        // Réservations admin : pas de délai (encaissement hors Stripe)
         if (isAdminCreatedBooking(booking)) {
           continue;
         }
 
-        // Vérifier si le délai de 24h est dépassé
+        // Vérifier si le délai de paiement (24h) est dépassé
         const confirmedAt = new Date(booking.updated_at || booking.created_at);
         const deadline = new Date(confirmedAt.getTime() + 24 * 60 * 60 * 1000); // +24h
 
         if (now > deadline) {
-          console.log(`⏰ [BookingsService] Réservation ${booking.id} expirée, annulation...`);
-          
-          // Utiliser la nouvelle fonction pour mettre à jour avec le motif
-          const reason = booking.status === 'pending_payment' 
-            ? 'Délai de paiement expiré' 
-            : 'Aucune réponse du propriétaire sous 24h';
-          const result = await this.updateBookingStatusWithReason(booking.id, 'cancelled', reason);
-          
+          console.log(`⏰ [BookingsService] Réservation ${booking.id} expirée (paiement), annulation...`);
+
+          const result = await this.updateBookingStatusWithReason(booking.id, 'cancelled', 'Délai de paiement expiré');
+
           if (!result.error) {
             cancelledCount++;
-            console.log(`✅ [BookingsService] Réservation ${booking.id} annulée avec motif: Délai de paiement expiré`);
-            
+
             // Fermer la conversation associée à cette réservation
             const { ConversationsService } = await import('./conversations');
             await ConversationsService.closeConversationForBooking(booking.id);

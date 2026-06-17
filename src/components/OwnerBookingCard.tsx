@@ -917,7 +917,7 @@ export default function OwnerBookingCard({
                         return (
                           <div className="flex flex-col items-end">
                             <span className="text-[10px] text-muted-foreground/70 italic text-right">
-                              {cancellationReason || (booking.status === 'cancelled' ? 'Délai de paiement expiré' : 'Réservation refusée')}
+                              {cancellationReason || (booking.status === 'cancelled' ? 'Annulée' : 'Réservation refusée')}
                             </span>
                             {updatedText && (
                               <span className="text-[10px] text-muted-foreground/60 text-right">Mise à jour le : {updatedText}</span>
