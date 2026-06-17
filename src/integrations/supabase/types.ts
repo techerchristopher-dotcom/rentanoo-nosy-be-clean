@@ -149,6 +149,7 @@ export type Database = {
           amount_total_expected: number | null
           amount_total_paid: number | null
           base_price: number
+          cart_group_id: string | null
           created_at: string | null
           created_by_admin_id: string | null
           currency: string | null
@@ -199,6 +200,7 @@ export type Database = {
           amount_total_expected?: number | null
           amount_total_paid?: number | null
           base_price: number
+          cart_group_id?: string | null
           created_at?: string | null
           created_by_admin_id?: string | null
           currency?: string | null
@@ -249,6 +251,7 @@ export type Database = {
           amount_total_expected?: number | null
           amount_total_paid?: number | null
           base_price?: number
+          cart_group_id?: string | null
           created_at?: string | null
           created_by_admin_id?: string | null
           currency?: string | null
@@ -464,6 +467,42 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           vehicle_id?: string | null
+        }
+        Relationships: []
+      }
+      cart_submissions: {
+        Row: {
+          cart_group_id: string
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_user_id: string | null
+          created_at: string | null
+          id: string
+          items_count: number
+          notes: string | null
+        }
+        Insert: {
+          cart_group_id: string
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          items_count: number
+          notes?: string | null
+        }
+        Update: {
+          cart_group_id?: string
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          items_count?: number
+          notes?: string | null
         }
         Relationships: []
       }
@@ -827,6 +866,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      listing_owners: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          owner_type: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          owner_type?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          owner_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      location_areas: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       maintenance_rules: {
         Row: {
@@ -1756,6 +1849,9 @@ export type Database = {
           created_at: string | null
           deposit_amount: number
           description: string | null
+          description_de: string | null
+          description_en: string | null
+          description_it: string | null
           engine_capacity: string | null
           fuel_type: string | null
           high_season_surcharge: number
@@ -1763,6 +1859,9 @@ export type Database = {
           internal_code: string | null
           internal_notes: string | null
           license_plate: string | null
+          listing_owner_id: string | null
+          listing_owner_phone: string | null
+          location_area_id: string | null
           long_duration_discount_14: number
           long_duration_discount_60: number
           low_season_discount: number
@@ -1791,6 +1890,9 @@ export type Database = {
           created_at?: string | null
           deposit_amount?: number
           description?: string | null
+          description_de?: string | null
+          description_en?: string | null
+          description_it?: string | null
           engine_capacity?: string | null
           fuel_type?: string | null
           high_season_surcharge?: number
@@ -1798,6 +1900,9 @@ export type Database = {
           internal_code?: string | null
           internal_notes?: string | null
           license_plate?: string | null
+          listing_owner_id?: string | null
+          listing_owner_phone?: string | null
+          location_area_id?: string | null
           long_duration_discount_14?: number
           long_duration_discount_60?: number
           low_season_discount?: number
@@ -1826,6 +1931,9 @@ export type Database = {
           created_at?: string | null
           deposit_amount?: number
           description?: string | null
+          description_de?: string | null
+          description_en?: string | null
+          description_it?: string | null
           engine_capacity?: string | null
           fuel_type?: string | null
           high_season_surcharge?: number
@@ -1833,6 +1941,9 @@ export type Database = {
           internal_code?: string | null
           internal_notes?: string | null
           license_plate?: string | null
+          listing_owner_id?: string | null
+          listing_owner_phone?: string | null
+          location_area_id?: string | null
           long_duration_discount_14?: number
           long_duration_discount_60?: number
           low_season_discount?: number
@@ -1854,7 +1965,22 @@ export type Database = {
           vin?: string | null
           year?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_listing_owner_id_fkey"
+            columns: ["listing_owner_id"]
+            isOneToOne: false
+            referencedRelation: "listing_owners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_location_area_id_fkey"
+            columns: ["location_area_id"]
+            isOneToOne: false
+            referencedRelation: "location_areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -2012,6 +2138,7 @@ export type Database = {
           }
         | {
             Args: {
+              p_cart_group_id?: string
               p_end_date: string
               p_end_time: string
               p_hotel_name: string
@@ -2032,6 +2159,19 @@ export type Database = {
         }[]
       }
       get_fee_percent: { Args: { p_payment_method: string }; Returns: number }
+      get_vehicle_by_license: {
+        Args: { p_license: string }
+        Returns: {
+          brand: string
+          description: string
+          engine_capacity: string
+          id: string
+          model: string
+          photo_url: string
+          vehicle_type: string
+          year: number
+        }[]
+      }
       has_staff_role: { Args: { roles: string[] }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       normalize_text: { Args: { input_text: string }; Returns: string }

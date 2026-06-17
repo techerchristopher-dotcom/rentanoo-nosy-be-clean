@@ -31,6 +31,8 @@ const Profile = lazy(() => import("./pages/Profile"));
 const ClientOnboarding = lazy(() => import("./pages/onboarding/ClientOnboarding"));
 const ProfileTest = lazy(() => import("./pages/ProfileTest"));
 const BookingDiscussion = lazy(() => import("./pages/booking/BookingDiscussion"));
+const CartSubmit = lazy(() => import("./pages/cart/CartSubmit"));
+const CartConfirmation = lazy(() => import("./pages/cart/CartConfirmation"));
 const MessageToOwners = lazy(() => import("./pages/booking/MessageToOwners"));
 const Legal = lazy(() => import("./pages/legal/Legal"));
 const SinistreCaution = lazy(() => import("./pages/sinistre-caution/SinistreCaution"));
@@ -177,6 +179,8 @@ const App = () => (
             <Route path="/moto/:license/booking/discussion" element={<Suspense fallback={<PageLoader />}><BookingDiscussion /></Suspense>} />
             <Route path="/hebergement/:license/booking/discussion" element={<Suspense fallback={<PageLoader />}><BookingDiscussion /></Suspense>} />
             <Route path="/booking/message" element={<Suspense fallback={<PageLoader />}><MessageToOwners /></Suspense>} />
+            <Route path="/panier/soumettre" element={<Suspense fallback={<PageLoader />}><CartSubmit /></Suspense>} />
+            <Route path="/panier/confirmation" element={<Suspense fallback={<PageLoader />}><CartConfirmation /></Suspense>} />
             <Route path="/legal" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
             <Route path="/sinistre-caution" element={<Suspense fallback={<PageLoader />}><SinistreCaution /></Suspense>} />
             <Route path="/meteo-nosy-be" element={<Suspense fallback={<PageLoader />}><MeteoNosyBePage /></Suspense>} />

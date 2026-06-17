@@ -68,6 +68,8 @@ export interface BookingData {
    * il doit toujours fournir cette valeur explicitement.
    */
   paymentMethod?: BookingPaymentMethod;
+  /** Panier multi-réservation : regroupe plusieurs bookings soumis en une seule fois. */
+  cartGroupId?: string;
 }
 
 export interface BookingResponse {
@@ -133,6 +135,7 @@ export class SupabaseBookingsService {
         p_selected_options: (bookingData.selectedOptions ?? []) as unknown as Json,
         p_hotel_name: bookingData.hotelName?.trim() ?? '',
         p_payment_method: paymentMethod,
+        ...(bookingData.cartGroupId ? { p_cart_group_id: bookingData.cartGroupId } : {}),
       });
 
       if (rpcError) {
