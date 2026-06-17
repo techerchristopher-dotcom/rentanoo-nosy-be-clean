@@ -343,7 +343,21 @@ export class SupabaseBookingsService {
         return { data: null, error: vehicleError || 'Véhicule non trouvé' };
       }
       const depositAmount = (vehicle as { deposit_amount?: number | null }).deposit_amount ?? 1000;
-      const snapshot = depositAmount;
+      const vehicleType = (vehicle as { vehicle_type?: string | null }).vehicle_type ?? null;
+
+      let depositEnabledForCategory = true;
+      if (vehicleType) {
+        const { data: depositRule } = await supabase
+          .from('deposit_category_rules')
+          .select('deposit_enabled')
+          .eq('vehicle_type', vehicleType)
+          .maybeSingle();
+        if (depositRule && depositRule.deposit_enabled === false) {
+          depositEnabledForCategory = false;
+        }
+      }
+
+      const snapshot = depositEnabledForCategory ? depositAmount : 0;
       const depositStatus = snapshot > 0 ? 'pending' : 'not_required';
 
       const updateData = {

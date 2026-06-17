@@ -143,6 +143,62 @@ export type Database = {
           },
         ]
       }
+      booking_option_categories: {
+        Row: {
+          option_id: string
+          vehicle_type: string
+        }
+        Insert: {
+          option_id: string
+          vehicle_type: string
+        }
+        Update: {
+          option_id?: string
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_option_categories_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "booking_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_options: {
+        Row: {
+          active: boolean
+          description: string | null
+          id: string
+          name: string
+          option_key: string
+          price_mga: number
+          pricing_mode: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          description?: string | null
+          id?: string
+          name: string
+          option_key: string
+          price_mga?: number
+          pricing_mode?: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          description?: string | null
+          id?: string
+          name?: string
+          option_key?: string
+          price_mga?: number
+          pricing_mode?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           admin_notes: string | null
@@ -791,6 +847,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deposit_category_rules: {
+        Row: {
+          deposit_enabled: boolean
+          updated_at: string | null
+          vehicle_type: string
+        }
+        Insert: {
+          deposit_enabled?: boolean
+          updated_at?: string | null
+          vehicle_type: string
+        }
+        Update: {
+          deposit_enabled?: boolean
+          updated_at?: string | null
+          vehicle_type?: string
+        }
+        Relationships: []
       }
       dictionary_entries: {
         Row: {
@@ -1565,6 +1639,30 @@ export type Database = {
           },
         ]
       }
+      service_fee_rules: {
+        Row: {
+          fee_percent: number
+          id: string
+          payment_method: string
+          updated_at: string | null
+          vehicle_type: string
+        }
+        Insert: {
+          fee_percent: number
+          id?: string
+          payment_method: string
+          updated_at?: string | null
+          vehicle_type: string
+        }
+        Update: {
+          fee_percent?: number
+          id?: string
+          payment_method?: string
+          updated_at?: string | null
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
       site_analytics_events: {
         Row: {
           created_at: string
@@ -2115,11 +2213,19 @@ export type Database = {
         }[]
       }
       compute_renter_fee: {
-        Args: { p_payment_method: string; p_subtotal: number }
+        Args: {
+          p_payment_method: string
+          p_subtotal: number
+          p_vehicle_type?: string
+        }
         Returns: number
       }
       compute_renter_total: {
-        Args: { p_payment_method: string; p_subtotal: number }
+        Args: {
+          p_payment_method: string
+          p_subtotal: number
+          p_vehicle_type?: string
+        }
         Returns: number
       }
       create_web_booking:
@@ -2158,7 +2264,10 @@ export type Database = {
           return_location: string
         }[]
       }
-      get_fee_percent: { Args: { p_payment_method: string }; Returns: number }
+      get_fee_percent: {
+        Args: { p_payment_method: string; p_vehicle_type?: string }
+        Returns: number
+      }
       get_vehicle_by_license: {
         Args: { p_license: string }
         Returns: {
@@ -2205,7 +2314,11 @@ export type Database = {
         Returns: string
       }
       sanitize_booking_selected_options: {
-        Args: { p_base_price: number; p_raw_options: Json }
+        Args: {
+          p_base_price: number
+          p_raw_options: Json
+          p_vehicle_type?: string
+        }
         Returns: {
           options_total: number
           selected_options: Json
