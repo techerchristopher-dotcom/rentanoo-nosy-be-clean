@@ -109,6 +109,7 @@ const SupplierForm = lazy(() => import("./pages/admin/suppliers/SupplierForm"));
 const MaintenancePage = lazy(() => import("./pages/admin/maintenance/MaintenancePage"));
 const AdminExchangeSettings = lazy(() => import("./pages/admin/settings/AdminExchangeSettings"));
 const AdminWhatsAppSettings = lazy(() => import("./pages/admin/settings/AdminWhatsAppSettings"));
+const AdminPricingSettings = lazy(() => import("./pages/admin/settings/AdminPricingSettings"));
 const AdminSiteAnalytics = lazy(() => import("./pages/admin/analytics/AdminSiteAnalytics"));
 const Checking = lazy(() => import("./pages/Checking"));
 const CheckinReturnPage = lazy(() => import("./pages/checkin-return/[bookingId]"));
@@ -386,6 +387,14 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <AdminWhatsAppSettings />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="settings/pricing"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AdminPricingSettings />
                   </Suspense>
                 }
               />

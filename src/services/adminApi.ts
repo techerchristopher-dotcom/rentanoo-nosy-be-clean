@@ -721,3 +721,99 @@ export async function adminGetGa4Analytics(days = 30): Promise<Ga4Report> {
     setupHint: data.setupHint,
   };
 }
+
+// ============================================================================
+// Pricing config admin (frais de service / options / caution par catégorie)
+// ============================================================================
+
+export type PricingVehicleType = "car" | "moto" | "scooter" | "quad" | "accommodation";
+export type PricingPaymentMethod = "card_online" | "cash_on_site";
+
+export interface ServiceFeeRule {
+  vehicle_type: PricingVehicleType;
+  payment_method: PricingPaymentMethod;
+  fee_percent: number;
+}
+
+export interface BookingOptionRow {
+  id: string;
+  option_key: string;
+  name: string;
+  description: string | null;
+  price_mga: number;
+  pricing_mode: "flat" | "per_day";
+  active: boolean;
+  categories: PricingVehicleType[];
+}
+
+export interface DepositCategoryRule {
+  vehicle_type: PricingVehicleType;
+  deposit_enabled: boolean;
+}
+
+export interface PricingConfig {
+  vehicleTypes: PricingVehicleType[];
+  paymentMethods: PricingPaymentMethod[];
+  feeRules: ServiceFeeRule[];
+  options: BookingOptionRow[];
+  depositRules: DepositCategoryRule[];
+}
+
+export async function adminGetPricingConfig(): Promise<PricingConfig> {
+  return adminFetch<PricingConfig & { ok: boolean }>("/api/admin/settings/pricing");
+}
+
+export async function adminSaveFeeRules(
+  rules: Array<{ vehicleType: PricingVehicleType; paymentMethod: PricingPaymentMethod; feePercent: number }>
+): Promise<void> {
+  await adminFetch("/api/admin/settings/pricing/fees", {
+    method: "PUT",
+    body: JSON.stringify({ rules }),
+  });
+}
+
+export async function adminSaveDepositRules(
+  rules: Array<{ vehicleType: PricingVehicleType; depositEnabled: boolean }>
+): Promise<void> {
+  await adminFetch("/api/admin/settings/pricing/deposit", {
+    method: "PUT",
+    body: JSON.stringify({ rules }),
+  });
+}
+
+export async function adminCreateBookingOption(payload: {
+  optionKey: string;
+  name: string;
+  description?: string;
+  priceMga: number;
+  pricingMode: "flat" | "per_day";
+  active?: boolean;
+  categories: PricingVehicleType[];
+}): Promise<BookingOptionRow> {
+  const data = await adminFetch<{ ok: boolean; option: BookingOptionRow }>(
+    "/api/admin/settings/pricing/options",
+    { method: "POST", body: JSON.stringify(payload) }
+  );
+  return data.option;
+}
+
+export async function adminUpdateBookingOption(
+  id: string,
+  payload: Partial<{
+    name: string;
+    description: string;
+    priceMga: number;
+    pricingMode: "flat" | "per_day";
+    active: boolean;
+    categories: PricingVehicleType[];
+  }>
+): Promise<void> {
+  await adminFetch(`/api/admin/settings/pricing/options/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminDeleteBookingOption(id: string): Promise<void> {
+  await adminFetch(`/api/admin/settings/pricing/options/${id}`, { method: "DELETE" });
+}
