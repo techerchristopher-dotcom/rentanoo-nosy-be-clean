@@ -1252,6 +1252,32 @@ app.get("/moto/:license/booking/discussion", (req, res, next) => {
   next();
 });
 
+// ── X-Robots-Tag: noindex for private/app routes ────────────────────────────
+// Google crawls SPA routes and gets index.html (200). React meta noindex only
+// works after JS execution. HTTP header is faster and more reliable.
+const NOINDEX_ROUTE_PREFIXES = [
+  "/auth/",
+  "/onboarding/",
+  "/profile",
+  "/me/",
+  "/admin",
+  "/success",
+  "/cancel",
+  "/checking/",
+  "/checkin-return/",
+  "/booking/",
+  "/rent-my-car/register",
+  "/profile-test",
+];
+
+app.use((req, res, next) => {
+  const p = req.path;
+  if (NOINDEX_ROUTE_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix))) {
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
+  }
+  next();
+});
+
 // ── OG Social Bot Middleware ─────────────────────────────────────────────────
 // Facebook, Twitter, LinkedIn crawlers hit vehicle pages before JS loads.
 // We detect bot UAs, query Supabase for the vehicle photo+title, and inject
