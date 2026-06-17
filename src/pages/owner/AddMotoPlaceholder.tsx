@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { OwnerDualCurrencyInput } from "@/components/currency/OwnerDualCurrencyInput";
 import { Bike, Camera, Upload, CheckCircle, Trash2, ArrowRight, Hotel } from "lucide-react";
+import { MdTerrain } from "react-icons/md";
 
 type AccommodationCategory = "Villa" | "Bungalow" | "Maison" | "Chambre" | "Appartement";
 
@@ -27,6 +28,7 @@ export default function AddMotoPlaceholder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isAccommodationMode = searchParams.get("kind") === "accommodation";
+  const isQuadMode = searchParams.get("kind") === "quad";
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -43,7 +45,7 @@ export default function AddMotoPlaceholder() {
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
   const [engineCapacity, setEngineCapacity] = useState("");
-  const [vehicleKind, setVehicleKind] = useState<"moto" | "scooter" | "">("");
+  const [vehicleKind, setVehicleKind] = useState<"moto" | "scooter" | "quad" | "buggy" | "">(isQuadMode ? "quad" : "");
   const [accommodationCategory, setAccommodationCategory] = useState<AccommodationCategory | "">("");
   const [locationAreaId, setLocationAreaId] = useState<string>("");
   const [licensePlate, setLicensePlate] = useState("");
@@ -428,7 +430,7 @@ export default function AddMotoPlaceholder() {
         transmission: (transmission || "manual") as any,
         fuel_type: (fuelType || "gasoline") as any,
         engine_capacity: engineCapacity || undefined,
-        vehicle_type: 'moto',
+        vehicle_type: (vehicleKind === "quad" || vehicleKind === "buggy") ? "quad" : vehicleKind === "scooter" ? "scooter" : "moto",
         has_ac: false,
         has_gps: false,
         has_cruise_control: false,
@@ -510,6 +512,8 @@ export default function AddMotoPlaceholder() {
               <CardTitle className="flex items-center gap-3">
                 {isAccommodationMode ? (
                   <Hotel className="h-8 w-8 text-primary" />
+                ) : isQuadMode ? (
+                  <MdTerrain className="h-8 w-8 text-primary" />
                 ) : (
                   <Bike className="h-8 w-8 text-primary" />
                 )}
@@ -518,6 +522,11 @@ export default function AddMotoPlaceholder() {
                     ? t(
                         "ownerVehicles.accommodationForm.title",
                         "Ajouter un hébergement"
+                      )
+                    : isQuadMode
+                    ? t(
+                        "ownerVehicles.motoForm.titleQuad",
+                        "Ajouter un quad / buggy"
                       )
                     : t(
                         "ownerVehicles.motoForm.title",
@@ -824,7 +833,7 @@ export default function AddMotoPlaceholder() {
                     </Label>
                     <Select
                       value={vehicleKind}
-                      onValueChange={(v: "moto" | "scooter") =>
+                      onValueChange={(v: "moto" | "scooter" | "quad" | "buggy") =>
                         setVehicleKind(v)
                       }
                     >
@@ -837,18 +846,26 @@ export default function AddMotoPlaceholder() {
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="moto">
-                          {t(
-                            "ownerVehicles.motoForm.kindMoto",
-                            "Moto"
-                          )}
-                        </SelectItem>
-                        <SelectItem value="scooter">
-                          {t(
-                            "ownerVehicles.motoForm.kindScooter",
-                            "Scooter"
-                          )}
-                        </SelectItem>
+                        {!isQuadMode && (
+                          <>
+                            <SelectItem value="moto">
+                              {t("ownerVehicles.motoForm.kindMoto", "Moto")}
+                            </SelectItem>
+                            <SelectItem value="scooter">
+                              {t("ownerVehicles.motoForm.kindScooter", "Scooter")}
+                            </SelectItem>
+                          </>
+                        )}
+                        {(isQuadMode || vehicleKind === "quad" || vehicleKind === "buggy") && (
+                          <>
+                            <SelectItem value="quad">
+                              {t("ownerVehicles.motoForm.kindQuad", "Quad")}
+                            </SelectItem>
+                            <SelectItem value="buggy">
+                              {t("ownerVehicles.motoForm.kindBuggy", "Buggy")}
+                            </SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
