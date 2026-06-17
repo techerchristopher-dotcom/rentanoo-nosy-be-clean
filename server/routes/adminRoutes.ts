@@ -3020,4 +3020,241 @@ export function registerAdminRoutes(app: Express, supabaseAdmin: SupabaseClient)
     const total = totalCash + totalCardTerminal + totalStripe + totalOther;
     return res.json({ ok: true, bookings, summary: { total, totalCash, totalCardTerminal, totalStripe, totalOther } });
   });
+
+  // ===========================================================================
+  // Pricing config admin (frais de service / options / caution par catégorie)
+  // ===========================================================================
+  const PRICING_VEHICLE_TYPES = ["car", "moto", "scooter", "quad", "accommodation"] as const;
+  const PRICING_PAYMENT_METHODS = ["card_online", "cash_on_site"] as const;
+
+  // GET /api/admin/settings/pricing — état complet (frais, options, caution)
+  app.get("/api/admin/settings/pricing", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const [feesRes, optionsRes, categoriesRes, depositRes] = await Promise.all([
+      supabaseAdmin.from("service_fee_rules").select("*"),
+      supabaseAdmin.from("booking_options").select("*").order("name"),
+      supabaseAdmin.from("booking_option_categories").select("*"),
+      supabaseAdmin.from("deposit_category_rules").select("*"),
+    ]);
+
+    if (feesRes.error) return res.status(500).json({ ok: false, message: feesRes.error.message });
+    if (optionsRes.error) return res.status(500).json({ ok: false, message: optionsRes.error.message });
+    if (categoriesRes.error) return res.status(500).json({ ok: false, message: categoriesRes.error.message });
+    if (depositRes.error) return res.status(500).json({ ok: false, message: depositRes.error.message });
+
+    const optionsWithCategories = (optionsRes.data ?? []).map((opt) => ({
+      ...opt,
+      categories: (categoriesRes.data ?? [])
+        .filter((c) => c.option_id === opt.id)
+        .map((c) => c.vehicle_type),
+    }));
+
+    return res.json({
+      ok: true,
+      vehicleTypes: PRICING_VEHICLE_TYPES,
+      paymentMethods: PRICING_PAYMENT_METHODS,
+      feeRules: feesRes.data ?? [],
+      options: optionsWithCategories,
+      depositRules: depositRes.data ?? [],
+    });
+  });
+
+  // PUT /api/admin/settings/pricing/fees — body: { rules: [{vehicleType, paymentMethod, feePercent}] }
+  app.put("/api/admin/settings/pricing/fees", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const rules = Array.isArray(req.body?.rules) ? req.body.rules : [];
+    for (const r of rules) {
+      if (!PRICING_VEHICLE_TYPES.includes(r?.vehicleType)) {
+        return res.status(400).json({ ok: false, message: `Catégorie invalide: ${r?.vehicleType}` });
+      }
+      if (!PRICING_PAYMENT_METHODS.includes(r?.paymentMethod)) {
+        return res.status(400).json({ ok: false, message: `Mode de paiement invalide: ${r?.paymentMethod}` });
+      }
+      const pct = Number(r?.feePercent);
+      if (!Number.isFinite(pct) || pct < 0 || pct > 1) {
+        return res.status(400).json({ ok: false, message: `Pourcentage invalide pour ${r.vehicleType}/${r.paymentMethod} (0 à 1 attendu)` });
+      }
+    }
+
+    const upserts = rules.map((r: any) => ({
+      vehicle_type: r.vehicleType,
+      payment_method: r.paymentMethod,
+      fee_percent: Number(r.feePercent),
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabaseAdmin
+      .from("service_fee_rules")
+      .upsert(upserts, { onConflict: "vehicle_type,payment_method" });
+
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+    return res.json({ ok: true });
+  });
+
+  // PUT /api/admin/settings/pricing/deposit — body: { rules: [{vehicleType, depositEnabled}] }
+  app.put("/api/admin/settings/pricing/deposit", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const rules = Array.isArray(req.body?.rules) ? req.body.rules : [];
+    for (const r of rules) {
+      if (!PRICING_VEHICLE_TYPES.includes(r?.vehicleType)) {
+        return res.status(400).json({ ok: false, message: `Catégorie invalide: ${r?.vehicleType}` });
+      }
+      if (typeof r?.depositEnabled !== "boolean") {
+        return res.status(400).json({ ok: false, message: `depositEnabled doit être un booléen pour ${r?.vehicleType}` });
+      }
+    }
+
+    const upserts = rules.map((r: any) => ({
+      vehicle_type: r.vehicleType,
+      deposit_enabled: r.depositEnabled,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabaseAdmin
+      .from("deposit_category_rules")
+      .upsert(upserts, { onConflict: "vehicle_type" });
+
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+    return res.json({ ok: true });
+  });
+
+  // POST /api/admin/settings/pricing/options — créer une option
+  app.post("/api/admin/settings/pricing/options", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const optionKey = typeof req.body?.optionKey === "string" ? req.body.optionKey.trim() : "";
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const description = typeof req.body?.description === "string" ? req.body.description.trim() : null;
+    const priceMga = Number(req.body?.priceMga);
+    const pricingMode = req.body?.pricingMode === "per_day" ? "per_day" : "flat";
+    const active = req.body?.active !== false;
+    const categories: string[] = Array.isArray(req.body?.categories) ? req.body.categories : [];
+
+    if (!optionKey || !/^[a-z0-9-]+$/.test(optionKey)) {
+      return res.status(400).json({ ok: false, message: "optionKey requis (lettres minuscules, chiffres, tirets uniquement)" });
+    }
+    if (!name) {
+      return res.status(400).json({ ok: false, message: "name requis" });
+    }
+    if (!Number.isFinite(priceMga) || priceMga < 0) {
+      return res.status(400).json({ ok: false, message: "priceMga invalide" });
+    }
+    for (const c of categories) {
+      if (!PRICING_VEHICLE_TYPES.includes(c as any)) {
+        return res.status(400).json({ ok: false, message: `Catégorie invalide: ${c}` });
+      }
+    }
+
+    const { data: option, error } = await supabaseAdmin
+      .from("booking_options")
+      .insert({
+        option_key: optionKey,
+        name,
+        description,
+        price_mga: priceMga,
+        pricing_mode: pricingMode,
+        active,
+      })
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+
+    if (categories.length > 0) {
+      const { error: catError } = await supabaseAdmin
+        .from("booking_option_categories")
+        .insert(categories.map((vehicleType) => ({ option_id: option.id, vehicle_type: vehicleType })));
+      if (catError) return res.status(500).json({ ok: false, message: catError.message });
+    }
+
+    return res.json({ ok: true, option: { ...option, categories } });
+  });
+
+  // PUT /api/admin/settings/pricing/options/:id — modifier une option (prix, statut, catégories)
+  app.put("/api/admin/settings/pricing/options/:id", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const { id } = req.params;
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+    if (typeof req.body?.name === "string") updates.name = req.body.name.trim();
+    if (typeof req.body?.description === "string") updates.description = req.body.description.trim();
+    if (req.body?.priceMga !== undefined) {
+      const priceMga = Number(req.body.priceMga);
+      if (!Number.isFinite(priceMga) || priceMga < 0) {
+        return res.status(400).json({ ok: false, message: "priceMga invalide" });
+      }
+      updates.price_mga = priceMga;
+    }
+    if (req.body?.pricingMode === "flat" || req.body?.pricingMode === "per_day") {
+      updates.pricing_mode = req.body.pricingMode;
+    }
+    if (typeof req.body?.active === "boolean") updates.active = req.body.active;
+
+    const { error } = await supabaseAdmin.from("booking_options").update(updates).eq("id", id);
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+
+    if (Array.isArray(req.body?.categories)) {
+      const categories: string[] = req.body.categories;
+      for (const c of categories) {
+        if (!PRICING_VEHICLE_TYPES.includes(c as any)) {
+          return res.status(400).json({ ok: false, message: `Catégorie invalide: ${c}` });
+        }
+      }
+      const { error: delError } = await supabaseAdmin.from("booking_option_categories").delete().eq("option_id", id);
+      if (delError) return res.status(500).json({ ok: false, message: delError.message });
+      if (categories.length > 0) {
+        const { error: insError } = await supabaseAdmin
+          .from("booking_option_categories")
+          .insert(categories.map((vehicleType) => ({ option_id: id, vehicle_type: vehicleType })));
+        if (insError) return res.status(500).json({ ok: false, message: insError.message });
+      }
+    }
+
+    return res.json({ ok: true });
+  });
+
+  // DELETE /api/admin/settings/pricing/options/:id
+  app.delete("/api/admin/settings/pricing/options/:id", async (req: Request, res: Response) => {
+    const gate = await requireAdmin(req, supabaseAdmin);
+    if (gate.ok === false) return res.status(gate.status).json(gate.body);
+
+    const { id } = req.params;
+    const { error } = await supabaseAdmin.from("booking_options").delete().eq("id", id);
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+    return res.json({ ok: true });
+  });
+
+  // GET /api/public/booking-options?vehicleType=quad — options actives pour une catégorie (client)
+  app.get("/api/public/booking-options", async (req: Request, res: Response) => {
+    const vehicleType = typeof req.query.vehicleType === "string" ? req.query.vehicleType : null;
+
+    let query = supabaseAdmin.from("booking_options").select("*, booking_option_categories(vehicle_type)").eq("active", true);
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ ok: false, message: error.message });
+
+    const options = (data ?? [])
+      .filter((opt: any) => {
+        if (!vehicleType) return true;
+        const cats = (opt.booking_option_categories ?? []).map((c: any) => c.vehicle_type);
+        return cats.includes(vehicleType);
+      })
+      .map((opt: any) => ({
+        id: opt.option_key,
+        name: opt.name,
+        description: opt.description,
+        priceMga: Number(opt.price_mga),
+        pricingMode: opt.pricing_mode,
+      }));
+
+    return res.json({ ok: true, options });
+  });
 }
