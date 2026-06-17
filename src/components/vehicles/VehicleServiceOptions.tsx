@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plane, Ship, Home, Baby, UserPlus, Building2 } from "lucide-react";
+import { Plane, Ship, Home, Baby, UserPlus, Building2, Tag } from "lucide-react";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import {
   updateBookingOptions,
@@ -21,7 +21,7 @@ import {
 } from "@/constants/platformBookingOptions";
 import { requiresHotelName } from "@/utils/bookingLocations";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
-import { usePlatformTransportOptions } from "@/hooks/usePlatformTransportOptions";
+import { useBookingOptionsCatalog } from "@/hooks/useBookingOptionsCatalog";
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 
 interface VehicleServiceOptionsProps {
@@ -55,7 +55,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   const [selectedServices, setSelectedServices] = useState(readSelectedServiceIdsFromDraft);
   const [hotelName, setHotelName] = useState(() => getBookingDraft()?.hotelName ?? "");
   const { formatClient } = useExchangeRate();
-  const { options: platformTransportOptions } = usePlatformTransportOptions();
+  const { options: catalogOptions } = useBookingOptionsCatalog(vehicle.vehicleType);
   const formatDualLabel = (amountMga: number) => {
     const { primary, secondary } = formatClient(amountMga);
     return `${primary} (${secondary})`;
@@ -68,17 +68,20 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
   const buildAvailableServices = (): ServiceOption[] => {
     const services: ServiceOption[] = [];
     
-    // Options plateforme transport (aéroport + hôtel, prix depuis Supabase)
-    for (const opt of platformTransportOptions) {
+    // Catalogue d'options admin, filtré par catégorie du véhicule
+    // (panel admin /admin/settings/pricing)
+    for (const opt of catalogOptions) {
       const isHotel = opt.id.includes("hotel");
+      const isAirport = opt.id.includes("airport");
+      const isPerDay = opt.pricingMode === "per_day";
       services.push({
         id: opt.id,
         name: opt.name,
-        description: opt.description,
-        icon: isHotel ? Building2 : Plane,
-        type: "flat_rate",
-        pricePerDay: 0,
-        totalPrice: opt.totalPrice,
+        description: opt.description ?? "",
+        icon: isHotel ? Building2 : isAirport ? Plane : Tag,
+        type: isPerDay ? "per_day" : "flat_rate",
+        pricePerDay: isPerDay ? opt.priceMga : 0,
+        totalPrice: isPerDay ? Math.round(opt.priceMga * rentalDays * 100) / 100 : opt.priceMga,
         isFree: false,
       });
     }
@@ -213,7 +216,7 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
 
   const availableServices = useMemo(
     () => buildAvailableServices(),
-    [vehicle, rentalDays, platformTransportOptions]
+    [vehicle, rentalDays, catalogOptions]
   );
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
