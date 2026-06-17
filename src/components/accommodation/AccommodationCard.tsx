@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Home } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
@@ -159,6 +160,19 @@ export function AccommodationCard({
             priceUnitKey="pricing.perNightShort"
           />
         </div>
+
+        {/* CTA Button */}
+        {onClick && (
+          <Button
+            className="w-full mt-4 bg-gradient-lagoon hover:opacity-90 shadow-soft"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+          >
+            {t("common.voir_la_fiche")}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
