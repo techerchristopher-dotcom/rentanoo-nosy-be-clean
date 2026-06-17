@@ -369,14 +369,16 @@ export default function AddMotoPlaceholder() {
       return;
     }
 
-    // Validations minimales (moto / scooter)
-    if (!brand.trim() || !model.trim() || !dailyPrice.trim() || !year.trim()) {
+    // Validations minimales (moto / scooter / quad)
+    const missingFields: string[] = [];
+    if (!brand.trim()) missingFields.push("marque");
+    if (!model.trim()) missingFields.push("modèle");
+    if (!year.trim()) missingFields.push("année");
+    if (!dailyPrice.trim()) missingFields.push("prix par jour");
+    if (missingFields.length > 0) {
       toast({
         title: t("common.error", "Erreur"),
-        description: t(
-          "ownerVehicles.motoForm.errors.required",
-          "Merci de renseigner au minimum la marque, le modèle, l'année et le prix par jour."
-        ),
+        description: `Champ(s) manquant(s) : ${missingFields.join(", ")}.`,
         variant: "destructive",
       });
       return;
@@ -987,21 +989,21 @@ export default function AddMotoPlaceholder() {
                   </div>
                 </div>
 
-                {/* Ligne 6 : Prix / jour (moto uniquement) */}
-                <div className="space-y-1">
-                  <Label htmlFor="dailyPrice">
-                    {t(
-                      "ownerVehicles.motoForm.dailyPrice",
-                      "Prix par jour (€)"
-                    )}
-                  </Label>
-                  <Input
-                    id="dailyPrice"
-                    value={dailyPrice}
-                    onChange={(e) => setDailyPrice(e.target.value)}
-                    placeholder="25"
-                  />
-                </div>
+                {/* Ligne 6 : Prix / jour */}
+                <OwnerDualCurrencyInput
+                  id="dailyPrice"
+                  label={t("ownerVehicles.motoForm.dailyPrice", "Prix par jour")}
+                  valueMga={dailyPrice}
+                  onChangeMga={setDailyPrice}
+                  required
+                  minMga={1000}
+                  arPlaceholder="50000"
+                  eurPlaceholder="10"
+                  hint={t(
+                    "ownerVehicles.motoForm.dailyPriceHint",
+                    "Saisissez l'un ou l'autre — équivalent € affiché selon le taux du jour"
+                  )}
+                />
                   </>
                 )}
 
