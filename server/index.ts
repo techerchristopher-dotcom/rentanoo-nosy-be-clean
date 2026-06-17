@@ -1164,6 +1164,77 @@ app.post("/api/translate", express.json(), async (req, res) => {
   }
 });
 
+// ── Dynamic Sitemap ───────────────────────────────────────────────────────────
+// Generates sitemap.xml with all active vehicle/accommodation listings from DB.
+// Bots always get fresh URLs; static public/sitemap.xml is kept as fallback.
+app.get("/sitemap.xml", async (_req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Fetch active listings
+    const { data: vehicles } = await supabaseAdmin
+      .from("vehicles")
+      .select("id, vehicle_type, updated_at, internal_code")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false });
+
+    const staticPages = [
+      { loc: "https://rentanoo.com/", changefreq: "daily", priority: "1.0", lastmod: today },
+      { loc: "https://rentanoo.com/location-scooter-nosy-be", changefreq: "weekly", priority: "0.95", lastmod: today },
+      { loc: "https://rentanoo.com/location-moto-nosy-be", changefreq: "weekly", priority: "0.95", lastmod: today },
+      { loc: "https://rentanoo.com/location-quad-nosy-be", changefreq: "weekly", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/location-voiture-nosy-be", changefreq: "weekly", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/location-4x4-nosy-be", changefreq: "weekly", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/location-minibus-nosy-be", changefreq: "weekly", priority: "0.85", lastmod: today },
+      { loc: "https://rentanoo.com/location-vacances-nosy-be", changefreq: "weekly", priority: "0.95", lastmod: today },
+      { loc: "https://rentanoo.com/location-appartement-nosy-be", changefreq: "weekly", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/location-villa-nosy-be", changefreq: "weekly", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/location-bungalow-nosy-be", changefreq: "weekly", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/meteo-nosy-be", changefreq: "daily", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/taux-change-euro-ariary-madagascar", changefreq: "daily", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/vols-aeroport-nosy-be", changefreq: "hourly", priority: "0.9", lastmod: today },
+      { loc: "https://rentanoo.com/blog", changefreq: "weekly", priority: "0.85", lastmod: today },
+      { loc: "https://rentanoo.com/blog/visiter-nosy-be-en-scooter", changefreq: "monthly", priority: "0.8", lastmod: "2026-06-01" },
+      { loc: "https://rentanoo.com/blog/itineraire-nosy-be-4-jours", changefreq: "monthly", priority: "0.8", lastmod: "2026-05-15" },
+      { loc: "https://rentanoo.com/blog/aeroport-fascene-guide-arrivee", changefreq: "monthly", priority: "0.8", lastmod: "2026-04-20" },
+      { loc: "https://rentanoo.com/rent-my-car", changefreq: "weekly", priority: "0.8", lastmod: today },
+      { loc: "https://rentanoo.com/contact", changefreq: "monthly", priority: "0.5", lastmod: today },
+      { loc: "https://rentanoo.com/legal", changefreq: "monthly", priority: "0.4", lastmod: today },
+    ];
+
+    // Build vehicle URLs
+    const vehicleUrls: { loc: string; changefreq: string; priority: string; lastmod: string }[] = [];
+    for (const v of vehicles ?? []) {
+      const license = ((v.internal_code as string | null) ?? v.id.replace(/-/g, "").slice(0, 8)).toUpperCase();
+      const lastmod = (v.updated_at as string | null)?.slice(0, 10) ?? today;
+      let loc: string;
+      if (v.vehicle_type === "accommodation") {
+        loc = `https://rentanoo.com/hebergement/${license}`;
+      } else if (v.vehicle_type === "moto") {
+        loc = `https://rentanoo.com/moto/${license}`;
+      } else {
+        loc = `https://rentanoo.com/vehicle/${license}`;
+      }
+      vehicleUrls.push({ loc, changefreq: "weekly", priority: "0.8", lastmod });
+    }
+
+    const allUrls = [...staticPages, ...vehicleUrls];
+    const urlEntries = allUrls.map(u =>
+      `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`
+    ).join("\n");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlEntries}\n</urlset>`;
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600"); // 1h cache
+    return res.send(xml);
+  } catch (err) {
+    console.error("[sitemap] Error:", err);
+    // Fallback: serve static sitemap
+    return res.redirect("/sitemap-static.xml");
+  }
+});
+
 // 301 redirects : scooters anciennement indexés sous /moto/ → /vehicle/
 // La seule vraie moto est D395A595 (Wakaza 250cc) — tout le reste = scooter
 app.get("/moto/:license", (req, res, next) => {

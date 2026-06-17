@@ -44,6 +44,8 @@ const LocationVacancesNosyBePage = lazy(() => import("./pages/seo/LocationVacanc
 const LocationAppartementNosyBePage = lazy(() => import("./pages/seo/LocationAppartementNosyBePage"));
 const LocationVillaNosyBePage = lazy(() => import("./pages/seo/LocationVillaNosyBePage"));
 const LocationBungalowNosyBePage = lazy(() => import("./pages/seo/LocationBungalowNosyBePage"));
+const Location4x4NosyBePage = lazy(() => import("./pages/seo/Location4x4NosyBePage"));
+const LocationMinibusNosyBePage = lazy(() => import("./pages/seo/LocationMinibusNosyBePage"));
 const BlogIndex = lazy(() => import("./pages/blog/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/blog/BlogPost"));
 
@@ -184,6 +186,8 @@ const App = () => (
             <Route path="/location-appartement-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationAppartementNosyBePage /></Suspense>} />
             <Route path="/location-villa-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationVillaNosyBePage /></Suspense>} />
             <Route path="/location-bungalow-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationBungalowNosyBePage /></Suspense>} />
+            <Route path="/location-4x4-nosy-be" element={<Suspense fallback={<PageLoader />}><Location4x4NosyBePage /></Suspense>} />
+            <Route path="/location-minibus-nosy-be" element={<Suspense fallback={<PageLoader />}><LocationMinibusNosyBePage /></Suspense>} />
             <Route path="/blog" element={<Suspense fallback={<PageLoader />}><BlogIndex /></Suspense>} />
             <Route path="/blog/:slug" element={<Suspense fallback={<PageLoader />}><BlogPost /></Suspense>} />
             <Route path="/contact" element={<Suspense fallback={<PageLoader />}><Contact /></Suspense>} />

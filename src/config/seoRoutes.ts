@@ -5,11 +5,15 @@ export const SEO_SCOOTER_PATH = "/location-scooter-nosy-be";
 export const SEO_MOTO_PATH = "/location-moto-nosy-be";
 export const SEO_QUAD_PATH = "/location-quad-nosy-be";
 export const SEO_VOITURE_PATH = "/location-voiture-nosy-be";
+export const SEO_4X4_PATH = "/location-4x4-nosy-be";
+export const SEO_MINIBUS_PATH = "/location-minibus-nosy-be";
 
 export const SEO_SCOOTER_URL = `https://rentanoo.com${SEO_SCOOTER_PATH}`;
 export const SEO_MOTO_URL = `https://rentanoo.com${SEO_MOTO_PATH}`;
 export const SEO_QUAD_URL = `https://rentanoo.com${SEO_QUAD_PATH}`;
 export const SEO_VOITURE_URL = `https://rentanoo.com${SEO_VOITURE_PATH}`;
+export const SEO_4X4_URL = `https://rentanoo.com${SEO_4X4_PATH}`;
+export const SEO_MINIBUS_URL = `https://rentanoo.com${SEO_MINIBUS_PATH}`;
 
 // --- Blog ---
 export const BLOG_PATH = "/blog";
