@@ -139,7 +139,7 @@ export interface Vehicle {
   seats?: number; // Nombre de places (utile pour moto)
   engineCapacity?: string; // Cylindrée (cc) pour moto
   /** Type véhicule Supabase : 'car' | 'moto' | 'scooter' | 'accommodation' — pour H1 SEO */
-  vehicleType?: 'car' | 'moto' | 'scooter' | 'accommodation' | null;
+  vehicleType?: 'car' | 'moto' | 'scooter' | 'accommodation' | 'quad' | null;
   /** Catégorie affichée (ex. Villa, Bungalow) — colonne vehicle_category */
   vehicleCategory?: string | null;
   

@@ -68,6 +68,8 @@ export function HomeResults({
         return "homeResults.titleAccommodation";
       case "moto":
         return "homeResults.titleMoto";
+      case "quad":
+        return "homeResults.titleQuad";
       case "scooter":
         return "homeResults.titleScooter";
       case "car":
@@ -83,6 +85,8 @@ export function HomeResults({
         return "homeResults.countAccommodation";
       case "moto":
         return "homeResults.countMoto";
+      case "quad":
+        return "homeResults.countQuad";
       case "scooter":
         return "homeResults.countScooter";
       case "car":
@@ -99,6 +103,8 @@ export function HomeResults({
         return "homeResults.noMatchAccommodation";
       case "moto":
         return "homeResults.noMatchMoto";
+      case "quad":
+        return "homeResults.noMatchQuad";
       case "scooter":
         return "homeResults.noMatchScooter";
       case "car":

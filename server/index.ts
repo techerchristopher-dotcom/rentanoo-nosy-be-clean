@@ -1389,7 +1389,8 @@ app.use(async (req, res, next) => {
     // Build readable title/description
     const typeLabel = vehicle.vehicle_type === "accommodation" ? "Hébergement" :
                       vehicle.vehicle_type === "moto" ? "Moto" :
-                      vehicle.vehicle_type === "car" ? "Voiture" : "Scooter";
+                      vehicle.vehicle_type === "car" ? "Voiture" :
+                      vehicle.vehicle_type === "quad" ? "Quad" : "Scooter";
     const cc = vehicle.engine_capacity ? ` ${vehicle.engine_capacity}cc` : "";
     const title = `${vehicle.brand} ${vehicle.model}${cc} — Location ${typeLabel} à Nosy Be | Rentanoo`;
     const description = vehicle.description

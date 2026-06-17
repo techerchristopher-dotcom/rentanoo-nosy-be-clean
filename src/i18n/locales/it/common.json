@@ -1387,18 +1387,28 @@
     }
   },
   "explorerFilters": {
+    "categories": {
+      "quad": "Quad / Buggy"
+    },
     "sub": {
-      "moto": {
-        "quad": "Quad / ATV"
+      "quad": {
+        "buggy": "Buggy",
+        "300cc": "300cc"
       }
     },
     "empty": {
-      "moto": {
-        "quad": {
-          "title": "Nessun quad disponibile",
-          "description": "Nessun quad o ATV disponibile al momento. Contattaci su WhatsApp."
-        }
+      "waPrefill": {
+        "quad": "Ciao Rentanoo,\n\nVorrei noleggiare un quad o buggy a Nosy Be. Potete informarmi sulle disponibilità?\n\nGrazie."
+      },
+      "quad": {
+        "title": "Quad & Buggy disponibili",
+        "description": "Scopri Nosy Be in modo diverso — noleggia un quad o buggy con Rentanoo."
       }
     }
+  },
+  "homeResults": {
+    "titleQuad": "Quad & Buggy disponibili",
+    "countQuad": "{{count}} quad",
+    "noMatchQuad": "Nessun quad corrisponde ai tuoi filtri."
   }
 }

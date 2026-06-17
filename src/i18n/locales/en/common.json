@@ -1613,6 +1613,7 @@
       "accommodation": "Accommodation",
       "scooter": "Scooters",
       "moto": "Motorcycles",
+      "quad": "Quads / Buggys",
       "car": "Cars"
     },
     "sub": {
@@ -1629,7 +1630,8 @@
         "150cc": "150cc",
         "200cc": "200cc",
         "200plus": "200cc+",
-        "250plus": "250cc+"
+        "250plus": "250cc+",
+        "300cc": "300cc"
       },
       "car": {
         "citadine": "City car",
@@ -1638,8 +1640,9 @@
         "van": "Van",
         "luxe": "Luxury"
       },
-      "moto": {
-        "quad": "Quad / ATV"
+      "quad": {
+        "buggy": "Buggy",
+        "300cc": "300cc"
       }
     },
     "comingSoon": "Coming soon",
@@ -1658,6 +1661,7 @@
         "car": "Hello Rentanoo,\n\nI would like to rent a car in Nosy Be. Please notify me when offers become available.\n\nThank you.",
         "scooter": "Hello Rentanoo,\n\nI would like to rent a scooter in Nosy Be. Please notify me about matching availability.\n\nThank you.",
         "moto": "Hello Rentanoo,\n\nI would like to rent a motorcycle in Nosy Be. Please notify me about matching availability.\n\nThank you.",
+        "quad": "Hello Rentanoo,\n\nI would like to rent a quad or buggy in Nosy Be. Please notify me about availability.\n\nThank you.",
         "accommodation": {
           "generic": "Hello Rentanoo,\n\nI am looking for accommodation in Nosy Be. Please contact me when offers become available.",
           "appartement": "Hello Rentanoo,\n\nI am looking for an apartment in Nosy Be. Please contact me when offers become available.",
@@ -1701,11 +1705,11 @@
       },
       "moto": {
         "title": "Motorcycles coming soon",
-        "description": "This category will be available soon on Rentanoo.",
-        "quad": {
-          "title": "No quad available",
-          "description": "No quad or ATV available at the moment. Contact us on WhatsApp."
-        }
+        "description": "This category will be available soon on Rentanoo."
+      },
+      "quad": {
+        "title": "Quads & Buggys available",
+        "description": "Explore Nosy Be differently — rent a quad or buggy with Rentanoo."
       },
       "car": {
         "title": "Cars coming soon",
@@ -1718,16 +1722,19 @@
     "titleAccommodation": "Available accommodation",
     "titleScooter": "Available scooters",
     "titleMoto": "Available motorcycles",
+    "titleQuad": "Available quads & buggys",
     "titleCar": "Available cars",
     "countAll": "{{count}} listing(s)",
     "countAccommodation": "{{count}} accommodation(s)",
     "countScooter": "{{count}} scooter(s)",
     "countMoto": "{{count}} motorcycle(s)",
+    "countQuad": "{{count}} quad(s)",
     "countCar": "{{count}} car(s)",
     "noMatchAll": "No listings match your filters.",
     "noMatchAccommodation": "No accommodation matches your filters.",
     "noMatchScooter": "No scooter matches your filters.",
     "noMatchMoto": "No motorcycle matches your filters.",
+    "noMatchQuad": "No quad matches your filters.",
     "noMatchCar": "No car matches your filters.",
     "emptyAll": "No listings available at the moment.",
     "emptyAccommodation": "No accommodation available at the moment."

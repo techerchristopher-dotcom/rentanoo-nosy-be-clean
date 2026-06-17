@@ -14,7 +14,7 @@ export function isCarVehicle(
   if (!v) return false;
   const t = v.vehicle_type;
   if (t === "car") return true;
-  if (t === "scooter" || t === "moto" || t === "accommodation") return false;
+  if (t === "scooter" || t === "moto" || t === "accommodation" || t === "quad") return false;
   return true;
 }
 
@@ -29,6 +29,8 @@ export function matchesMainCategory(
       return v.vehicle_type === "scooter";
     case "moto":
       return v.vehicle_type === "moto";
+    case "quad":
+      return v.vehicle_type === "quad";
     case "car":
       return isCarVehicle(v);
     default:
@@ -134,6 +136,7 @@ export function isExplorerMainCategoryId(
     value === "accommodation" ||
     value === "scooter" ||
     value === "moto" ||
+    value === "quad" ||
     value === "car"
   );
 }

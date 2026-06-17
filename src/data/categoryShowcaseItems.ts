@@ -47,8 +47,7 @@ export const CATEGORY_SHOWCASE_ITEMS: CategoryShowcaseItem[] = [
     id: "quad",
     labelKey: "categoryShowcase.items.quad.label",
     Icon: MdTerrain,
-    available: false,
-    waPrefillKey: "categoryShowcase.items.quad.waPrefillMessage",
+    available: true,
     gtagCategoryId: "quad",
   },
   {

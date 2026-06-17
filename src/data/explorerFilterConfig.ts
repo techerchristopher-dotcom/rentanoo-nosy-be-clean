@@ -1,11 +1,12 @@
 import type { ComponentType, SVGProps } from "react";
 import { Car } from "lucide-react";
-import { MdHotel, MdMoped, MdTwoWheeler } from "react-icons/md";
+import { MdHotel, MdMoped, MdTwoWheeler, MdTerrain } from "react-icons/md";
 
 export type ExplorerMainCategoryId =
   | "accommodation"
   | "scooter"
   | "moto"
+  | "quad"
   | "car";
 
 export type ExplorerSubFilterKind =
@@ -218,18 +219,33 @@ export const EXPLORER_MAIN_CATEGORIES: ExplorerMainCategoryConfig[] = [
         kind: "engine_min",
         engineMin: 250,
       },
+    ],
+  },
+  {
+    id: "quad",
+    labelKey: "explorerFilters.categories.quad",
+    Icon: MdTerrain,
+    vehicleType: "quad",
+    alwaysVisible: true,
+    gtagCategoryId: "quad",
+    emptyState: {
+      titleKey: "explorerFilters.empty.quad.title",
+      descriptionKey: "explorerFilters.empty.quad.description",
+      ctaKey: "explorerFilters.empty.cta.request",
+      waPrefillKey: "explorerFilters.empty.waPrefill.quad",
+    },
+    subFilters: [
       {
-        id: "quad",
-        labelKey: "explorerFilters.sub.moto.quad",
+        id: "300cc",
+        labelKey: "explorerFilters.sub.quad.300cc",
+        kind: "engine_exact",
+        engineCc: 300,
+      },
+      {
+        id: "buggy",
+        labelKey: "explorerFilters.sub.quad.buggy",
         kind: "model_keyword",
-        modelKeywords: ["quad", "maxxer", "atv"],
-        emptyState: {
-          titleKey: "explorerFilters.empty.moto.quad.title",
-          descriptionKey: "explorerFilters.empty.moto.quad.description",
-          ctaKey: "explorerFilters.empty.cta.request",
-          waPrefillKey: "explorerFilters.empty.waPrefill.moto",
-          illustration: "moto",
-        },
+        modelKeywords: ["buggy"],
       },
     ],
   },

@@ -17,6 +17,7 @@ export const CATEGORY_MODAL_AUTO_OPEN = false;
 export type FilterableVehicleType =
   | "scooter"
   | "moto"
+  | "quad"
   | "accommodation"
   | "car";
 
@@ -61,6 +62,7 @@ export function isFilterableVehicleType(
   return (
     value === "scooter" ||
     value === "moto" ||
+    value === "quad" ||
     value === "accommodation" ||
     value === "car"
   );

@@ -3,6 +3,11 @@ export const isMoto = (v: { vehicle_type?: string | null } | null | undefined): 
   return v.vehicle_type === 'moto' || v.vehicle_type === 'scooter';
 };
 
+export const isQuad = (v: { vehicle_type?: string | null } | null | undefined): boolean => {
+  if (!v) return false;
+  return v.vehicle_type === 'quad';
+};
+
 export const isAccommodation = (
   v: { vehicle_type?: string | null; vehicleType?: string | null } | null | undefined
 ): boolean => {
@@ -46,6 +51,7 @@ export function getVehicleTypeForChecking(
   if (vehicleType === 'car') return 'car';
   if (vehicleType === 'moto') return 'moto';
   if (vehicleType === 'scooter') return 'moto';
+  if (vehicleType === 'quad') return 'car'; // quad uses car checkin flow
 
   // Valeur inattendue → fallback car + warning avec valeur brute
   console.warn("[Checking] Valeur inattendue vehicle_type:", vehicleType);
