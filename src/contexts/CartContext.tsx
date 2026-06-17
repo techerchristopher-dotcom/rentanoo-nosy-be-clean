@@ -32,6 +32,9 @@ type CartContextValue = {
   items: CartItem[];
   count: number;
   isFull: boolean;
+  isOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
   addItem: (item: Omit<CartItem, "id">) => boolean;
   removeItem: (id: string) => void;
   updateItem: (id: string, patch: Partial<Omit<CartItem, "id">>) => void;
@@ -61,6 +64,10 @@ function saveCartToStorage(items: CartItem[]) {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => loadCartFromStorage());
+  const [isOpen, setIsOpen] = useState(false);
+
+  const openCart = useCallback(() => setIsOpen(true), []);
+  const closeCart = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
     saveCartToStorage(items);
@@ -93,12 +100,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       items,
       count: items.length,
       isFull: items.length >= CART_MAX_ITEMS,
+      isOpen,
+      openCart,
+      closeCart,
       addItem,
       removeItem,
       updateItem,
       clearCart,
     }),
-    [items, addItem, removeItem, updateItem, clearCart]
+    [items, isOpen, openCart, closeCart, addItem, removeItem, updateItem, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

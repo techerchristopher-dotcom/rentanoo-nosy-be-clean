@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Car, User, LogOut, LayoutDashboard, Shield } from "lucide-react";
+import { Car, User, LogOut, LayoutDashboard, Shield, ShoppingCart } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 import { useTranslation } from "react-i18next";
 import { setCurrentLang } from "@/i18n/language";
 import type { LangCode } from "@/types/dictionary";
@@ -32,6 +33,7 @@ const LANGUAGES: Array<{ code: LangCode; flag: string; label: string }> = [
 export function Navbar() {
   const { t, i18n } = useTranslation("common");
   const { user, signOut } = useAuth();
+  const { count: cartCount, openCart } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserType | null>(null);
@@ -161,6 +163,22 @@ export function Navbar() {
 
           {/* User Menu / Auth + CTA */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Panier multi-réservation */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="relative px-2"
+              onClick={openCart}
+              aria-label="Mon panier"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                  {cartCount}
+                </span>
+              )}
+            </Button>
+
             {/* Language Switcher */}
             <LanguageSwitcher />
 
@@ -245,6 +263,22 @@ export function Navbar() {
 
           {/* Mobile User Menu - Mon espace */}
           <div className="md:hidden flex items-center gap-1">
+            {/* Panier multi-réservation */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="relative px-2"
+              onClick={openCart}
+              aria-label="Mon panier"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                  {cartCount}
+                </span>
+              )}
+            </Button>
+
             {/* Explorer (catégories showcase) — icône seule sur mobile */}
             <ExploreCategoriesButton iconOnlyOnMobile className="px-2" />
 
