@@ -802,6 +802,69 @@ app.get("/api/stripe/session-details", async (req, res) => {
   }
 });
 
+// Route panier multi-réservation : email récap groupé envoyé à Christopher
+app.post("/api/cart/notify", async (req, res) => {
+  try {
+    const { cart_group_id, client_name, client_email, client_phone, notes, items } = req.body as {
+      cart_group_id?: string;
+      client_name?: string;
+      client_email?: string;
+      client_phone?: string;
+      notes?: string;
+      items?: Array<{ label: string; status: "success" | "failed" }>;
+    };
+
+    if (!cart_group_id || !Array.isArray(items)) {
+      return res.status(400).json({ ok: false, error: "MISSING_FIELDS" });
+    }
+
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const christopherEmail = process.env.CHRISTOPHER_EMAIL;
+
+    if (!resendApiKey || !christopherEmail) {
+      console.warn("[cart/notify] RESEND_API_KEY ou CHRISTOPHER_EMAIL manquant — email non envoyé");
+      return res.status(200).json({ ok: true, sent: false });
+    }
+
+    const itemsHtml = items
+      .map(
+        (item) =>
+          `<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">${item.label}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;">${
+            item.status === "success" ? "✅ Créée" : "❌ Indisponible"
+          }</td></tr>`
+      )
+      .join("");
+
+    const html = `
+      <h2>Nouvelle demande groupée (panier)</h2>
+      <p><strong>Client :</strong> ${client_name || "(non renseigné)"}<br/>
+      <strong>Email :</strong> ${client_email || "(non renseigné)"}<br/>
+      <strong>Téléphone :</strong> ${client_phone || "(non renseigné)"}</p>
+      <table style="border-collapse:collapse;width:100%;max-width:480px;">
+        <thead><tr><th style="text-align:left;padding:4px 8px;">Élément</th><th style="text-align:left;padding:4px 8px;">Statut</th></tr></thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      ${notes ? `<p><strong>Notes :</strong> ${notes}</p>` : ""}
+      <p style="color:#888;font-size:12px;">cart_group_id: ${cart_group_id}</p>
+    `;
+
+    const { Resend } = await import("resend");
+    const resend = new Resend(resendApiKey);
+    await resend.emails.send({
+      from: "Rentanoo <notifications@rentanoo.com>",
+      to: christopherEmail,
+      subject: `Nouvelle demande groupée — ${items.length} élément(s)`,
+      html,
+    });
+
+    return res.status(200).json({ ok: true, sent: true });
+  } catch (err: any) {
+    console.error("[cart/notify] erreur envoi email", err?.message);
+    // Les bookings sont déjà créés côté DB — on ne fait pas échouer la soumission
+    return res.status(200).json({ ok: false, sent: false, error: err?.message });
+  }
+});
+
 // Route pour démarrer un état des lieux de départ
 app.post("/api/checkin/start", async (req, res) => {
   try {
