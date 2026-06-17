@@ -117,6 +117,9 @@ const getLocationIcon = (zone: string) => {
   }
 };
 
+// Réactivable si besoin de basculer en mode réservation directe
+const DIRECT_BOOKING_ENABLED = false;
+
 export default function VehicleDetails() {
   console.log('🎯 [DEBUG] VehicleDetails component rendering');
   
@@ -1093,21 +1096,22 @@ export default function VehicleDetails() {
             )}
           </div>
 
-          <Button
-            size="lg"
-            onClick={() => handleBooking()}
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
-          >
-            <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
-            Réserver
-          </Button>
+          {DIRECT_BOOKING_ENABLED && (
+            <Button
+              size="lg"
+              onClick={() => handleBooking()}
+              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
+            >
+              <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
+              Réserver
+            </Button>
+          )}
 
           <Button
             size="lg"
-            variant="outline"
             onClick={handleAddToCart}
             disabled={isCartFull}
-            className="w-full"
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
             {isCartFull ? "Panier plein (10/10)" : "Ajouter au panier"}
@@ -1788,11 +1792,12 @@ export default function VehicleDetails() {
             </div>
             <Button
               size="lg"
-              onClick={() => handleBooking()}
+              onClick={handleAddToCart}
+              disabled={isCartFull}
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >
-              <Zap className="h-4 w-4 mr-2 text-yellow-400" fill="currentColor" />
-              Réserver
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              {isCartFull ? "Panier plein" : "Ajouter au panier"}
             </Button>
           </div>
         </div>
