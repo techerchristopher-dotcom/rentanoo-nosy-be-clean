@@ -28,6 +28,11 @@ export interface CartItem {
   estimatedPrice?: number;
 }
 
+export interface LastAddedDates {
+  startDate: string;
+  endDate: string;
+}
+
 type CartContextValue = {
   items: CartItem[];
   count: number;
@@ -39,6 +44,10 @@ type CartContextValue = {
   removeItem: (id: string) => void;
   updateItem: (id: string, patch: Partial<Omit<CartItem, "id">>) => void;
   clearCart: () => void;
+  isSuggestionModalOpen: boolean;
+  lastAddedDates: LastAddedDates | null;
+  openSuggestionModal: (dates?: LastAddedDates) => void;
+  closeSuggestionModal: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -65,9 +74,17 @@ function saveCartToStorage(items: CartItem[]) {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => loadCartFromStorage());
   const [isOpen, setIsOpen] = useState(false);
+  const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
+  const [lastAddedDates, setLastAddedDates] = useState<LastAddedDates | null>(null);
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
+
+  const openSuggestionModal = useCallback((dates?: LastAddedDates) => {
+    if (dates) setLastAddedDates(dates);
+    setIsSuggestionModalOpen(true);
+  }, []);
+  const closeSuggestionModal = useCallback(() => setIsSuggestionModalOpen(false), []);
 
   useEffect(() => {
     saveCartToStorage(items);
@@ -107,8 +124,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       updateItem,
       clearCart,
+      isSuggestionModalOpen,
+      lastAddedDates,
+      openSuggestionModal,
+      closeSuggestionModal,
     }),
-    [items, isOpen, openCart, closeCart, addItem, removeItem, updateItem, clearCart]
+    [
+      items,
+      isOpen,
+      openCart,
+      closeCart,
+      addItem,
+      removeItem,
+      updateItem,
+      clearCart,
+      isSuggestionModalOpen,
+      lastAddedDates,
+      openSuggestionModal,
+      closeSuggestionModal,
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -436,3 +436,31 @@ All colors MUST be HSL.
     animation: none !important;
   }
 }
+
+@keyframes cart-badge-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.animate-cart-badge-pulse {
+  animation: cart-badge-pulse 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cart-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.45); }
+  50% { box-shadow: 0 0 0 6px rgba(13, 148, 136, 0.15); }
+}
+
+.animate-cart-glow {
+  animation: cart-glow-pulse 2s ease-in-out infinite;
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cart-badge-pulse,
+  .animate-cart-glow {
+    animation: none !important;
+  }
+}

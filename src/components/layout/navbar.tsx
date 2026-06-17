@@ -33,7 +33,7 @@ const LANGUAGES: Array<{ code: LangCode; flag: string; label: string }> = [
 export function Navbar() {
   const { t, i18n } = useTranslation("common");
   const { user, signOut } = useAuth();
-  const { count: cartCount, openCart } = useCart();
+  const { count: cartCount, openCart, isOpen: isCartOpen } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserType | null>(null);
@@ -165,15 +165,19 @@ export function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             {/* Panier multi-réservation */}
             <Button
+              id="navbar-cart-icon"
               variant="ghost"
               size="sm"
-              className="relative px-2"
+              className={cn(
+                "relative px-2",
+                cartCount > 0 && !isCartOpen && "animate-cart-glow"
+              )}
               onClick={openCart}
               aria-label="Mon panier"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                <span className="cart-badge absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
                   {cartCount}
                 </span>
               )}
@@ -265,15 +269,19 @@ export function Navbar() {
           <div className="md:hidden flex items-center gap-1">
             {/* Panier multi-réservation */}
             <Button
+              id="navbar-cart-icon-mobile"
               variant="ghost"
               size="sm"
-              className="relative px-2"
+              className={cn(
+                "relative px-2",
+                cartCount > 0 && !isCartOpen && "animate-cart-glow"
+              )}
               onClick={openCart}
               aria-label="Mon panier"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
+                <span className="cart-badge absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-medium text-primary-foreground">
                   {cartCount}
                 </span>
               )}

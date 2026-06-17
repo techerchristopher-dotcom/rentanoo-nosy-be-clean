@@ -74,6 +74,7 @@ import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptio
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart } from "lucide-react";
+import { flyToCart } from "@/utils/cartFlyAnimation";
 import { 
   getOptimizedImageUrl, 
   generateSrcSet, 
@@ -127,7 +128,7 @@ export default function VehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { addItem: addToCart, isFull: isCartFull } = useCart();
+  const { addItem: addToCart, isFull: isCartFull, openCart, openSuggestionModal } = useCart();
   const { t, i18n } = useTranslation("common");
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
 
@@ -603,7 +604,7 @@ export default function VehicleDetails() {
     }
   };
   
-  const handleAddToCart = () => {
+  const handleAddToCart = (originEl?: HTMLElement) => {
     if (!vehicle) return;
 
     if (isCartFull) {
@@ -657,9 +658,20 @@ export default function VehicleDetails() {
     });
 
     if (added) {
+      if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
+      const dates = { startDate: startDate.toISOString(), endDate: endDate.toISOString() };
       toast({
-        title: "Ajouté au panier",
-        description: `${vehicle.brand} ${vehicle.model} ajouté à votre demande groupée.`,
+        title: `✓ ${vehicle.brand} ${vehicle.model} ajouté au panier`,
+        description: (
+          <div className="flex gap-2 mt-2">
+            <Button size="sm" variant="outline" onClick={() => openCart()}>
+              Voir mon panier
+            </Button>
+            <Button size="sm" onClick={() => openSuggestionModal(dates)}>
+              Continuer mes recherches →
+            </Button>
+          </div>
+        ),
       });
     }
   };
@@ -1109,7 +1121,7 @@ export default function VehicleDetails() {
 
           <Button
             size="lg"
-            onClick={handleAddToCart}
+            onClick={(e) => handleAddToCart(e.currentTarget)}
             disabled={isCartFull}
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
@@ -1792,7 +1804,7 @@ export default function VehicleDetails() {
             </div>
             <Button
               size="lg"
-              onClick={handleAddToCart}
+              onClick={(e) => handleAddToCart(e.currentTarget)}
               disabled={isCartFull}
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >

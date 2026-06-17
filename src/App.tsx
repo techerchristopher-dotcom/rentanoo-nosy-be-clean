@@ -8,6 +8,7 @@ import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { WhatsAppContactProvider } from "@/contexts/WhatsAppContactContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { CategorySuggestionModal } from "@/components/cart/CategorySuggestionModal";
 import { CategoryShowcaseProvider } from "@/hooks/useCategoryShowcase";
 import { CategoryShowcaseModal } from "@/components/categories/CategoryShowcaseModal";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
@@ -147,6 +148,7 @@ const App = () => (
           <BrowserRouter>
             <CategoryShowcaseProvider>
             <CartDrawer />
+            <CategorySuggestionModal />
             <RouteChangeTracker />
             <ClientProfileCompletionGuard />
             {/* Wrapper to allow a fixed dev language switcher on all pages */}
