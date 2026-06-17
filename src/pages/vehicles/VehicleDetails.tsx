@@ -72,6 +72,8 @@ import { PhotoService } from "@/services/supabase/photos";
 import VehicleOwnerCard from "@/components/VehicleOwnerCard";
 import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptions";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
+import { ShoppingCart } from "lucide-react";
 import { 
   getOptimizedImageUrl, 
   generateSrcSet, 
@@ -122,6 +124,7 @@ export default function VehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { addItem: addToCart, isFull: isCartFull } = useCart();
   const { t, i18n } = useTranslation("common");
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
 
@@ -597,6 +600,67 @@ export default function VehicleDetails() {
     }
   };
   
+  const handleAddToCart = () => {
+    if (!vehicle) return;
+
+    if (isCartFull) {
+      toast({
+        title: "Panier plein (10/10)",
+        description: "Soumets d'abord ta demande actuelle avant d'ajouter un autre véhicule.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!navigationState?.rentalCalculation) {
+      toast({
+        title: t("booking.funnel.missingDates.title"),
+        description: t("booking.funnel.missingDates.description"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { startDate, endDate, startTime, endTime } = navigationState.rentalCalculation;
+
+    const pricing = getBookingRentalPricing({
+      pricePerDay: vehicle.dailyPrice,
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+    });
+
+    if (!pricing) {
+      toast({
+        title: "Dates invalides",
+        description: "L'heure de fin doit être après l'heure de départ.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const added = addToCart({
+      vehicleId: vehicle.id,
+      vehicleType: (vehicle.vehicleType as any) || "car",
+      vehicleLabel: `${vehicle.brand} ${vehicle.model}`,
+      vehicleThumbnail: photos.length > 0 ? photos[0].url : undefined,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      startTime,
+      endTime,
+      pickupLocation: navigationState.pickupLocation || undefined,
+      estimatedPrice: pricing.basePrice,
+    });
+
+    if (added) {
+      toast({
+        title: "Ajouté au panier",
+        description: `${vehicle.brand} ${vehicle.model} ajouté à votre demande groupée.`,
+      });
+    }
+  };
+
   const handleConfirmBooking = async (
     paymentMethod: BookingPaymentMethod = 'card_online',
   ) => {
@@ -1036,6 +1100,17 @@ export default function VehicleDetails() {
           >
             <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
             Réserver
+          </Button>
+
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={handleAddToCart}
+            disabled={isCartFull}
+            className="w-full"
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            {isCartFull ? "Panier plein (10/10)" : "Ajouter au panier"}
           </Button>
 
           {/* Services supplémentaires proposés par ce véhicule */}
