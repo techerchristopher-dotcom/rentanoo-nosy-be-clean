@@ -1350,6 +1350,13 @@ function injectOgTags(html: string, opts: {
   // <title>
   out = out.replace(/<title>[^<]*<\/title>/i,
     `<title>${esc(opts.title)}</title>`);
+  // canonical link — inject or replace
+  const canonicalTag = `<link rel="canonical" href="${esc(opts.url)}" />`;
+  if (/<link rel="canonical"[^>]*>/i.test(out)) {
+    out = out.replace(/<link rel="canonical"[^>]*>/gi, canonicalTag);
+  } else {
+    out = out.replace("</head>", `  ${canonicalTag}\n</head>`);
+  }
 
   return out;
 }
