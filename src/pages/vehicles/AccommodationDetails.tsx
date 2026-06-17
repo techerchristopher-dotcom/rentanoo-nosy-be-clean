@@ -138,7 +138,7 @@ export default function AccommodationDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { addItem: addToCart, isFull: isCartFull, openCart, openSuggestionModal } = useCart();
+  const { addItem: addToCart, isFull: isCartFull, openAddedModal } = useCart();
   const { t, i18n } = useTranslation();
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
   const listingTerms = useListingTerms("accommodation");
@@ -633,19 +633,9 @@ export default function AccommodationDetails() {
 
     if (added) {
       if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
-      const dates = { startDate: startDate.toISOString(), endDate: endDate.toISOString() };
-      toast({
-        title: `✓ ${vehicle.model} ajouté au panier`,
-        description: (
-          <div className="flex gap-2 mt-2">
-            <Button size="sm" variant="outline" onClick={() => openCart()}>
-              Voir mon panier
-            </Button>
-            <Button size="sm" onClick={() => openSuggestionModal(dates)}>
-              Continuer mes recherches →
-            </Button>
-          </div>
-        ),
+      openAddedModal({
+        label: vehicle.model,
+        dates: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
       });
     }
   };

@@ -9,6 +9,7 @@ import { WhatsAppContactProvider } from "@/contexts/WhatsAppContactContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CategorySuggestionModal } from "@/components/cart/CategorySuggestionModal";
+import { AddedToCartModal } from "@/components/cart/AddedToCartModal";
 import { CategoryShowcaseProvider } from "@/hooks/useCategoryShowcase";
 import { CategoryShowcaseModal } from "@/components/categories/CategoryShowcaseModal";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
@@ -149,6 +150,7 @@ const App = () => (
             <CategoryShowcaseProvider>
             <CartDrawer />
             <CategorySuggestionModal />
+            <AddedToCartModal />
             <RouteChangeTracker />
             <ClientProfileCompletionGuard />
             {/* Wrapper to allow a fixed dev language switcher on all pages */}

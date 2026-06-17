@@ -458,7 +458,21 @@ All colors MUST be HSL.
   border-radius: 9999px;
 }
 
+@keyframes modal-shake {
+  0%, 100% { transform: translate(-50%, -50%); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(calc(-50% - 6px), -50%); }
+  20%, 40%, 60%, 80% { transform: translate(calc(-50% + 6px), -50%); }
+}
+
+.animate-modal-shake {
+  animation: modal-shake 500ms ease-in-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .animate-modal-shake {
+    animation: none !important;
+  }
+
   .animate-cart-badge-pulse,
   .animate-cart-glow {
     animation: none !important;

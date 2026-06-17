@@ -33,6 +33,11 @@ export interface LastAddedDates {
   endDate: string;
 }
 
+export interface LastAddedItemInfo {
+  label: string;
+  dates: LastAddedDates;
+}
+
 type CartContextValue = {
   items: CartItem[];
   count: number;
@@ -48,6 +53,10 @@ type CartContextValue = {
   lastAddedDates: LastAddedDates | null;
   openSuggestionModal: (dates?: LastAddedDates) => void;
   closeSuggestionModal: () => void;
+  isAddedModalOpen: boolean;
+  lastAddedItem: LastAddedItemInfo | null;
+  openAddedModal: (item: LastAddedItemInfo) => void;
+  closeAddedModal: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -76,6 +85,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
   const [lastAddedDates, setLastAddedDates] = useState<LastAddedDates | null>(null);
+  const [isAddedModalOpen, setIsAddedModalOpen] = useState(false);
+  const [lastAddedItem, setLastAddedItem] = useState<LastAddedItemInfo | null>(null);
+
+  const openAddedModal = useCallback((item: LastAddedItemInfo) => {
+    setLastAddedItem(item);
+    setIsAddedModalOpen(true);
+  }, []);
+  const closeAddedModal = useCallback(() => setIsAddedModalOpen(false), []);
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
@@ -128,6 +145,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       lastAddedDates,
       openSuggestionModal,
       closeSuggestionModal,
+      isAddedModalOpen,
+      lastAddedItem,
+      openAddedModal,
+      closeAddedModal,
     }),
     [
       items,
@@ -142,6 +163,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       lastAddedDates,
       openSuggestionModal,
       closeSuggestionModal,
+      isAddedModalOpen,
+      lastAddedItem,
+      openAddedModal,
+      closeAddedModal,
     ]
   );
 
