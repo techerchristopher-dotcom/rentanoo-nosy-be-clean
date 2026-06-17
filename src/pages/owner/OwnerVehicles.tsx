@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { VehicleTypeModal } from "@/components/owner/VehicleTypeModal";
 import { getPublicListingPath } from "@/utils/vehicleType";
 import { getOptimizedImageUrl } from "@/utils/imageOptimization";
-import { MdHotel, MdMoped, MdTwoWheeler } from "react-icons/md";
+import { MdHotel, MdMoped, MdTwoWheeler, MdTerrain } from "react-icons/md";
 
 const LOCKED_OPERATIONAL_STATUSES = new Set([
   "rented",
@@ -46,10 +46,11 @@ type OwnerVehicleRow = Vehicle & {
 
 // ── Filter config ────────────────────────────────────────────────────────────
 const TYPE_FILTERS = [
-  { id: "accommodation", label: "Hébergements", Icon: MdHotel },
-  { id: "scooter",       label: "Scooters",     Icon: MdMoped },
-  { id: "moto",          label: "Motos",        Icon: MdTwoWheeler },
-  { id: "car",           label: "Voitures",     Icon: Car },
+  { id: "accommodation", label: "Hébergements",  Icon: MdHotel },
+  { id: "scooter",       label: "Scooters",      Icon: MdMoped },
+  { id: "moto",          label: "Motos",         Icon: MdTwoWheeler },
+  { id: "quad",          label: "Quads/Buggys",  Icon: MdTerrain },
+  { id: "car",           label: "Voitures",      Icon: Car },
 ] as const;
 
 const SUB_CATEGORY_FILTERS: Record<string, { id: string; label: string }[]> = {
@@ -71,7 +72,7 @@ const SUB_CATEGORY_FILTERS: Record<string, { id: string; label: string }[]> = {
 
 function vehicleMatchesType(v: OwnerVehicleRow, typeId: string): boolean {
   const vt = v.vehicleType as string;
-  if (typeId === "car") return !["scooter", "moto", "accommodation"].includes(vt);
+  if (typeId === "car") return !["scooter", "moto", "accommodation", "quad"].includes(vt);
   return vt === typeId;
 }
 
@@ -310,6 +311,11 @@ const OwnerVehicles = () => {
   const handleSelectAccommodation = () => {
     setShowVehicleTypeModal(false);
     navigate("/me/owner/vehicles/add-moto?kind=accommodation");
+  };
+
+  const handleSelectQuad = () => {
+    setShowVehicleTypeModal(false);
+    navigate("/me/owner/vehicles/add-moto?kind=quad");
   };
 
   const loadData = async () => {
@@ -847,6 +853,7 @@ const OwnerVehicles = () => {
         onOpenChange={setShowVehicleTypeModal}
         onSelectCar={handleSelectCar}
         onSelectMoto={handleSelectMoto}
+        onSelectQuad={handleSelectQuad}
         onSelectAccommodation={handleSelectAccommodation}
       />
 

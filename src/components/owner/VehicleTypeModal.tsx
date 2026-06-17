@@ -1,4 +1,5 @@
 import { Car, Bike, Hotel } from "lucide-react";
+import { MdTerrain } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -15,6 +16,7 @@ interface VehicleTypeModalProps {
   onOpenChange: (open: boolean) => void;
   onSelectCar: () => void;
   onSelectMoto: () => void;
+  onSelectQuad: () => void;
   onSelectAccommodation: () => void;
 }
 
@@ -23,6 +25,7 @@ export function VehicleTypeModal({
   onOpenChange,
   onSelectCar,
   onSelectMoto,
+  onSelectQuad,
   onSelectAccommodation,
 }: VehicleTypeModalProps) {
   const { t } = useTranslation("common");
@@ -45,7 +48,7 @@ export function VehicleTypeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 mt-4 md:grid-cols-3">
+        <div className="grid gap-4 mt-4 grid-cols-2 md:grid-cols-4">
           {/* Option Voiture */}
           <button
             type="button"
@@ -77,6 +80,20 @@ export function VehicleTypeModal({
                 "ownerVehicles.vehicleTypeModal.motoLabel",
                 "Moto / Scooter"
               )}
+            </div>
+          </button>
+
+          {/* Option Quad / Buggy */}
+          <button
+            type="button"
+            onClick={onSelectQuad}
+            className="flex flex-col items-center justify-center rounded-lg border bg-muted/40 px-4 py-6 text-center hover:border-primary hover:bg-background transition-colors"
+          >
+            <div className="mb-3 rounded-full bg-primary-soft/30 p-3">
+              <MdTerrain className="h-6 w-6 text-primary" />
+            </div>
+            <div className="font-semibold">
+              {t("ownerVehicles.vehicleTypeModal.quadLabel", "Quad / Buggy")}
             </div>
           </button>
 
