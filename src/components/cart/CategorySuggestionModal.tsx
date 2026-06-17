@@ -11,13 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 
-const CATEGORIES: Array<{ id: string; label: string; route: string; Icon: typeof Car }> = [
-  { id: "accommodation", label: "Hébergement", route: "/location-vacances-nosy-be", Icon: Hotel },
-  { id: "scooter", label: "Scooter", route: "/location-scooter-nosy-be", Icon: MdMoped as unknown as typeof Car },
-  { id: "quad", label: "Quad", route: "/location-quad-nosy-be", Icon: MdTerrain as unknown as typeof Car },
-  { id: "car", label: "Voiture", route: "/location-voiture-nosy-be", Icon: Car },
-  { id: "minibus", label: "Minibus", route: "/location-minibus-nosy-be", Icon: MdAirportShuttle as unknown as typeof Car },
-  { id: "moto", label: "Moto", route: "/location-moto-nosy-be", Icon: MdTwoWheeler as unknown as typeof Car },
+// Les routes /location-*-nosy-be sont des pages SEO statiques sans listing ni
+// date picker — on redirige plutôt vers la page d'accueil avec le filtre
+// catégorie (?cat=) appliqué, qui affiche les vrais résultats filtrables.
+const CATEGORIES: Array<{ id: string; label: string; cat: string; Icon: typeof Car }> = [
+  { id: "accommodation", label: "Hébergement", cat: "accommodation", Icon: Hotel },
+  { id: "scooter", label: "Scooter", cat: "scooter", Icon: MdMoped as unknown as typeof Car },
+  { id: "quad", label: "Quad", cat: "quad", Icon: MdTerrain as unknown as typeof Car },
+  { id: "car", label: "Voiture", cat: "car", Icon: Car },
+  { id: "minibus", label: "Minibus", cat: "car", Icon: MdAirportShuttle as unknown as typeof Car },
+  { id: "moto", label: "Moto", cat: "moto", Icon: MdTwoWheeler as unknown as typeof Car },
 ];
 
 function formatShortDate(iso: string) {
@@ -44,7 +47,7 @@ export function CategorySuggestionModal() {
 
   const goToCategory = (start: string, end: string) => {
     if (!selectedCategory) return;
-    navigate(`${selectedCategory.route}?start=${start}&end=${end}`);
+    navigate(`/?cat=${selectedCategory.cat}&start=${start}&end=${end}`);
     handleClose(false);
   };
 

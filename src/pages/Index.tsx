@@ -244,11 +244,46 @@ const Index = () => {
     }
   }, [searching, filteredVehicles]);
 
+  // Pré-remplir depuis les query params (?cat=&start=&end=) — ex: redirection
+  // depuis la modale panier "Continuer mes recherches". Priorité sur localStorage.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const cat = params.get("cat");
+    const start = params.get("start");
+    const end = params.get("end");
+
+    if (!cat && !start && !end) return;
+
+    if (cat && isExplorerMainCategoryId(cat)) {
+      setSelectedMainCategory(cat);
+    }
+    if (start) setStartDate(new Date(start));
+    if (end) setEndDate(new Date(end));
+
+    if (start && end) {
+      setTimeout(() => {
+        performSearchWithCriteria({
+          searchText: "",
+          startDate: start,
+          endDate: end,
+          startTime: "06:30",
+          endTime: "06:00",
+          selectedMainCategory: cat && isExplorerMainCategoryId(cat) ? cat : null,
+          selectedSubFilter: null,
+          selectedVehicleTypes: [],
+        });
+      }, 300);
+    }
+  }, []); // Exécuter une seule fois au montage
+
   // Restaurer les critères de recherche depuis localStorage au montage
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("cat") || params.get("start") || params.get("end")) return;
+
     // Nettoyer les critères expirés (> 7 jours)
     cleanupExpiredSearchCriteria();
-    
+
     // Restaurer les critères sauvegardés
     const savedCriteria = getSearchCriteria();
     if (savedCriteria) {
