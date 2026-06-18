@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { calculateRentalCost, createRentalCalculation, createVehicleRentalInfo } from "@/lib/utils";
 import { VehicleFilters, RentalCalculation, VehicleRentalInfo } from "@/types";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
+import { trackMetaSearchInitiateCheckout } from "@/lib/metaPixel";
 
 const Footer = lazy(() => import("@/components/layout/footer").then((m) => ({ default: m.Footer })));
 const HomeResults = lazy(() => import("@/components/home/HomeResults").then((m) => ({ default: m.HomeResults })));
@@ -457,6 +458,8 @@ const Index = () => {
       });
       return;
     }
+
+    trackMetaSearchInitiateCheckout({ value: 0, currency: "EUR" });
 
     shouldScrollToResultsRef.current = true;
     setSearching(true);

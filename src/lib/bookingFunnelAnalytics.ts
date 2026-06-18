@@ -39,7 +39,12 @@ export function trackViewItem(params: {
     rental_days: params.rentalDays ?? 0,
   });
 
-  trackMetaViewContent({ contentId: params.itemId });
+  trackMetaViewContent({
+    contentId: params.itemId,
+    contentName: params.itemName,
+    value: params.price,
+    currency: "EUR",
+  });
 }
 
 export function trackBeginCheckout(params: {
@@ -58,7 +63,11 @@ export function trackBeginCheckout(params: {
     source: params.source,
   });
 
-  trackMetaInitiateCheckout({ dedupId: `${params.itemId}_${params.rentalDays}` });
+  trackMetaInitiateCheckout({
+    dedupId: `${params.itemId}_${params.rentalDays}`,
+    value: params.value,
+    currency: "EUR",
+  });
 }
 
 export function trackBookingBlocked(params: {

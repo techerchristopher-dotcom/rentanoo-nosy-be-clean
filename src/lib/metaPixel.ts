@@ -50,14 +50,32 @@ function markAsSent(storageKey: string, dedupId: string): void {
   writeDedupSet(storageKey, set);
 }
 
+/** PageView — déclenché au chargement initial (snippet index.html) ET à chaque changement de route SPA. */
+export function trackMetaPageView(): void {
+  if (!isFbqAvailable()) return;
+  try {
+    window.fbq!("track", "PageView");
+  } catch {
+    // best effort
+  }
+}
+
 /** ViewContent — fiche véhicule/hébergement. dedupId = vehicle/listing id (1x par session). */
-export function trackMetaViewContent(params: { contentId: string }): void {
+export function trackMetaViewContent(params: {
+  contentId: string;
+  contentName: string;
+  value: number;
+  currency: string;
+}): void {
   if (!isFbqAvailable()) return;
   if (hasBeenSent(STORAGE_KEY_VIEW_CONTENT, params.contentId)) return;
   try {
     window.fbq!("track", "ViewContent", {
       content_type: "product",
       content_ids: [params.contentId],
+      content_name: params.contentName,
+      value: params.value,
+      currency: params.currency,
     });
     markAsSent(STORAGE_KEY_VIEW_CONTENT, params.contentId);
   } catch {
@@ -65,13 +83,35 @@ export function trackMetaViewContent(params: { contentId: string }): void {
   }
 }
 
-/** InitiateCheckout — clic "Réserver". dedupId = vehicle id + rental days pour éviter le spam sur double-clic. */
-export function trackMetaInitiateCheckout(params: { dedupId: string }): void {
+/** InitiateCheckout — clic "Réserver" / "Je lance la recherche". dedupId pour éviter le spam sur double-clic. */
+export function trackMetaInitiateCheckout(params: {
+  dedupId: string;
+  value: number;
+  currency: string;
+}): void {
   if (!isFbqAvailable()) return;
   if (hasBeenSent(STORAGE_KEY_INITIATE_CHECKOUT, params.dedupId)) return;
   try {
-    window.fbq!("track", "InitiateCheckout");
+    window.fbq!("track", "InitiateCheckout", {
+      content_type: "product",
+      value: params.value,
+      currency: params.currency,
+    });
     markAsSent(STORAGE_KEY_INITIATE_CHECKOUT, params.dedupId);
+  } catch {
+    // best effort
+  }
+}
+
+/** InitiateCheckout — clic "Je lance la recherche" (pas de dédup : une recherche relancée doit re-déclencher). */
+export function trackMetaSearchInitiateCheckout(params: { value: number; currency: string }): void {
+  if (!isFbqAvailable()) return;
+  try {
+    window.fbq!("track", "InitiateCheckout", {
+      content_type: "product",
+      value: params.value,
+      currency: params.currency,
+    });
   } catch {
     // best effort
   }

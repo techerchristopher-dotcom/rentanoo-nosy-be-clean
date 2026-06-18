@@ -15,6 +15,7 @@ import { CategoryShowcaseModal } from "@/components/categories/CategoryShowcaseM
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import { trackPageViewEvent } from "@/lib/whatsappAnalytics";
+import { trackMetaPageView } from "@/lib/metaPixel";
 import { PageLoader } from "@/components/ui/page-loader";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navbar } from "@/components/layout/navbar";
@@ -123,7 +124,10 @@ const I18nDebug = lazy(() => import("./pages/__I18nDebug"));
 
 const queryClient = new QueryClient();
 
-/** Envoie un page_view GA4 à chaque changement de route (SPA). La 1re page est déjà envoyée par gtag('config'). */
+/**
+ * Envoie un page_view GA4 + un fbq PageView Meta à chaque changement de route (SPA).
+ * La 1re page est déjà envoyée par gtag('config') / le snippet Meta dans index.html.
+ */
 function RouteChangeTracker() {
   const location = useLocation();
   const isInitial = useRef(true);
@@ -133,6 +137,7 @@ function RouteChangeTracker() {
       return;
     }
     trackPageViewEvent(location.pathname + location.search, document.title);
+    trackMetaPageView();
   }, [location.pathname, location.search]);
   return null;
 }
