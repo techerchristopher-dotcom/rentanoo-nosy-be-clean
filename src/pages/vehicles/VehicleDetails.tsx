@@ -70,7 +70,7 @@ import {
 import { SupabaseVehiclesService } from "@/services/supabaseVehiclesService";
 import { PhotoService } from "@/services/supabase/photos";
 import VehicleOwnerCard from "@/components/VehicleOwnerCard";
-import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptions";
+import { VehicleServiceOptions, VehicleServiceOptionsHandle } from "@/components/vehicles/VehicleServiceOptions";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart } from "lucide-react";
@@ -148,6 +148,8 @@ export default function VehicleDetails() {
   console.log('🎯 [DEBUG] Navigate function:', typeof navigate);
   console.log('🎯 [DEBUG] Location state:', location.state);
   
+  const serviceOptionsRef = useRef<VehicleServiceOptionsHandle>(null);
+  const [hotelNameValid, setHotelNameValid] = useState(true);
   const [vehicle, setVehicle] = useState<AppVehicle | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [vehiclePhotos, setVehiclePhotos] = useState<any[]>([]);
@@ -470,6 +472,10 @@ export default function VehicleDetails() {
       return;
     }
 
+    if (!serviceOptionsRef.current?.validate()) {
+      return;
+    }
+
     trackBeginCheckout({
       itemId: vehicle.id,
       itemName: `${vehicle.brand} ${vehicle.model}`,
@@ -644,7 +650,12 @@ export default function VehicleDetails() {
       return;
     }
 
-    const bookingDraftOptions = getBookingDraft()?.selectedOptions
+    if (!serviceOptionsRef.current?.validate()) {
+      return;
+    }
+
+    const bookingDraft = getBookingDraft();
+    const bookingDraftOptions = bookingDraft?.selectedOptions
       ?.filter((opt) => opt.selected)
       .map((opt) => ({ id: opt.id, name: opt.name, totalPrice: opt.totalPrice })) ?? [];
     const optionsTotal = bookingDraftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
@@ -660,6 +671,7 @@ export default function VehicleDetails() {
       endTime,
       pickupLocation: navigationState.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
+      hotelName: bookingDraft?.hotelName?.trim() || undefined,
       estimatedPrice: pricing.basePrice,
     });
 
@@ -1108,7 +1120,8 @@ export default function VehicleDetails() {
             <Button
               size="lg"
               onClick={() => handleBooking()}
-              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
+              disabled={!hotelNameValid}
+              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
               Réserver
@@ -1118,8 +1131,8 @@ export default function VehicleDetails() {
           <Button
             size="lg"
             onClick={(e) => handleAddToCart(e.currentTarget)}
-            disabled={isCartFull}
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
+            disabled={isCartFull || !hotelNameValid}
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
             {isCartFull ? "Panier plein (10/10)" : "Ajouter au panier"}
@@ -1136,9 +1149,11 @@ export default function VehicleDetails() {
             });
             return vehicle && navigationState?.rentalCalculation;
           })() && (
-            <VehicleServiceOptions 
+            <VehicleServiceOptions
+              ref={serviceOptionsRef}
               vehicle={vehicle}
               rentalDays={navigationState.rentalCalculation.rentalDays}
+              onHotelValidityChange={setHotelNameValid}
             />
           )}
 
@@ -1801,8 +1816,8 @@ export default function VehicleDetails() {
             <Button
               size="lg"
               onClick={(e) => handleAddToCart(e.currentTarget)}
-              disabled={isCartFull}
-              className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
+              disabled={isCartFull || !hotelNameValid}
+              className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
               {isCartFull ? "Panier plein" : "Ajouter au panier"}
