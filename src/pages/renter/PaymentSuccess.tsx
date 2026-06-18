@@ -9,6 +9,7 @@ import {
   markPaymentCompletedSent,
   trackGa4Event,
 } from "@/lib/analytics";
+import { trackMetaPurchase } from "@/lib/metaPixel";
 import { supabase } from "@/integrations/supabase/client";
 import { adminGetBooking } from "@/services/adminApi";
 
@@ -65,6 +66,11 @@ export default function PaymentSuccess() {
               });
               markPurchaseConversionSent(sessionIdFromUrl);
             }
+            trackMetaPurchase({
+              value: data.amount,
+              currency: data.currency || "EUR",
+              dedupId: sessionIdFromUrl,
+            });
           }
 
           bookingIdFromStripe = typeof data?.booking_id === "string" ? data.booking_id : null;

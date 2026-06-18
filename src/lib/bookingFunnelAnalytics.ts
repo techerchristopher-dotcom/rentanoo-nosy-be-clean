@@ -1,4 +1,5 @@
 import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
+import { trackMetaViewContent, trackMetaInitiateCheckout } from "@/lib/metaPixel";
 
 export type BookingBlockedReason =
   | "auth_required"
@@ -37,6 +38,8 @@ export function trackViewItem(params: {
     has_dates: params.hasDates,
     rental_days: params.rentalDays ?? 0,
   });
+
+  trackMetaViewContent({ contentId: params.itemId });
 }
 
 export function trackBeginCheckout(params: {
@@ -54,6 +57,8 @@ export function trackBeginCheckout(params: {
     rental_days: params.rentalDays,
     source: params.source,
   });
+
+  trackMetaInitiateCheckout({ dedupId: `${params.itemId}_${params.rentalDays}` });
 }
 
 export function trackBookingBlocked(params: {
