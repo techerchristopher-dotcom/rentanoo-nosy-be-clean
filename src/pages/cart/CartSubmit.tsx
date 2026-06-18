@@ -5,13 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCart } from "@/contexts/CartContext";
+import { Car, Hotel, ShoppingCart } from "lucide-react";
+import { MdMoped, MdTwoWheeler, MdTerrain } from "react-icons/md";
+import { useCart, type CartVehicleType } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
+import { ProfileService } from "@/services/supabase/profile";
+import { previewRenterFee, type RenterFeePreview } from "@/services/supabase/renterFeePreview";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
 import { DualPrice } from "@/components/currency/DualPrice";
+import type { User } from "@/types";
+
+const TYPE_ICONS: Record<CartVehicleType, typeof Car> = {
+  car: Car,
+  moto: MdTwoWheeler as unknown as typeof Car,
+  scooter: MdMoped as unknown as typeof Car,
+  quad: MdTerrain as unknown as typeof Car,
+  accommodation: Hotel,
+};
 
 interface ItemResult {
   id: string;
@@ -22,23 +34,37 @@ interface ItemResult {
 
 export default function CartSubmit() {
   const { items, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const [profile, setProfile] = useState<User | null>(null);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<"edit" | "review">("edit");
-
-  const total = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+  const [feePreviews, setFeePreviews] = useState<Record<string, RenterFeePreview | null>>({});
 
   useEffect(() => {
-    if (!user) {
+    if (!authUser) {
       navigate(`/auth/login?redirect=${encodeURIComponent("/panier/soumettre")}`);
+      return;
     }
-  }, [user, navigate]);
+    ProfileService.getCurrentUserProfile().then(({ data }) => setProfile(data));
+  }, [authUser, navigate]);
 
-  if (!user) return null;
+  useEffect(() => {
+    Promise.all(
+      items.map(async (item) => {
+        const preview = await previewRenterFee(item.estimatedPrice || 0, "card_online", item.vehicleType);
+        return [item.id, preview] as const;
+      })
+    ).then((entries) => setFeePreviews(Object.fromEntries(entries)));
+  }, [items]);
+
+  if (!authUser) return null;
+
+  const subtotal = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+  const feeTotal = items.reduce((sum, item) => sum + (feePreviews[item.id]?.service_fee_renter || 0), 0);
+  const total = subtotal + feeTotal;
 
   if (items.length === 0) {
     return (
@@ -53,7 +79,11 @@ export default function CartSubmit() {
     );
   }
 
-  const handleSubmit = async () => {
+  const clientName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : "";
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
     setSubmitting(true);
 
     const cartGroupId = crypto.randomUUID();
@@ -62,14 +92,15 @@ export default function CartSubmit() {
     for (const item of items) {
       const { data, error } = await SupabaseBookingsService.createBooking({
         vehicleId: item.vehicleId,
-        renterId: user.id,
+        renterId: profile.id,
         startDate: item.startDate,
         endDate: item.endDate,
         startTime: item.startTime,
         endTime: item.endTime,
         pickupLocation: item.pickupLocation,
-        totalPrice: item.estimatedPrice || 0,
+        totalPrice: feePreviews[item.id]?.amount_total_expected ?? item.estimatedPrice ?? 0,
         basePrice: item.estimatedPrice || 0,
+        selectedOptions: item.selectedOptions?.map((o) => ({ id: o.id, name: o.name, pricePerDay: 0, totalPrice: o.totalPrice })),
         cartGroupId,
       });
 
@@ -84,10 +115,10 @@ export default function CartSubmit() {
     try {
       await supabase.from("cart_submissions").insert({
         cart_group_id: cartGroupId,
-        client_user_id: user.id,
-        client_name: `${user.firstName} ${user.lastName}`.trim(),
-        client_email: user.email,
-        client_phone: user.phone || null,
+        client_user_id: profile.id,
+        client_name: clientName,
+        client_email: profile.email,
+        client_phone: profile.phone || null,
         items_count: items.length,
         notes: notes.trim() || null,
       });
@@ -101,9 +132,9 @@ export default function CartSubmit() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart_group_id: cartGroupId,
-          client_name: `${user.firstName} ${user.lastName}`.trim(),
-          client_email: user.email,
-          client_phone: user.phone,
+          client_name: clientName,
+          client_email: profile.email,
+          client_phone: profile.phone,
           notes,
           items: results.map((r) => ({ label: r.label, status: r.status })),
         }),
@@ -119,74 +150,6 @@ export default function CartSubmit() {
     navigate(`/panier/confirmation?group=${cartGroupId}&results=${resultsParam}`);
   };
 
-  if (step === "review") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <ShoppingCart className="h-7 w-7 text-primary" />
-                Récapitulatif de ma demande ({items.length} élément{items.length > 1 ? "s" : ""})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
-                    <div>
-                      <p className="font-medium">{item.vehicleLabel}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {new Date(item.startDate).toLocaleDateString("fr-FR")} →{" "}
-                        {new Date(item.endDate).toLocaleDateString("fr-FR")}
-                      </p>
-                      <p className="text-muted-foreground text-xs italic">Prix estimé au moment de l'ajout</p>
-                    </div>
-                    {item.estimatedPrice ? (
-                      <DualPrice
-                        amountMga={item.estimatedPrice}
-                        variant="client"
-                        primaryClassName="font-semibold tabular-nums shrink-0"
-                        secondaryClassName="text-xs"
-                      />
-                    ) : (
-                      <span className="text-xs text-muted-foreground shrink-0">Prix non disponible</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between border-t pt-4">
-                <span className="font-semibold">Total estimé</span>
-                <DualPrice
-                  amountMga={total}
-                  variant="client"
-                  primaryClassName="font-bold text-lg tabular-nums"
-                  secondaryClassName="text-sm"
-                />
-              </div>
-
-              <p className="text-sm text-muted-foreground rounded-lg bg-muted/40 p-3">
-                Cette demande n'est pas un paiement — chaque propriétaire valide votre demande individuellement.
-              </p>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setStep("edit")}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Modifier
-                </Button>
-                <Button type="button" onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? "Envoi en cours..." : "Confirmer l'envoi"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -198,59 +161,106 @@ export default function CartSubmit() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setStep("review");
-              }}
-              className="space-y-6"
-            >
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-3">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
-                    <div>
-                      <p className="font-medium">{item.vehicleLabel}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {new Date(item.startDate).toLocaleDateString("fr-FR")} →{" "}
-                        {new Date(item.endDate).toLocaleDateString("fr-FR")}
-                      </p>
+                {items.map((item) => {
+                  const Icon = TYPE_ICONS[item.vehicleType] || Car;
+                  const preview = feePreviews[item.id];
+                  return (
+                    <div key={item.id} className="rounded-lg border p-3 text-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="h-14 w-14 rounded-lg overflow-hidden bg-muted/40 flex items-center justify-center shrink-0">
+                          {item.vehicleThumbnail ? (
+                            <img
+                              src={item.vehicleThumbnail}
+                              alt={item.vehicleLabel}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Icon className="h-6 w-6 text-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">{item.vehicleLabel}</p>
+                          <p className="text-muted-foreground text-xs">
+                            {new Date(item.startDate).toLocaleDateString("fr-FR")} →{" "}
+                            {new Date(item.endDate).toLocaleDateString("fr-FR")}
+                          </p>
+                          {item.selectedOptions && item.selectedOptions.length > 0 && (
+                            <ul className="mt-1 space-y-0.5">
+                              {item.selectedOptions.map((opt) => (
+                                <li key={opt.id} className="text-xs text-muted-foreground flex justify-between gap-2">
+                                  <span>{opt.name}</span>
+                                  <DualPrice
+                                    amountMga={opt.totalPrice}
+                                    variant="client"
+                                    primaryClassName="text-xs"
+                                    secondaryClassName="text-[10px]"
+                                  />
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                        {item.estimatedPrice ? (
+                          <DualPrice
+                            amountMga={item.estimatedPrice}
+                            variant="client"
+                            primaryClassName="font-semibold tabular-nums shrink-0"
+                            secondaryClassName="text-xs"
+                          />
+                        ) : (
+                          <span className="text-xs text-muted-foreground shrink-0">Prix non disponible</span>
+                        )}
+                      </div>
+                      {preview && (
+                        <div className="flex justify-between gap-2 text-xs text-muted-foreground mt-2 pt-2 border-t">
+                          <span>Frais de service</span>
+                          <DualPrice
+                            amountMga={preview.service_fee_renter}
+                            variant="client"
+                            primaryClassName="text-xs"
+                            secondaryClassName="text-[10px]"
+                          />
+                        </div>
+                      )}
                     </div>
-                    {item.estimatedPrice ? (
-                      <DualPrice
-                        amountMga={item.estimatedPrice}
-                        variant="client"
-                        primaryClassName="font-semibold tabular-nums shrink-0"
-                        secondaryClassName="text-xs"
-                      />
-                    ) : (
-                      <span className="text-xs text-muted-foreground shrink-0">Prix non disponible</span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <div className="flex items-center justify-between border-t pt-3">
-                <span className="font-semibold">Total estimé</span>
-                <DualPrice
-                  amountMga={total}
-                  variant="client"
-                  primaryClassName="font-bold text-lg tabular-nums"
-                  secondaryClassName="text-sm"
-                />
+              <div className="space-y-1.5 border-t pt-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Sous-total</span>
+                  <DualPrice amountMga={subtotal} variant="client" primaryClassName="tabular-nums" secondaryClassName="text-xs" />
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Frais de service</span>
+                  <DualPrice amountMga={feeTotal} variant="client" primaryClassName="tabular-nums" secondaryClassName="text-xs" />
+                </div>
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="font-semibold">Total estimé</span>
+                  <DualPrice
+                    amountMga={total}
+                    variant="client"
+                    primaryClassName="font-bold text-lg tabular-nums"
+                    secondaryClassName="text-sm"
+                  />
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1">
                   <Label>Nom</Label>
-                  <Input value={`${user.firstName} ${user.lastName}`.trim()} disabled />
+                  <Input value={clientName} disabled />
                 </div>
                 <div className="space-y-1">
                   <Label>Email</Label>
-                  <Input value={user.email} disabled />
+                  <Input value={profile?.email || ""} disabled />
                 </div>
                 <div className="space-y-1">
                   <Label>Téléphone</Label>
-                  <Input value={user.phone || ""} disabled />
+                  <Input value={profile?.phone || ""} disabled />
                 </div>
               </div>
 
@@ -273,8 +283,8 @@ export default function CartSubmit() {
                 <Button type="button" variant="outline" onClick={() => navigate("/")}>
                   Annuler
                 </Button>
-                <Button type="submit">
-                  Vérifier ma demande
+                <Button type="submit" disabled={submitting || !profile}>
+                  {submitting ? "Envoi en cours..." : "Envoyer ma demande"}
                 </Button>
               </div>
             </form>

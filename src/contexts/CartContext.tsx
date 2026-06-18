@@ -23,7 +23,7 @@ export interface CartItem {
   endDate: string;
   startTime?: string;
   endTime?: string;
-  selectedOptions?: string[];
+  selectedOptions?: Array<{ id: string; name: string; totalPrice: number }>;
   pickupLocation?: string;
   estimatedPrice?: number;
 }

@@ -644,6 +644,11 @@ export default function VehicleDetails() {
       return;
     }
 
+    const bookingDraftOptions = getBookingDraft()?.selectedOptions
+      ?.filter((opt) => opt.selected)
+      .map((opt) => ({ id: opt.id, name: opt.name, totalPrice: opt.totalPrice })) ?? [];
+    const optionsTotal = bookingDraftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
+
     const added = addToCart({
       vehicleId: vehicle.id,
       vehicleType: (vehicle.vehicleType as any) || "car",
@@ -654,7 +659,8 @@ export default function VehicleDetails() {
       startTime,
       endTime,
       pickupLocation: navigationState.pickupLocation || undefined,
-      estimatedPrice: pricing.basePrice,
+      selectedOptions: bookingDraftOptions,
+      estimatedPrice: pricing.basePrice + optionsTotal,
     });
 
     if (added) {
