@@ -36,6 +36,7 @@ interface BookingConfirmationModalProps {
     year: number;
     imageUrl?: string;
     category?: string;
+    vehicleType?: string;
   };
   rentalInfo: {
     pickupLocation?: string;
@@ -141,7 +142,7 @@ export function BookingConfirmationModal({
   const subtotal = rentalInfo.basePrice + optionsTotal;
 
   const { previewFor, savingsMga, loading: previewLoading, error: previewError } =
-    useRenterFeePreview(subtotal);
+    useRenterFeePreview(subtotal, vehicle.vehicleType);
 
   const activePreview = previewFor(paymentMethod);
   const reservationFee = activePreview?.service_fee_renter ?? 0;

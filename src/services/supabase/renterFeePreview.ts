@@ -47,12 +47,14 @@ function parsePreviewRow(raw: unknown): RenterFeePreview | null {
 export async function previewRenterFee(
   subtotal: number,
   paymentMethod: BookingPaymentMethod,
+  vehicleType?: string | null,
 ): Promise<RenterFeePreview | null> {
   if (!Number.isFinite(subtotal) || subtotal <= 0) return null;
 
   const { data, error } = await supabase.rpc('preview_renter_fee', {
     p_subtotal: subtotal,
     p_payment_method: paymentMethod,
+    ...(vehicleType ? { p_vehicle_type: vehicleType } : {}),
   });
 
   if (error) {

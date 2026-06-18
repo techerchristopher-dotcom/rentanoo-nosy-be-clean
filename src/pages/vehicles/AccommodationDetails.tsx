@@ -1414,6 +1414,7 @@ export default function AccommodationDetails() {
             year: vehicle.year,
             imageUrl: photos.length > 0 ? photos[0].url : undefined,
             category: vehicle.vehicleType ?? "accommodation",
+            vehicleType: vehicle.vehicleType ?? "accommodation",
           }}
           rentalInfo={{
             pickupLocation: getBookingDraft()?.pickupLocation || navigationState.pickupLocation || t("motoDetails.notSpecified"),

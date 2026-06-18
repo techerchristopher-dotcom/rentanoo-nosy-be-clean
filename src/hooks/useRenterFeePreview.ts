@@ -19,7 +19,10 @@ export interface UseRenterFeePreviewResult {
  * Charge en parallèle les previews card_online et cash_on_site pour un subtotal.
  * Tous les montants affichés doivent provenir de ces réponses RPC.
  */
-export function useRenterFeePreview(subtotal: number): UseRenterFeePreviewResult {
+export function useRenterFeePreview(
+  subtotal: number,
+  vehicleType?: string | null
+): UseRenterFeePreviewResult {
   const [cardPreview, setCardPreview] = useState<RenterFeePreview | null>(null);
   const [cashPreview, setCashPreview] = useState<RenterFeePreview | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,8 +42,8 @@ export function useRenterFeePreview(subtotal: number): UseRenterFeePreviewResult
     setError(false);
 
     Promise.all([
-      previewRenterFee(subtotal, 'card_online'),
-      previewRenterFee(subtotal, 'cash_on_site'),
+      previewRenterFee(subtotal, 'card_online', vehicleType),
+      previewRenterFee(subtotal, 'cash_on_site', vehicleType),
     ])
       .then(([card, cash]) => {
         if (cancelled) return;
@@ -58,7 +61,7 @@ export function useRenterFeePreview(subtotal: number): UseRenterFeePreviewResult
     return () => {
       cancelled = true;
     };
-  }, [subtotal]);
+  }, [subtotal, vehicleType]);
 
   const savingsMga = useMemo(() => {
     if (!cardPreview || !cashPreview) return 0;
