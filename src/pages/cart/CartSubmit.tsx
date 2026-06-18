@@ -15,7 +15,6 @@ import { ProfileService } from "@/services/supabase/profile";
 import { previewRenterFee, type RenterFeePreview } from "@/services/supabase/renterFeePreview";
 import { supabase } from "@/integrations/supabase/client";
 import { DualPrice } from "@/components/currency/DualPrice";
-import { requiresHotelName } from "@/utils/bookingLocations";
 import type { User } from "@/types";
 
 const TYPE_ICONS: Record<CartVehicleType, typeof Car> = {
@@ -94,24 +93,6 @@ export default function CartSubmit() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
-
-    // Garde-fou final : un item du panier ajouté avant ce fix (ou via un autre flux)
-    // peut nécessiter un nom d'hôtel sans l'avoir — on bloque ici plutôt que de
-    // laisser le serveur renvoyer HOTEL_NAME_REQUIRED après coup, sans rien préciser.
-    const missingHotelItem = items.find(
-      (item) =>
-        requiresHotelName((item.selectedOptions ?? []).map((o) => o.id)) &&
-        !item.hotelName?.trim()
-    );
-    if (missingHotelItem) {
-      toast({
-        title: "Nom d'hôtel manquant",
-        description: `Indique le nom de l'hôtel pour "${missingHotelItem.vehicleLabel}" avant d'envoyer ta demande (retourne sur la fiche du véhicule).`,
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSubmitting(true);
 
     const cartGroupId = crypto.randomUUID();
@@ -126,7 +107,6 @@ export default function CartSubmit() {
         startTime: item.startTime,
         endTime: item.endTime,
         pickupLocation: item.pickupLocation,
-        hotelName: item.hotelName,
         totalPrice: feePreviews[item.id]?.amount_total_expected ?? item.estimatedPrice ?? 0,
         basePrice: item.estimatedPrice || 0,
         selectedOptions: item.selectedOptions?.map((o) => ({ id: o.id, name: o.name, pricePerDay: 0, totalPrice: o.totalPrice })),

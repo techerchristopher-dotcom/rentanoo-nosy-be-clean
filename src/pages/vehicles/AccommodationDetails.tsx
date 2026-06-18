@@ -618,8 +618,7 @@ export default function AccommodationDetails() {
       return;
     }
 
-    const bookingDraft = getBookingDraft();
-    const bookingDraftOptions = bookingDraft?.selectedOptions
+    const bookingDraftOptions = getBookingDraft()?.selectedOptions
       ?.filter((opt) => opt.selected)
       .map((opt) => ({ id: opt.id, name: opt.name, totalPrice: opt.totalPrice })) ?? [];
     const optionsTotal = bookingDraftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
@@ -635,7 +634,6 @@ export default function AccommodationDetails() {
       endTime,
       pickupLocation: navigationState.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
-      hotelName: bookingDraft?.hotelName?.trim() || undefined,
       estimatedPrice: pricing.basePrice,
     });
 

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -27,13 +27,6 @@ import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 interface VehicleServiceOptionsProps {
   vehicle: Vehicle;
   rentalDays: number;
-  /** Appelé chaque fois que la validité du champ hôtel change (true si non requis ou rempli). */
-  onHotelValidityChange?: (valid: boolean) => void;
-}
-
-export interface VehicleServiceOptionsHandle {
-  /** Valide le champ hôtel si requis. Affiche l'erreur + scroll si invalide. Retourne true si OK pour soumettre. */
-  validate: () => boolean;
 }
 
 // Type pour distinguer les services par jour vs forfait
@@ -58,12 +51,9 @@ function readSelectedServiceIdsFromDraft(): string[] {
     .map((opt) => LEGACY_AIRPORT_OPTION_ID_MAP[opt.id] ?? opt.id);
 }
 
-export const VehicleServiceOptions = forwardRef<VehicleServiceOptionsHandle, VehicleServiceOptionsProps>(
-  function VehicleServiceOptions({ vehicle, rentalDays, onHotelValidityChange }, ref) {
+export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOptionsProps) {
   const [selectedServices, setSelectedServices] = useState(readSelectedServiceIdsFromDraft);
   const [hotelName, setHotelName] = useState(() => getBookingDraft()?.hotelName ?? "");
-  const [hotelNameTouched, setHotelNameTouched] = useState(false);
-  const hotelFieldRef = useRef<HTMLDivElement | null>(null);
   const { formatClient } = useExchangeRate();
   const { options: catalogOptions } = useBookingOptionsCatalog(vehicle.vehicleType);
   const formatDualLabel = (amountMga: number) => {
@@ -273,33 +263,12 @@ export const VehicleServiceOptions = forwardRef<VehicleServiceOptionsHandle, Veh
   }, [selectedServices, availableServices]);
 
   const showHotelField = requiresHotelName(selectedServices);
-  const hotelNameInvalid = showHotelField && !hotelName.trim();
-  const showHotelError = hotelNameInvalid && hotelNameTouched;
 
   useEffect(() => {
     if (!showHotelField) return;
     updateBookingComplementaryMeta({ hotelName: hotelName.trim() || undefined });
   }, [hotelName, showHotelField]);
-
-  // Champ trop discret sinon : scroll auto dès l'apparition pour que le client ne le manque pas
-  useEffect(() => {
-    if (!showHotelField) return;
-    hotelFieldRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [showHotelField]);
-
-  useEffect(() => {
-    onHotelValidityChange?.(!hotelNameInvalid);
-  }, [hotelNameInvalid, onHotelValidityChange]);
-
-  useImperativeHandle(ref, () => ({
-    validate: () => {
-      if (!hotelNameInvalid) return true;
-      setHotelNameTouched(true);
-      hotelFieldRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return false;
-    },
-  }), [hotelNameInvalid]);
-
+  
   // Si aucun service n'est disponible pour ce véhicule, ne rien afficher
   if (availableServices.length === 0) {
     return null;
@@ -388,29 +357,14 @@ export const VehicleServiceOptions = forwardRef<VehicleServiceOptionsHandle, Veh
             })}
         
         {showHotelField && (
-          <div
-            ref={hotelFieldRef}
-            className={`space-y-2 rounded-lg border-2 p-3 bg-primary/5 ${
-              showHotelError ? "border-destructive" : "border-primary"
-            }`}
-          >
-            <Label htmlFor="vehicle-hotel-name" className="font-bold flex items-center gap-1">
-              <span aria-hidden>🏨</span> Nom de votre hôtel *
-            </Label>
+          <div className="space-y-2 rounded-lg border border-border p-3">
+            <Label htmlFor="vehicle-hotel-name">Nom de l'hôtel</Label>
             <Input
               id="vehicle-hotel-name"
-              placeholder="Ex : Hôtel Madirokely Beach, Villa Les Bougainvilliers..."
+              placeholder="Ex. Royal Beach Hotel"
               value={hotelName}
               onChange={(e) => setHotelName(e.target.value)}
-              onBlur={() => setHotelNameTouched(true)}
-              aria-invalid={showHotelError}
-              className={showHotelError ? "border-destructive focus-visible:ring-destructive" : undefined}
             />
-            {showHotelError && (
-              <p className="text-sm text-destructive">
-                ⚠️ Veuillez indiquer le nom de votre hôtel pour la livraison
-              </p>
-            )}
           </div>
         )}
 
@@ -432,5 +386,5 @@ export const VehicleServiceOptions = forwardRef<VehicleServiceOptionsHandle, Veh
       </CardContent>
     </Card>
   );
-});
+}
 
