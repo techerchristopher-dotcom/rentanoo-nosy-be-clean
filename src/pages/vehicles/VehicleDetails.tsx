@@ -660,7 +660,7 @@ export default function VehicleDetails() {
       endTime,
       pickupLocation: navigationState.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
-      estimatedPrice: pricing.basePrice + optionsTotal,
+      estimatedPrice: pricing.basePrice,
     });
 
     if (added) {

@@ -634,7 +634,7 @@ export default function AccommodationDetails() {
       endTime,
       pickupLocation: navigationState.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
-      estimatedPrice: pricing.basePrice + optionsTotal,
+      estimatedPrice: pricing.basePrice,
     });
 
     if (added) {

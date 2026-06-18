@@ -54,7 +54,9 @@ export default function CartSubmit() {
   useEffect(() => {
     Promise.all(
       items.map(async (item) => {
-        const preview = await previewRenterFee(item.estimatedPrice || 0, "card_online", item.vehicleType);
+        const itemOptionsTotal = item.selectedOptions?.reduce((sum, o) => sum + o.totalPrice, 0) || 0;
+        const itemBase = (item.estimatedPrice || 0) + itemOptionsTotal;
+        const preview = await previewRenterFee(itemBase, "card_online", item.vehicleType);
         return [item.id, preview] as const;
       })
     ).then((entries) => setFeePreviews(Object.fromEntries(entries)));
@@ -62,9 +64,16 @@ export default function CartSubmit() {
 
   if (!authUser) return null;
 
-  const subtotal = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+  const vehiclesSubtotal = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+  const optionsSubtotal = items.reduce(
+    (sum, item) => sum + (item.selectedOptions?.reduce((s, o) => s + o.totalPrice, 0) || 0),
+    0
+  );
+  const baseTotal = vehiclesSubtotal + optionsSubtotal;
   const feeTotal = items.reduce((sum, item) => sum + (feePreviews[item.id]?.service_fee_renter || 0), 0);
-  const total = subtotal + feeTotal;
+  const total = baseTotal + feeTotal;
+  const feePercentDisplay =
+    baseTotal > 0 && feeTotal > 0 ? Math.round((feeTotal / baseTotal) * 100) : null;
 
   if (items.length === 0) {
     return (
@@ -165,7 +174,6 @@ export default function CartSubmit() {
               <div className="space-y-3">
                 {items.map((item) => {
                   const Icon = TYPE_ICONS[item.vehicleType] || Car;
-                  const preview = feePreviews[item.id];
                   return (
                     <div key={item.id} className="rounded-lg border p-3 text-sm">
                       <div className="flex items-start gap-3">
@@ -186,21 +194,6 @@ export default function CartSubmit() {
                             {new Date(item.startDate).toLocaleDateString("fr-FR")} →{" "}
                             {new Date(item.endDate).toLocaleDateString("fr-FR")}
                           </p>
-                          {item.selectedOptions && item.selectedOptions.length > 0 && (
-                            <ul className="mt-1 space-y-0.5">
-                              {item.selectedOptions.map((opt) => (
-                                <li key={opt.id} className="text-xs text-muted-foreground flex justify-between gap-2">
-                                  <span>{opt.name}</span>
-                                  <DualPrice
-                                    amountMga={opt.totalPrice}
-                                    variant="client"
-                                    primaryClassName="text-xs"
-                                    secondaryClassName="text-[10px]"
-                                  />
-                                </li>
-                              ))}
-                            </ul>
-                          )}
                         </div>
                         {item.estimatedPrice ? (
                           <DualPrice
@@ -213,15 +206,19 @@ export default function CartSubmit() {
                           <span className="text-xs text-muted-foreground shrink-0">Prix non disponible</span>
                         )}
                       </div>
-                      {preview && (
-                        <div className="flex justify-between gap-2 text-xs text-muted-foreground mt-2 pt-2 border-t">
-                          <span>Frais de service</span>
-                          <DualPrice
-                            amountMga={preview.service_fee_renter}
-                            variant="client"
-                            primaryClassName="text-xs"
-                            secondaryClassName="text-[10px]"
-                          />
+                      {item.selectedOptions && item.selectedOptions.length > 0 && (
+                        <div className="mt-2 pt-2 border-t space-y-1">
+                          {item.selectedOptions.map((opt) => (
+                            <div key={opt.id} className="flex justify-between gap-2 text-xs text-muted-foreground">
+                              <span>{opt.name}</span>
+                              <DualPrice
+                                amountMga={opt.totalPrice}
+                                variant="client"
+                                primaryClassName="text-xs"
+                                secondaryClassName="text-[10px]"
+                              />
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -231,11 +228,19 @@ export default function CartSubmit() {
 
               <div className="space-y-1.5 border-t pt-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Sous-total</span>
-                  <DualPrice amountMga={subtotal} variant="client" primaryClassName="tabular-nums" secondaryClassName="text-xs" />
+                  <span className="text-muted-foreground">Sous-total véhicules</span>
+                  <DualPrice amountMga={vehiclesSubtotal} variant="client" primaryClassName="tabular-nums" secondaryClassName="text-xs" />
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Frais de service</span>
+                {optionsSubtotal > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Sous-total options</span>
+                    <DualPrice amountMga={optionsSubtotal} variant="client" primaryClassName="tabular-nums" secondaryClassName="text-xs" />
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-sm border-t pt-1.5">
+                  <span className="text-muted-foreground">
+                    Frais de service{feePercentDisplay !== null ? ` (${feePercentDisplay}%)` : ""}
+                  </span>
                   <DualPrice amountMga={feeTotal} variant="client" primaryClassName="tabular-nums" secondaryClassName="text-xs" />
                 </div>
                 <div className="flex items-center justify-between border-t pt-2">

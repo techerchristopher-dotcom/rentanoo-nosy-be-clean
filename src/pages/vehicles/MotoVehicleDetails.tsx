@@ -688,7 +688,7 @@ export default function MotoVehicleDetails() {
       endTime,
       pickupLocation: navigationState.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
-      estimatedPrice: pricing.basePrice + optionsTotal,
+      estimatedPrice: pricing.basePrice,
     });
 
     if (added) {
