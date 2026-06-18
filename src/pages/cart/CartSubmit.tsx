@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { SupabaseBookingsService } from "@/services/supabase/bookings";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { DualPrice } from "@/components/currency/DualPrice";
 
 interface ItemResult {
   id: string;
@@ -27,6 +28,9 @@ export default function CartSubmit() {
 
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<"edit" | "review">("edit");
+
+  const total = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
 
   useEffect(() => {
     if (!user) {
@@ -49,8 +53,7 @@ export default function CartSubmit() {
     );
   }
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setSubmitting(true);
 
     const cartGroupId = crypto.randomUUID();
@@ -116,6 +119,74 @@ export default function CartSubmit() {
     navigate(`/panier/confirmation?group=${cartGroupId}&results=${resultsParam}`);
   };
 
+  if (step === "review") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <ShoppingCart className="h-7 w-7 text-primary" />
+                Récapitulatif de ma demande ({items.length} élément{items.length > 1 ? "s" : ""})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                {items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+                    <div>
+                      <p className="font-medium">{item.vehicleLabel}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {new Date(item.startDate).toLocaleDateString("fr-FR")} →{" "}
+                        {new Date(item.endDate).toLocaleDateString("fr-FR")}
+                      </p>
+                      <p className="text-muted-foreground text-xs italic">Prix estimé au moment de l'ajout</p>
+                    </div>
+                    {item.estimatedPrice ? (
+                      <DualPrice
+                        amountMga={item.estimatedPrice}
+                        variant="client"
+                        primaryClassName="font-semibold tabular-nums shrink-0"
+                        secondaryClassName="text-xs"
+                      />
+                    ) : (
+                      <span className="text-xs text-muted-foreground shrink-0">Prix non disponible</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between border-t pt-4">
+                <span className="font-semibold">Total estimé</span>
+                <DualPrice
+                  amountMga={total}
+                  variant="client"
+                  primaryClassName="font-bold text-lg tabular-nums"
+                  secondaryClassName="text-sm"
+                />
+              </div>
+
+              <p className="text-sm text-muted-foreground rounded-lg bg-muted/40 p-3">
+                Cette demande n'est pas un paiement — chaque propriétaire valide votre demande individuellement.
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => setStep("edit")}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Modifier
+                </Button>
+                <Button type="button" onClick={handleSubmit} disabled={submitting}>
+                  {submitting ? "Envoi en cours..." : "Confirmer l'envoi"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -127,17 +198,45 @@ export default function CartSubmit() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setStep("review");
+              }}
+              className="space-y-6"
+            >
               <div className="space-y-3">
                 {items.map((item) => (
-                  <div key={item.id} className="rounded-lg border p-3 text-sm">
-                    <p className="font-medium">{item.vehicleLabel}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {new Date(item.startDate).toLocaleDateString("fr-FR")} →{" "}
-                      {new Date(item.endDate).toLocaleDateString("fr-FR")}
-                    </p>
+                  <div key={item.id} className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+                    <div>
+                      <p className="font-medium">{item.vehicleLabel}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {new Date(item.startDate).toLocaleDateString("fr-FR")} →{" "}
+                        {new Date(item.endDate).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
+                    {item.estimatedPrice ? (
+                      <DualPrice
+                        amountMga={item.estimatedPrice}
+                        variant="client"
+                        primaryClassName="font-semibold tabular-nums shrink-0"
+                        secondaryClassName="text-xs"
+                      />
+                    ) : (
+                      <span className="text-xs text-muted-foreground shrink-0">Prix non disponible</span>
+                    )}
                   </div>
                 ))}
+              </div>
+
+              <div className="flex items-center justify-between border-t pt-3">
+                <span className="font-semibold">Total estimé</span>
+                <DualPrice
+                  amountMga={total}
+                  variant="client"
+                  primaryClassName="font-bold text-lg tabular-nums"
+                  secondaryClassName="text-sm"
+                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -166,12 +265,16 @@ export default function CartSubmit() {
                 />
               </div>
 
+              <p className="text-sm text-muted-foreground rounded-lg bg-muted/40 p-3">
+                Cette demande n'est pas un paiement — chaque propriétaire valide votre demande individuellement.
+              </p>
+
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => navigate("/")}>
                   Annuler
                 </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? "Envoi en cours..." : "Envoyer ma demande"}
+                <Button type="submit">
+                  Vérifier ma demande
                 </Button>
               </div>
             </form>
