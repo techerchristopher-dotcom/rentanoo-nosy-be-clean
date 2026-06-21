@@ -1613,30 +1613,20 @@ export default function OwnerBookingCard({
                   })()}
 
                   <div className="pt-2 border-t space-y-2">
-                    <AdminPriceRow label="Total réservation (TTC)" amountMga={cardTotalAmount} bold />
                     <div className="flex justify-between items-start gap-4 text-muted-foreground">
-                      <span className="text-sm">Commission de la plateforme ({cardFeePercentDisplay}%)</span>
+                      <span className="text-sm">Frais de plateforme ({cardFeePercentDisplay}%)</span>
                       <DualPrice
                         amountMga={cardServiceFeeOwner}
                         variant="admin"
                         className="items-end text-right shrink-0"
-                        primaryClassName="text-sm tabular-nums text-destructive"
-                        secondaryClassName="text-xs text-destructive/80"
+                        primaryClassName="text-sm tabular-nums"
+                        secondaryClassName="text-xs"
                       />
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t-2">
-                    <div className="flex justify-between items-start gap-4">
-                      <span className="font-bold text-lg text-[#004E4E]">REVENU PROPRIÉTAIRE</span>
-                      <DualPrice
-                        amountMga={cardOwnerPayout}
-                        variant="admin"
-                        className="items-end text-right shrink-0"
-                        primaryClassName="font-bold text-2xl text-[#004E4E] tabular-nums"
-                        secondaryClassName="text-sm text-[#004E4E]/70"
-                      />
-                    </div>
+                  <div className="pt-2 border-t-2">
+                    <AdminPriceRow label="Montant total" amountMga={cardTotalAmount} bold />
                   </div>
                 </div>
               </div>
