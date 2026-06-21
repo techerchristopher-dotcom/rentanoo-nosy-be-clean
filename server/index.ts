@@ -1235,11 +1235,13 @@ app.get("/sitemap.xml", async (_req, res) => {
     const today = new Date().toISOString().slice(0, 10);
 
     // Fetch active listings
-    const { data: vehicles } = await supabaseAdmin
+    const { data: vehicles, error: vehiclesError } = await supabaseAdmin
       .from("vehicles")
       .select("id, vehicle_type, updated_at, internal_code")
-      .eq("is_active", true)
+      .eq("available", true)
       .order("updated_at", { ascending: false });
+
+    if (vehiclesError) throw vehiclesError;
 
     const staticPages = [
       { loc: "https://rentanoo.com/", changefreq: "daily", priority: "1.0", lastmod: today },
