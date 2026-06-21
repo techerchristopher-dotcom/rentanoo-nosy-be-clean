@@ -346,8 +346,8 @@ export default function RenterBookingCard({
   const cardDurationText =
     (cardRentalPricing &&
       (formatBillableDays(t, cardRentalPricing.billableDays) ??
-        t('duration.day_one', { count: 1 }))) ||
-    t('duration.day_one', { count: 1 })
+        t('duration.day', { count: 1 }))) ||
+    t('duration.day', { count: 1 })
 
   const calculateRealDuration = () => cardDurationText
 

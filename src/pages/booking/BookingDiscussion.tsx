@@ -843,12 +843,12 @@ const BookingDiscussion = () => {
     }
 
     if (!pricing) {
-      return t("duration.day_one", { count: 1 });
+      return t("duration.day", { count: 1 });
     }
 
     const result =
       formatBillableDays(t, pricing.billableDays) ??
-      t("duration.day_one", { count: 1 });
+      t("duration.day", { count: 1 });
 
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
@@ -956,7 +956,7 @@ const BookingDiscussion = () => {
       voiture: `${vehicle.brand} ${vehicle.model}`,
       dateDebut: formatDate(currentBooking.start_date),
       dateFin: formatDate(currentBooking.end_date),
-      duree: t(days === 1 ? "duration.day_one" : "duration.day_other", { count: days }),
+      duree: t("duration.day", { count: days }),
       extras: selectedExtras,
     });
 

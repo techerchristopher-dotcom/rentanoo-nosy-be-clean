@@ -17,15 +17,11 @@ export function formatDuration(
   const parts: string[] = [];
 
   if (days > 0) {
-    const dayKey = days === 1 ? "duration.day_one" : "duration.day_other";
-    const dayText = t(dayKey, { count: days });
-    parts.push(dayText);
+    parts.push(t("duration.day", { count: days }));
   }
 
   if (hours > 0) {
-    const hourKey = hours === 1 ? "duration.hour_one" : "duration.hour_other";
-    const hourText = t(hourKey, { count: hours });
-    parts.push(hourText);
+    parts.push(t("duration.hour", { count: hours }));
   }
 
   const separator = t("duration.separator");
@@ -68,17 +64,14 @@ export function formatBillableDays(
   }
 
   if (!hasHalf) {
-    const dayKey =
-      wholeDays === 1 ? "duration.day_one" : "duration.day_other";
-    return t(dayKey, { count: wholeDays });
+    return t("duration.day", { count: wholeDays });
   }
 
   if (wholeDays === 0) {
     return t("duration.half_day");
   }
 
-  const dayKey = wholeDays === 1 ? "duration.day_one" : "duration.day_other";
-  const daysText = t(dayKey, { count: wholeDays });
+  const daysText = t("duration.day", { count: wholeDays });
   const halfSuffix = t("duration.half_day_suffix");
   return `${daysText} ${halfSuffix}`;
 }

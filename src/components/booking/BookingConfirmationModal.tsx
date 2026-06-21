@@ -162,7 +162,7 @@ export function BookingConfirmationModal({
   });
   const durationText =
     formatBillableDays(t, pricingPreview?.billableDays ?? rentalInfo.rentalDays) ??
-    t("duration.day_one", { count: 1 });
+    t("duration.day", { count: 1 });
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // FONCTION POUR SUPPRIMER UNE OPTION DEPUIS LA MODAL
