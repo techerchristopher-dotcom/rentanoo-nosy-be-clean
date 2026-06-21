@@ -78,6 +78,112 @@ const OwnerBookings = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'active' | 'upcoming' | 'past' | 'cancelled' | 'refused'>('all');
   // Notification badge logic removed
   const [ownerVehicleIds, setOwnerVehicleIds] = useState<string[]>([]);
+  const [visibleCount, setVisibleCount] = useState(3);
+  const enrichedIdsRef = useRef<Set<string>>(new Set());
+  const conversationsRef = useRef<Conversation[] | null>(null);
+  const currentUserIdRef = useRef<string>('');
+  const isAdminRef = useRef(false);
+
+  useEffect(() => {
+    setVisibleCount(3);
+  }, [activeFilter]);
+
+  const matchesFilter = (booking: BookingWithDetails, filter: typeof activeFilter, now: Date) => {
+    const startDate = new Date(booking.startDate);
+    const endDate = new Date(booking.endDate);
+    switch (filter) {
+      case 'pending':
+        return (booking.status === 'confirmed' && booking.depositStatus === 'pending') ||
+               booking.status === 'pending' ||
+               booking.status === 'pending_payment';
+      case 'active':
+        return booking.status === 'active' ||
+               (booking.status === 'confirmed' &&
+                booking.depositStatus === 'paid' &&
+                startDate <= now &&
+                endDate >= now);
+      case 'upcoming':
+        return booking.status === 'confirmed' &&
+               booking.depositStatus === 'paid' &&
+               startDate > now;
+      case 'past':
+        return booking.status === 'completed';
+      case 'cancelled':
+        return booking.status === 'cancelled' ||
+               booking.status === 'rejected' ||
+               booking.status === 'declined';
+      case 'refused':
+        return booking.status === 'declined';
+      case 'all':
+      default:
+        return true;
+    }
+  };
+
+  // Enrichit (locataire, photo, conversation) seulement les réservations affichées à l'écran —
+  // évite de tout charger (N requêtes par réservation) pour un historique qui peut compter des dizaines d'entrées.
+  const enrichVisibleBookings = async (targets: BookingWithDetails[]) => {
+    const toEnrich = targets.filter((b) => !enrichedIdsRef.current.has(b.id));
+    if (toEnrich.length === 0) return;
+    toEnrich.forEach((b) => enrichedIdsRef.current.add(b.id));
+
+    if (!conversationsRef.current) {
+      const conversationsResult = await ConversationsService.getUserConversations(currentUserIdRef.current, {
+        isAdmin: isAdminRef.current,
+      });
+      conversationsRef.current = !conversationsResult.error && conversationsResult.data ? conversationsResult.data : [];
+    }
+    const conversations = conversationsRef.current;
+
+    const patches = await Promise.all(
+      toEnrich.map(async (booking) => {
+        const renterResult = await ProfileService.getUserProfile(booking.renterId);
+        const renter = renterResult.error ? undefined : renterResult.data;
+
+        let primaryPhoto: Photo | undefined;
+        if (booking.vehicleId) {
+          try {
+            const photosResult = await PhotoService.getVehiclePhotos(booking.vehicleId);
+            if (photosResult.data && photosResult.data.length > 0) {
+              const uploadedPhoto = photosResult.data[0] as any;
+              primaryPhoto = {
+                id: uploadedPhoto.id,
+                vehicleId: uploadedPhoto.vehicleId || uploadedPhoto.vehicle_id,
+                url: uploadedPhoto.url,
+                angle: uploadedPhoto.angle || 'exterior',
+                position: uploadedPhoto.position || 0,
+                isPrimary: uploadedPhoto.isPrimary || uploadedPhoto.is_primary || false,
+                type: uploadedPhoto.type || 'exterior',
+                createdAt: uploadedPhoto.createdAt || uploadedPhoto.created_at || new Date().toISOString(),
+              } as Photo;
+            }
+          } catch (photoError) {
+            console.error('Erreur lors du chargement des photos:', photoError);
+          }
+        }
+
+        const conversation = conversations.find(
+          (c) => c.vehicleId === booking.vehicleId && c.renterId === booking.renterId
+        );
+
+        return { id: booking.id, renter, primaryPhoto, conversation };
+      })
+    );
+
+    setBookings((prev) =>
+      prev.map((b) => {
+        const patch = patches.find((p) => p.id === b.id);
+        return patch ? { ...b, renter: patch.renter, primaryPhoto: patch.primaryPhoto, conversation: patch.conversation } : b;
+      })
+    );
+  };
+
+  useEffect(() => {
+    if (bookings.length === 0) return;
+    const now = new Date();
+    const filtered = bookings.filter((b) => matchesFilter(b, activeFilter, now));
+    enrichVisibleBookings(filtered.slice(0, visibleCount));
+  }, [bookings.length, activeFilter, visibleCount]);
 
   const toggleExpanded = (bookingId: string) => {
     setExpandedBookings(prev => {
@@ -119,6 +225,10 @@ const OwnerBookings = () => {
       const user = profileResult.data;
       setCurrentUser(user);
       const isAdmin = user.isAdmin === true;
+      currentUserIdRef.current = user.id;
+      isAdminRef.current = isAdmin;
+      enrichedIdsRef.current = new Set();
+      conversationsRef.current = null;
 
       // Vérifier que l'utilisateur est propriétaire (les admins bypassent la restriction)
       if (!isAdmin && !user.roles.includes('owner')) {
@@ -236,90 +346,44 @@ const OwnerBookings = () => {
       };
       });
 
-      // 4. Enrichir les réservations avec les détails
-      const enrichedBookings = await Promise.all(
-        ownerBookings.map(async (booking) => {
-          // Récupérer le locataire par son ID
-          const renterResult = await ProfileService.getUserProfile(booking.renterId);
-          const renter = renterResult.error ? null : renterResult.data;
-          
-          // Récupérer le véhicule
-          const vehicle = ownerVehicles.find(v => v.id === booking.vehicleId);
-          
-          // Récupérer les photos du véhicule
-          let primaryPhoto: Photo | undefined;
-          if (vehicle) {
-            try {
-            const photosResult = await PhotoService.getVehiclePhotos(booking.vehicleId);
-              if (photosResult.data && photosResult.data.length > 0) {
-                const uploadedPhoto = photosResult.data[0] as any;
-                primaryPhoto = {
-                  id: uploadedPhoto.id,
-                  vehicleId: uploadedPhoto.vehicleId || uploadedPhoto.vehicle_id,
-                  url: uploadedPhoto.url,
-                  angle: uploadedPhoto.angle || 'exterior',
-                  position: uploadedPhoto.position || 0,
-                  isPrimary: uploadedPhoto.isPrimary || uploadedPhoto.is_primary || false,
-                  type: uploadedPhoto.type || 'exterior',
-                  createdAt: uploadedPhoto.createdAt || uploadedPhoto.created_at || new Date().toISOString(),
-                } as Photo;
-              }
-            } catch (photoError) {
-              console.error('Erreur lors du chargement des photos:', photoError);
-            }
-          }
-          
-          // Convertir le véhicule Supabase vers le format de l'application
-          const mappedVehicle: AppVehicle | undefined = vehicle ? {
-            id: vehicle.id,
-            ownerId: vehicle.owner_id || "",
-            license: vehicle.id.substring(0, 8).toUpperCase(),
-            brand: vehicle.brand,
-            model: vehicle.model,
-            color: vehicle.color || "Non spécifié",
-            fuel: (vehicle.fuel_type as any) || "gasoline",
-            year: vehicle.year,
-            hasAC: vehicle.has_ac || false,
-            doors: vehicle.doors || 5,
-            transmission: (vehicle.transmission as any) || "manual",
-            mileage: vehicle.mileage || 0,
-            dailyPrice: vehicle.price_per_day,
-            currency: "EUR",
-            latitude: 0,
-            longitude: 0,
-            status: "available" as any,
-            description: vehicle.description || undefined,
-            location: vehicle.location || undefined,
-            createdAt: vehicle.created_at || new Date().toISOString(),
-            updatedAt: vehicle.updated_at || new Date().toISOString(),
-          } : undefined;
+      // 4. Attacher le véhicule (déjà en mémoire depuis l'étape 2, pas besoin d'appel réseau)
+      // Locataire/photo/conversation sont chargés à la demande par enrichVisibleBookings(),
+      // seulement pour les réservations réellement affichées — évite N requêtes par historique.
+      const ownerBookingsWithVehicle = ownerBookings.map((booking) => {
+        const vehicle = ownerVehicles.find(v => v.id === booking.vehicleId);
 
-          // Récupérer la conversation (admin → toutes pour pouvoir matcher n'importe quelle réservation)
-          const conversationsResult = await ConversationsService.getUserConversations(user.id, { isAdmin });
-          const conversation = !conversationsResult.error && conversationsResult.data
-            ? conversationsResult.data.find(c => 
-                c.vehicleId === booking.vehicleId && 
-                c.renterId === booking.renterId
-              )
-            : undefined;
+        const mappedVehicle: AppVehicle | undefined = vehicle ? {
+          id: vehicle.id,
+          ownerId: vehicle.owner_id || "",
+          license: vehicle.id.substring(0, 8).toUpperCase(),
+          brand: vehicle.brand,
+          model: vehicle.model,
+          color: vehicle.color || "Non spécifié",
+          fuel: (vehicle.fuel_type as any) || "gasoline",
+          year: vehicle.year,
+          hasAC: vehicle.has_ac || false,
+          doors: vehicle.doors || 5,
+          transmission: (vehicle.transmission as any) || "manual",
+          mileage: vehicle.mileage || 0,
+          dailyPrice: vehicle.price_per_day,
+          currency: "EUR",
+          latitude: 0,
+          longitude: 0,
+          status: "available" as any,
+          description: vehicle.description || undefined,
+          location: vehicle.location || undefined,
+          createdAt: vehicle.created_at || new Date().toISOString(),
+          updatedAt: vehicle.updated_at || new Date().toISOString(),
+        } : undefined;
 
-          return {
-            ...booking,
-            renter,
-            vehicle: mappedVehicle,
-            conversation,
-            primaryPhoto,
-          };
-        })
-      );
+        return { ...booking, vehicle: mappedVehicle };
+      });
 
-      // Nouvelle logique : inclure TOUTES les réservations dans le dataset affiché
-      // Les bookings avec status 'confirmed' doivent être inclus, même si deposit_status === 'pending'
+      const enrichedBookings = ownerBookingsWithVehicle;
       const allBookings = enrichedBookings;
 
-      // Séparer pour compatibilité avec l'ancien code (mais maintenant on utilise allBookings pour l'affichage)
-      const confirmedBookings = enrichedBookings.filter(b => 
-        b.status === 'accepted' || b.status === 'active' || b.status === 'closed' 
+      const confirmedBookings = enrichedBookings.filter(b =>
+        b.status === 'accepted' || b.status === 'active' || b.status === 'closed'
         || b.status === 'cancelled' || b.status === 'declined' || b.status === 'confirmed'
       );
       const pendingRequests = enrichedBookings.filter(b => 
@@ -727,19 +791,20 @@ const OwnerBookings = () => {
                 </CardContent>
               </Card>
             ) : (
-                filteredBookings.map((booking) => {
+              <>
+                {filteredBookings.slice(0, visibleCount).map((booking) => {
                   const bookingDetails: BookingWithDetails = {
                     ...booking,
                   };
-                  
+
                   // Calculer le totalPrice si non présent
                   if (!bookingDetails.totalPrice && bookingDetails.totalAmount) {
                     (bookingDetails as any).totalPrice = bookingDetails.totalAmount;
                   }
-                  
+
                   // Auto-expand les cards qui nécessitent une action (pending/pending_payment)
                   const forceExpand = booking.status === 'pending' || booking.status === 'pending_payment';
-                  
+
                   return (
                     <OwnerBookingCard
                       key={booking.id}
@@ -758,7 +823,15 @@ const OwnerBookings = () => {
                       }}
                     />
                   );
-                })
+                })}
+                {filteredBookings.length > visibleCount && (
+                  <div className="flex justify-center pt-2">
+                    <Button variant="outline" onClick={() => setVisibleCount((c) => c + 10)}>
+                      Voir plus de réservations ({filteredBookings.length - visibleCount} restantes)
+                    </Button>
+                  </div>
+                )}
+              </>
               );
             })()}
         </div>
