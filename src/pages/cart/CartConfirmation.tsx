@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
@@ -15,6 +15,10 @@ interface ItemResult {
 export default function CartConfirmation() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const results = useMemo<ItemResult[]>(() => {
     const raw = searchParams.get("results");

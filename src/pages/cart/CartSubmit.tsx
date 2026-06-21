@@ -51,6 +51,7 @@ export default function CartSubmit() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setSubmitting(true);
 
     const cartGroupId = crypto.randomUUID();
