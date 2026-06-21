@@ -1101,17 +1101,6 @@ export default function VehicleDetails() {
             )}
           </div>
 
-          {DIRECT_BOOKING_ENABLED && (
-            <Button
-              size="lg"
-              onClick={() => handleBooking()}
-              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
-            >
-              <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
-              Réserver
-            </Button>
-          )}
-
           <Button
             size="lg"
             onClick={(e) => handleAddToCart(e.currentTarget)}
