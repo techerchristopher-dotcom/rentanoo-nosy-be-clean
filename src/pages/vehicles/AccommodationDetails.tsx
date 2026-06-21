@@ -636,6 +636,7 @@ export default function AccommodationDetails() {
     });
 
     if (added) {
+      clearBookingDraft();
       if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
       openAddedModal({
         label: vehicle.model,

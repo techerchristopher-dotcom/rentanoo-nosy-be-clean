@@ -690,6 +690,7 @@ export default function MotoVehicleDetails() {
     });
 
     if (added) {
+      clearBookingDraft();
       if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
       openAddedModal({
         label: `${vehicle.brand} ${vehicle.model}`,
