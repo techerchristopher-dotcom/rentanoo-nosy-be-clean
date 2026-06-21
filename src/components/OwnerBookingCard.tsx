@@ -130,7 +130,7 @@ export default function OwnerBookingCard({
 }: OwnerBookingCardProps) {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { t } = useTranslation("common")
+  const { t } = useTranslation() // defaultNS = "translation" où duration.* est déplié depuis common.duration.*
   const { formatAdminInline, footnote } = useExchangeRate()
   /** Profil chargé uniquement si le parent n’a pas fourni `booking.renter`. */
   const [renterFromFetch, setRenterFromFetch] = useState<User | null>(null)
