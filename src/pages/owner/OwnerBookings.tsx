@@ -48,6 +48,7 @@ interface BookingWithDetails extends Omit<Booking, 'startTime' | 'endTime' | 'pi
   rentalDays?: number;
   pickupLocation?: string;
   hotelName?: string;
+  notes?: string;
   totalPrice?: number;
   depositStatus?: 'pending' | 'paid' | 'refunded' | 'card_registered' | 'not_required' | null;
   depositAmountSnapshot?: number | null;
@@ -210,6 +211,7 @@ const OwnerBookings = () => {
         pickupLocation: (booking.pickup_location as string) || '',
         returnLocation: (booking.return_location as string) || (booking.pickup_location as string) || '',
         hotelName: (booking.hotel_name as string) || '',
+        notes: (booking.notes as string) || '',
         selectedOptions: selectedOptions, // Utiliser la variable calculée
         basePrice: booking.base_price,
         optionsTotal: booking.options_total,

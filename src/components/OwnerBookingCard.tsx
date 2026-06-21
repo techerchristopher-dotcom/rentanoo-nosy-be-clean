@@ -1496,6 +1496,16 @@ export default function OwnerBookingCard({
                 </div>
               )}
 
+              {(booking as any).notes && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">Notes</h4>
+                  </div>
+                  <p className="text-lg font-semibold whitespace-pre-wrap">{(booking as any).notes}</p>
+                </div>
+              )}
+
               {/* Dates de location */}
               <div className="border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-4">

@@ -131,6 +131,7 @@ export default function CartSubmit() {
         endTime: item.endTime,
         pickupLocation: item.pickupLocation,
         hotelName: item.hotelName?.trim() || undefined,
+        notes: notes.trim() || undefined,
         totalPrice: feePreviews[item.id]?.amount_total_expected ?? item.estimatedPrice ?? 0,
         basePrice: item.estimatedPrice || 0,
         selectedOptions: item.selectedOptions?.map((o) => ({ id: o.id, name: o.name, pricePerDay: 0, totalPrice: o.totalPrice })),

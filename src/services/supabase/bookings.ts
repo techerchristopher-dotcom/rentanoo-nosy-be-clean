@@ -44,6 +44,7 @@ export interface BookingData {
   totalPrice: number;
   pickupLocation?: string;
   hotelName?: string;
+  notes?: string;
   startTime?: string; // Format "06:30"
   endTime?: string; // Format "14:00"
   // Nouvelles colonnes
@@ -135,7 +136,8 @@ export class SupabaseBookingsService {
         p_selected_options: (bookingData.selectedOptions ?? []) as unknown as Json,
         p_hotel_name: bookingData.hotelName?.trim() ?? '',
         p_payment_method: paymentMethod,
-        ...(bookingData.cartGroupId ? { p_cart_group_id: bookingData.cartGroupId } : {}),
+        p_cart_group_id: bookingData.cartGroupId ?? null,
+        p_notes: bookingData.notes?.trim() ?? '',
       });
 
       if (rpcError) {

@@ -782,6 +782,7 @@
       "pickupZone": "Abholzone",
       "returnZone": "Rückgabezone",
       "hotelName": "Hotel",
+      "notes": "Notizen",
       "notSpecified": "Nicht angegeben",
       "rentalDates": "Mietdaten",
       "baseRate": "Grundpreis",

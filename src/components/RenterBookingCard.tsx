@@ -1491,6 +1491,20 @@ export default function RenterBookingCard({
               </div>
             )}
 
+            {(booking as any).notes && (
+              <div className="flex items-center gap-3 px-2">
+                <div className="p-2 bg-primary-soft rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground mb-1">{t('bookings.details.notes')}</p>
+                  <p className="text-base font-semibold text-foreground whitespace-pre-wrap">
+                    {(booking as any).notes}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <Separator />
 
             {/* Section Dates et Durée */}

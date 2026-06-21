@@ -562,6 +562,7 @@ export default function RenterBookings() {
               if (rentalDays) (bookingWithTimes as any).rentalDays = rentalDays;
               if (pickupLocation) bookingWithTimes.pickupLocation = pickupLocation;
               if (booking.hotel_name) (bookingWithTimes as any).hotelName = booking.hotel_name;
+              if (booking.notes) (bookingWithTimes as any).notes = booking.notes;
               if (referenceNumber) (bookingWithTimes as any).referenceNumber = referenceNumber;
               
               console.log('✅ [RenterBookings] Booking final avec heures:', bookingWithTimes);
@@ -602,6 +603,7 @@ export default function RenterBookings() {
                 basePrice: (booking as any).base_price ?? null,
                 optionsTotal: (booking as any).options_total ?? null,
                 hotelName: (booking as any).hotel_name ?? null,
+                notes: (booking as any).notes ?? null,
               };
             }
           })

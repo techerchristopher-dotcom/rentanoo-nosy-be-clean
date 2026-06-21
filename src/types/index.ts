@@ -218,6 +218,7 @@ export interface Booking {
   // Lieu de prise en charge
   pickupLocation: string; // "Aéroport", "Hell-Ville", etc.
   hotelName?: string; // Nom de l'hôtel si option restitution/récupération hôtel choisie
+  notes?: string; // Notes du locataire saisies au moment de la demande
 
   // Montant et statut
   totalAmount: number;
