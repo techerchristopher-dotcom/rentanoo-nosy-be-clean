@@ -43,6 +43,9 @@ interface BookingWithDetails extends Omit<Booking, 'startTime' | 'endTime' | 'pi
   basePrice?: number;
   optionsTotal?: number;
   serviceFee?: number;
+  serviceFeeRenter?: number;
+  serviceFeePercentApplied?: number;
+  amountTotalExpected?: number;
   subtotal?: number;
   pricePerDay?: number;
   rentalDays?: number;
@@ -216,6 +219,9 @@ const OwnerBookings = () => {
         basePrice: booking.base_price,
         optionsTotal: booking.options_total,
         serviceFee: booking.service_fee,
+        serviceFeeRenter: (booking as any).service_fee_renter ?? booking.service_fee,
+        serviceFeePercentApplied: (booking as any).service_fee_percent_applied ?? null,
+        amountTotalExpected: (booking as any).amount_total_expected ?? null,
         subtotal: booking.subtotal,
         pricePerDay: booking.price_per_day,
         rentalDays: booking.rental_days,

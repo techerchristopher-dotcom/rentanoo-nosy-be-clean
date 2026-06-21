@@ -62,7 +62,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConversationsService } from '@/services/supabase/conversations'
 import { MessagesService } from '@/services/supabase/messages'
 import { BookingMoreActionsMenu } from '@/components/BookingMoreActionsMenu'
-import { calcServiceFeeOwner, calcServiceFeeRenter, calcOwnerPayout, calcRenterTotal } from '@/utils/serviceFees'
+import { calcServiceFeeRenter, calcRenterTotal, SERVICE_FEE_PERCENT_RENTER } from '@/utils/serviceFees'
 import { useTranslation } from 'react-i18next'
 import { forceDepositForOwner } from '@/lib/depositCaution'
 import { isAdminCreatedBooking } from '@/utils/bookingAdmin'
@@ -165,10 +165,16 @@ export default function OwnerBookingCard({
     cardRentalPricing?.basePrice ?? (booking as any).basePrice ?? (booking as any).base_price ?? 0
   const cardSubtotal =
     (booking as any).subtotal ?? cardBasePrice + cardOptionsTotal
-  const cardServiceFeeRenter = calcServiceFeeRenter(cardSubtotal)
-  const cardTotalAmount = calcRenterTotal(cardSubtotal)
-  const cardServiceFeeOwner = calcServiceFeeOwner(cardSubtotal)
-  const cardOwnerPayout = calcOwnerPayout(cardSubtotal)
+  // % réellement appliqué à cette réservation (figé en base au moment de la création,
+  // ne pas recalculer avec une constante : dépend de la catégorie + mode de paiement choisis à ce moment-là)
+  const cardFeePercentApplied = (booking as any).serviceFeePercentApplied ?? SERVICE_FEE_PERCENT_RENTER
+  const cardFeePercentDisplay = Math.round(cardFeePercentApplied * 100)
+  const cardServiceFeeRenter =
+    (booking as any).serviceFeeRenter ?? (booking as any).serviceFee ?? calcServiceFeeRenter(cardSubtotal)
+  const cardTotalAmount =
+    (booking as any).amountTotalExpected ?? Math.round((cardSubtotal + cardServiceFeeRenter) * 100) / 100
+  const cardServiceFeeOwner = cardServiceFeeRenter
+  const cardOwnerPayout = Math.round((cardSubtotal - cardServiceFeeOwner) * 100) / 100
   const cardDurationText =
     (cardRentalPricing &&
       (formatBillableDays(t, cardRentalPricing.billableDays) ??
@@ -1085,7 +1091,7 @@ export default function OwnerBookingCard({
                                         <span className="font-semibold">{formatAdminInline(cardSubtotal)}</span>
                                       </div>
                                       <div className="flex justify-between text-muted-foreground">
-                                        <span>Frais de service locataire (15%)</span>
+                                        <span>Frais de service locataire ({cardFeePercentDisplay}%)</span>
                                         <span>+{formatAdminInline(cardServiceFeeRenter)}</span>
                                       </div>
                                       <div className="flex justify-between border-t pt-1">
@@ -1093,11 +1099,11 @@ export default function OwnerBookingCard({
                                         <span className="font-semibold text-success">{formatAdminInline(cardTotalAmount)}</span>
                                       </div>
                                       <div className="flex justify-between text-muted-foreground mt-2">
-                                        <span>Commission propriétaire (15%)</span>
+                                        <span>Commission propriétaire ({cardFeePercentDisplay}%)</span>
                                         <span className="text-destructive">-{formatAdminInline(cardServiceFeeOwner)}</span>
                                       </div>
                                       <div className="flex justify-between border-t pt-1">
-                                        <span>Votre revenu (85%)</span>
+                                        <span>Votre revenu ({100 - cardFeePercentDisplay}%)</span>
                                         <span className="font-semibold text-primary">{formatAdminInline(cardOwnerPayout)}</span>
                                       </div>
                                       <p className="text-[10px] text-muted-foreground pt-1">{footnote}</p>
@@ -1609,7 +1615,7 @@ export default function OwnerBookingCard({
                   <div className="pt-2 border-t space-y-2">
                     <AdminPriceRow label="Total réservation (TTC)" amountMga={cardTotalAmount} bold />
                     <div className="flex justify-between items-start gap-4 text-muted-foreground">
-                      <span className="text-sm">Commission de la plateforme (15%)</span>
+                      <span className="text-sm">Commission de la plateforme ({cardFeePercentDisplay}%)</span>
                       <DualPrice
                         amountMga={cardServiceFeeOwner}
                         variant="admin"
