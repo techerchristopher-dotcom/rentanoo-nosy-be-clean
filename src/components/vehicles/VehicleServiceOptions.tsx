@@ -2,14 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Plane, Ship, Home, Baby, UserPlus, Building2, Tag } from "lucide-react";
 import { Vehicle } from "@/services/supabaseVehiclesService";
 import {
   updateBookingOptions,
   getBookingDraft,
-  updateBookingComplementaryMeta,
   BookingOption,
 } from "@/services/localStorage/bookingStorage";
 import {
@@ -19,7 +16,6 @@ import {
   resolvePickupExclusion,
   resolveReturnExclusion,
 } from "@/constants/platformBookingOptions";
-import { requiresHotelName } from "@/utils/bookingLocations";
 import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 import { useBookingOptionsCatalog } from "@/hooks/useBookingOptionsCatalog";
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
@@ -53,7 +49,6 @@ function readSelectedServiceIdsFromDraft(): string[] {
 
 export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOptionsProps) {
   const [selectedServices, setSelectedServices] = useState(readSelectedServiceIdsFromDraft);
-  const [hotelName, setHotelName] = useState(() => getBookingDraft()?.hotelName ?? "");
   const { formatClient } = useExchangeRate();
   const { options: catalogOptions } = useBookingOptionsCatalog(vehicle.vehicleType);
   const formatDualLabel = (amountMga: number) => {
@@ -262,13 +257,6 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
     updateBookingOptions(selectedOptionsData);
   }, [selectedServices, availableServices]);
 
-  const showHotelField = requiresHotelName(selectedServices);
-
-  useEffect(() => {
-    if (!showHotelField) return;
-    updateBookingComplementaryMeta({ hotelName: hotelName.trim() || undefined });
-  }, [hotelName, showHotelField]);
-  
   // Si aucun service n'est disponible pour ce véhicule, ne rien afficher
   if (availableServices.length === 0) {
     return null;
@@ -355,18 +343,6 @@ export function VehicleServiceOptions({ vehicle, rentalDays }: VehicleServiceOpt
                 </div>
               );
             })}
-        
-        {showHotelField && (
-          <div className="space-y-2 rounded-lg border border-border p-3">
-            <Label htmlFor="vehicle-hotel-name">Nom de l'hôtel</Label>
-            <Input
-              id="vehicle-hotel-name"
-              placeholder="Ex. Royal Beach Hotel"
-              value={hotelName}
-              onChange={(e) => setHotelName(e.target.value)}
-            />
-          </div>
-        )}
 
         {/* Récapitulatif des services sélectionnés */}
         {selectedServices.length > 0 && (

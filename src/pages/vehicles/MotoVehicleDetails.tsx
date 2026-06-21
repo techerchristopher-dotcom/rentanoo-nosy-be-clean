@@ -152,8 +152,6 @@ const getLocationIcon = (zone: string) => {
   }
 };
 
-// Réactivable si besoin de basculer en mode réservation directe
-const DIRECT_BOOKING_ENABLED = false;
 
 export default function MotoVehicleDetails() {
   console.log("🏍️ [DEBUG] MotoVehicleDetails component rendering");
@@ -1065,17 +1063,6 @@ export default function MotoVehicleDetails() {
               </div>
             )}
           </div>
-
-          {DIRECT_BOOKING_ENABLED && (
-            <Button
-              size="lg"
-              onClick={() => handleBooking()}
-              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
-            >
-              <Zap className="h-5 w-5 mr-2 text-yellow-400" fill="currentColor" />
-              {t("booking.reserve")}
-            </Button>
-          )}
 
           <Button
             size="lg"

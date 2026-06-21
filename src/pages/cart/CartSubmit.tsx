@@ -15,6 +15,7 @@ import { ProfileService } from "@/services/supabase/profile";
 import { previewRenterFee, type RenterFeePreview } from "@/services/supabase/renterFeePreview";
 import { supabase } from "@/integrations/supabase/client";
 import { DualPrice } from "@/components/currency/DualPrice";
+import { requiresHotelName } from "@/utils/bookingLocations";
 import type { User } from "@/types";
 
 const TYPE_ICONS: Record<CartVehicleType, typeof Car> = {
@@ -33,7 +34,7 @@ interface ItemResult {
 }
 
 export default function CartSubmit() {
-  const { items, clearCart } = useCart();
+  const { items, clearCart, updateItem } = useCart();
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -42,6 +43,10 @@ export default function CartSubmit() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feePreviews, setFeePreviews] = useState<Record<string, RenterFeePreview | null>>({});
+  const [hotelNameErrors, setHotelNameErrors] = useState<Record<string, boolean>>({});
+
+  const itemNeedsHotelName = (item: (typeof items)[number]) =>
+    requiresHotelName(item.selectedOptions?.map((o) => o.id) ?? []);
 
   useEffect(() => {
     if (!authUser) {
@@ -93,6 +98,24 @@ export default function CartSubmit() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
+
+    const missingHotelNames: Record<string, boolean> = {};
+    for (const item of items) {
+      if (itemNeedsHotelName(item) && !item.hotelName?.trim()) {
+        missingHotelNames[item.id] = true;
+      }
+    }
+    if (Object.keys(missingHotelNames).length > 0) {
+      setHotelNameErrors(missingHotelNames);
+      toast({
+        title: "Nom de l'hôtel requis",
+        description: "Indique le nom de l'hôtel pour chaque véhicule concerné avant d'envoyer ta demande.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setHotelNameErrors({});
+
     setSubmitting(true);
 
     const cartGroupId = crypto.randomUUID();
@@ -107,6 +130,7 @@ export default function CartSubmit() {
         startTime: item.startTime,
         endTime: item.endTime,
         pickupLocation: item.pickupLocation,
+        hotelName: item.hotelName?.trim() || undefined,
         totalPrice: feePreviews[item.id]?.amount_total_expected ?? item.estimatedPrice ?? 0,
         basePrice: item.estimatedPrice || 0,
         selectedOptions: item.selectedOptions?.map((o) => ({ id: o.id, name: o.name, pricePerDay: 0, totalPrice: o.totalPrice })),
@@ -219,6 +243,28 @@ export default function CartSubmit() {
                               />
                             </div>
                           ))}
+                        </div>
+                      )}
+                      {itemNeedsHotelName(item) && (
+                        <div className="mt-2 pt-2 border-t space-y-1">
+                          <Label htmlFor={`hotel-name-${item.id}`} className="text-xs">
+                            Nom de l'hôtel *
+                          </Label>
+                          <Input
+                            id={`hotel-name-${item.id}`}
+                            placeholder="Ex. Royal Beach Hotel"
+                            value={item.hotelName ?? ""}
+                            onChange={(e) => {
+                              updateItem(item.id, { hotelName: e.target.value });
+                              if (hotelNameErrors[item.id]) {
+                                setHotelNameErrors((prev) => ({ ...prev, [item.id]: false }));
+                              }
+                            }}
+                            className={hotelNameErrors[item.id] ? "border-destructive" : ""}
+                          />
+                          {hotelNameErrors[item.id] && (
+                            <p className="text-xs text-destructive">Ce champ est obligatoire.</p>
+                          )}
                         </div>
                       )}
                     </div>

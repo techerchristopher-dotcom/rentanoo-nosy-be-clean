@@ -118,9 +118,6 @@ const getLocationIcon = (zone: string) => {
   }
 };
 
-// Réactivable si besoin de basculer en mode réservation directe
-const DIRECT_BOOKING_ENABLED = false;
-
 export default function VehicleDetails() {
   console.log('🎯 [DEBUG] VehicleDetails component rendering');
   

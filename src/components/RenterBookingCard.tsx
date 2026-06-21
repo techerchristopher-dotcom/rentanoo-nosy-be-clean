@@ -27,6 +27,7 @@ import {
   Shield,
   Bell,
   Mail,
+  Building2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -1474,6 +1475,20 @@ export default function RenterBookingCard({
                   </div>
                 </div>
               </>
+            )}
+
+            {(booking as any).hotelName && (
+              <div className="flex items-center gap-3 px-2">
+                <div className="p-2 bg-primary-soft rounded-lg">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground mb-1">{t('bookings.details.hotelName')}</p>
+                  <p className="text-base font-semibold text-foreground">
+                    {(booking as any).hotelName}
+                  </p>
+                </div>
+              </div>
             )}
 
             <Separator />

@@ -30,6 +30,7 @@ import {
   AlertCircle,
   Loader2,
   RotateCcw,
+  Building2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -1484,6 +1485,16 @@ export default function OwnerBookingCard({
                 </div>
                 <p className="text-lg font-semibold">{(booking as any).pickupLocation || booking.pickupLocation || 'Non spécifiée'}</p>
               </div>
+
+              {(booking as any).hotelName && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">Hôtel</h4>
+                  </div>
+                  <p className="text-lg font-semibold">{(booking as any).hotelName}</p>
+                </div>
+              )}
 
               {/* Dates de location */}
               <div className="border rounded-lg p-4">

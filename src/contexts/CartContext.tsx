@@ -26,6 +26,7 @@ export interface CartItem {
   selectedOptions?: Array<{ id: string; name: string; totalPrice: number }>;
   pickupLocation?: string;
   estimatedPrice?: number;
+  hotelName?: string;
 }
 
 export interface LastAddedDates {

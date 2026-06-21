@@ -1078,6 +1078,7 @@
       "notProvided": "Not provided",
       "pickupZone": "Pickup zone",
       "returnZone": "Return zone",
+      "hotelName": "Hotel",
       "notSpecified": "Not specified",
       "rentalDates": "Rental dates",
       "baseRate": "Base rate",
