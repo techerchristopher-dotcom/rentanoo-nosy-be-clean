@@ -275,7 +275,7 @@ export default function CartSubmit() {
 
               <div className="space-y-1.5 border-t pt-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Sous-total véhicules</span>
+                  <span className="text-muted-foreground">Sous-total locations</span>
                   <DualPrice amountMga={vehiclesSubtotal} variant="client" primaryClassName="tabular-nums" secondaryClassName="text-xs" />
                 </div>
                 {optionsSubtotal > 0 && (
