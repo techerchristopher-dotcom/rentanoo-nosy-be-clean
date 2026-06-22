@@ -92,15 +92,19 @@ export function CartDrawer() {
 
                   {item.estimatedPrice != null && (
                     <div className="mt-3 space-y-1.5 border-t pt-3">
-                      <div className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
-                        <span className="truncate">
-                          {item.pricePerDay != null && item.rentalDays != null
-                            ? `Location : ${formatClientInline(item.pricePerDay)} / jour × ${item.rentalDays} jour${item.rentalDays > 1 ? "s" : ""}`
-                            : "Location"}
-                        </span>
-                        <span className="shrink-0 tabular-nums">
-                          {formatClientInline(item.estimatedPrice)}
-                        </span>
+                      <div>
+                        <div className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
+                          <span className="truncate">Location</span>
+                          <span className="shrink-0 tabular-nums">
+                            {formatClientInline(item.estimatedPrice)}
+                          </span>
+                        </div>
+                        {item.pricePerDay != null && item.rentalDays != null && (
+                          <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                            {formatClientInline(item.pricePerDay)} / jour × {item.rentalDays} jour
+                            {item.rentalDays > 1 ? "s" : ""}
+                          </p>
+                        )}
                       </div>
                       {hasOptions &&
                         item.selectedOptions!.map((opt) => (
