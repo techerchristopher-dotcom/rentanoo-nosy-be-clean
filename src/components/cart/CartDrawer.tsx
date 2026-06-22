@@ -49,18 +49,43 @@ export function CartDrawer() {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 rounded-lg border p-3"
+                  className="flex items-start gap-3 rounded-lg border p-3"
                 >
-                  <div className="rounded-full bg-primary-soft/30 p-2 shrink-0">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
+                  {item.vehicleThumbnail ? (
+                    <img
+                      src={item.vehicleThumbnail}
+                      alt={item.vehicleLabel}
+                      className="h-12 w-12 rounded-full object-cover shrink-0 ring-1 ring-border"
+                    />
+                  ) : (
+                    <div className="rounded-full bg-primary-soft/30 p-2 shrink-0">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.vehicleLabel}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateRange(item.startDate, item.endDate)}
                     </p>
+                    {item.selectedOptions && item.selectedOptions.length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {item.selectedOptions.map((opt) => (
+                          <li
+                            key={opt.id}
+                            className="text-xs text-muted-foreground flex items-center justify-between gap-2"
+                          >
+                            <span className="truncate">+ {opt.name}</span>
+                            {opt.totalPrice > 0 && (
+                              <span className="shrink-0">
+                                {opt.totalPrice.toLocaleString("fr-FR")} Ar
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {item.estimatedPrice != null && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground mt-1">
                         ~{item.estimatedPrice.toLocaleString("fr-FR")} Ar
                       </p>
                     )}
