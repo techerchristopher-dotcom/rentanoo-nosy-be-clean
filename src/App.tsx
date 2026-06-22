@@ -143,6 +143,19 @@ function RouteChangeTracker() {
   return null;
 }
 
+// React Router ne réinitialise pas le scroll par défaut : sans ça, naviguer
+// vers une nouvelle page (ex: clic "Lire" sur un article) garde la position
+// de scroll de la page précédente. On laisse les ancres (#search-results)
+// gérer leur propre scroll ailleurs.
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (hash) return;
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -159,6 +172,7 @@ const App = () => (
             <CategorySuggestionModal />
             <AddedToCartModal />
             <RouteChangeTracker />
+            <ScrollToTop />
             <ClientProfileCompletionGuard />
             {/* Wrapper to allow a fixed dev language switcher on all pages */}
             <div className="relative">
