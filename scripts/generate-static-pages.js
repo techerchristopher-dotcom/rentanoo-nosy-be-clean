@@ -166,6 +166,20 @@ const PAGES = [
     ],
   },
   {
+    slug: "blog/comment-louer-un-scooter-a-nosy-be",
+    title: "Comment louer un scooter à Nosy Be — Guide complet | Rentanoo",
+    description: "Documents nécessaires, choix du véhicule, prix et erreurs à éviter : notre guide complet pour louer un scooter à Nosy Be facilement et sereinement.",
+    canonical: "https://rentanoo.com/blog/comment-louer-un-scooter-a-nosy-be",
+    h1: "Comment louer un scooter à Nosy Be facilement",
+    intro: "Le bon type de véhicule, les documents demandés, l'état du scooter et les conditions de remise : tout ce qu'il faut anticiper pour louer un scooter à Nosy Be sans perdre de temps.",
+    faq: [],
+    breadcrumbs: [
+      { name: "Accueil", item: "https://rentanoo.com/" },
+      { name: "Blog", item: "https://rentanoo.com/blog" },
+      { name: "Comment louer un scooter à Nosy Be", item: "https://rentanoo.com/blog/comment-louer-un-scooter-a-nosy-be" },
+    ],
+  },
+  {
     slug: "blog/visiter-nosy-be-en-scooter",
     title: "Visiter Nosy Be en scooter — Guide complet 2026 | Rentanoo",
     description: "Notre guide pour visiter Nosy Be en scooter : meilleurs itinéraires, routes praticables, plages accessibles, conseils de sécurité et tarifs de location.",

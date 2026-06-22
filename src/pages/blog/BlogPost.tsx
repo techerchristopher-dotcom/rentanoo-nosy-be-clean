@@ -7,6 +7,39 @@ import { Seo } from "@/components/seo/Seo";
 import { SeoPageShell } from "@/components/seo/SeoPageLayout";
 import { getBlogPost, BLOG_POSTS } from "@/data/blogPosts";
 
+function renderInline(text: string, keyBase: string | number): React.ReactNode[] {
+  // Découpe le texte en alternant texte brut / liens [label](url) / gras **texte**
+  const tokens: React.ReactNode[] = [];
+  const regex = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let idx = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push(text.slice(lastIndex, match.index));
+    }
+    if (match[1] && match[2]) {
+      tokens.push(
+        <a
+          key={`${keyBase}-${idx++}`}
+          href={match[2]}
+          className="text-primary underline hover:no-underline"
+        >
+          {match[1]}
+        </a>
+      );
+    } else if (match[3]) {
+      tokens.push(<strong key={`${keyBase}-${idx++}`}>{match[3]}</strong>);
+    }
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    tokens.push(text.slice(lastIndex));
+  }
+  return tokens;
+}
+
 function renderContent(content: string) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
@@ -14,8 +47,13 @@ function renderContent(content: string) {
 
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith("## ")) {
-      elements.push(<h2 key={i} className="text-xl font-bold mt-8 mb-3 tracking-tight">{line.slice(3)}</h2>);
+    if (line.startsWith("### ")) {
+      elements.push(<h3 key={i} className="text-lg font-semibold mt-6 mb-2 tracking-tight">{renderInline(line.slice(4), i)}</h3>);
+    } else if (line.startsWith("## ")) {
+      elements.push(<h2 key={i} className="text-xl font-bold mt-8 mb-3 tracking-tight">{renderInline(line.slice(3), i)}</h2>);
+    } else if (line.startsWith("# ")) {
+      // H1 ignoré dans le contenu — le titre est déjà affiché via post.title
+      // (cas des exports markdown bruts qui répètent le titre en H1)
     } else if (line.startsWith("**") && line.endsWith("**")) {
       elements.push(<p key={i} className="font-semibold mt-4 mb-1">{line.slice(2, -2)}</p>);
     } else if (line.startsWith("- ")) {
@@ -26,7 +64,7 @@ function renderContent(content: string) {
       }
       elements.push(
         <ul key={i} className="list-disc pl-5 space-y-1 text-muted-foreground text-sm mb-3">
-          {items.map((item, idx) => <li key={idx}>{item}</li>)}
+          {items.map((item, idx) => <li key={idx}>{renderInline(item, `ul-${i}-${idx}`)}</li>)}
         </ul>
       );
       continue;
@@ -38,7 +76,7 @@ function renderContent(content: string) {
       }
       elements.push(
         <ol key={i} className="list-decimal pl-5 space-y-1 text-muted-foreground text-sm mb-3">
-          {items.map((item, idx) => <li key={idx}>{item}</li>)}
+          {items.map((item, idx) => <li key={idx}>{renderInline(item, `ol-${i}-${idx}`)}</li>)}
         </ol>
       );
       continue;
@@ -65,7 +103,7 @@ function renderContent(content: string) {
       );
       continue;
     } else if (line.trim()) {
-      elements.push(<p key={i} className="text-muted-foreground text-sm leading-relaxed mb-3">{line}</p>);
+      elements.push(<p key={i} className="text-muted-foreground text-sm leading-relaxed mb-3">{renderInline(line, i)}</p>);
     }
     i++;
   }

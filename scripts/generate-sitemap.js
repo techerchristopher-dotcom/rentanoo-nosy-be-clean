@@ -27,6 +27,7 @@ const STATIC_URLS = [
   { loc: "/contact", changefreq: "monthly", priority: "0.5" },
   { loc: "/rent-my-car", changefreq: "weekly", priority: "0.8" },
   { loc: "/sinistre-caution", changefreq: "monthly", priority: "0.6" },
+  { loc: "/politique-annulation", changefreq: "monthly", priority: "0.5" },
   { loc: "/meteo-nosy-be", changefreq: "daily", priority: "0.9" },
   { loc: "/taux-change-euro-ariary-madagascar", changefreq: "daily", priority: "0.9" },
   { loc: "/vols-aeroport-nosy-be", changefreq: "hourly", priority: "0.9" },
@@ -42,6 +43,7 @@ const STATIC_URLS = [
   { loc: "/location-bungalow-nosy-be", changefreq: "weekly", priority: "0.85" },
   // --- Blog ---
   { loc: "/blog", changefreq: "weekly", priority: "0.8" },
+  { loc: "/blog/comment-louer-un-scooter-a-nosy-be", changefreq: "monthly", priority: "0.75" },
   { loc: "/blog/visiter-nosy-be-en-scooter", changefreq: "monthly", priority: "0.75" },
   { loc: "/blog/itineraire-nosy-be-4-jours", changefreq: "monthly", priority: "0.75" },
   { loc: "/blog/aeroport-fascene-guide-arrivee", changefreq: "monthly", priority: "0.75" },
