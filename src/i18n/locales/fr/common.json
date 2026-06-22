@@ -515,8 +515,8 @@
     }
   },
   "home": {
-    "heroTitle": "Louez scooter, moto ou hébergement à Nosy Be",
-    "heroSubtitle": "RENTANOO, la plateforme de location 100 % en ligne — deux-roues et hébergements",
+    "heroTitle": "Louez scooter, moto, voiture ou hébergement à Nosy Be",
+    "heroSubtitle": "RENTANOO, la plateforme de location 100 % en ligne — deux-roues, voitures et hébergements",
     "catalogCta": "Voir les {{count}} véhicules disponibles",
     "catalogCta_one": "Voir le véhicule disponible",
     "catalogCtaLoading": "Voir les véhicules disponibles",

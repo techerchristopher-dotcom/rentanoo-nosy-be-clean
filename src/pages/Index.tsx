@@ -674,15 +674,15 @@ const Index = () => {
       />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="bg-gradient-lagoon text-white py-16 lg:py-24">
+        <section className="bg-gradient-lagoon bg-[length:200%_200%] animate-gradient-shift text-white py-16 lg:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white animate-fade-up [animation-delay:0ms]">
               {t(
                 "home.heroTitle",
                 "Louez votre scooter à Nosy Be en quelques clics"
               )}
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto font-medium">
+            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto font-medium animate-fade-up [animation-delay:120ms]">
               {t(
                 "home.heroSubtitle",
                 "RENTANOO, la première plateforme de location de scooters 100 % en ligne"
@@ -690,30 +690,36 @@ const Index = () => {
             </p>
 
             {showCatalogUi ? (
-              <HomeHeroTrustStrip
-                vehicleCount={vehicles.length}
-                minPriceLabel={minPriceLabel}
-              />
+              <div className="animate-fade-up [animation-delay:220ms]">
+                <HomeHeroTrustStrip
+                  vehicleCount={vehicles.length}
+                  minPriceLabel={minPriceLabel}
+                />
+              </div>
             ) : null}
 
-            <HomeDayContextStrip variant="hero" />
-            
+            <div className="animate-fade-up [animation-delay:280ms]">
+              <HomeDayContextStrip variant="hero" />
+            </div>
+
             {/* 🎨 Nouvelle SearchBar style Airbnb */}
-            <SearchBarAirbnb
-              searchText={searchText}
-              onSearchTextChange={setSearchText}
-              startDate={startDate || null}
-              endDate={endDate || null}
-              onStartDateChange={(date) => setStartDate(date || undefined)}
-              onEndDateChange={(date) => setEndDate(date || undefined)}
-              startTime={startTime}
-              endTime={endTime}
-              onStartTimeChange={setStartTime}
-              onEndTimeChange={setEndTime}
-              onSearch={handleSearch}
-              searching={searching}
-              onResetSearch={handleResetSearch}
-            />
+            <div className="animate-fade-up [animation-delay:340ms]">
+              <SearchBarAirbnb
+                searchText={searchText}
+                onSearchTextChange={setSearchText}
+                startDate={startDate || null}
+                endDate={endDate || null}
+                onStartDateChange={(date) => setStartDate(date || undefined)}
+                onEndDateChange={(date) => setEndDate(date || undefined)}
+                startTime={startTime}
+                endTime={endTime}
+                onStartTimeChange={setStartTime}
+                onEndTimeChange={setEndTime}
+                onSearch={handleSearch}
+                searching={searching}
+                onResetSearch={handleResetSearch}
+              />
+            </div>
 
           </div>
         </section>
