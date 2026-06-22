@@ -8,6 +8,7 @@ export interface BlogPost {
   content: string;
   seoTitle: string;
   seoDescription: string;
+  image?: string;
 }
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -20,6 +21,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt: "Le bon type de véhicule, les documents demandés, l'état du scooter et les conditions de remise : tout ce qu'il faut anticiper pour louer un scooter à Nosy Be sans perdre de temps.",
     seoTitle: "Comment louer un scooter à Nosy Be — Guide complet | Rentanoo",
     seoDescription: "Documents nécessaires, choix du véhicule, prix et erreurs à éviter : notre guide complet pour louer un scooter à Nosy Be facilement et sereinement.",
+    image: "https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/blog/comment-louer-un-scooter-a-nosy-be.webp",
     content: `À Nosy Be, attendre d'atterrir pour chercher un deux-roues peut vite compliquer le début du séjour. Si vous vous demandez comment louer un scooter à Nosy Be, le plus simple est d'anticiper quelques points précis : le bon type de véhicule, les documents demandés, l'état du scooter et les conditions de remise.
 
 ## Comment louer un scooter à Nosy Be sans perdre de temps

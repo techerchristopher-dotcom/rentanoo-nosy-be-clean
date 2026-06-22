@@ -134,6 +134,7 @@ export default function BlogPost() {
         title={post.seoTitle}
         description={post.seoDescription}
         canonical={`https://rentanoo.com/blog/${post.slug}`}
+        ogImage={post.image}
         structuredData={{
           "@context": "https://schema.org",
           "@type": "Article",
@@ -152,6 +153,17 @@ export default function BlogPost() {
         </Button>
 
         <header className="mb-8">
+          {post.image && (
+            <div className="aspect-[16/9] overflow-hidden rounded-xl mb-6 bg-muted/30">
+              <img
+                src={post.image}
+                alt={post.title}
+                className="w-full h-full object-cover"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </div>
+          )}
           <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
             <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{post.category}</span>
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readTime} min de lecture</span>

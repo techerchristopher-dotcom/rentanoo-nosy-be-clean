@@ -37,6 +37,17 @@ export default function BlogIndex() {
               to={`/blog/${post.slug}`}
               className="group flex flex-col rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow overflow-hidden"
             >
+              {post.image && (
+                <div className="aspect-[16/9] overflow-hidden bg-muted/30">
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              )}
               <div className="p-5 flex flex-col gap-3 flex-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-primary">{post.category}</span>
                 <h2 className="font-bold text-base leading-snug group-hover:text-primary transition-colors">{post.title}</h2>
