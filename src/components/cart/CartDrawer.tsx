@@ -1,4 +1,4 @@
-import { Car, Hotel, Trash2 } from "lucide-react";
+import { Calendar, Car, Hotel, Trash2 } from "lucide-react";
 import { MdMoped, MdTwoWheeler, MdTerrain } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import {
@@ -48,58 +48,72 @@ export function CartDrawer() {
           ) : (
             items.map((item) => {
               const Icon = TYPE_ICONS[item.vehicleType] || Car;
+              const hasOptions = item.selectedOptions && item.selectedOptions.length > 0;
               return (
                 <div
                   key={item.id}
-                  className="flex items-start gap-3 rounded-lg border p-3"
+                  className="rounded-2xl border bg-card p-4 shadow-sm"
                 >
-                  {item.vehicleThumbnail ? (
-                    <img
-                      src={item.vehicleThumbnail}
-                      alt={item.vehicleLabel}
-                      className="h-12 w-12 rounded-full object-cover shrink-0 ring-1 ring-border"
-                    />
-                  ) : (
-                    <div className="rounded-full bg-primary-soft/30 p-2 shrink-0">
-                      <Icon className="h-5 w-5 text-primary" />
+                  <div className="flex items-start gap-3">
+                    {item.vehicleThumbnail ? (
+                      <img
+                        src={item.vehicleThumbnail}
+                        alt={item.vehicleLabel}
+                        className="h-14 w-14 rounded-xl object-cover shrink-0 ring-1 ring-border"
+                      />
+                    ) : (
+                      <div className="h-14 w-14 rounded-xl bg-primary-soft/30 flex items-center justify-center shrink-0">
+                        <Icon className="h-6 w-6 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-sm font-semibold leading-tight truncate">
+                        {item.vehicleLabel}
+                      </p>
+                      <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        {formatDateRange(item.startDate, item.endDate)}
+                      </span>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.vehicleLabel}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateRange(item.startDate, item.endDate)}
-                    </p>
-                    {item.selectedOptions && item.selectedOptions.length > 0 && (
-                      <ul className="mt-1 space-y-0.5">
-                        {item.selectedOptions.map((opt) => (
-                          <li
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 -mr-1 -mt-1 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeItem(item.id)}
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {(hasOptions || item.estimatedPrice != null) && (
+                    <div className="mt-3 space-y-1.5 border-t pt-3">
+                      {hasOptions &&
+                        item.selectedOptions!.map((opt) => (
+                          <div
                             key={opt.id}
-                            className="text-xs text-muted-foreground flex items-center justify-between gap-2"
+                            className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground"
                           >
-                            <span className="truncate">+ {opt.name}</span>
+                            <span className="truncate">{opt.name}</span>
                             {opt.totalPrice > 0 && (
-                              <span className="shrink-0">
+                              <span className="shrink-0 tabular-nums">
                                 {formatClientInline(opt.totalPrice)}
                               </span>
                             )}
-                          </li>
+                          </div>
                         ))}
-                      </ul>
-                    )}
-                    {item.estimatedPrice != null && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        ~{formatClientInline(item.estimatedPrice)}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeItem(item.id)}
-                    aria-label="Supprimer"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                      {item.estimatedPrice != null && (
+                        <div className="flex items-baseline justify-between gap-3 pt-1">
+                          <span className="text-xs font-medium text-foreground">
+                            Sous-total
+                          </span>
+                          <span className="text-sm font-semibold tabular-nums">
+                            {formatClientInline(item.estimatedPrice)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })
