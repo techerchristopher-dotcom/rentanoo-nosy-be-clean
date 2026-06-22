@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, ShieldCheck, Hourglass, Banknote } from "lucide-react";
+import { Calendar, ShieldCheck, Hourglass, Banknote, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ClientPriceRow } from "@/components/currency/PriceRows";
@@ -187,7 +188,19 @@ export function PaymentFlowModal({
               <ClientPriceRow label="Sous-total" amountMga={reservation.montantDeBase} />
               <ClientPriceRow label={serviceFeeLabel} amountMga={reservation.fraisService} />
               <div className="flex justify-between items-start gap-3 pt-2 border-t">
-                <span className="font-semibold min-w-0 truncate">Total TTC à payer</span>
+                <span className="font-semibold min-w-0 truncate inline-flex items-center gap-1.5">
+                  Total TTC à payer
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs">
+                        Annulation gratuite jusqu'à 48h avant. Entre 24h et 48h : 50% remboursé. Moins de 24h : aucun remboursement.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
                 <DualPrice
                   amountMga={reservation.totalTTC}
                   variant="client"

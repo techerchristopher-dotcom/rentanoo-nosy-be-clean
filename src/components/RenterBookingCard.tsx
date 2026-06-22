@@ -1322,6 +1322,17 @@ export default function RenterBookingCard({
                 <Textarea id="customCancelReason" value={customCancelReason} onChange={(e) => setCustomCancelReason(e.target.value)} placeholder={t('bookings.cancel.reasonPlaceholder')} />
               </div>
             )}
+            <p className="text-xs text-muted-foreground rounded-lg bg-muted/40 p-3">
+              Le remboursement dépend du délai avant le retrait/l'arrivée.{' '}
+              <a
+                href="/politique-annulation"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Voir la politique d'annulation →
+              </a>
+            </p>
           </div>
           <div className="flex gap-3 pt-2">
             <Button variant="outline" className="flex-1" onClick={() => setShowCancelModal(false)} disabled={isDeleting}>{t('bookings.cancel.back')}</Button>

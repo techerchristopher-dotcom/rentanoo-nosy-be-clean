@@ -128,6 +128,9 @@ export function CartDrawer() {
                           {formatClientInline(itemTotal(item))}
                         </span>
                       </div>
+                      <p className="text-[11px] text-muted-foreground/70">
+                        Annulation gratuite jusqu'à 48h{item.vehicleType === "accommodation" ? " avant l'arrivée" : " avant le retrait"}
+                      </p>
                     </div>
                   )}
                 </div>
