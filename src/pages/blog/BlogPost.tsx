@@ -169,7 +169,7 @@ export default function BlogPost() {
           <p className="font-semibold mb-2">Prêt à explorer Nosy Be ?</p>
           <p className="text-sm text-muted-foreground mb-4">Réservez scooter, moto ou hébergement directement en ligne.</p>
           <Button asChild className="bg-primary text-white">
-            <Link to="/">Voir les annonces disponibles</Link>
+            <Link to="/#search-results">Voir les annonces disponibles</Link>
           </Button>
         </div>
 

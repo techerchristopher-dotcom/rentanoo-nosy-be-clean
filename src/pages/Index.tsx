@@ -161,6 +161,19 @@ const Index = () => {
 
   const showCatalogUi = !loading && vehicles.length > 0;
 
+  // Scroll vers le catalogue quand on arrive avec #search-results (ex: CTA depuis le blog)
+  useEffect(() => {
+    if (location.hash !== "#search-results") return;
+    if (!showCatalogUi) return;
+    const id = window.setTimeout(() => {
+      document.getElementById("search-results")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
+    return () => window.clearTimeout(id);
+  }, [location.hash, showCatalogUi]);
+
   useEffect(() => {
     selectedMainCategoryRef.current = selectedMainCategory;
     selectedSubFilterRef.current = selectedSubFilter;
