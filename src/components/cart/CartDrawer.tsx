@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart, CART_MAX_ITEMS, type CartVehicleType } from "@/contexts/CartContext";
+import { useExchangeRate } from "@/contexts/ExchangeRateContext";
 
 const TYPE_ICONS: Record<CartVehicleType, typeof Car> = {
   car: Car,
@@ -28,6 +29,7 @@ function formatDateRange(startDate: string, endDate: string) {
 export function CartDrawer() {
   const { items, count, isOpen, closeCart, removeItem } = useCart();
   const navigate = useNavigate();
+  const { formatClientInline } = useExchangeRate();
 
   const total = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
 
@@ -77,7 +79,7 @@ export function CartDrawer() {
                             <span className="truncate">+ {opt.name}</span>
                             {opt.totalPrice > 0 && (
                               <span className="shrink-0">
-                                {opt.totalPrice.toLocaleString("fr-FR")} Ar
+                                {formatClientInline(opt.totalPrice)}
                               </span>
                             )}
                           </li>
@@ -86,7 +88,7 @@ export function CartDrawer() {
                     )}
                     {item.estimatedPrice != null && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        ~{item.estimatedPrice.toLocaleString("fr-FR")} Ar
+                        ~{formatClientInline(item.estimatedPrice)}
                       </p>
                     )}
                   </div>
@@ -108,7 +110,7 @@ export function CartDrawer() {
           <SheetFooter className="flex-col gap-3 sm:flex-col">
             <div className="flex items-center justify-between w-full text-sm">
               <span className="text-muted-foreground">Total estimé</span>
-              <span className="font-semibold">{total.toLocaleString("fr-FR")} Ar</span>
+              <span className="font-semibold">{formatClientInline(total)}</span>
             </div>
             <Button
               className="w-full"
