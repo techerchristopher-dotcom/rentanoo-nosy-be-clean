@@ -16,6 +16,7 @@ import { previewRenterFee, type RenterFeePreview } from "@/services/supabase/ren
 import { supabase } from "@/integrations/supabase/client";
 import { DualPrice } from "@/components/currency/DualPrice";
 import { requiresHotelName } from "@/utils/bookingLocations";
+import { SubmitProgressOverlay } from "@/components/cart/SubmitProgressOverlay";
 import type { User } from "@/types";
 
 const TYPE_ICONS: Record<CartVehicleType, typeof Car> = {
@@ -42,6 +43,7 @@ export default function CartSubmit() {
   const [profile, setProfile] = useState<User | null>(null);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitStep, setSubmitStep] = useState(0);
   const [feePreviews, setFeePreviews] = useState<Record<string, RenterFeePreview | null>>({});
   const [hotelNameErrors, setHotelNameErrors] = useState<Record<string, boolean>>({});
 
@@ -117,6 +119,12 @@ export default function CartSubmit() {
     setHotelNameErrors({});
 
     setSubmitting(true);
+    setSubmitStep(0);
+    const stepTimers = [
+      setTimeout(() => setSubmitStep(1), 700),
+      setTimeout(() => setSubmitStep(2), 1500),
+      setTimeout(() => setSubmitStep(3), 2300),
+    ];
 
     const cartGroupId = crypto.randomUUID();
     const results: ItemResult[] = [];
@@ -177,6 +185,9 @@ export default function CartSubmit() {
       console.warn("[CartSubmit] email notify failed", err);
     }
 
+    stepTimers.forEach(clearTimeout);
+    setSubmitStep(3);
+
     clearCart();
     setSubmitting(false);
 
@@ -186,6 +197,7 @@ export default function CartSubmit() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
+      <SubmitProgressOverlay open={submitting} stepIndex={submitStep} />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
           <CardHeader>
