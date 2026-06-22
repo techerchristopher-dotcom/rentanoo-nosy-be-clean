@@ -31,7 +31,11 @@ export function CartDrawer() {
   const navigate = useNavigate();
   const { formatClientInline } = useExchangeRate();
 
-  const total = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
+  const itemTotal = (item: (typeof items)[number]) =>
+    (item.estimatedPrice || 0) +
+    (item.selectedOptions?.reduce((sum, opt) => sum + (opt.totalPrice || 0), 0) || 0);
+
+  const total = items.reduce((sum, item) => sum + itemTotal(item), 0);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeCart()}>
@@ -86,8 +90,14 @@ export function CartDrawer() {
                     </Button>
                   </div>
 
-                  {(hasOptions || item.estimatedPrice != null) && (
+                  {item.estimatedPrice != null && (
                     <div className="mt-3 space-y-1.5 border-t pt-3">
+                      <div className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
+                        <span className="truncate">Location</span>
+                        <span className="shrink-0 tabular-nums">
+                          {formatClientInline(item.estimatedPrice)}
+                        </span>
+                      </div>
                       {hasOptions &&
                         item.selectedOptions!.map((opt) => (
                           <div
@@ -102,16 +112,14 @@ export function CartDrawer() {
                             )}
                           </div>
                         ))}
-                      {item.estimatedPrice != null && (
-                        <div className="flex items-baseline justify-between gap-3 pt-1">
-                          <span className="text-xs font-medium text-foreground">
-                            Sous-total
-                          </span>
-                          <span className="text-sm font-semibold tabular-nums">
-                            {formatClientInline(item.estimatedPrice)}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-baseline justify-between gap-3 pt-1">
+                        <span className="text-xs font-medium text-foreground">
+                          Sous-total
+                        </span>
+                        <span className="text-sm font-semibold tabular-nums">
+                          {formatClientInline(itemTotal(item))}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
