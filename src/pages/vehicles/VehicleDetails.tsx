@@ -1086,7 +1086,7 @@ export default function VehicleDetails() {
               className="mt-2 inline-flex items-center gap-1.5 text-xs text-success hover:underline"
             >
               <Clock className="h-3.5 w-3.5" />
-              Annulation gratuite jusqu'à 48h avant
+              Annulation gratuite jusqu'à 48h avant le retrait
             </Link>
 
             {/* Afficher le total si des dates sont sélectionnées */}
