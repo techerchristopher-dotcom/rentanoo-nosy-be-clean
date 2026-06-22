@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, Hotel, ShoppingCart } from "lucide-react";
@@ -340,6 +346,34 @@ export default function CartSubmit() {
                   placeholder="Précisions sur votre demande..."
                 />
               </div>
+
+              <Accordion type="single" collapsible className="rounded-lg border">
+                <AccordionItem value="cancellation" className="border-none">
+                  <AccordionTrigger className="px-4 text-sm">
+                    Conditions d'annulation
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 space-y-2">
+                    {items.map((item) => {
+                      const startDate = new Date(item.startDate);
+                      const cutoff = new Date(startDate.getTime() - 48 * 60 * 60 * 1000);
+                      const cutoffLabel = cutoff.toLocaleString("fr-FR", {
+                        day: "2-digit",
+                        month: "long",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                      return (
+                        <p key={item.id} className="text-sm text-muted-foreground">
+                          <strong className="text-foreground">{item.vehicleLabel}</strong> — annulation gratuite jusqu'au {cutoffLabel}. Entre 24h et 48h avant : 50% remboursé. Moins de 24h : aucun remboursement.
+                        </p>
+                      );
+                    })}
+                    <Link to="/politique-annulation" className="text-sm text-primary hover:underline inline-block pt-1">
+                      Voir la politique complète →
+                    </Link>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               <p className="text-sm text-muted-foreground rounded-lg bg-muted/40 p-3">
                 Cette demande n'est pas un paiement — chaque propriétaire valide votre demande individuellement.

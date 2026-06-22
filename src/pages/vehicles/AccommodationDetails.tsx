@@ -100,7 +100,7 @@ import { AccommodationHighlights } from "@/components/accommodation/Accommodatio
 import { ListingDescriptionContent } from "@/components/listing/ListingDescriptionContent";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Clock } from "lucide-react";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
@@ -958,6 +958,14 @@ export default function AccommodationDetails() {
             <p className="text-muted-foreground">
               {t("pricing.perNightShort", "par nuit")}
             </p>
+
+            <Link
+              to="/politique-annulation"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs text-success hover:underline"
+            >
+              <Clock className="h-3.5 w-3.5" />
+              Annulation gratuite jusqu'à 48h avant
+            </Link>
 
             {vehicleRentalInfo && (
               <div className="mt-3 pt-3 border-t border-muted">

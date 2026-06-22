@@ -79,6 +79,9 @@ export function Footer() {
               <li>
                 <Link to="/legal" className="text-muted-foreground hover:text-primary transition-colors">{t('common.mentions_lgales')}</Link>
               </li>
+              <li>
+                <Link to="/politique-annulation" className="text-muted-foreground hover:text-primary transition-colors">{t('common.politique_annulation', "Politique d'annulation et de remboursement")}</Link>
+              </li>
             </ul>
           </div>
         </div>

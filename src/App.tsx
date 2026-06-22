@@ -38,6 +38,7 @@ const CartSubmit = lazy(() => import("./pages/cart/CartSubmit"));
 const CartConfirmation = lazy(() => import("./pages/cart/CartConfirmation"));
 const MessageToOwners = lazy(() => import("./pages/booking/MessageToOwners"));
 const Legal = lazy(() => import("./pages/legal/Legal"));
+const PolitiqueAnnulation = lazy(() => import("./pages/legal/PolitiqueAnnulation"));
 const SinistreCaution = lazy(() => import("./pages/sinistre-caution/SinistreCaution"));
 const Contact = lazy(() => import("./pages/Contact"));
 const MeteoNosyBePage = lazy(() => import("./pages/seo/MeteoNosyBePage"));
@@ -192,6 +193,7 @@ const App = () => (
             <Route path="/panier/soumettre" element={<Suspense fallback={<PageLoader />}><CartSubmit /></Suspense>} />
             <Route path="/panier/confirmation" element={<Suspense fallback={<PageLoader />}><CartConfirmation /></Suspense>} />
             <Route path="/legal" element={<Suspense fallback={<PageLoader />}><Legal /></Suspense>} />
+            <Route path="/politique-annulation" element={<Suspense fallback={<PageLoader />}><PolitiqueAnnulation /></Suspense>} />
             <Route path="/sinistre-caution" element={<Suspense fallback={<PageLoader />}><SinistreCaution /></Suspense>} />
             <Route path="/meteo-nosy-be" element={<Suspense fallback={<PageLoader />}><MeteoNosyBePage /></Suspense>} />
             <Route path="/taux-change-euro-ariary-madagascar" element={<Suspense fallback={<PageLoader />}><TauxChangeMadagascarPage /></Suspense>} />
