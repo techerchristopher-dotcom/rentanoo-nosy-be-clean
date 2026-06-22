@@ -687,6 +687,8 @@ export default function MotoVehicleDetails() {
       pickupLocation: navigationState.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
       estimatedPrice: pricing.basePrice,
+      pricePerDay: vehicle.dailyPrice,
+      rentalDays: pricing.billableDays,
     });
 
     if (added) {
