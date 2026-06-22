@@ -1,4 +1,4 @@
-import { createRoot, hydrateRoot } from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
@@ -57,10 +57,10 @@ const app = (
   </HelmetProvider>
 );
 
-// Si react-snap a pré-rendu du HTML, on hydrate pour préserver le contenu statique.
-// Sinon (premier rendu SPA normal), on monte via createRoot.
-if (rootEl.hasChildNodes()) {
-  hydrateRoot(rootEl, app);
-} else {
-  createRoot(rootEl).render(app);
-}
+// Le HTML pré-rendu par generate-static-pages.js n'injecte qu'un bloc SEO
+// caché (aria-hidden, hors écran) pour les crawlers — sa structure ne
+// correspond jamais à l'arbre React réel. hydrateRoot ne peut donc que
+// échouer (mismatch garanti) et faisait planter l'app via l'ErrorBoundary.
+// On monte toujours via createRoot ; le contenu SEO statique reste lisible
+// par les crawlers avant l'exécution du JS, puis est simplement remplacé.
+createRoot(rootEl).render(app);
