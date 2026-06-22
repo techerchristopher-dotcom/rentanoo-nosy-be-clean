@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { Car, CheckCircle2, PartyPopper, XCircle } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface ItemResult {
@@ -10,6 +10,7 @@ interface ItemResult {
   label: string;
   status: "success" | "failed";
   error?: string;
+  thumbnail?: string;
 }
 
 export default function CartConfirmation() {
@@ -33,29 +34,47 @@ export default function CartConfirmation() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary-soft/5 to-secondary-soft/10 pt-20">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className="overflow-hidden border-none shadow-xl animate-in fade-in zoom-in-95 duration-500">
+          <div className="bg-gradient-lagoon px-6 py-10 text-center text-white">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/15 ring-4 ring-white/20 animate-in zoom-in duration-500">
+              <PartyPopper className="h-8 w-8" />
+            </div>
+            <h1 className="text-2xl font-bold">
               {successCount > 0
-                ? `${successCount} demande${successCount > 1 ? "s" : ""} envoyée${successCount > 1 ? "s" : ""}`
+                ? `${successCount} demande${successCount > 1 ? "s" : ""} envoyée${successCount > 1 ? "s" : ""} !`
                 : "Aucune demande envoyée"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
+            </h1>
+            <p className="mt-1 text-sm text-white/80">
+              Merci pour votre confiance, on s'occupe du reste.
+            </p>
+          </div>
+
+          <CardContent className="space-y-5 p-6">
+            <div className="space-y-2.5">
               {results.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center gap-2 rounded-lg border p-3 text-sm"
+                  className="flex items-center gap-3 rounded-xl border bg-card p-3"
                 >
+                  <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted/40 flex items-center justify-center shrink-0">
+                    {r.thumbnail ? (
+                      <img
+                        src={r.thumbnail}
+                        alt={r.label}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Car className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <span className="flex-1 text-sm font-medium truncate">{r.label}</span>
                   {r.status === "success" ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                    <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
                   ) : (
-                    <XCircle className="h-4 w-4 text-destructive shrink-0" />
-                  )}
-                  <span className="flex-1">{r.label}</span>
-                  {r.status === "failed" && (
-                    <span className="text-xs text-destructive">{r.error || "Indisponible"}</span>
+                    <div className="text-right shrink-0">
+                      <XCircle className="h-5 w-5 text-destructive inline-block" />
+                      <p className="text-[11px] text-destructive">{r.error || "Indisponible"}</p>
+                    </div>
                   )}
                 </div>
               ))}
@@ -68,13 +87,25 @@ export default function CartConfirmation() {
               </p>
             )}
 
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-center">
               Christopher vous recontacte sous 24h pour confirmer chaque réservation.
             </p>
 
-            <Button className="w-full" onClick={() => navigate("/")}>
-              Retour à l'accueil
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => navigate("/")}
+              >
+                Retour à l'accueil
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => navigate("/me/owner/bookings")}
+              >
+                Voir mes réservations
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -32,6 +32,7 @@ interface ItemResult {
   label: string;
   status: "success" | "failed";
   error?: string;
+  thumbnail?: string;
 }
 
 export default function CartSubmit() {
@@ -151,6 +152,7 @@ export default function CartSubmit() {
         label: item.vehicleLabel,
         status: data ? "success" : "failed",
         error: error || undefined,
+        thumbnail: item.vehicleThumbnail,
       });
     }
 
