@@ -244,7 +244,7 @@ export function ExplorerVisualFilters({
           )
         }
         className={cn(
-          "inline-flex shrink-0 snap-start flex-col items-center gap-1.5 rounded-xl border px-4 py-3 min-w-[100px] transition-all",
+          "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
           isActive
             ? "border-primary bg-primary/5 ring-2 ring-primary/20"
@@ -252,7 +252,7 @@ export function ExplorerVisualFilters({
         )}
       >
         <Icon className="h-6 w-6 text-primary" aria-hidden />
-        <span className="text-xs font-semibold whitespace-nowrap">
+        <span className="text-xs font-semibold text-center leading-tight">
           {t(category.labelKey)} ({count})
         </span>
       </button>
@@ -275,7 +275,7 @@ export function ExplorerVisualFilters({
 
       {/* Niveau 1 */}
       {isMobile ? (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 snap-x snap-mandatory scrollbar-hide">
+        <div className="grid grid-cols-3 gap-2">
           {EXPLORER_MAIN_CATEGORIES.map(renderMainCategoryMobile)}
         </div>
       ) : (
