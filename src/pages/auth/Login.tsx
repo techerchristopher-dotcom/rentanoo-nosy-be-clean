@@ -173,6 +173,13 @@ export default function Login() {
           </CardHeader>
           
           <CardContent>
+            {/* Cart context banner */}
+            {searchParams.get("redirect")?.includes("/panier") && (
+              <div className="mb-4 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-primary font-medium text-center">
+                Connecte-toi ou crée un compte pour envoyer ta demande de réservation — ton panier est sauvegardé.
+              </div>
+            )}
+
             {/* Social Login Buttons */}
             <div className="space-y-3">
               <Button

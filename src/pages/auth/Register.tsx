@@ -182,6 +182,13 @@ export default function Register() {
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {/* Cart context banner */}
+                    {redirectParam?.includes("/panier") && (
+                      <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-primary font-medium text-center">
+                        Connecte-toi ou crée un compte pour envoyer ta demande de réservation — ton panier est sauvegardé.
+                      </div>
+                    )}
+
                     {/* Social Login Buttons */}
                     <div className="space-y-3">
                       <Button
