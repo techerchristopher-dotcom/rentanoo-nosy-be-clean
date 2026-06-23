@@ -359,6 +359,35 @@ export const SupabaseVehiclesService = {
   },
 
   /**
+   * Récupère un véhicule disponible à partir des 8 premiers caractères de son ID
+   * (format utilisé dans les URLs /vehicle/:license et /hebergement/:license).
+   * Requête ciblée par plage d'ID, évite de charger tout le catalogue pour
+   * afficher une seule fiche produit.
+   */
+  async getVehicleByShortId(shortId: string): Promise<{ data: Vehicle | null; error: string | null }> {
+    const prefix = shortId.toLowerCase();
+    try {
+      const { data, error } = await supabase
+        .from('vehicles')
+        .select(VEHICLE_SELECT_WITH_AREA_SIMPLE)
+        .gte('id', `${prefix}-0000-0000-0000-000000000000`)
+        .lte('id', `${prefix}-ffff-ffff-ffff-ffffffffffff`)
+        .eq('available', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[SupabaseVehiclesService] ❌ getVehicleByShortId error:', error);
+        return { data: null, error: error.message };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('[SupabaseVehiclesService] ❌ getVehicleByShortId exception:', error);
+      return { data: null, error: 'Erreur lors de la récupération du véhicule' };
+    }
+  },
+
+  /**
    * Récupère un véhicule par son ID
    */
   async getVehicleById(vehicleId: string): Promise<{ data: Vehicle | null; error: string | null }> {

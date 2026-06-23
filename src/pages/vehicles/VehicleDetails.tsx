@@ -275,20 +275,8 @@ export default function VehicleDetails() {
     try {
       setLoading(true);
       
-             // Charger tous les véhicules depuis Supabase
-             const allVehicles = await SupabaseVehiclesService.getAvailableVehicles();
-             
-             console.log('🚗 [DEBUG] Tous les véhicules chargés:', allVehicles.length);
-             console.log('🚗 [DEBUG] License recherchée:', license);
-             
-             // Afficher les 8 premiers caractères de chaque véhicule pour debug
-             allVehicles.forEach((v, index) => {
-               const vehicleLicense = v.id.substring(0, 8).toUpperCase();
-               console.log(`🚗 [DEBUG] Véhicule ${index}: ID=${v.id}, License=${vehicleLicense}, Match=${vehicleLicense === license}`);
-             });
-             
-             // Trouver le véhicule qui correspond à la license (license générée à partir des 8 premiers caractères de l'ID)
-             const vehicle = allVehicles.find(v => v.id.substring(0, 8).toUpperCase() === license.toUpperCase());
+             // Charger uniquement ce véhicule (requête ciblée par préfixe d'ID, pas tout le catalogue)
+             const { data: vehicle } = await SupabaseVehiclesService.getVehicleByShortId(license);
       
       if (vehicle) {
         if (isAccommodation(vehicle)) {
