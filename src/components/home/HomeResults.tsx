@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +51,17 @@ export function HomeResults({
   deferImages = false,
 }: HomeResultsProps) {
   const { t } = useTranslation("common");
+
+  const PAGE_SIZE = 9;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Repart de PAGE_SIZE chaque fois que la liste filtrée change (nouvelle recherche/catégorie)
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filteredVehicles]);
+
+  const visibleVehicles = filteredVehicles.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredVehicles.length;
 
   const hasExplorerFilter =
     selectedMainCategory != null || selectedSubFilter != null;
@@ -168,8 +179,9 @@ export function HomeResults({
               subCategory={selectedSubFilter}
             />
           ) : !loading && filteredVehicles.length > 0 ? (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredVehicles.map((vehicle, index) => {
+              {visibleVehicles.map((vehicle, index) => {
                 const vehicleRentalInfo = rentalCalculation?.isCalculated
                   ? getVehicleRentalInfo(vehicle.id, vehicle.price_per_day)
                   : undefined;
@@ -227,6 +239,17 @@ export function HomeResults({
                 );
               })}
             </div>
+            {hasMore ? (
+              <div className="mt-8 text-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                >
+                  {t("common.voir_plus", "Voir plus")}
+                </Button>
+              </div>
+            ) : null}
+            </>
           ) : !loading ? (
             <Card className="p-8 text-center">
               <p className="text-muted-foreground mb-4">

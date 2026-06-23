@@ -131,6 +131,8 @@ export const SupabaseVehiclesService = {
     vehicleCategories?: string[];
     fuel_type?: string[];
     transmission?: string[];
+    /** Limite le nombre de lignes récupérées (utile pour les pages qui n'ont besoin que d'un aperçu). */
+    limit?: number;
   }): Promise<Vehicle[]> {
     try {
       let query = supabase
@@ -149,6 +151,10 @@ export const SupabaseVehiclesService = {
 
       if (filters?.transmission?.length) {
         query = query.in('transmission', filters.transmission);
+      }
+
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
