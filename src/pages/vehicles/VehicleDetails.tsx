@@ -137,7 +137,7 @@ export default function VehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { addItem: addToCart, isFull: isCartFull, openAddedModal } = useCart();
+  const { addItem: addToCart, updateItem: updateCartItem, isFull: isCartFull, openAddedModal } = useCart();
   const { t, i18n } = useTranslation("common");
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
 
@@ -192,6 +192,8 @@ export default function VehicleDetails() {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [pickerStartDate, setPickerStartDate] = useState<Date | null>(null);
   const [pickerEndDate, setPickerEndDate] = useState<Date | null>(null);
+  // Tracks the cart item ID added during this page visit — enables date update (vs new add) when user re-validates dates
+  const [lastAddedCartItemId, setLastAddedCartItemId] = useState<string | null>(null);
   const [dateLocale, setDateLocale] = useState<Locale | null>(null);
   const viewItemSentRef = useRef(false);
 
@@ -454,6 +456,9 @@ export default function VehicleDetails() {
     if (license) {
       saveBookingResumeIntent({ path: `/vehicle/${license}`, navState: newNavState });
     }
+
+    // Auto-add to cart using newNavState directly (setState is async — navigationState not yet updated)
+    handleAddToCart(undefined, newNavState);
   };
 
   const handleBooking = (userOverride?: User | null) => {
@@ -636,7 +641,7 @@ export default function VehicleDetails() {
     }
   };
   
-  const handleAddToCart = (originEl?: HTMLElement) => {
+  const handleAddToCart = (originEl?: HTMLElement, navOverride?: VehicleNavState) => {
     if (!vehicle) return;
 
     if (isCartFull) {
@@ -648,12 +653,14 @@ export default function VehicleDetails() {
       return;
     }
 
-    if (!navigationState?.rentalCalculation) {
+    const nav = navOverride ?? navigationState;
+
+    if (!nav?.rentalCalculation) {
       setIsDatePickerOpen(true);
       return;
     }
 
-    const { startDate, endDate, startTime, endTime } = navigationState.rentalCalculation;
+    const { startDate, endDate, startTime, endTime } = nav.rentalCalculation;
 
     const pricing = getBookingRentalPricing({
       pricePerDay: vehicle.dailyPrice,
@@ -677,7 +684,7 @@ export default function VehicleDetails() {
       .map((opt) => ({ id: opt.id, name: opt.name, totalPrice: opt.totalPrice })) ?? [];
     const optionsTotal = bookingDraftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
 
-    const added = addToCart({
+    const cartPayload = {
       vehicleId: vehicle.id,
       vehicleType: (vehicle.vehicleType as any) || "car",
       vehicleLabel: `${vehicle.brand} ${vehicle.model}`,
@@ -686,15 +693,29 @@ export default function VehicleDetails() {
       endDate: endDate.toISOString(),
       startTime,
       endTime,
-      pickupLocation: navigationState.pickupLocation || undefined,
+      pickupLocation: nav.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
       estimatedPrice: pricing.basePrice,
       pricePerDay: vehicle.dailyPrice,
       rentalDays: pricing.billableDays,
-    });
+    };
+
+    // navOverride = called from handleValidateDates (auto-add after date selection)
+    // If user already added an item this page visit, update it instead of adding a duplicate
+    if (navOverride && lastAddedCartItemId) {
+      updateCartItem(lastAddedCartItemId, cartPayload);
+      openAddedModal({
+        label: `${vehicle.brand} ${vehicle.model}`,
+        dates: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+      });
+      return;
+    }
+
+    const added = addToCart(cartPayload);
 
     if (added) {
       clearBookingDraft();
+      if (navOverride) setLastAddedCartItemId(added);
       if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
       openAddedModal({
         label: `${vehicle.brand} ${vehicle.model}`,

@@ -48,7 +48,7 @@ type CartContextValue = {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  addItem: (item: Omit<CartItem, "id">) => boolean;
+  addItem: (item: Omit<CartItem, "id">) => string | false;
   removeItem: (id: string) => void;
   updateItem: (id: string, patch: Partial<Omit<CartItem, "id">>) => void;
   clearCart: () => void;
@@ -111,13 +111,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = useCallback((item: Omit<CartItem, "id">) => {
-    let added = false;
+    let newId: string | false = false;
     setItems((prev) => {
       if (prev.length >= CART_MAX_ITEMS) return prev;
-      added = true;
-      return [...prev, { ...item, id: crypto.randomUUID() }];
+      newId = crypto.randomUUID();
+      return [...prev, { ...item, id: newId }];
     });
-    return added;
+    return newId;
   }, []);
 
   const removeItem = useCallback((id: string) => {
