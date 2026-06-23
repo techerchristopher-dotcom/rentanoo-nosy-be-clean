@@ -73,7 +73,7 @@ import VehicleOwnerCard from "@/components/VehicleOwnerCard";
 import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptions";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart, Clock } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { 
   getOptimizedImageUrl, 

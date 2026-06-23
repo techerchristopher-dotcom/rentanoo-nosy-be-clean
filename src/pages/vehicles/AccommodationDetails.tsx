@@ -100,7 +100,7 @@ import { AccommodationHighlights } from "@/components/accommodation/Accommodatio
 import { ListingDescriptionContent } from "@/components/listing/ListingDescriptionContent";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart, Clock } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
