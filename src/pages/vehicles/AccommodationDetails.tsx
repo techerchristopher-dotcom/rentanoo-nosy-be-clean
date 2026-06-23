@@ -1,6 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
+import type { Locale } from "date-fns";
+
+const SearchBarDatePickerModal = lazy(() =>
+  import("@/components/ui/search-bar-date-picker-modal").then((m) => ({ default: m.SearchBarDatePickerModal }))
+);
+
+const getDateLocale = (lang: string): Promise<Locale> => {
+  if (lang.startsWith("fr")) return import("date-fns/locale/fr").then((m) => m.fr);
+  if (lang.startsWith("it")) return import("date-fns/locale/it").then((m) => m.it);
+  if (lang.startsWith("de")) return import("date-fns/locale/de").then((m) => m.de);
+  return import("date-fns/locale/en-US").then((m) => m.enUS);
+};
 import {
   Car,
   Home,
@@ -64,7 +76,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
 import { ProfileService } from "@/services/supabase/profile";
 import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle } from "@/types";
-import { createVehicleRentalInfo } from "@/lib/utils";
+import { createVehicleRentalInfo, createRentalCalculation } from "@/lib/utils";
 import { getBookingRentalPricing } from "@/utils/rentalPriceFromDates";
 import { formatLegacyFormattedPrice } from "@/utils/formatLegacyFormattedPrice";
 import { getVehicleCardTotalSummary } from "@/utils/formatVehicleCardRental";
@@ -178,6 +190,11 @@ export default function AccommodationDetails() {
     legal: false,
   });
   const [restoredNavState, setRestoredNavState] = useState<VehicleNavState>(null);
+  const [manualNavState, setManualNavState] = useState<VehicleNavState>(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [pickerStartDate, setPickerStartDate] = useState<Date | null>(null);
+  const [pickerEndDate, setPickerEndDate] = useState<Date | null>(null);
+  const [dateLocale, setDateLocale] = useState<Locale | null>(null);
   const viewItemSentRef = useRef(false);
   const [rawVehicleCategory, setRawVehicleCategory] = useState<string | null>(null);
 
@@ -186,9 +203,14 @@ export default function AccommodationDetails() {
   }, [license]);
 
   useEffect(() => {
+    getDateLocale(i18n.language).then(setDateLocale);
+  }, [i18n.language]);
+
+  useEffect(() => {
     const routerState = location.state as VehicleNavState | null;
     if (routerState?.rentalCalculation) {
       setRestoredNavState(null);
+      setManualNavState(null);
       return;
     }
     if (!license) return;
@@ -381,7 +403,9 @@ export default function AccommodationDetails() {
     pickupLocation?: string;
   } | null;
 
-  const navigationState: VehicleNavState = routerNavState?.rentalCalculation
+  const navigationState: VehicleNavState = manualNavState
+    ? manualNavState
+    : routerNavState?.rentalCalculation
     ? routerNavState
     : restoredNavState ?? routerNavState;
 
@@ -397,6 +421,35 @@ export default function AccommodationDetails() {
   const durationText = vehicleRentalInfo
     ? formatBillableDays(t, vehicleRentalInfo.days)
     : null;
+
+  const handleValidateDates = () => {
+    if (!pickerStartDate || !pickerEndDate) return;
+
+    const rentalCalculation = createRentalCalculation(
+      pickerStartDate,
+      "06:30",
+      pickerEndDate,
+      "06:00"
+    );
+
+    if (!rentalCalculation.isCalculated) return;
+
+    const newNavState: VehicleNavState = {
+      rentalCalculation,
+      startDate: rentalCalculation.startDate.toISOString(),
+      endDate: rentalCalculation.endDate.toISOString(),
+      startTime: rentalCalculation.startTime,
+      endTime: rentalCalculation.endTime,
+      pickupLocation: navigationState?.pickupLocation,
+    };
+
+    setManualNavState(newNavState);
+    setIsDatePickerOpen(false);
+
+    if (license) {
+      saveBookingResumeIntent({ path: `/hebergement/${license}`, navState: newNavState });
+    }
+  };
 
   const handleBooking = (userOverride?: User | null) => {
     const activeUser = userOverride ?? currentUser;
@@ -442,11 +495,7 @@ export default function AccommodationDetails() {
         itemId: vehicle.id,
         itemVariant: license,
       });
-      toast({
-        title: t("booking.funnel.missingDates.title"),
-        description: t("booking.funnel.missingDates.description"),
-        variant: "destructive",
-      });
+      setIsDatePickerOpen(true);
       return;
     }
 
@@ -589,11 +638,7 @@ export default function AccommodationDetails() {
     }
 
     if (!navigationState?.rentalCalculation) {
-      toast({
-        title: t("booking.funnel.missingDates.title"),
-        description: t("booking.funnel.missingDates.description"),
-        variant: "destructive",
-      });
+      setIsDatePickerOpen(true);
       return;
     }
 
@@ -1405,6 +1450,22 @@ export default function AccommodationDetails() {
       {/* Panneau debug i18n - DEV uniquement */}
 
       <Footer />
+
+      {/* Date picker modal — déclenché depuis la fiche produit (remplace l'ancien renvoi vers l'accueil) */}
+      {isDatePickerOpen && dateLocale && (
+        <Suspense fallback={null}>
+          <SearchBarDatePickerModal
+            startDate={pickerStartDate}
+            endDate={pickerEndDate}
+            onStartDateChange={setPickerStartDate}
+            onEndDateChange={setPickerEndDate}
+            dateLocale={dateLocale}
+            onClose={() => setIsDatePickerOpen(false)}
+            onValidate={handleValidateDates}
+            t={t}
+          />
+        </Suspense>
+      )}
 
       {vehicle && navigationState?.rentalCalculation && (
         <BookingConfirmationModal
