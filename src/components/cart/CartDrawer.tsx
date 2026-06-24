@@ -6,7 +6,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart, CART_MAX_ITEMS, type CartVehicleType } from "@/contexts/CartContext";
@@ -44,7 +43,8 @@ export function CartDrawer() {
           <SheetTitle>Mon panier ({count}/{CART_MAX_ITEMS})</SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto">
+          <div className="py-4 space-y-3">
           {items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-12">
               Votre panier est vide. Ajoutez un véhicule ou un hébergement depuis sa fiche.
@@ -137,25 +137,26 @@ export function CartDrawer() {
               );
             })
           )}
-        </div>
+          </div>
 
-        {items.length > 0 && (
-          <SheetFooter className="flex-col gap-3 sm:flex-col">
-            <div className="flex items-center justify-between w-full text-sm">
-              <span className="text-muted-foreground">Total estimé</span>
-              <span className="font-semibold">{formatClientInline(total)}</span>
+          {items.length > 0 && (
+            <div className="sticky bottom-0 bg-background border-t pt-3 pb-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between w-full text-sm">
+                <span className="text-muted-foreground">Total estimé</span>
+                <span className="font-semibold">{formatClientInline(total)}</span>
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => {
+                  closeCart();
+                  navigate("/panier/soumettre");
+                }}
+              >
+                Valider ma demande →
+              </Button>
             </div>
-            <Button
-              className="w-full"
-              onClick={() => {
-                closeCart();
-                navigate("/panier/soumettre");
-              }}
-            >
-              Valider ma demande →
-            </Button>
-          </SheetFooter>
-        )}
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   );
