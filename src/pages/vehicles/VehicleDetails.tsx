@@ -85,6 +85,8 @@ import VehicleOwnerCard from "@/components/VehicleOwnerCard";
 import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptions";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
+import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
+import { trackWhatsAppFabEvent } from "@/lib/whatsappAnalytics";
 import { ShoppingCart } from "lucide-react";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { 
@@ -138,6 +140,7 @@ export default function VehicleDetails() {
   const location = useLocation();
   const { toast } = useToast();
   const { addItem: addToCart, updateItem: updateCartItem, isFull: isCartFull, openAddedModal } = useCart();
+  const { waUrl: whatsappBaseUrl } = useWhatsAppContact();
   const { t, i18n } = useTranslation("common");
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
 
@@ -1197,6 +1200,17 @@ export default function VehicleDetails() {
             <CheckCircle className="h-4 w-4 mr-1" />
             Annulation gratuite
           </Badge>
+
+          <a
+            href={`${whatsappBaseUrl}?text=${encodeURIComponent(`Bonjour, j'ai une question sur ${vehicle ? `${vehicle.brand} ${vehicle.model}` : "ce véhicule"}${license ? ` (réf: ${license})` : ""}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackWhatsAppFabEvent("whatsapp_pdp_click", { page_path: `/vehicle/${license}`, vehicle_ref: license ?? "" })}
+            className="flex items-center justify-center gap-2 w-full rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700 hover:bg-green-100 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            Une question avant de réserver ? Écris-nous sur WhatsApp
+          </a>
         </div>
 
         <Separator className="my-6" />

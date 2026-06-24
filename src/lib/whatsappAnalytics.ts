@@ -3,12 +3,14 @@ import { trackGa4Event } from "@/lib/analytics";
 export type WhatsAppFabEvent =
   | "whatsapp_fab_click"
   | "whatsapp_bubble_shown"
-  | "whatsapp_fab_drag";
+  | "whatsapp_fab_drag"
+  | "whatsapp_pdp_click";
 
 const ANALYTICS_EVENTS = new Set<string>([
   "whatsapp_fab_click",
   "whatsapp_bubble_shown",
   "whatsapp_fab_drag",
+  "whatsapp_pdp_click",
   "page_view",
 ]);
 

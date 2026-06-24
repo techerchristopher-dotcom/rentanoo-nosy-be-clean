@@ -112,7 +112,9 @@ import { AccommodationHighlights } from "@/components/accommodation/Accommodatio
 import { ListingDescriptionContent } from "@/components/listing/ListingDescriptionContent";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, MessageSquare } from "lucide-react";
+import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
+import { trackWhatsAppFabEvent } from "@/lib/whatsappAnalytics";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
@@ -149,6 +151,7 @@ export default function AccommodationDetails() {
   const location = useLocation();
   const { toast } = useToast();
   const { addItem: addToCart, updateItem: updateCartItem, isFull: isCartFull, openAddedModal } = useCart();
+  const { waUrl: whatsappBaseUrl } = useWhatsAppContact();
   const { t, i18n } = useTranslation();
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
   const listingTerms = useListingTerms("accommodation");
@@ -1054,6 +1057,17 @@ export default function AccommodationDetails() {
             <CheckCircle className="h-4 w-4 mr-1" />
             {t("booking.freeCancellation")}
           </Badge>
+
+          <a
+            href={`${whatsappBaseUrl}?text=${encodeURIComponent(`Bonjour, j'ai une question sur ${vehicle ? vehicle.model : "cet hébergement"}${license ? ` (réf: ${license})` : ""}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackWhatsAppFabEvent("whatsapp_pdp_click", { page_path: `/hebergement/${license}`, vehicle_ref: license ?? "" })}
+            className="flex items-center justify-center gap-2 w-full rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700 hover:bg-green-100 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            Une question avant de réserver ? Écris-nous sur WhatsApp
+          </a>
         </div>
       </CardContent>
     </Card>
