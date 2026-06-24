@@ -1,4 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import type { Locale } from "date-fns";
+
+const SearchBarDatePickerModal = lazy(() =>
+  import("@/components/ui/search-bar-date-picker-modal").then((m) => ({ default: m.SearchBarDatePickerModal }))
+);
+
+const getDateLocale = (lang: string): Promise<Locale> => {
+  if (lang.startsWith("fr")) return import("date-fns/locale/fr").then((m) => m.fr);
+  if (lang.startsWith("it")) return import("date-fns/locale/it").then((m) => m.it);
+  if (lang.startsWith("de")) return import("date-fns/locale/de").then((m) => m.de);
+  return import("date-fns/locale/en-US").then((m) => m.enUS);
+};
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -102,6 +114,9 @@ import { VehicleServiceOptions } from "@/components/vehicles/VehicleServiceOptio
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, Clock } from "lucide-react";
+import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
+import { trackWhatsAppFabEvent } from "@/lib/whatsappAnalytics";
+import { createRentalCalculation } from "@/lib/utils";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { mapToMotoVehicle } from "@/mappers/vehicleMappers";
 import { isMoto } from "@/utils/vehicleType";
@@ -160,7 +175,8 @@ export default function MotoVehicleDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { addItem: addToCart, isFull: isCartFull, openAddedModal } = useCart();
+  const { addItem: addToCart, updateItem: updateCartItem, isFull: isCartFull, openAddedModal } = useCart();
+  const { waUrl: whatsappBaseUrl } = useWhatsAppContact();
   const { t, i18n } = useTranslation();
   const { footnote, formatClient, formatClientInline } = useExchangeRate();
   
@@ -207,6 +223,12 @@ export default function MotoVehicleDetails() {
     legal: false,
   });
   const [restoredNavState, setRestoredNavState] = useState<VehicleNavState>(null);
+  const [manualNavState, setManualNavState] = useState<VehicleNavState>(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [pickerStartDate, setPickerStartDate] = useState<Date | null>(null);
+  const [pickerEndDate, setPickerEndDate] = useState<Date | null>(null);
+  const [lastAddedCartItemId, setLastAddedCartItemId] = useState<string | null>(null);
+  const [dateLocale, setDateLocale] = useState<Locale | null>(null);
   const viewItemSentRef = useRef(false);
 
   // Flag pour contrôler l'affichage de la section "Récupération du véhicule"
@@ -233,7 +255,12 @@ export default function MotoVehicleDetails() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setManualNavState(null);
   }, [license]);
+
+  useEffect(() => {
+    getDateLocale(i18n.language).then(setDateLocale);
+  }, [i18n.language]);
 
   useEffect(() => {
     const routerState = location.state as VehicleNavState | null;
@@ -431,9 +458,8 @@ export default function MotoVehicleDetails() {
     pickupLocation?: string;
   } | null;
 
-  const navigationState: VehicleNavState = routerNavState?.rentalCalculation
-    ? routerNavState
-    : restoredNavState ?? routerNavState;
+  const navigationState: VehicleNavState = manualNavState
+    ?? (routerNavState?.rentalCalculation ? routerNavState : restoredNavState ?? routerNavState);
 
   const vehicleRentalInfo: VehicleRentalInfo | null =
     vehicle && navigationState?.rentalCalculation
@@ -492,11 +518,7 @@ export default function MotoVehicleDetails() {
         itemId: vehicle.id,
         itemVariant: license,
       });
-      toast({
-        title: t("booking.funnel.missingDates.title"),
-        description: t("booking.funnel.missingDates.description"),
-        variant: "destructive",
-      });
+      setIsDatePickerOpen(true);
       return;
     }
 
@@ -630,7 +652,38 @@ export default function MotoVehicleDetails() {
     }
   };
   
-  const handleAddToCart = (originEl?: HTMLElement) => {
+  const handleValidateDates = () => {
+    if (!pickerStartDate || !pickerEndDate) return;
+
+    const rentalCalculation = createRentalCalculation(
+      pickerStartDate,
+      "06:30",
+      pickerEndDate,
+      "06:00"
+    );
+
+    if (!rentalCalculation.isCalculated) return;
+
+    const newNavState: VehicleNavState = {
+      rentalCalculation,
+      startDate: rentalCalculation.startDate.toISOString(),
+      endDate: rentalCalculation.endDate.toISOString(),
+      startTime: rentalCalculation.startTime,
+      endTime: rentalCalculation.endTime,
+      pickupLocation: navigationState?.pickupLocation,
+    };
+
+    setManualNavState(newNavState);
+    setIsDatePickerOpen(false);
+
+    if (license) {
+      saveBookingResumeIntent({ path: `/moto/${license}`, navState: newNavState });
+    }
+
+    handleAddToCart(undefined, newNavState);
+  };
+
+  const handleAddToCart = (originEl?: HTMLElement, navOverride?: VehicleNavState) => {
     if (!vehicle) return;
 
     if (isCartFull) {
@@ -642,16 +695,14 @@ export default function MotoVehicleDetails() {
       return;
     }
 
-    if (!navigationState?.rentalCalculation) {
-      toast({
-        title: t("booking.funnel.missingDates.title"),
-        description: t("booking.funnel.missingDates.description"),
-        variant: "destructive",
-      });
+    const nav = navOverride ?? navigationState;
+
+    if (!nav?.rentalCalculation) {
+      setIsDatePickerOpen(true);
       return;
     }
 
-    const { startDate, endDate, startTime, endTime } = navigationState.rentalCalculation;
+    const { startDate, endDate, startTime, endTime } = nav.rentalCalculation;
 
     const pricing = getBookingRentalPricing({
       pricePerDay: vehicle.dailyPrice,
@@ -673,9 +724,8 @@ export default function MotoVehicleDetails() {
     const bookingDraftOptions = getBookingDraft()?.selectedOptions
       ?.filter((opt) => opt.selected)
       .map((opt) => ({ id: opt.id, name: opt.name, totalPrice: opt.totalPrice })) ?? [];
-    const optionsTotal = bookingDraftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
 
-    const added = addToCart({
+    const cartPayload = {
       vehicleId: vehicle.id,
       vehicleType: (vehicle.vehicleType as any) || "moto",
       vehicleLabel: `${vehicle.brand} ${vehicle.model}`,
@@ -684,15 +734,27 @@ export default function MotoVehicleDetails() {
       endDate: endDate.toISOString(),
       startTime,
       endTime,
-      pickupLocation: navigationState.pickupLocation || undefined,
+      pickupLocation: nav.pickupLocation || undefined,
       selectedOptions: bookingDraftOptions,
       estimatedPrice: pricing.basePrice,
       pricePerDay: vehicle.dailyPrice,
       rentalDays: pricing.billableDays,
-    });
+    };
+
+    if (navOverride && lastAddedCartItemId) {
+      updateCartItem(lastAddedCartItemId, cartPayload);
+      openAddedModal({
+        label: `${vehicle.brand} ${vehicle.model}`,
+        dates: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+      });
+      return;
+    }
+
+    const added = addToCart(cartPayload);
 
     if (added) {
       clearBookingDraft();
+      if (navOverride) setLastAddedCartItemId(added);
       if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
       openAddedModal({
         label: `${vehicle.brand} ${vehicle.model}`,
@@ -1098,6 +1160,17 @@ export default function MotoVehicleDetails() {
             <CheckCircle className="h-4 w-4 mr-1" />
             {t("booking.freeCancellation")}
           </Badge>
+
+          <a
+            href={`${whatsappBaseUrl}?text=${encodeURIComponent(`Bonjour, j'ai une question sur ${vehicle ? `${vehicle.brand} ${vehicle.model}` : "ce véhicule"}${license ? ` (réf: ${license})` : ""}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackWhatsAppFabEvent("whatsapp_pdp_click", { page_path: `/moto/${license}`, vehicle_ref: license ?? "" })}
+            className="flex items-center justify-center gap-2 w-full rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700 hover:bg-green-100 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            Une question avant de réserver ? Écris-nous sur WhatsApp
+          </a>
         </div>
 
         <Separator className="my-6" />
@@ -1767,6 +1840,21 @@ export default function MotoVehicleDetails() {
       {/* Panneau debug i18n - DEV uniquement */}
 
       <Footer />
+
+      {isDatePickerOpen && dateLocale && (
+        <Suspense fallback={null}>
+          <SearchBarDatePickerModal
+            startDate={pickerStartDate}
+            endDate={pickerEndDate}
+            onStartDateChange={setPickerStartDate}
+            onEndDateChange={setPickerEndDate}
+            dateLocale={dateLocale}
+            onClose={() => setIsDatePickerOpen(false)}
+            onValidate={handleValidateDates}
+            t={t}
+          />
+        </Suspense>
+      )}
 
       <ComplementaryServicesModal
         isOpen={showComplementaryModal}
