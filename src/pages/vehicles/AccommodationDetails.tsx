@@ -1,11 +1,8 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import type { Locale } from "date-fns";
-
-const SearchBarDatePickerModal = lazy(() =>
-  import("@/components/ui/search-bar-date-picker-modal").then((m) => ({ default: m.SearchBarDatePickerModal }))
-);
+import { CartAddModal, type CartAddParams } from "@/components/booking/CartAddModal";
 
 const getDateLocale = (lang: string): Promise<Locale> => {
   if (lang.startsWith("fr")) return import("date-fns/locale/fr").then((m) => m.fr);
@@ -194,9 +191,8 @@ export default function AccommodationDetails() {
   });
   const [restoredNavState, setRestoredNavState] = useState<VehicleNavState>(null);
   const [manualNavState, setManualNavState] = useState<VehicleNavState>(null);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [pickerStartDate, setPickerStartDate] = useState<Date | null>(null);
-  const [pickerEndDate, setPickerEndDate] = useState<Date | null>(null);
+  const [isCartAddModalOpen, setIsCartAddModalOpen] = useState(false);
+  const pendingOriginEl = useRef<HTMLElement | null>(null);
   const [dateLocale, setDateLocale] = useState<Locale | null>(null);
   // Tracks the cart item ID added during this page visit — enables date update (vs new add) when user re-validates dates
   const [lastAddedCartItemId, setLastAddedCartItemId] = useState<string | null>(null);
@@ -411,36 +407,18 @@ export default function AccommodationDetails() {
     ? formatBillableDays(t, vehicleRentalInfo.days)
     : null;
 
-  const handleValidateDates = () => {
-    if (!pickerStartDate || !pickerEndDate) return;
-
-    const rentalCalculation = createRentalCalculation(
-      pickerStartDate,
-      "06:30",
-      pickerEndDate,
-      "06:00"
-    );
-
-    if (!rentalCalculation.isCalculated) return;
-
-    const newNavState: VehicleNavState = {
-      rentalCalculation,
-      startDate: rentalCalculation.startDate.toISOString(),
-      endDate: rentalCalculation.endDate.toISOString(),
-      startTime: rentalCalculation.startTime,
-      endTime: rentalCalculation.endTime,
-      pickupLocation: navigationState?.pickupLocation,
-    };
-
-    setManualNavState(newNavState);
-    setIsDatePickerOpen(false);
-
-    if (license) {
-      saveBookingResumeIntent({ path: `/hebergement/${license}`, navState: newNavState });
+  const openCartModal = (originEl?: HTMLElement) => {
+    if (!vehicle) return;
+    if (isCartFull) {
+      toast({
+        title: "Panier plein (10/10)",
+        description: "Soumets d'abord ta demande actuelle avant d'ajouter un autre élément.",
+        variant: "destructive",
+      });
+      return;
     }
-
-    // Auto-add to cart using newNavState directly (setState is async — navigationState not yet updated)
-    handleAddToCart(undefined, newNavState);
+    pendingOriginEl.current = originEl ?? null;
+    setIsCartAddModalOpen(true);
   };
 
   const handleBooking = (userOverride?: User | null) => {
@@ -617,26 +595,27 @@ export default function AccommodationDetails() {
     }
   };
   
-  const handleAddToCart = (originEl?: HTMLElement, navOverride?: VehicleNavState) => {
+  const doAddToCart = ({ startDate, endDate, startTime, endTime, selectedPlatformOptions }: CartAddParams) => {
     if (!vehicle) return;
 
-    if (isCartFull) {
-      toast({
-        title: "Panier plein (10/10)",
-        description: "Soumets d'abord ta demande actuelle avant d'ajouter un autre élément.",
-        variant: "destructive",
-      });
-      return;
+    const rentalCalculation = createRentalCalculation(startDate, startTime, endDate, endTime);
+    if (!rentalCalculation.isCalculated) return;
+
+    const newNavState: VehicleNavState = {
+      rentalCalculation,
+      startDate: rentalCalculation.startDate.toISOString(),
+      endDate: rentalCalculation.endDate.toISOString(),
+      startTime: rentalCalculation.startTime,
+      endTime: rentalCalculation.endTime,
+      pickupLocation: navigationState?.pickupLocation,
+    };
+
+    setManualNavState(newNavState);
+    setIsCartAddModalOpen(false);
+
+    if (license) {
+      saveBookingResumeIntent({ path: `/hebergement/${license}`, navState: newNavState });
     }
-
-    const nav = navOverride ?? navigationState;
-
-    if (!nav?.rentalCalculation) {
-      setIsDatePickerOpen(true);
-      return;
-    }
-
-    const { startDate, endDate, startTime, endTime } = nav.rentalCalculation;
 
     const pricing = getBookingRentalPricing({
       pricePerDay: vehicle.dailyPrice,
@@ -655,10 +634,11 @@ export default function AccommodationDetails() {
       return;
     }
 
-    const bookingDraftOptions = getBookingDraft()?.selectedOptions
-      ?.filter((opt) => opt.selected)
-      .map((opt) => ({ id: opt.id, name: opt.name, totalPrice: opt.totalPrice })) ?? [];
-    const optionsTotal = bookingDraftOptions.reduce((sum, opt) => sum + opt.totalPrice, 0);
+    const cartSelectedOptions = selectedPlatformOptions.map((opt) => ({
+      id: opt.id,
+      name: opt.name,
+      totalPrice: opt.totalPrice,
+    }));
 
     const cartPayload = {
       vehicleId: vehicle.id,
@@ -669,16 +649,16 @@ export default function AccommodationDetails() {
       endDate: endDate.toISOString(),
       startTime,
       endTime,
-      pickupLocation: nav.pickupLocation || undefined,
-      selectedOptions: bookingDraftOptions,
+      pickupLocation: newNavState.pickupLocation || undefined,
+      selectedOptions: cartSelectedOptions,
       estimatedPrice: pricing.basePrice,
       pricePerDay: vehicle.dailyPrice,
       rentalDays: pricing.billableDays,
     };
 
-    // navOverride = called from handleValidateDates (auto-add after date selection)
-    // If user already added an item this page visit, update it instead of adding a duplicate
-    if (navOverride && lastAddedCartItemId) {
+    const originEl = pendingOriginEl.current;
+
+    if (lastAddedCartItemId) {
       updateCartItem(lastAddedCartItemId, cartPayload);
       openAddedModal({
         label: vehicle.model,
@@ -691,7 +671,7 @@ export default function AccommodationDetails() {
 
     if (added) {
       clearBookingDraft();
-      if (navOverride) setLastAddedCartItemId(added);
+      setLastAddedCartItemId(added);
       if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
       openAddedModal({
         label: vehicle.model,
@@ -1045,7 +1025,7 @@ export default function AccommodationDetails() {
 
           <Button
             size="lg"
-            onClick={(e) => handleAddToCart(e.currentTarget)}
+            onClick={(e) => openCartModal(e.currentTarget)}
             disabled={isCartFull}
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
@@ -1454,7 +1434,7 @@ export default function AccommodationDetails() {
             </div>
             <Button
               size="lg"
-              onClick={(e) => handleAddToCart(e.currentTarget)}
+              onClick={(e) => openCartModal(e.currentTarget)}
               disabled={isCartFull}
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >
@@ -1470,21 +1450,17 @@ export default function AccommodationDetails() {
 
       <Footer />
 
-      {/* Date picker modal — déclenché depuis la fiche produit (remplace l'ancien renvoi vers l'accueil) */}
-      {isDatePickerOpen && dateLocale && (
-        <Suspense fallback={null}>
-          <SearchBarDatePickerModal
-            startDate={pickerStartDate}
-            endDate={pickerEndDate}
-            onStartDateChange={setPickerStartDate}
-            onEndDateChange={setPickerEndDate}
-            dateLocale={dateLocale}
-            onClose={() => setIsDatePickerOpen(false)}
-            onValidate={handleValidateDates}
-            t={t}
-          />
-        </Suspense>
-      )}
+      <CartAddModal
+        isOpen={isCartAddModalOpen}
+        onClose={() => setIsCartAddModalOpen(false)}
+        pricePerDay={vehicle?.dailyPrice ?? 0}
+        vehicleLabel={vehicle?.model ?? ""}
+        dateLocale={dateLocale}
+        t={t}
+        onAddToCart={doAddToCart}
+        initialStartDate={navigationState?.rentalCalculation?.startDate ?? null}
+        initialEndDate={navigationState?.rentalCalculation?.endDate ?? null}
+      />
 
       {vehicle && navigationState?.rentalCalculation && (
         <BookingConfirmationModal
