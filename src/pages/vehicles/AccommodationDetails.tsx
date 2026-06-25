@@ -1030,7 +1030,7 @@ export default function AccommodationDetails() {
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
-            {isCartFull ? "Panier plein (10/10)" : "Ajouter au panier"}
+            {isCartFull ? "Panier plein (10/10)" : "Simuler mon tarif gratuitement"}
           </Button>
 
           <Badge variant="secondary" className="w-full justify-center py-1">
@@ -1439,7 +1439,7 @@ export default function AccommodationDetails() {
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
-              {isCartFull ? "Panier plein" : "Ajouter au panier"}
+              {isCartFull ? "Panier plein" : "Simuler mon tarif gratuitement"}
             </Button>
           </div>
         </div>
@@ -1455,6 +1455,7 @@ export default function AccommodationDetails() {
         onClose={() => setIsCartAddModalOpen(false)}
         pricePerDay={vehicle?.dailyPrice ?? 0}
         vehicleLabel={vehicle?.model ?? ""}
+        vehicleThumbnail={photos.length > 0 ? photos[0].url : undefined}
         dateLocale={dateLocale}
         t={t}
         onAddToCart={doAddToCart}

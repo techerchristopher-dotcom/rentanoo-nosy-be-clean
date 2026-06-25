@@ -30,6 +30,7 @@ interface CartAddModalProps {
   onClose: () => void;
   pricePerDay: number;
   vehicleLabel: string;
+  vehicleThumbnail?: string;
   dateLocale: Locale | null;
   t: (key: string, fallback?: string) => string;
   onAddToCart: (params: CartAddParams) => void;
@@ -44,6 +45,8 @@ export function CartAddModal({
   isOpen,
   onClose,
   pricePerDay,
+  vehicleLabel,
+  vehicleThumbnail,
   dateLocale,
   t,
   onAddToCart,
@@ -132,6 +135,7 @@ export function CartAddModal({
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col max-h-[92dvh] sm:max-h-[88vh]"
         role="dialog"
         aria-modal="true"
+        aria-label={vehicleLabel}
       >
         {/* Header */}
         <div className="shrink-0 px-4 pt-4 pb-3 sm:px-6 sm:pt-5 relative border-b border-gray-100">
@@ -201,35 +205,46 @@ export function CartAddModal({
           </>
         )}
 
-        {/* Step 2: Price summary + options */}
+        {/* Step 2: Sticky price summary + scrollable options */}
         {step === "options" && pricing && (
           <>
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 space-y-4">
-              {/* Price breakdown */}
-              <div className="rounded-xl bg-muted/40 p-4 space-y-2.5">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">
-                    {pricing.billableDays} jour{pricing.billableDays > 1 ? "s" : ""} × {formatClient(pricePerDay).primary}/j
-                  </span>
-                  <span className="font-semibold">{formatClient(pricing.basePrice).primary}</span>
-                </div>
-                {selectedOptions.map((o) => (
-                  <div key={o.id} className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground truncate pr-2">{o.name}</span>
-                    <span className="font-semibold shrink-0">+{formatClient(o.totalPrice).primary}</span>
+            {/* Sticky price card */}
+            <div className="shrink-0 px-4 pt-4 pb-3 sm:px-6 border-b border-gray-100 bg-white">
+              <div className="flex gap-3 items-start">
+                {vehicleThumbnail && (
+                  <img
+                    src={vehicleThumbnail}
+                    alt={vehicleLabel}
+                    className="h-16 w-16 rounded-xl object-cover shrink-0 shadow-sm"
+                  />
+                )}
+                <div className="flex-1 min-w-0 rounded-xl bg-muted/40 p-3 space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">
+                      {pricing.billableDays} jour{pricing.billableDays > 1 ? "s" : ""} × {formatClient(pricePerDay).primary}/j
+                    </span>
+                    <span className="font-semibold">{formatClient(pricing.basePrice).primary}</span>
                   </div>
-                ))}
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm">Total estimé</span>
-                  <div className="text-right">
-                    <div className="font-bold text-primary text-lg leading-tight">{formatClient(total).primary}</div>
-                    <div className="text-xs text-muted-foreground">{formatClient(total).secondary}</div>
+                  {selectedOptions.map((o) => (
+                    <div key={o.id} className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground truncate pr-2">{o.name}</span>
+                      <span className="font-semibold shrink-0">+{formatClient(o.totalPrice).primary}</span>
+                    </div>
+                  ))}
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-sm">Total estimé</span>
+                    <div className="text-right">
+                      <div className="font-bold text-primary text-lg leading-tight">{formatClient(total).primary}</div>
+                      <div className="text-xs text-muted-foreground">{formatClient(total).secondary}</div>
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Platform options */}
+            {/* Scrollable options */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
               {platformOptions.length > 0 && (
                 <div className="space-y-2.5">
                   <p className="text-sm font-semibold text-gray-800">Options de livraison</p>

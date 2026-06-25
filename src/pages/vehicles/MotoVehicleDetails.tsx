@@ -1,9 +1,6 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Locale } from "date-fns";
-
-const SearchBarDatePickerModal = lazy(() =>
-  import("@/components/ui/search-bar-date-picker-modal").then((m) => ({ default: m.SearchBarDatePickerModal }))
-);
+import { CartAddModal, type CartAddParams } from "@/components/booking/CartAddModal";
 
 const getDateLocale = (lang: string): Promise<Locale> => {
   if (lang.startsWith("fr")) return import("date-fns/locale/fr").then((m) => m.fr);
@@ -224,9 +221,8 @@ export default function MotoVehicleDetails() {
   });
   const [restoredNavState, setRestoredNavState] = useState<VehicleNavState>(null);
   const [manualNavState, setManualNavState] = useState<VehicleNavState>(null);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [pickerStartDate, setPickerStartDate] = useState<Date | null>(null);
-  const [pickerEndDate, setPickerEndDate] = useState<Date | null>(null);
+  const [isCartAddModalOpen, setIsCartAddModalOpen] = useState(false);
+  const pendingOriginEl = useRef<HTMLElement | null>(null);
   const [lastAddedCartItemId, setLastAddedCartItemId] = useState<string | null>(null);
   const [dateLocale, setDateLocale] = useState<Locale | null>(null);
   const viewItemSentRef = useRef(false);
@@ -652,16 +648,24 @@ export default function MotoVehicleDetails() {
     }
   };
   
-  const handleValidateDates = () => {
-    if (!pickerStartDate || !pickerEndDate) return;
+  const openCartModal = (originEl?: HTMLElement) => {
+    if (!vehicle) return;
+    if (isCartFull) {
+      toast({
+        title: "Panier plein (10/10)",
+        description: "Soumets d'abord ta demande actuelle avant d'ajouter un autre véhicule.",
+        variant: "destructive",
+      });
+      return;
+    }
+    pendingOriginEl.current = originEl ?? null;
+    setIsCartAddModalOpen(true);
+  };
 
-    const rentalCalculation = createRentalCalculation(
-      pickerStartDate,
-      "06:30",
-      pickerEndDate,
-      "06:00"
-    );
+  const doAddToCart = ({ startDate, endDate, startTime, endTime, selectedPlatformOptions }: CartAddParams) => {
+    if (!vehicle) return;
 
+    const rentalCalculation = createRentalCalculation(startDate, startTime, endDate, endTime);
     if (!rentalCalculation.isCalculated) return;
 
     const newNavState: VehicleNavState = {
@@ -674,35 +678,11 @@ export default function MotoVehicleDetails() {
     };
 
     setManualNavState(newNavState);
-    setIsDatePickerOpen(false);
+    setIsCartAddModalOpen(false);
 
     if (license) {
       saveBookingResumeIntent({ path: `/moto/${license}`, navState: newNavState });
     }
-
-    handleAddToCart(undefined, newNavState);
-  };
-
-  const handleAddToCart = (originEl?: HTMLElement, navOverride?: VehicleNavState) => {
-    if (!vehicle) return;
-
-    if (isCartFull) {
-      toast({
-        title: "Panier plein (10/10)",
-        description: "Soumets d'abord ta demande actuelle avant d'ajouter un autre véhicule.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const nav = navOverride ?? navigationState;
-
-    if (!nav?.rentalCalculation) {
-      setIsDatePickerOpen(true);
-      return;
-    }
-
-    const { startDate, endDate, startTime, endTime } = nav.rentalCalculation;
 
     const pricing = getBookingRentalPricing({
       pricePerDay: vehicle.dailyPrice,
@@ -721,9 +701,11 @@ export default function MotoVehicleDetails() {
       return;
     }
 
-    const bookingDraftOptions = getBookingDraft()?.selectedOptions
-      ?.filter((opt) => opt.selected)
-      .map((opt) => ({ id: opt.id, name: opt.name, totalPrice: opt.totalPrice })) ?? [];
+    const cartSelectedOptions = selectedPlatformOptions.map((opt) => ({
+      id: opt.id,
+      name: opt.name,
+      totalPrice: opt.totalPrice,
+    }));
 
     const cartPayload = {
       vehicleId: vehicle.id,
@@ -734,14 +716,16 @@ export default function MotoVehicleDetails() {
       endDate: endDate.toISOString(),
       startTime,
       endTime,
-      pickupLocation: nav.pickupLocation || undefined,
-      selectedOptions: bookingDraftOptions,
+      pickupLocation: newNavState.pickupLocation || undefined,
+      selectedOptions: cartSelectedOptions,
       estimatedPrice: pricing.basePrice,
       pricePerDay: vehicle.dailyPrice,
       rentalDays: pricing.billableDays,
     };
 
-    if (navOverride && lastAddedCartItemId) {
+    const originEl = pendingOriginEl.current;
+
+    if (lastAddedCartItemId) {
       updateCartItem(lastAddedCartItemId, cartPayload);
       openAddedModal({
         label: `${vehicle.brand} ${vehicle.model}`,
@@ -754,7 +738,7 @@ export default function MotoVehicleDetails() {
 
     if (added) {
       clearBookingDraft();
-      if (navOverride) setLastAddedCartItemId(added);
+      setLastAddedCartItemId(added);
       if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
       openAddedModal({
         label: `${vehicle.brand} ${vehicle.model}`,
@@ -1139,12 +1123,12 @@ export default function MotoVehicleDetails() {
 
           <Button
             size="lg"
-            onClick={(e) => handleAddToCart(e.currentTarget)}
+            onClick={(e) => openCartModal(e.currentTarget)}
             disabled={isCartFull}
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:opacity-90"
           >
             <ShoppingCart className="h-5 w-5 mr-2" />
-            {isCartFull ? "Panier plein (10/10)" : "Ajouter au panier"}
+            {isCartFull ? "Panier plein (10/10)" : "Simuler mon tarif gratuitement"}
           </Button>
 
           {(() => {
@@ -1825,12 +1809,12 @@ export default function MotoVehicleDetails() {
             </div>
             <Button
               size="lg"
-              onClick={(e) => handleAddToCart(e.currentTarget)}
+              onClick={(e) => openCartModal(e.currentTarget)}
               disabled={isCartFull}
               className="bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 px-6 flex-shrink-0"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
-              {isCartFull ? "Panier plein" : "Ajouter au panier"}
+              {isCartFull ? "Panier plein" : "Simuler mon tarif gratuitement"}
             </Button>
           </div>
         </div>
@@ -1841,20 +1825,18 @@ export default function MotoVehicleDetails() {
 
       <Footer />
 
-      {isDatePickerOpen && dateLocale && (
-        <Suspense fallback={null}>
-          <SearchBarDatePickerModal
-            startDate={pickerStartDate}
-            endDate={pickerEndDate}
-            onStartDateChange={setPickerStartDate}
-            onEndDateChange={setPickerEndDate}
-            dateLocale={dateLocale}
-            onClose={() => setIsDatePickerOpen(false)}
-            onValidate={handleValidateDates}
-            t={t}
-          />
-        </Suspense>
-      )}
+      <CartAddModal
+        isOpen={isCartAddModalOpen}
+        onClose={() => setIsCartAddModalOpen(false)}
+        pricePerDay={vehicle?.dailyPrice ?? 0}
+        vehicleLabel={vehicle ? `${vehicle.brand} ${vehicle.model}` : ""}
+        vehicleThumbnail={photos.length > 0 ? photos[0].url : undefined}
+        dateLocale={dateLocale}
+        t={t}
+        onAddToCart={doAddToCart}
+        initialStartDate={navigationState?.rentalCalculation?.startDate ?? null}
+        initialEndDate={navigationState?.rentalCalculation?.endDate ?? null}
+      />
 
       <ComplementaryServicesModal
         isOpen={showComplementaryModal}
