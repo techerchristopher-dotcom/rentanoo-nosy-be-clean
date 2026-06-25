@@ -329,29 +329,33 @@ const Index = () => {
       );
       setSelectedSubFilter(savedCriteria.selectedSubFilter ?? null);
       
-      // 🔧 NOUVEAU : Relancer automatiquement la recherche après restauration
-      // Utiliser les critères sauvegardés directement au lieu des états React
-      setTimeout(() => {
-        console.log('🔄 [localStorage] Relance automatique de la recherche après restauration');
-        
-        // Vérifier que les critères sont bien présents avant de relancer
-        const hasValidCriteria = savedCriteria.searchText?.trim() || 
-                                 savedCriteria.startDate || 
+      requestCatalogScroll();
+
+      // Relancer automatiquement la recherche après restauration, puis scroller
+      // vers la section catégorie (même comportement que la navigation ?cat=...)
+      const savedCatId = isExplorerMainCategoryId(savedCriteria.selectedMainCategory ?? "")
+        ? savedCriteria.selectedMainCategory as ExplorerMainCategoryId
+        : null;
+
+      setTimeout(async () => {
+        const hasValidCriteria = savedCriteria.searchText?.trim() ||
+                                 savedCriteria.startDate ||
                                  savedCriteria.endDate ||
                                  savedCriteria.selectedMainCategory ||
                                  savedCriteria.selectedSubFilter ||
-                                 savedCriteria.selectedVehicleTypes?.length > 0;
-        
+                                 (savedCriteria.selectedVehicleTypes?.length ?? 0) > 0;
+
         if (hasValidCriteria) {
-          console.log('✅ [localStorage] Critères valides détectés, relance de la recherche');
-          console.log('🔍 [localStorage] Critères utilisés pour la relance:', savedCriteria);
-          
-          // Relancer la recherche directement avec les critères sauvegardés
-          performSearchWithCriteria(savedCriteria);
-        } else {
-          console.log('⚠️ [localStorage] Aucun critère valide, pas de relance automatique');
+          await performSearchWithCriteria(savedCriteria);
+          // Scroll vers la section catégorie après chargement des données
+          setTimeout(() => {
+            (savedCatId
+              ? (document.getElementById(`section-${savedCatId}`) ?? document.getElementById("search-results"))
+              : document.getElementById("search-results"))
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 150);
         }
-      }, 300); // Délai pour la synchronisation des états React
+      }, 300);
       
       toast({
         title: t("home.toasts.searchRestored.title", "Recherche restaurée"),

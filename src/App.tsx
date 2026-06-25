@@ -149,6 +149,15 @@ function RouteChangeTracker() {
 // gérer leur propre scroll ailleurs.
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
+
+  // Prevent the browser from auto-restoring the scroll position on refresh /
+  // back-navigation — we handle scroll positioning ourselves.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
   useEffect(() => {
     if (hash) return;
     window.scrollTo(0, 0);
