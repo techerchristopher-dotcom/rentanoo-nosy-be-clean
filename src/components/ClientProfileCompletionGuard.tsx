@@ -34,6 +34,8 @@ function isPathExemptFromClientProfileGuard(pathname: string): boolean {
   if (pathname.startsWith("/me/owner")) return true;
   if (pathname === "/me/dashboard" || pathname.startsWith("/me/dashboard/")) return true;
   if (pathname === "/rent-my-car" || pathname.startsWith("/rent-my-car/")) return true;
+  if (pathname === "/panier/soumettre" || pathname.startsWith("/panier/soumettre/")) return true;
+  if (pathname === "/panier/confirmation" || pathname.startsWith("/panier/confirmation/")) return true;
   return false;
 }
 

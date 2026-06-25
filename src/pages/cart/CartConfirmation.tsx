@@ -4,6 +4,7 @@ import { Car, CheckCircle2, PartyPopper, XCircle } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ItemResult {
   id: string;
@@ -16,6 +17,7 @@ interface ItemResult {
 export default function CartConfirmation() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const results = useMemo<ItemResult[]>(() => {
     const raw = searchParams.get("results");
@@ -93,18 +95,20 @@ export default function CartConfirmation() {
 
             <div className="flex flex-col sm:flex-row gap-2.5">
               <Button
-                variant="outline"
+                variant={user ? "outline" : "default"}
                 className="flex-1"
                 onClick={() => navigate("/")}
               >
                 Retour à l'accueil
               </Button>
-              <Button
-                className="flex-1"
-                onClick={() => navigate("/me/owner/bookings")}
-              >
-                Voir mes réservations
-              </Button>
+              {user && (
+                <Button
+                  className="flex-1"
+                  onClick={() => navigate("/me/owner/bookings")}
+                >
+                  Voir mes réservations
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

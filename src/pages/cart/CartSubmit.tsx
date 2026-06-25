@@ -43,7 +43,7 @@ interface ItemResult {
 
 export default function CartSubmit() {
   const { items, clearCart, updateItem } = useCart();
-  const { user: authUser } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -53,17 +53,18 @@ export default function CartSubmit() {
   const [submitStep, setSubmitStep] = useState(0);
   const [feePreviews, setFeePreviews] = useState<Record<string, RenterFeePreview | null>>({});
   const [hotelNameErrors, setHotelNameErrors] = useState<Record<string, boolean>>({});
+  const [guestFirstName, setGuestFirstName] = useState("");
+  const [guestLastName, setGuestLastName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
 
   const itemNeedsHotelName = (item: (typeof items)[number]) =>
     requiresHotelName(item.selectedOptions?.map((o) => o.id) ?? []);
 
   useEffect(() => {
-    if (!authUser) {
-      navigate(`/auth/login?redirect=${encodeURIComponent("/panier/soumettre")}`);
-      return;
-    }
+    if (!authUser) return;
     ProfileService.getCurrentUserProfile().then(({ data }) => setProfile(data));
-  }, [authUser, navigate]);
+  }, [authUser]);
 
   useEffect(() => {
     Promise.all(
@@ -76,7 +77,7 @@ export default function CartSubmit() {
     ).then((entries) => setFeePreviews(Object.fromEntries(entries)));
   }, [items]);
 
-  if (!authUser) return null;
+  if (authLoading) return null;
 
   const vehiclesSubtotal = items.reduce((sum, item) => sum + (item.estimatedPrice || 0), 0);
   const optionsSubtotal = items.reduce(
@@ -88,6 +89,13 @@ export default function CartSubmit() {
   const total = baseTotal + feeTotal;
   const feePercentDisplay =
     baseTotal > 0 && feeTotal > 0 ? Math.round((feeTotal / baseTotal) * 100) : null;
+
+  const guestReady =
+    guestFirstName.trim().length >= 2 &&
+    guestLastName.trim().length >= 2 &&
+    guestEmail.trim().includes("@") &&
+    guestPhone.trim().length >= 6;
+  const canSubmit = !submitting && (authUser ? !!profile : guestReady);
 
   if (items.length === 0) {
     return (
@@ -106,7 +114,7 @@ export default function CartSubmit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
+    if (authUser && !profile) return;
 
     const missingHotelNames: Record<string, boolean> = {};
     for (const item of items) {
@@ -133,13 +141,76 @@ export default function CartSubmit() {
       setTimeout(() => setSubmitStep(3), 2300),
     ];
 
+    let effectiveClientName = clientName;
+    let effectiveClientEmail = profile?.email || "";
+    let effectiveClientPhone = profile?.phone || "";
+    let effectiveClientUserId = profile?.id || "";
+
+    if (!authUser) {
+      const firstName = guestFirstName.trim();
+      const lastName = guestLastName.trim();
+      const email = guestEmail.trim();
+      const phone = guestPhone.trim();
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: crypto.randomUUID(),
+        options: { data: { firstName, lastName } },
+      });
+
+      if (signUpError) {
+        stepTimers.forEach(clearTimeout);
+        setSubmitting(false);
+        const isAlreadyRegistered =
+          signUpError.message.toLowerCase().includes("already registered") ||
+          signUpError.message.toLowerCase().includes("already been registered");
+        toast({
+          title: isAlreadyRegistered ? "Email déjà utilisé" : "Erreur lors de la création du compte",
+          description: isAlreadyRegistered
+            ? "Un compte existe déjà avec cet email. Connecte-toi pour envoyer ta demande."
+            : signUpError.message,
+          variant: "destructive",
+        });
+        if (isAlreadyRegistered) {
+          navigate(`/auth/login?redirect=${encodeURIComponent("/panier/soumettre")}`);
+        }
+        return;
+      }
+
+      if (!signUpData.session) {
+        stepTimers.forEach(clearTimeout);
+        setSubmitting(false);
+        toast({
+          title: "Vérifie ta boîte email",
+          description:
+            "Un email de confirmation a été envoyé. Confirme-le puis reviens ici — ton panier est sauvegardé.",
+        });
+        return;
+      }
+
+      await supabase.from("profiles").upsert({
+        id: signUpData.session.user.id,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        role: "renter",
+        kyc_status: "pending",
+      });
+
+      effectiveClientName = `${firstName} ${lastName}`;
+      effectiveClientEmail = email;
+      effectiveClientPhone = phone;
+      effectiveClientUserId = signUpData.session.user.id;
+    }
+
     const cartGroupId = crypto.randomUUID();
     const results: ItemResult[] = [];
 
     for (const item of items) {
       const { data, error } = await SupabaseBookingsService.createBooking({
         vehicleId: item.vehicleId,
-        renterId: profile.id,
+        renterId: effectiveClientUserId,
         startDate: item.startDate,
         endDate: item.endDate,
         startTime: item.startTime,
@@ -165,10 +236,10 @@ export default function CartSubmit() {
     try {
       await supabase.from("cart_submissions").insert({
         cart_group_id: cartGroupId,
-        client_user_id: profile.id,
-        client_name: clientName,
-        client_email: profile.email,
-        client_phone: profile.phone || null,
+        client_user_id: effectiveClientUserId || null,
+        client_name: effectiveClientName,
+        client_email: effectiveClientEmail,
+        client_phone: effectiveClientPhone || null,
         items_count: items.length,
         notes: notes.trim() || null,
       });
@@ -182,9 +253,9 @@ export default function CartSubmit() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart_group_id: cartGroupId,
-          client_name: clientName,
-          client_email: profile.email,
-          client_phone: profile.phone,
+          client_name: effectiveClientName,
+          client_email: effectiveClientEmail,
+          client_phone: effectiveClientPhone,
           notes,
           items: results.map((r) => ({ label: r.label, status: r.status })),
         }),
@@ -321,20 +392,72 @@ export default function CartSubmit() {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-1">
-                  <Label>Nom</Label>
-                  <Input value={clientName} disabled />
+              {authUser ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>Nom</Label>
+                    <Input value={clientName} disabled />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Email</Label>
+                    <Input value={profile?.email || ""} disabled />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Téléphone</Label>
+                    <Input value={profile?.phone || ""} disabled />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label>Email</Label>
-                  <Input value={profile?.email || ""} disabled />
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground rounded-lg bg-muted/40 p-3">
+                    Pas besoin de compte — on crée un espace gratuit pour toi pour suivre ta demande.
+                  </p>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="guest-first-name">Prénom *</Label>
+                      <Input
+                        id="guest-first-name"
+                        placeholder="Prénom"
+                        value={guestFirstName}
+                        onChange={(e) => setGuestFirstName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="guest-last-name">Nom *</Label>
+                      <Input
+                        id="guest-last-name"
+                        placeholder="Nom"
+                        value={guestLastName}
+                        onChange={(e) => setGuestLastName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="guest-email">Email *</Label>
+                      <Input
+                        id="guest-email"
+                        type="email"
+                        placeholder="ton@email.com"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="guest-phone">Téléphone *</Label>
+                      <Input
+                        id="guest-phone"
+                        type="tel"
+                        placeholder="+261 34 00 000 00"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label>Téléphone</Label>
-                  <Input value={profile?.phone || ""} disabled />
-                </div>
-              </div>
+              )}
 
               <div className="space-y-1">
                 <Label htmlFor="notes">Notes (optionnel)</Label>
@@ -383,7 +506,7 @@ export default function CartSubmit() {
                 <Button type="button" variant="outline" onClick={() => navigate("/")}>
                   Annuler
                 </Button>
-                <Button type="submit" disabled={submitting || !profile}>
+                <Button type="submit" disabled={!canSubmit}>
                   {submitting ? "Envoi en cours..." : "Envoyer ma demande"}
                 </Button>
               </div>
