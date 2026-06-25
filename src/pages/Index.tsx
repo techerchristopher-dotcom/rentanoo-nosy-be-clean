@@ -57,6 +57,7 @@ const Index = () => {
   const [showResults, setShowResults] = useState(false);
   const shouldScrollToResultsRef = useRef(false);
   const pendingCatalogScrollRef = useRef(false);
+  const pendingScrollCategoryRef = useRef<string | null>(null);
   const selectedMainCategoryRef = useRef<ExplorerMainCategoryId | null>(null);
   const selectedSubFilterRef = useRef<string | null>(null);
 
@@ -206,9 +207,16 @@ const Index = () => {
     if (!pendingCatalogScrollRef.current || !showResults || loading) return;
 
     pendingCatalogScrollRef.current = false;
-    const timer = setTimeout(scrollToResults, 100);
+    const catId = pendingScrollCategoryRef.current;
+    pendingScrollCategoryRef.current = null;
+    const timer = setTimeout(() => {
+      const el =
+        (catId && document.getElementById(`section-${catId}`)) ||
+        document.getElementById("search-results");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
     return () => clearTimeout(timer);
-  }, [filteredVehicles, showResults, loading, scrollToResults]);
+  }, [filteredVehicles, showResults, loading]);
 
 
   // Charger les véhicules depuis Supabase
@@ -270,6 +278,7 @@ const Index = () => {
 
     if (cat && isExplorerMainCategoryId(cat)) {
       setSelectedMainCategory(cat);
+      pendingScrollCategoryRef.current = cat;
     }
     if (start) setStartDate(new Date(start));
     if (end) setEndDate(new Date(end));
