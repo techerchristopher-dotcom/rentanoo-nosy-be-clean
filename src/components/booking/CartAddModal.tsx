@@ -36,6 +36,7 @@ interface CartAddModalProps {
   onAddToCart: (params: CartAddParams) => void;
   initialStartDate?: Date | null;
   initialEndDate?: Date | null;
+  showDeliveryOptions?: boolean;
 }
 
 const START_TIME = "06:30";
@@ -52,6 +53,7 @@ export function CartAddModal({
   onAddToCart,
   initialStartDate,
   initialEndDate,
+  showDeliveryOptions = true,
 }: CartAddModalProps) {
   const [step, setStep] = useState<"dates" | "options">("dates");
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -245,7 +247,7 @@ export function CartAddModal({
 
             {/* Scrollable options */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
-              {platformOptions.length > 0 && (
+              {showDeliveryOptions && platformOptions.length > 0 && (
                 <div className="space-y-2.5">
                   <p className="text-sm font-semibold text-gray-800">Options de livraison</p>
                   {platformOptions.map((opt) => (
