@@ -57,7 +57,6 @@ const Index = () => {
   const [showResults, setShowResults] = useState(false);
   const shouldScrollToResultsRef = useRef(false);
   const pendingCatalogScrollRef = useRef(false);
-  const pendingCategoryNavScrollRef = useRef<string | null>(null);
   const selectedMainCategoryRef = useRef<ExplorerMainCategoryId | null>(null);
   const selectedSubFilterRef = useRef<string | null>(null);
 
@@ -211,19 +210,6 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [filteredVehicles, showResults, loading, scrollToResults]);
 
-  // Scroll vers la section catégorie après navigation ?cat=... (ex: "Continuer mes recherches")
-  useEffect(() => {
-    const catId = pendingCategoryNavScrollRef.current;
-    if (!catId || loading) return;
-    pendingCategoryNavScrollRef.current = null;
-    const timer = setTimeout(() => {
-      (document.getElementById(`section-${catId}`) ?? document.getElementById("search-results"))
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [loading, filteredVehicles]);
-
-
   // Charger les véhicules depuis Supabase
   useEffect(() => {
     const loadVehicles = async () => {
@@ -283,7 +269,6 @@ const Index = () => {
 
     if (cat && isExplorerMainCategoryId(cat)) {
       setSelectedMainCategory(cat);
-      pendingCategoryNavScrollRef.current = cat;
     }
     if (start) setStartDate(new Date(start));
     if (end) setEndDate(new Date(end));
@@ -291,17 +276,26 @@ const Index = () => {
     requestCatalogScroll();
 
     if (start && end) {
-      setTimeout(() => {
-        performSearchWithCriteria({
+      const catId = cat && isExplorerMainCategoryId(cat) ? cat : null;
+      setTimeout(async () => {
+        await performSearchWithCriteria({
           searchText: "",
           startDate: start,
           endDate: end,
           startTime: "06:30",
           endTime: "06:00",
-          selectedMainCategory: cat && isExplorerMainCategoryId(cat) ? cat : null,
+          selectedMainCategory: catId,
           selectedSubFilter: null,
           selectedVehicleTypes: [],
         });
+        if (catId) {
+          // Wait for React to commit the state update to the DOM before scrolling
+          setTimeout(() => {
+            (document.getElementById(`section-${catId}`) ??
+              document.getElementById("search-results"))
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 150);
+        }
       }, 300);
     }
   }, []); // Exécuter une seule fois au montage
