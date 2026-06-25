@@ -649,8 +649,11 @@ const Index = () => {
     (category: ExplorerMainCategoryId | null) => {
       setSelectedMainCategory(category);
       setSelectedSubFilter(null);
+      if (category !== null) {
+        scrollToResults();
+      }
     },
-    []
+    [scrollToResults]
   );
 
   const handleResetExplorerFilters = useCallback(() => {
