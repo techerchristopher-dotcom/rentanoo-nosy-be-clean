@@ -74,10 +74,10 @@ export function CartAddModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setStep("dates");
     setStartDate(initialStartDate ?? null);
     setEndDate(initialEndDate ?? null);
     setSelectedIds([]);
+    setStep(initialStartDate && initialEndDate ? "options" : "dates");
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pricing = useMemo(() => {

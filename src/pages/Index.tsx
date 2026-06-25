@@ -274,6 +274,8 @@ const Index = () => {
     if (start) setStartDate(new Date(start));
     if (end) setEndDate(new Date(end));
 
+    requestCatalogScroll();
+
     if (start && end) {
       setTimeout(() => {
         performSearchWithCriteria({
