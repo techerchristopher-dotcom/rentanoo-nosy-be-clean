@@ -133,7 +133,7 @@ export function HomeResults({
   return (
     <section id="search-results" className="py-12 scroll-mt-4">
       {selectedMainCategory != null && (
-        <div id={`section-${selectedMainCategory}`} className="sr-only" />
+        <div id={`section-${selectedMainCategory}`} aria-hidden="true" />
       )}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
