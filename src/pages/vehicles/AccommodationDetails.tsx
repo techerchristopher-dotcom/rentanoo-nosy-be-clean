@@ -1459,6 +1459,7 @@ export default function AccommodationDetails() {
         dateLocale={dateLocale}
         t={t}
         onAddToCart={doAddToCart}
+        showDeliveryOptions={false}
         initialStartDate={navigationState?.rentalCalculation?.startDate ?? null}
         initialEndDate={navigationState?.rentalCalculation?.endDate ?? null}
       />
