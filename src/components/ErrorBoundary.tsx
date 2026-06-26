@@ -110,6 +110,18 @@ export class ErrorBoundary extends Component<Props, State> {
     // Ignorer gtag/GA4/Google Ads : échec = best-effort, ne jamais bloquer l'app
     if (tagName === 'SCRIPT' && src && /googletagmanager\.com/.test(src)) return;
 
+    // Chunk Vite périmé après déploiement (/assets/*.js ou /assets/*.css avec hash) :
+    // auto-reload silencieux une seule fois pour récupérer le nouvel index.html.
+    if (src && /\/assets\/[^/]+\.(js|css)(\?.*)?$/.test(src)) {
+      const RELOAD_KEY = 'stale_chunk_reload';
+      if (!sessionStorage.getItem(RELOAD_KEY)) {
+        sessionStorage.setItem(RELOAD_KEY, '1');
+        window.location.reload();
+        return;
+      }
+      // Si déjà rechargé une fois et ça échoue encore → afficher l'erreur normalement
+    }
+
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.error('[ErrorBoundary] ❌ Erreur de chargement de ressource');
     console.error('[ErrorBoundary] 📦 Type:', tagLower);
