@@ -42,7 +42,7 @@ export interface SeoCategoryPageProps {
 }
 
 function MiniListingCard({ v }: { v: SupabaseVehicle }) {
-  const path = getPublicListingPath(v.vehicle_type as string, (v as unknown as { internal_code?: string; id: string }).internal_code?.toUpperCase() ?? v.id.replace(/-/g, "").slice(0, 8).toUpperCase());
+  const path = getPublicListingPath(v);
   const photo = resolvePhotoUrl((v as unknown as { primary_photo_url?: string }).primary_photo_url ?? null);
   const price = v.price_per_day;
   const label = `${v.brand} ${v.model}`.trim();
