@@ -1517,7 +1517,7 @@ if (process.env.NODE_ENV === "production") {
         ) {
           res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         } else if (basename === "index.html") {
-          res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+          res.setHeader("Cache-Control", "no-store");
         }
       },
     })
@@ -1539,8 +1539,8 @@ if (process.env.NODE_ENV === "production") {
       return res.status(404).send("File not found");
     }
     
-    // Sinon, c'est une route SPA → servir index.html (no-cache pour éviter stale HTML)
-    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+    // Sinon, c'est une route SPA → servir index.html (no-store : jamais en cache)
+    res.setHeader("Cache-Control", "no-store");
     console.log(`🔄 [SPA Fallback] Route SPA détectée: ${req.path} → index.html`);
     res.sendFile(path.join(distPath, "index.html"), (err) => {
       if (err) {

@@ -66,16 +66,30 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+    const reason = event.reason;
+    const msg = reason instanceof Error ? reason.message : String(reason || '');
+
+    // Dynamic import échoué après déploiement (chunk périmé) : auto-reload silencieux une fois
+    // Ces erreurs ressemblent à : "Failed to fetch dynamically imported module: .../assets/xxx.js"
+    if (/Failed to fetch dynamically imported module|Loading chunk|ChunkLoadError/i.test(msg) ||
+        (msg.includes('/assets/') && /\.(js|css)/.test(msg))) {
+      const RELOAD_KEY = 'stale_chunk_reload';
+      if (!sessionStorage.getItem(RELOAD_KEY)) {
+        sessionStorage.setItem(RELOAD_KEY, '1');
+        window.location.reload();
+        return;
+      }
+    }
+
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.error('[ErrorBoundary] ❌ Promesse rejetée non catchée (unhandledrejection)');
-    console.error('[ErrorBoundary] 📦 Raison:', event.reason);
+    console.error('[ErrorBoundary] 📦 Raison:', reason);
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    // Créer une erreur à partir de la raison du rejet
-    const error = event.reason instanceof Error 
-      ? event.reason 
-      : new Error(String(event.reason || 'Promesse rejetée'));
-    
+    const error = reason instanceof Error
+      ? reason
+      : new Error(String(reason || 'Promesse rejetée'));
+
     this.setState({
       hasError: true,
       error,
