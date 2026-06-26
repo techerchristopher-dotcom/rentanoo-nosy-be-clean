@@ -39,6 +39,12 @@ export interface Vehicle {
   has_security_guard?: boolean | null;
   near_shopping_center?: boolean | null;
   near_nightlife?: boolean | null;
+  has_equipped_kitchen?: boolean | null;
+  has_solar_panel?: boolean | null;
+  has_housekeeper?: boolean | null;
+  has_laundry?: boolean | null;
+  has_remote_work?: boolean | null;
+  has_canal_plus?: boolean | null;
   has_gps: boolean | null;
   has_cruise_control: boolean | null;
   has_bluetooth: boolean | null;
@@ -461,6 +467,12 @@ export const SupabaseVehiclesService = {
     has_security_guard?: boolean;
     near_shopping_center?: boolean;
     near_nightlife?: boolean;
+    has_equipped_kitchen?: boolean;
+    has_solar_panel?: boolean;
+    has_housekeeper?: boolean;
+    has_laundry?: boolean;
+    has_remote_work?: boolean;
+    has_canal_plus?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
     has_bluetooth?: boolean;

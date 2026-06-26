@@ -121,6 +121,12 @@ export interface Vehicle {
   hasSecurityGuard?: boolean;
   nearShoppingCenter?: boolean;
   nearNightlife?: boolean;
+  hasEquippedKitchen?: boolean;
+  hasSolarPanel?: boolean;
+  hasHousekeeper?: boolean;
+  hasLaundry?: boolean;
+  hasRemoteWork?: boolean;
+  hasCanalPlus?: boolean;
   hasGPS?: boolean;
   hasCruiseControl?: boolean;
   hasBluetooth?: boolean;

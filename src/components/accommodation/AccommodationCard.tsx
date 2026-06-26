@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Home, Wind, Waves, Umbrella, Wifi, Bath, Shield, ShoppingBag, Music } from "lucide-react";
+import { MapPin, Users, Home, Wind, Waves, Umbrella, Wifi, Bath, Shield, ShoppingBag, Music, UtensilsCrossed, Sun, Sparkles, Shirt, Laptop, Tv } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
@@ -217,6 +217,42 @@ export function AccommodationCard({
             <div className="flex items-center text-xs text-rose-600 bg-rose-50 rounded-full px-2 py-1">
               <Music className="h-3 w-3 mr-1" />
               {t("accommodationCard.nearNightlife", "Proche activités nocturnes")}
+            </div>
+          )}
+          {vehicle.hasEquippedKitchen && (
+            <div className="flex items-center text-xs text-amber-600 bg-amber-50 rounded-full px-2 py-1">
+              <UtensilsCrossed className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasEquippedKitchen", "Cuisine équipée")}
+            </div>
+          )}
+          {vehicle.hasSolarPanel && (
+            <div className="flex items-center text-xs text-yellow-600 bg-yellow-50 rounded-full px-2 py-1">
+              <Sun className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasSolarPanel", "Panneau solaire")}
+            </div>
+          )}
+          {vehicle.hasHousekeeper && (
+            <div className="flex items-center text-xs text-fuchsia-600 bg-fuchsia-50 rounded-full px-2 py-1">
+              <Sparkles className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasHousekeeper", "Femme de ménage")}
+            </div>
+          )}
+          {vehicle.hasLaundry && (
+            <div className="flex items-center text-xs text-sky-600 bg-sky-50 rounded-full px-2 py-1">
+              <Shirt className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasLaundry", "Blanchisserie")}
+            </div>
+          )}
+          {vehicle.hasRemoteWork && (
+            <div className="flex items-center text-xs text-slate-600 bg-slate-50 rounded-full px-2 py-1">
+              <Laptop className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasRemoteWork", "Télétravail possible")}
+            </div>
+          )}
+          {vehicle.hasCanalPlus && (
+            <div className="flex items-center text-xs text-red-600 bg-red-50 rounded-full px-2 py-1">
+              <Tv className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasCanalPlus", "Canal+")}
             </div>
           )}
         </div>

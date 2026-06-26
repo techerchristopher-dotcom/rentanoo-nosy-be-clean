@@ -2,7 +2,7 @@ import "@/styles/preview-banner.css";
 import "@/styles/manage-vehicle.css";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella, Wifi, Bath, ShoppingBag, Music } from "lucide-react";
+import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella, Wifi, Bath, ShoppingBag, Music, UtensilsCrossed, Sun, Sparkles, Shirt, Laptop, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1642,6 +1642,12 @@ export default function ManageVehicle() {
           has_security_guard: formData.hasSecurityGuard,
           near_shopping_center: formData.nearShoppingCenter,
           near_nightlife: formData.nearNightlife,
+          has_equipped_kitchen: formData.hasEquippedKitchen,
+          has_solar_panel: formData.hasSolarPanel,
+          has_housekeeper: formData.hasHousekeeper,
+          has_laundry: formData.hasLaundry,
+          has_remote_work: formData.hasRemoteWork,
+          has_canal_plus: formData.hasCanalPlus,
         };
 
         const amenitiesResult = await SupabaseVehiclesService.updateVehicle(vehicle.id, accommodationAmenitiesData);
@@ -2214,6 +2220,72 @@ export default function ManageVehicle() {
                             id="nearNightlife"
                             checked={formData.nearNightlife}
                             onCheckedChange={(v) => handleInputChange("nearNightlife", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <UtensilsCrossed className="h-4 w-4 text-amber-500" />
+                            <span className="text-sm font-medium">Cuisine équipée</span>
+                          </div>
+                          <Switch
+                            id="hasEquippedKitchen"
+                            checked={formData.hasEquippedKitchen}
+                            onCheckedChange={(v) => handleInputChange("hasEquippedKitchen", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Sun className="h-4 w-4 text-yellow-500" />
+                            <span className="text-sm font-medium">Panneau solaire</span>
+                          </div>
+                          <Switch
+                            id="hasSolarPanel"
+                            checked={formData.hasSolarPanel}
+                            onCheckedChange={(v) => handleInputChange("hasSolarPanel", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-fuchsia-500" />
+                            <span className="text-sm font-medium">Femme de ménage</span>
+                          </div>
+                          <Switch
+                            id="hasHousekeeper"
+                            checked={formData.hasHousekeeper}
+                            onCheckedChange={(v) => handleInputChange("hasHousekeeper", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Shirt className="h-4 w-4 text-sky-500" />
+                            <span className="text-sm font-medium">Blanchisserie</span>
+                          </div>
+                          <Switch
+                            id="hasLaundry"
+                            checked={formData.hasLaundry}
+                            onCheckedChange={(v) => handleInputChange("hasLaundry", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Laptop className="h-4 w-4 text-slate-500" />
+                            <span className="text-sm font-medium">Télétravail possible</span>
+                          </div>
+                          <Switch
+                            id="hasRemoteWork"
+                            checked={formData.hasRemoteWork}
+                            onCheckedChange={(v) => handleInputChange("hasRemoteWork", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Tv className="h-4 w-4 text-red-500" />
+                            <span className="text-sm font-medium">Canal+</span>
+                          </div>
+                          <Switch
+                            id="hasCanalPlus"
+                            checked={formData.hasCanalPlus}
+                            onCheckedChange={(v) => handleInputChange("hasCanalPlus", v)}
                           />
                         </div>
                       </div>

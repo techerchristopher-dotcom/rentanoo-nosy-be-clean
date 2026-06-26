@@ -53,6 +53,12 @@ import {
   Zap,
   ShoppingBag,
   Music,
+  UtensilsCrossed,
+  Sun,
+  Sparkles,
+  Shirt,
+  Laptop,
+  Tv,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1249,7 +1255,7 @@ export default function AccommodationDetails() {
                 )}
               </div>
 
-              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi || vehicle.hasPrivateBathroom || vehicle.hasSecurityGuard || vehicle.nearShoppingCenter || vehicle.nearNightlife) && (
+              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi || vehicle.hasPrivateBathroom || vehicle.hasSecurityGuard || vehicle.nearShoppingCenter || vehicle.nearNightlife || vehicle.hasEquippedKitchen || vehicle.hasSolarPanel || vehicle.hasHousekeeper || vehicle.hasLaundry || vehicle.hasRemoteWork || vehicle.hasCanalPlus) && (
                 <Card className="overflow-hidden">
                   <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -1320,6 +1326,54 @@ export default function AccommodationDetails() {
                           <Music className="h-4 w-4 text-rose-600 shrink-0" />
                           <span className="text-sm font-medium text-rose-800">
                             {t("accommodationDetails.nearNightlife", "Proche activités nocturnes")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasEquippedKitchen && (
+                        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                          <UtensilsCrossed className="h-4 w-4 text-amber-600 shrink-0" />
+                          <span className="text-sm font-medium text-amber-800">
+                            {t("accommodationDetails.hasEquippedKitchen", "Cuisine équipée")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasSolarPanel && (
+                        <div className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2">
+                          <Sun className="h-4 w-4 text-yellow-600 shrink-0" />
+                          <span className="text-sm font-medium text-yellow-800">
+                            {t("accommodationDetails.hasSolarPanel", "Panneau solaire")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasHousekeeper && (
+                        <div className="flex items-center gap-2 rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-3 py-2">
+                          <Sparkles className="h-4 w-4 text-fuchsia-600 shrink-0" />
+                          <span className="text-sm font-medium text-fuchsia-800">
+                            {t("accommodationDetails.hasHousekeeper", "Femme de ménage")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasLaundry && (
+                        <div className="flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+                          <Shirt className="h-4 w-4 text-sky-600 shrink-0" />
+                          <span className="text-sm font-medium text-sky-800">
+                            {t("accommodationDetails.hasLaundry", "Blanchisserie")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasRemoteWork && (
+                        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                          <Laptop className="h-4 w-4 text-slate-600 shrink-0" />
+                          <span className="text-sm font-medium text-slate-800">
+                            {t("accommodationDetails.hasRemoteWork", "Télétravail possible")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasCanalPlus && (
+                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                          <Tv className="h-4 w-4 text-red-600 shrink-0" />
+                          <span className="text-sm font-medium text-red-800">
+                            {t("accommodationDetails.hasCanalPlus", "Canal+")}
                           </span>
                         </div>
                       )}

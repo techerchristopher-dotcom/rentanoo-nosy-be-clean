@@ -62,6 +62,12 @@ export interface VehicleFormData {
   hasSecurityGuard: boolean;
   nearShoppingCenter: boolean;
   nearNightlife: boolean;
+  hasEquippedKitchen: boolean;
+  hasSolarPanel: boolean;
+  hasHousekeeper: boolean;
+  hasLaundry: boolean;
+  hasRemoteWork: boolean;
+  hasCanalPlus: boolean;
 
   // Zones de pick-up
   pickupZones: string[];
@@ -208,6 +214,12 @@ export const initialFormData: VehicleFormData = {
   hasSecurityGuard: false,
   nearShoppingCenter: false,
   nearNightlife: false,
+  hasEquippedKitchen: false,
+  hasSolarPanel: false,
+  hasHousekeeper: false,
+  hasLaundry: false,
+  hasRemoteWork: false,
+  hasCanalPlus: false,
   pickupZones: [],
   minAdvanceHours: "24",
   minRentalDays: "1",

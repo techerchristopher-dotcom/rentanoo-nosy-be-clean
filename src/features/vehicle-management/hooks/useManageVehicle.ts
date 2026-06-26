@@ -149,6 +149,12 @@ export function useManageVehicle(
         hasSecurityGuard: (vehicleData as any).has_security_guard || false,
         nearShoppingCenter: (vehicleData as any).near_shopping_center || false,
         nearNightlife: (vehicleData as any).near_nightlife || false,
+        hasEquippedKitchen: (vehicleData as any).has_equipped_kitchen || false,
+        hasSolarPanel: (vehicleData as any).has_solar_panel || false,
+        hasHousekeeper: (vehicleData as any).has_housekeeper || false,
+        hasLaundry: (vehicleData as any).has_laundry || false,
+        hasRemoteWork: (vehicleData as any).has_remote_work || false,
+        hasCanalPlus: (vehicleData as any).has_canal_plus || false,
         // 🆕 CHARGER LES ZONES DE PICK-UP
         pickupZones: vehicleData.pickup_zones || [],
         // 🆕 CHARGER LES CONDITIONS DE RÉSERVATION
