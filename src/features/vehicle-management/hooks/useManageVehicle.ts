@@ -147,6 +147,8 @@ export function useManageVehicle(
         hasAndroidAuto: vehicleData.has_android_auto || false,
         hasPrivateBathroom: (vehicleData as any).has_private_bathroom || false,
         hasSecurityGuard: (vehicleData as any).has_security_guard || false,
+        nearShoppingCenter: (vehicleData as any).near_shopping_center || false,
+        nearNightlife: (vehicleData as any).near_nightlife || false,
         // 🆕 CHARGER LES ZONES DE PICK-UP
         pickupZones: vehicleData.pickup_zones || [],
         // 🆕 CHARGER LES CONDITIONS DE RÉSERVATION

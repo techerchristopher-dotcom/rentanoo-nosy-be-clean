@@ -119,6 +119,8 @@ export interface Vehicle {
   hasWifi?: boolean;
   hasPrivateBathroom?: boolean;
   hasSecurityGuard?: boolean;
+  nearShoppingCenter?: boolean;
+  nearNightlife?: boolean;
   hasGPS?: boolean;
   hasCruiseControl?: boolean;
   hasBluetooth?: boolean;

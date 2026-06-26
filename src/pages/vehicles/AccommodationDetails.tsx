@@ -51,6 +51,8 @@ import {
   Wifi,
   Bath,
   Zap,
+  ShoppingBag,
+  Music,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1247,7 +1249,7 @@ export default function AccommodationDetails() {
                 )}
               </div>
 
-              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi || vehicle.hasPrivateBathroom || vehicle.hasSecurityGuard) && (
+              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi || vehicle.hasPrivateBathroom || vehicle.hasSecurityGuard || vehicle.nearShoppingCenter || vehicle.nearNightlife) && (
                 <Card className="overflow-hidden">
                   <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -1302,6 +1304,22 @@ export default function AccommodationDetails() {
                           <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
                           <span className="text-sm font-medium text-emerald-800">
                             {t("accommodationDetails.hasSecurityGuard", "Gardien sur place")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.nearShoppingCenter && (
+                        <div className="flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2">
+                          <ShoppingBag className="h-4 w-4 text-purple-600 shrink-0" />
+                          <span className="text-sm font-medium text-purple-800">
+                            {t("accommodationDetails.nearShoppingCenter", "Proche centre commercial")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.nearNightlife && (
+                        <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                          <Music className="h-4 w-4 text-rose-600 shrink-0" />
+                          <span className="text-sm font-medium text-rose-800">
+                            {t("accommodationDetails.nearNightlife", "Proche activités nocturnes")}
                           </span>
                         </div>
                       )}

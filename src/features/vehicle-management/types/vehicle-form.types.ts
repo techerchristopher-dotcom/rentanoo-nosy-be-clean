@@ -60,6 +60,8 @@ export interface VehicleFormData {
   hasAndroidAuto: boolean;
   hasPrivateBathroom: boolean;
   hasSecurityGuard: boolean;
+  nearShoppingCenter: boolean;
+  nearNightlife: boolean;
 
   // Zones de pick-up
   pickupZones: string[];
@@ -204,6 +206,8 @@ export const initialFormData: VehicleFormData = {
   hasAndroidAuto: false,
   hasPrivateBathroom: false,
   hasSecurityGuard: false,
+  nearShoppingCenter: false,
+  nearNightlife: false,
   pickupZones: [],
   minAdvanceHours: "24",
   minRentalDays: "1",

@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Home, Wind, Waves, Umbrella, Wifi, Bath, Shield } from "lucide-react";
+import { MapPin, Users, Home, Wind, Waves, Umbrella, Wifi, Bath, Shield, ShoppingBag, Music } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
@@ -14,6 +14,7 @@ import {
   IMAGE_SIZES,
   IMAGE_WIDTHS,
 } from "@/utils/imageOptimization";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AccommodationCardProps {
   vehicle: Vehicle;
@@ -39,7 +40,27 @@ export function AccommodationCard({
 }: AccommodationCardProps) {
   const { t } = useTranslation("common");
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
+  const [fetchedPhotoUrl, setFetchedPhotoUrl] = useState<string | null>(null);
   const isFetchingFallback = useRef(false);
+
+  useEffect(() => {
+    if (primaryPhoto?.url) return;
+    let cancelled = false;
+    (supabase as any)
+      .from("vehicle_photos")
+      .select("photo_url, is_primary, display_order")
+      .eq("vehicle_id", vehicle.id)
+      .not("photo_url", "ilike", "%.heic")
+      .order("is_primary", { ascending: false })
+      .order("display_order", { ascending: true })
+      .limit(1)
+      .then(({ data }: any) => {
+        if (!cancelled && data?.[0]?.photo_url) {
+          setFetchedPhotoUrl(data[0].photo_url);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [vehicle.id, primaryPhoto?.url]);
 
   const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
@@ -97,7 +118,7 @@ export function AccommodationCard({
     >
       <div className="aspect-[4/3] relative overflow-hidden">
         {(() => {
-          const imageUrl = primaryPhoto?.url || PLACEHOLDER_URL;
+          const imageUrl = primaryPhoto?.url || fetchedPhotoUrl || PLACEHOLDER_URL;
           const isSupabaseUrl = imageUrl.includes("supabase.co/storage");
           const srcSet = isSupabaseUrl ? generateSrcSet(imageUrl, IMAGE_WIDTHS.CARD) : undefined;
           const optimizedSrc = isSupabaseUrl ? getOptimizedImageUrl(imageUrl, 400) : imageUrl;
@@ -184,6 +205,18 @@ export function AccommodationCard({
             <div className="flex items-center text-xs text-emerald-600 bg-emerald-50 rounded-full px-2 py-1">
               <Shield className="h-3 w-3 mr-1" />
               {t("accommodationCard.hasSecurityGuard", "Gardien sur place")}
+            </div>
+          )}
+          {vehicle.nearShoppingCenter && (
+            <div className="flex items-center text-xs text-purple-600 bg-purple-50 rounded-full px-2 py-1">
+              <ShoppingBag className="h-3 w-3 mr-1" />
+              {t("accommodationCard.nearShoppingCenter", "Proche centre commercial")}
+            </div>
+          )}
+          {vehicle.nearNightlife && (
+            <div className="flex items-center text-xs text-rose-600 bg-rose-50 rounded-full px-2 py-1">
+              <Music className="h-3 w-3 mr-1" />
+              {t("accommodationCard.nearNightlife", "Proche activités nocturnes")}
             </div>
           )}
         </div>

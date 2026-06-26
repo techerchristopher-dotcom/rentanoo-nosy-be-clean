@@ -2,7 +2,7 @@ import "@/styles/preview-banner.css";
 import "@/styles/manage-vehicle.css";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella, Wifi, Bath } from "lucide-react";
+import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella, Wifi, Bath, ShoppingBag, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1640,6 +1640,8 @@ export default function ManageVehicle() {
           has_wifi: formData.hasWifi,
           has_private_bathroom: formData.hasPrivateBathroom,
           has_security_guard: formData.hasSecurityGuard,
+          near_shopping_center: formData.nearShoppingCenter,
+          near_nightlife: formData.nearNightlife,
         };
 
         const amenitiesResult = await SupabaseVehiclesService.updateVehicle(vehicle.id, accommodationAmenitiesData);
@@ -2190,6 +2192,28 @@ export default function ManageVehicle() {
                             id="hasSecurityGuard"
                             checked={formData.hasSecurityGuard}
                             onCheckedChange={(v) => handleInputChange("hasSecurityGuard", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <ShoppingBag className="h-4 w-4 text-purple-500" />
+                            <span className="text-sm font-medium">Proche centre commercial</span>
+                          </div>
+                          <Switch
+                            id="nearShoppingCenter"
+                            checked={formData.nearShoppingCenter}
+                            onCheckedChange={(v) => handleInputChange("nearShoppingCenter", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Music className="h-4 w-4 text-rose-500" />
+                            <span className="text-sm font-medium">Proche activités nocturnes</span>
+                          </div>
+                          <Switch
+                            id="nearNightlife"
+                            checked={formData.nearNightlife}
+                            onCheckedChange={(v) => handleInputChange("nearNightlife", v)}
                           />
                         </div>
                       </div>
