@@ -1223,6 +1223,94 @@ export default function AccommodationDetails() {
                   seats={vehicle.seats}
                   category={rawVehicleCategory ?? vehicle.vehicleCategory}
                 />
+                {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi || vehicle.hasPrivateBathroom || vehicle.hasSecurityGuard || vehicle.nearShoppingCenter || vehicle.nearNightlife || vehicle.hasEquippedKitchen || vehicle.hasSolarPanel || vehicle.hasHousekeeper || vehicle.hasLaundry || vehicle.hasRemoteWork || vehicle.hasCanalPlus) && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {vehicle.hasAC && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                        <Wind className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasAC", "Climatisation")}
+                      </div>
+                    )}
+                    {vehicle.hasPool && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700">
+                        <Waves className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasPool", "Piscine")}
+                      </div>
+                    )}
+                    {vehicle.nearBeach && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700">
+                        <Umbrella className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.nearBeach", "Proche de la mer")}
+                      </div>
+                    )}
+                    {vehicle.hasWifi && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">
+                        <Wifi className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasWifi", "WiFi")}
+                      </div>
+                    )}
+                    {vehicle.hasPrivateBathroom && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+                        <Bath className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasPrivateBathroom", "Salle de bain privative")}
+                      </div>
+                    )}
+                    {vehicle.hasSecurityGuard && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                        <Shield className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasSecurityGuard", "Gardien sur place")}
+                      </div>
+                    )}
+                    {vehicle.nearShoppingCenter && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700">
+                        <ShoppingBag className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.nearShoppingCenter", "Proche centre commercial")}
+                      </div>
+                    )}
+                    {vehicle.nearNightlife && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700">
+                        <Music className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.nearNightlife", "Proche activités nocturnes")}
+                      </div>
+                    )}
+                    {vehicle.hasEquippedKitchen && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                        <UtensilsCrossed className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasEquippedKitchen", "Cuisine équipée")}
+                      </div>
+                    )}
+                    {vehicle.hasSolarPanel && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700">
+                        <Sun className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasSolarPanel", "Panneau solaire")}
+                      </div>
+                    )}
+                    {vehicle.hasHousekeeper && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-xs font-medium text-fuchsia-700">
+                        <Sparkles className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasHousekeeper", "Femme de ménage")}
+                      </div>
+                    )}
+                    {vehicle.hasLaundry && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
+                        <Shirt className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasLaundry", "Blanchisserie")}
+                      </div>
+                    )}
+                    {vehicle.hasRemoteWork && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                        <Laptop className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasRemoteWork", "Télétravail possible")}
+                      </div>
+                    )}
+                    {vehicle.hasCanalPlus && (
+                      <div className="flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+                        <Tv className="h-3 w-3 shrink-0" />
+                        {t("accommodationDetails.hasCanalPlus", "Canal+")}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
