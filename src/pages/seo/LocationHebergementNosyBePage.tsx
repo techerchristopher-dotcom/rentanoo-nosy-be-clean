@@ -24,7 +24,11 @@ import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicListingPath } from "@/utils/vehicleType";
+import { getCapacityBadge } from "@/utils/getCapacityBadge";
 import { cn } from "@/lib/utils";
+
+// IDs courts (8 premiers chars UUID) des logements toujours affichés
+const PINNED_SHORT_IDS = ["285a520f", "da287e92"] as const;
 
 // ─── Données statiques ───────────────────────────────────────────────────────
 
@@ -150,6 +154,7 @@ function ListingCard({ v, photos, animDelay }: ListingCardProps) {
   const price = v.price_per_day;
   const label = `${v.brand} ${v.model}`.trim();
   const hasMultiple = photos.length > 1;
+  const capacityBadge = getCapacityBadge(v.seats);
 
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
@@ -189,6 +194,15 @@ function ListingCard({ v, photos, animDelay }: ListingCardProps) {
                 ))}
               </CarouselContent>
             </Carousel>
+
+            {/* Badge capacité — top-left, coexiste avec les flèches */}
+            {capacityBadge && (
+              <div className="absolute top-2 left-2 z-10 pointer-events-none">
+                <span className="inline-flex items-center rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+                  {capacityBadge}
+                </span>
+              </div>
+            )}
 
             {/* Flèches custom — overlay discret, visibles au hover desktop & toujours sur mobile */}
             {hasMultiple && (
@@ -289,7 +303,31 @@ export default function LocationHebergementNosyBePage() {
   useEffect(() => {
     SupabaseVehiclesService.getAvailableVehicles({ limit: 40 }).then(async (all) => {
       const accommodations = all.filter((v) => v.vehicle_type === "accommodation");
-      const sliced = accommodations.slice(0, 6);
+
+      // ── Sélection des 6 logements ────────────────────────────────────────
+      // 1. Logements imposés (toujours affichés en premier)
+      const pinned = PINNED_SHORT_IDS
+        .map((shortId) => accommodations.find((v) => v.id.toLowerCase().startsWith(shortId)))
+        .filter((v): v is SupabaseVehicle => !!v);
+      const pinnedIds = new Set(pinned.map((v) => v.id));
+      const pool = accommodations.filter((v) => !pinnedIds.has(v.id));
+
+      // 2. 2-3 logements capacité ~4 personnes (3-5 places)
+      const near4 = pool.filter((v) => v.seats != null && v.seats >= 3 && v.seats <= 5).slice(0, 3);
+      const near4Ids = new Set(near4.map((v) => v.id));
+
+      // 3. 1 logement grande capacité (8+ places)
+      const large = pool
+        .filter((v) => !near4Ids.has(v.id) && v.seats != null && (v.seats as number) >= 8)
+        .slice(0, 1);
+      const largeIds = new Set(large.map((v) => v.id));
+
+      // 4. Remplissage si manque encore des slots
+      const usedIds = new Set([...pinnedIds, ...near4Ids, ...largeIds]);
+      const needed = 6 - pinned.length - near4.length - large.length;
+      const fill = pool.filter((v) => !usedIds.has(v.id)).slice(0, Math.max(0, needed));
+
+      const sliced = [...pinned, ...near4, ...large, ...fill].slice(0, 6);
       setListings(sliced);
 
       // Hero bg : première photo disponible
