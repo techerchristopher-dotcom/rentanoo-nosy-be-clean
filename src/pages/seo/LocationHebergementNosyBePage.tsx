@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, CreditCard, MapPin } from "lucide-react";
+import { ArrowRight, Shield, CreditCard, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/seo/Seo";
@@ -10,12 +10,19 @@ import {
   SeoFaqSection,
   SeoPageShell,
 } from "@/components/seo/SeoPageLayout";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import { WaveDivider } from "@/components/seo/WaveDivider";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
+import { supabase } from "@/integrations/supabase/client";
 import { getPublicListingPath } from "@/utils/vehicleType";
 import { cn } from "@/lib/utils";
 
-// ─── Données de la page ─────────────────────────────────────────────────────
+// ─── Données statiques ───────────────────────────────────────────────────────
 
 const FAQ_ITEMS = [
   {
@@ -33,18 +40,9 @@ const FAQ_ITEMS = [
 ];
 
 const TRUST_ITEMS = [
-  {
-    icon: <MapPin className="h-3.5 w-3.5" aria-hidden />,
-    label: "Vérifiés sur place par notre équipe",
-  },
-  {
-    icon: <Shield className="h-3.5 w-3.5" aria-hidden />,
-    label: "Prix clairs, aucune surprise",
-  },
-  {
-    icon: <CreditCard className="h-3.5 w-3.5" aria-hidden />,
-    label: "Acompte sécurisé, solde sur place",
-  },
+  { icon: <MapPin className="h-3.5 w-3.5" aria-hidden />, label: "Vérifiés sur place par notre équipe" },
+  { icon: <Shield className="h-3.5 w-3.5" aria-hidden />, label: "Prix clairs, aucune surprise" },
+  { icon: <CreditCard className="h-3.5 w-3.5" aria-hidden />, label: "Acompte sécurisé, solde sur place" },
 ];
 
 const RELATED_LINKS = [
@@ -74,7 +72,7 @@ const BREADCRUMB_SCHEMA = {
   ],
 };
 
-// ─── Hook : apparition au scroll ────────────────────────────────────────────
+// ─── Hook scroll-reveal (réutilisé uniquement sur les éléments toujours présents dans le DOM) ──
 
 function useScrollReveal(ref: React.RefObject<Element>, threshold = 0.15) {
   const [visible, setVisible] = useState(false);
@@ -91,33 +89,114 @@ function useScrollReveal(ref: React.RefObject<Element>, threshold = 0.15) {
   return visible;
 }
 
-// ─── Carte listing locale (avec hover-lift) ──────────────────────────────────
+// ─── Carte listing avec mini-carrousel ───────────────────────────────────────
 
-function ListingCard({ v }: { v: SupabaseVehicle }) {
+interface ListingCardProps {
+  v: SupabaseVehicle;
+  photos: string[];  // URLs de toutes les photos disponibles
+  animDelay: number;
+}
+
+function ListingCard({ v, photos, animDelay }: ListingCardProps) {
   const path = getPublicListingPath(v);
-  const photoUrl = (v as unknown as { primaryPhotoUrl?: string }).primaryPhotoUrl ?? null;
   const price = v.price_per_day;
   const label = `${v.brand} ${v.model}`.trim();
+  const hasMultiple = photos.length > 1;
+
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    api.on("select", onSelect);
+    return () => { api.off("select", onSelect); };
+  }, [api]);
 
   return (
     <Link
       to={path}
-      className="group flex flex-col rounded-xl border bg-card overflow-hidden shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-lagoon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group flex flex-col rounded-xl border bg-card overflow-hidden shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-lagoon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary animate-fade-up"
+      style={{ animationDelay: `${animDelay}ms`, animationFillMode: "both" }}
     >
-      <div className="h-44 bg-muted overflow-hidden">
-        {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt={label}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-          />
+      {/* Zone photo avec mini-carrousel */}
+      <div className="relative h-44 bg-muted overflow-hidden">
+        {photos.length > 0 ? (
+          <>
+            <Carousel
+              setApi={setApi}
+              opts={{ loop: false, dragFree: false }}
+              className="h-full w-full"
+            >
+              <CarouselContent className="-ml-0 h-44">
+                {photos.map((url, i) => (
+                  <CarouselItem key={i} className="pl-0">
+                    <img
+                      src={url}
+                      alt={i === 0 ? label : `${label} — photo ${i + 1}`}
+                      className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading={i === 0 ? "eager" : "lazy"}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+
+            {/* Flèches custom — overlay discret, visibles au hover desktop & toujours sur mobile */}
+            {hasMultiple && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Photo précédente"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); api?.scrollPrev(); }}
+                  className={cn(
+                    "absolute left-1.5 top-1/2 -translate-y-1/2 z-10",
+                    "flex h-7 w-7 items-center justify-center rounded-full",
+                    "bg-black/40 text-white backdrop-blur-sm transition-opacity duration-200",
+                    "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                    current === 0 && "pointer-events-none opacity-0 group-hover:opacity-30"
+                  )}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Photo suivante"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); api?.scrollNext(); }}
+                  className={cn(
+                    "absolute right-1.5 top-1/2 -translate-y-1/2 z-10",
+                    "flex h-7 w-7 items-center justify-center rounded-full",
+                    "bg-black/40 text-white backdrop-blur-sm transition-opacity duration-200",
+                    "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                    current === photos.length - 1 && "pointer-events-none opacity-0 group-hover:opacity-30"
+                  )}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+
+                {/* Indicateurs dots */}
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 pointer-events-none">
+                  {photos.map((_, i) => (
+                    <span
+                      key={i}
+                      className={cn(
+                        "inline-block h-1 rounded-full transition-all duration-300",
+                        i === current ? "w-4 bg-white" : "w-1 bg-white/50"
+                      )}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
             Photo à venir
           </div>
         )}
       </div>
+
+      {/* Infos de la carte */}
       <div className="p-3 flex-1 flex flex-col gap-1">
         <p className="font-semibold text-sm text-foreground line-clamp-1">{label}</p>
         {price ? (
@@ -137,35 +216,63 @@ function ListingCard({ v }: { v: SupabaseVehicle }) {
 
 export default function LocationHebergementNosyBePage() {
   const [listings, setListings] = useState<SupabaseVehicle[]>([]);
+  // Map vehicleId → tableau de photo URLs triées
+  const [photosByVehicle, setPhotosByVehicle] = useState<Record<string, string[]>>({});
   const [heroBg, setHeroBg] = useState<string | null>(null);
 
+  // Trust strip : toujours dans le DOM → scroll-reveal safe
   const trustRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
   const trustVisible = useScrollReveal(trustRef as React.RefObject<Element>);
-  const gridVisible = useScrollReveal(gridRef as React.RefObject<Element>);
-
-  useEffect(() => {
-    SupabaseVehiclesService.getAvailableVehicles({ limit: 40 }).then((all) => {
-      const accommodations = all.filter((v) => v.vehicle_type === "accommodation");
-      setListings(accommodations.slice(0, 6));
-      // Photo de héros : première accommodation avec photo
-      const firstWithPhoto = accommodations.find(
-        (v) => (v as unknown as { primaryPhotoUrl?: string }).primaryPhotoUrl
-      );
-      if (firstWithPhoto) {
-        setHeroBg((firstWithPhoto as unknown as { primaryPhotoUrl?: string }).primaryPhotoUrl ?? null);
-      }
-    });
-  }, []);
 
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  useEffect(() => {
+    SupabaseVehiclesService.getAvailableVehicles({ limit: 40 }).then(async (all) => {
+      const accommodations = all.filter((v) => v.vehicle_type === "accommodation");
+      const sliced = accommodations.slice(0, 6);
+      setListings(sliced);
+
+      // Hero bg : première photo disponible
+      const firstPhoto = (sliced[0] as unknown as { primaryPhotoUrl?: string })?.primaryPhotoUrl;
+      if (firstPhoto) setHeroBg(firstPhoto);
+
+      // Batch fetch toutes les photos pour le carrousel
+      if (sliced.length === 0) return;
+      const ids = sliced.map((v) => v.id);
+      const { data: rows } = await supabase
+        .from("vehicle_photos")
+        .select("vehicle_id, photo_url, is_primary, display_order")
+        .in("vehicle_id", ids)
+        .not("photo_url", "ilike", "%.heic%")
+        .order("display_order", { ascending: true });
+
+      if (!rows) return;
+
+      const grouped: Record<string, string[]> = {};
+      for (const row of rows) {
+        const vid = row.vehicle_id as string;
+        if (!grouped[vid]) grouped[vid] = [];
+        if (row.photo_url) {
+          // Mettre la photo principale en premier
+          if (row.is_primary) {
+            grouped[vid].unshift(row.photo_url);
+          } else {
+            grouped[vid].push(row.photo_url);
+          }
+        }
+      }
+      // Limiter à 5 photos par carte
+      for (const vid of Object.keys(grouped)) {
+        grouped[vid] = grouped[vid].slice(0, 5);
+      }
+      setPhotosByVehicle(grouped);
+    });
+  }, []);
+
   const fadeUp = (delay: number) =>
-    prefersReducedMotion
-      ? {}
-      : { animationDelay: `${delay}ms`, animationFillMode: "both" as const };
+    prefersReducedMotion ? {} : { animationDelay: `${delay}ms`, animationFillMode: "both" as const };
 
   return (
     <SeoPageShell>
@@ -181,28 +288,15 @@ export default function LocationHebergementNosyBePage() {
       <section className="relative overflow-hidden bg-gradient-lagoon text-white min-h-[360px] md:min-h-[440px] flex items-center">
         {/* Photo de fond dynamique */}
         {heroBg && (
-          <div
-            className="absolute inset-0 transition-opacity duration-700"
-            style={{ opacity: heroBg ? 0.25 : 0 }}
-            aria-hidden
-          >
-            <img
-              src={heroBg}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+          <div className="absolute inset-0" aria-hidden>
+            <img src={heroBg} alt="" className="w-full h-full object-cover opacity-25" />
           </div>
         )}
-
-        {/* Overlay gradient-lagoon */}
         <div className="absolute inset-0 bg-gradient-lagoon opacity-85" aria-hidden />
-
-        {/* Orbes décoratifs (identiques à SeoPageHero) */}
         <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-white/10 blur-3xl" aria-hidden />
-        <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-amber-300/10 blur-3xl" style={{ animationDelay: "2s" }} aria-hidden />
+        <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-amber-300/10 blur-3xl" aria-hidden />
 
         <div className="relative mx-auto max-w-4xl px-4 py-14 md:py-20 w-full">
-          {/* Eyebrow */}
           <div
             className={cn("flex items-center gap-3", !prefersReducedMotion && "animate-fade-up")}
             style={fadeUp(0)}
@@ -213,35 +307,24 @@ export default function LocationHebergementNosyBePage() {
             </p>
           </div>
 
-          {/* H1 */}
           <h1
-            className={cn(
-              "mt-4 text-3xl font-bold tracking-tight md:text-5xl md:leading-[1.1] lg:text-[3.25rem]",
-              !prefersReducedMotion && "animate-fade-up"
-            )}
+            className={cn("mt-4 text-3xl font-bold tracking-tight md:text-5xl md:leading-[1.1] lg:text-[3.25rem]", !prefersReducedMotion && "animate-fade-up")}
             style={fadeUp(100)}
           >
             Trouvez votre hébergement idéal à Nosy Be
           </h1>
 
-          {/* Intro */}
           <p
-            className={cn(
-              "mt-5 max-w-2xl text-base md:text-lg leading-relaxed text-white/80",
-              !prefersReducedMotion && "animate-fade-up"
-            )}
+            className={cn("mt-5 max-w-2xl text-base md:text-lg leading-relaxed text-white/80", !prefersReducedMotion && "animate-fade-up")}
             style={fadeUp(200)}
           >
             Hébergements vérifiés sur place par notre équipe locale à Nosy Be.
             Prix clairs, réservation en 2 minutes.
           </p>
 
-          {/* Trust strip glassmorphism */}
+          {/* Trust chips glassmorphism */}
           <div
-            className={cn(
-              "mt-8 flex flex-wrap gap-2",
-              !prefersReducedMotion && "animate-fade-up"
-            )}
+            className={cn("mt-8 flex flex-wrap gap-2", !prefersReducedMotion && "animate-fade-up")}
             style={fadeUp(300)}
             aria-label="Garanties Rentanoo"
           >
@@ -257,14 +340,12 @@ export default function LocationHebergementNosyBePage() {
           </div>
         </div>
 
-        {/* Ligne séparatrice basse */}
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" aria-hidden />
       </section>
 
-      {/* ── VAGUE SÉPARATRICE ──────────────────────────────────────────────── */}
       <WaveDivider className="-mt-1" />
 
-      {/* ── TRUST STRIP SCROLL REVEAL ──────────────────────────────────────── */}
+      {/* ── TRUST STRIP (toujours dans le DOM → scroll-reveal safe) ─────────── */}
       <div ref={trustRef} className="border-b bg-muted/30">
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
@@ -273,10 +354,7 @@ export default function LocationHebergementNosyBePage() {
                 key={i}
                 className={cn(
                   "flex items-center gap-2 text-sm text-foreground transition-all duration-500",
-                  trustVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-3",
-                  prefersReducedMotion && "opacity-100 translate-y-0"
+                  trustVisible || prefersReducedMotion ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
                 )}
                 style={{ transitionDelay: `${i * 80}ms` }}
               >
@@ -291,33 +369,35 @@ export default function LocationHebergementNosyBePage() {
       {/* ── GRILLE DE LISTINGS ─────────────────────────────────────────────── */}
       {listings.length > 0 && (
         <section className="container mx-auto px-4 py-10 max-w-5xl">
-          {/* Compteur dynamique (vraies données Supabase) */}
+          {/* Compteur réel — aucun chiffre inventé */}
           <p className="text-sm text-muted-foreground mb-3">
-            <span className="font-semibold text-primary">{listings.length} hébergement{listings.length > 1 ? "s" : ""}</span>
+            <span className="font-semibold text-primary">
+              {listings.length} hébergement{listings.length > 1 ? "s" : ""}
+            </span>
             {" "}disponible{listings.length > 1 ? "s" : ""} cette semaine à Nosy Be
           </p>
 
           <h2 className="text-xl font-bold mb-5 tracking-tight">Annonces disponibles</h2>
 
-          <div
-            ref={gridRef}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4"
-          >
-            {listings.map((v, i) => (
-              <div
-                key={v.id}
-                className={cn(
-                  "transition-all duration-500",
-                  gridVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-4",
-                  prefersReducedMotion && "opacity-100 translate-y-0"
-                )}
-                style={{ transitionDelay: `${i * 60}ms` }}
-              >
-                <ListingCard v={v} />
-              </div>
-            ))}
+          {/*
+            FIX BUG OPACITÉ : les cartes utilisent animate-fade-up avec delay CSS.
+            Pas d'IntersectionObserver ici — le hook ne peut pas s'attacher avant
+            que listings soit chargé (rendu conditionnel), ce qui bloquait opacity à 0.
+          */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {listings.map((v, i) => {
+              // Fallback : si pas de photos batch, utiliser primaryPhotoUrl
+              const primaryUrl = (v as unknown as { primaryPhotoUrl?: string }).primaryPhotoUrl;
+              const photos = photosByVehicle[v.id] ?? (primaryUrl ? [primaryUrl] : []);
+              return (
+                <ListingCard
+                  key={v.id}
+                  v={v}
+                  photos={photos}
+                  animDelay={i * 60}
+                />
+              );
+            })}
           </div>
 
           <div className="mt-6 text-center">
@@ -330,10 +410,9 @@ export default function LocationHebergementNosyBePage() {
         </section>
       )}
 
-      {/* ── VAGUE SÉPARATRICE ──────────────────────────────────────────────── */}
       <WaveDivider />
 
-      {/* ── SECTION CONTENU (HISTOIRE FONDATEUR) ──────────────────────────── */}
+      {/* ── SECTION FONDATEUR ──────────────────────────────────────────────── */}
       <SeoContentSection>
         <div className="prose prose-neutral dark:prose-invert max-w-none prose-headings:tracking-tight">
           <h2>Pourquoi Rentanoo ?</h2>
@@ -347,7 +426,6 @@ export default function LocationHebergementNosyBePage() {
           </p>
         </div>
 
-        {/* Liens internes */}
         <div className="flex flex-wrap gap-3 mt-4">
           {RELATED_LINKS.map((l) => (
             <Button key={l.href} asChild variant="outline" size="sm">
@@ -356,10 +434,7 @@ export default function LocationHebergementNosyBePage() {
           ))}
         </div>
 
-        <SeoFaqSection
-          title="Questions fréquentes — Hébergement à Nosy Be"
-          items={FAQ_ITEMS}
-        />
+        <SeoFaqSection title="Questions fréquentes — Hébergement à Nosy Be" items={FAQ_ITEMS} />
 
         <SeoCtaPanel
           title="Réservez votre hébergement à Nosy Be"
