@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, CreditCard, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowRight, Shield, CreditCard, MapPin, ChevronLeft, ChevronRight,
+  Waves, Users, Wifi, UtensilsCrossed,
+} from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/seo/Seo";
@@ -17,6 +20,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { WaveDivider } from "@/components/seo/WaveDivider";
+import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { supabase } from "@/integrations/supabase/client";
 import { getPublicListingPath } from "@/utils/vehicleType";
@@ -87,6 +91,50 @@ function useScrollReveal(ref: React.RefObject<Element>, threshold = 0.15) {
     return () => observer.disconnect();
   }, [ref, threshold]);
   return visible;
+}
+
+// ─── Équipements clés (données réelles uniquement, max 4) ────────────────────
+
+function AmenitiesList({ v }: { v: SupabaseVehicle }) {
+  const items: { icon: React.ReactNode; label: string }[] = [];
+
+  // Ordre de priorité strict (prompt Phase 4)
+  if (v.near_beach) {
+    items.push({ icon: <Waves className="h-3 w-3 shrink-0" aria-hidden />, label: "Proche de la plage" });
+  }
+  if (v.has_pool) {
+    items.push({ icon: <span className="text-[10px] shrink-0" aria-hidden>🏊</span>, label: "Piscine" });
+  }
+  if (v.seats && v.seats > 0) {
+    items.push({ icon: <Users className="h-3 w-3 shrink-0" aria-hidden />, label: `Jusqu'à ${v.seats} pers.` });
+  }
+  const areaName = (v as unknown as { location_areas?: { name?: string } }).location_areas?.name;
+  if (items.length < 4 && areaName) {
+    items.push({ icon: <MapPin className="h-3 w-3 shrink-0" aria-hidden />, label: areaName });
+  }
+  if (items.length < 4 && v.has_wifi) {
+    items.push({ icon: <Wifi className="h-3 w-3 shrink-0" aria-hidden />, label: "Wifi" });
+  }
+  if (items.length < 4 && !v.has_wifi) {
+    if (v.near_nightlife) {
+      items.push({ icon: <span className="text-[10px] shrink-0" aria-hidden>🎵</span>, label: "Vie nocturne proche" });
+    } else if (v.near_shopping_center) {
+      items.push({ icon: <UtensilsCrossed className="h-3 w-3 shrink-0" aria-hidden />, label: "Commerces proches" });
+    }
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <ul className="flex flex-col gap-0.5 mt-0.5">
+      {items.slice(0, 4).map((item, i) => (
+        <li key={i} className="flex items-center gap-1 text-[11px] text-muted-foreground leading-snug">
+          <span className="text-primary/70">{item.icon}</span>
+          {item.label}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 // ─── Carte listing avec mini-carrousel ───────────────────────────────────────
@@ -197,13 +245,23 @@ function ListingCard({ v, photos, animDelay }: ListingCardProps) {
       </div>
 
       {/* Infos de la carte */}
-      <div className="p-3 flex-1 flex flex-col gap-1">
+      <div className="p-3 flex-1 flex flex-col gap-2">
+        {/* Titre */}
         <p className="font-semibold text-sm text-foreground line-clamp-1">{label}</p>
+
+        {/* Prix EUR + Ar (ClientMgaPrice — composant existant) */}
         {price ? (
-          <p className="text-primary font-bold text-sm">
-            {price.toLocaleString("fr-FR")} Ar / nuit
-          </p>
+          <ClientMgaPrice
+            amountMga={price}
+            primaryClassName="text-base font-bold tabular-nums leading-none text-primary"
+            secondaryClassName="text-xs tabular-nums text-muted-foreground"
+            secondarySuffix=" / nuit"
+          />
         ) : null}
+
+        {/* Équipements clés (max 4, données réelles uniquement) */}
+        <AmenitiesList v={v} />
+
         <span className="mt-auto inline-flex items-center gap-1 text-xs text-primary font-medium pt-1">
           Voir la fiche <ArrowRight className="h-3 w-3" />
         </span>
