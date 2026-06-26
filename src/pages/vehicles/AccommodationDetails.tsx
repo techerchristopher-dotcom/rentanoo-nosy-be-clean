@@ -49,6 +49,7 @@ import {
   Waves,
   Umbrella,
   Wifi,
+  Bath,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1246,7 +1247,7 @@ export default function AccommodationDetails() {
                 )}
               </div>
 
-              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi) && (
+              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi || vehicle.hasPrivateBathroom || vehicle.hasSecurityGuard) && (
                 <Card className="overflow-hidden">
                   <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -1285,6 +1286,22 @@ export default function AccommodationDetails() {
                           <Wifi className="h-4 w-4 text-violet-600 shrink-0" />
                           <span className="text-sm font-medium text-violet-800">
                             {t("accommodationDetails.hasWifi", "WiFi")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasPrivateBathroom && (
+                        <div className="flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2">
+                          <Bath className="h-4 w-4 text-teal-600 shrink-0" />
+                          <span className="text-sm font-medium text-teal-800">
+                            {t("accommodationDetails.hasPrivateBathroom", "Salle de bain privative")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasSecurityGuard && (
+                        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                          <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span className="text-sm font-medium text-emerald-800">
+                            {t("accommodationDetails.hasSecurityGuard", "Gardien sur place")}
                           </span>
                         </div>
                       )}

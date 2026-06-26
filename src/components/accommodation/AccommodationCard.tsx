@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Home, Wind, Waves, Umbrella, Wifi } from "lucide-react";
+import { MapPin, Users, Home, Wind, Waves, Umbrella, Wifi, Bath, Shield } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
@@ -172,6 +172,18 @@ export function AccommodationCard({
             <div className="flex items-center text-xs text-violet-600 bg-violet-50 rounded-full px-2 py-1">
               <Wifi className="h-3 w-3 mr-1" />
               {t("accommodationCard.hasWifi", "WiFi")}
+            </div>
+          )}
+          {vehicle.hasPrivateBathroom && (
+            <div className="flex items-center text-xs text-teal-600 bg-teal-50 rounded-full px-2 py-1">
+              <Bath className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasPrivateBathroom", "Salle de bain privative")}
+            </div>
+          )}
+          {vehicle.hasSecurityGuard && (
+            <div className="flex items-center text-xs text-emerald-600 bg-emerald-50 rounded-full px-2 py-1">
+              <Shield className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasSecurityGuard", "Gardien sur place")}
             </div>
           )}
         </div>

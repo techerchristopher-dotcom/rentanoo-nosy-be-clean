@@ -167,6 +167,8 @@ export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => 
   hasPool: vehicle.has_pool ?? false,
   nearBeach: vehicle.near_beach ?? false,
   hasWifi: (vehicle as any).has_wifi ?? false,
+  hasPrivateBathroom: (vehicle as any).has_private_bathroom ?? false,
+  hasSecurityGuard: (vehicle as any).has_security_guard ?? false,
   doors: 0,
   transmission: "manual" as any,
   mileage: 0,

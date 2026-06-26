@@ -35,6 +35,8 @@ export interface Vehicle {
   has_pool?: boolean | null;
   near_beach?: boolean | null;
   has_wifi?: boolean | null;
+  has_private_bathroom?: boolean | null;
+  has_security_guard?: boolean | null;
   has_gps: boolean | null;
   has_cruise_control: boolean | null;
   has_bluetooth: boolean | null;
@@ -453,6 +455,8 @@ export const SupabaseVehiclesService = {
     has_pool?: boolean;
     near_beach?: boolean;
     has_wifi?: boolean;
+    has_private_bathroom?: boolean;
+    has_security_guard?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
     has_bluetooth?: boolean;

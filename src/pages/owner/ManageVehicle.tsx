@@ -2,7 +2,7 @@ import "@/styles/preview-banner.css";
 import "@/styles/manage-vehicle.css";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella, Wifi } from "lucide-react";
+import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella, Wifi, Bath } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1638,6 +1638,8 @@ export default function ManageVehicle() {
           has_pool: formData.hasPool,
           near_beach: formData.nearBeach,
           has_wifi: formData.hasWifi,
+          has_private_bathroom: formData.hasPrivateBathroom,
+          has_security_guard: formData.hasSecurityGuard,
         };
 
         const amenitiesResult = await SupabaseVehiclesService.updateVehicle(vehicle.id, accommodationAmenitiesData);
@@ -2166,6 +2168,28 @@ export default function ManageVehicle() {
                             id="hasWifi"
                             checked={formData.hasWifi}
                             onCheckedChange={(v) => handleInputChange("hasWifi", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Bath className="h-4 w-4 text-teal-500" />
+                            <span className="text-sm font-medium">Salle de bain privative</span>
+                          </div>
+                          <Switch
+                            id="hasPrivateBathroom"
+                            checked={formData.hasPrivateBathroom}
+                            onCheckedChange={(v) => handleInputChange("hasPrivateBathroom", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-emerald-500" />
+                            <span className="text-sm font-medium">Gardien sur place</span>
+                          </div>
+                          <Switch
+                            id="hasSecurityGuard"
+                            checked={formData.hasSecurityGuard}
+                            onCheckedChange={(v) => handleInputChange("hasSecurityGuard", v)}
                           />
                         </div>
                       </div>
