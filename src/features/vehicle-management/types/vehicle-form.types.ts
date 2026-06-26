@@ -39,6 +39,7 @@ export interface VehicleFormData {
   hasAC: boolean;
   hasPool: boolean;
   nearBeach: boolean;
+  hasWifi: boolean;
   hasGPS: boolean;
   hasCruiseControl: boolean;
   hasBluetooth: boolean;
@@ -180,6 +181,7 @@ export const initialFormData: VehicleFormData = {
   hasAC: false,
   hasPool: false,
   nearBeach: false,
+  hasWifi: false,
   hasGPS: false,
   hasCruiseControl: false,
   hasBluetooth: false,

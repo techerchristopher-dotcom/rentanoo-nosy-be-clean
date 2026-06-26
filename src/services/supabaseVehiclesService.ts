@@ -34,6 +34,7 @@ export interface Vehicle {
   has_ac: boolean | null;
   has_pool?: boolean | null;
   near_beach?: boolean | null;
+  has_wifi?: boolean | null;
   has_gps: boolean | null;
   has_cruise_control: boolean | null;
   has_bluetooth: boolean | null;
@@ -451,6 +452,7 @@ export const SupabaseVehiclesService = {
     has_ac?: boolean;
     has_pool?: boolean;
     near_beach?: boolean;
+    has_wifi?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
     has_bluetooth?: boolean;

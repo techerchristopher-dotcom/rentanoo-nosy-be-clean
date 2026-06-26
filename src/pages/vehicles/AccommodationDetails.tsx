@@ -48,6 +48,7 @@ import {
   Ship,
   Waves,
   Umbrella,
+  Wifi,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1245,7 +1246,7 @@ export default function AccommodationDetails() {
                 )}
               </div>
 
-              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach) && (
+              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach || vehicle.hasWifi) && (
                 <Card className="overflow-hidden">
                   <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -1276,6 +1277,14 @@ export default function AccommodationDetails() {
                           <Umbrella className="h-4 w-4 text-orange-600 shrink-0" />
                           <span className="text-sm font-medium text-orange-800">
                             {t("accommodationDetails.nearBeach", "Proche de la mer")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasWifi && (
+                        <div className="flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2">
+                          <Wifi className="h-4 w-4 text-violet-600 shrink-0" />
+                          <span className="text-sm font-medium text-violet-800">
+                            {t("accommodationDetails.hasWifi", "WiFi")}
                           </span>
                         </div>
                       )}

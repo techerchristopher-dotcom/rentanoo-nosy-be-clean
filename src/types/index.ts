@@ -116,6 +116,7 @@ export interface Vehicle {
   hasAC: boolean;
   hasPool?: boolean;
   nearBeach?: boolean;
+  hasWifi?: boolean;
   hasGPS?: boolean;
   hasCruiseControl?: boolean;
   hasBluetooth?: boolean;

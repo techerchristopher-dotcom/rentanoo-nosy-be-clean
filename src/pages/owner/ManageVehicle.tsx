@@ -2,7 +2,7 @@ import "@/styles/preview-banner.css";
 import "@/styles/manage-vehicle.css";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella } from "lucide-react";
+import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1637,6 +1637,7 @@ export default function ManageVehicle() {
           has_ac: formData.hasAC,
           has_pool: formData.hasPool,
           near_beach: formData.nearBeach,
+          has_wifi: formData.hasWifi,
         };
 
         const amenitiesResult = await SupabaseVehiclesService.updateVehicle(vehicle.id, accommodationAmenitiesData);
@@ -2154,6 +2155,17 @@ export default function ManageVehicle() {
                             id="nearBeach"
                             checked={formData.nearBeach}
                             onCheckedChange={(v) => handleInputChange("nearBeach", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Wifi className="h-4 w-4 text-violet-500" />
+                            <span className="text-sm font-medium">WiFi</span>
+                          </div>
+                          <Switch
+                            id="hasWifi"
+                            checked={formData.hasWifi}
+                            onCheckedChange={(v) => handleInputChange("hasWifi", v)}
                           />
                         </div>
                       </div>

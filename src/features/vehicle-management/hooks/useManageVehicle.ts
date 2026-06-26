@@ -126,6 +126,7 @@ export function useManageVehicle(
         hasAC: vehicleData.has_ac || false,
         hasPool: vehicleData.has_pool || false,
         nearBeach: vehicleData.near_beach || false,
+        hasWifi: vehicleData.has_wifi || false,
         hasGPS: vehicleData.has_gps || false,
         hasCruiseControl: vehicleData.has_cruise_control || false,
         hasBluetooth: vehicleData.has_bluetooth || false,
