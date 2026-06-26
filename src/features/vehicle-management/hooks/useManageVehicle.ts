@@ -124,8 +124,8 @@ export function useManageVehicle(
         depositAmount: ((vehicleData as { deposit_amount?: number | null }).deposit_amount ?? 1000).toString(),
         // 🆕 CHARGER TOUS LES ÉQUIPEMENTS DEPUIS LA BASE DE DONNÉES
         hasAC: vehicleData.has_ac || false,
-        hasPool: (vehicleData as any).has_pool || false,
-        nearBeach: (vehicleData as any).near_beach || false,
+        hasPool: vehicleData.has_pool || false,
+        nearBeach: vehicleData.near_beach || false,
         hasGPS: vehicleData.has_gps || false,
         hasCruiseControl: vehicleData.has_cruise_control || false,
         hasBluetooth: vehicleData.has_bluetooth || false,

@@ -1631,40 +1631,22 @@ export default function ManageVehicle() {
         });
       }
 
-      // 🆕 Sauvegarder les équipements
+      // Sauvegarder les équipements hébergement (colonnes existantes en base)
       try {
-        const equipmentUpdateData = {
+        const accommodationAmenitiesData = {
           has_ac: formData.hasAC,
           has_pool: formData.hasPool,
           near_beach: formData.nearBeach,
-          has_gps: formData.hasGPS,
-          has_cruise_control: formData.hasCruiseControl,
-          has_bluetooth: formData.hasBluetooth,
-          has_carplay: formData.hasCarPlay,
-          has_audio_input: formData.hasAudioInput,
-          has_backup_camera: formData.hasBackupCamera,
-          has_usb_port: formData.hasUSBPort,
-          has_leather_seats: formData.hasLeatherSeats,
-          has_sunroof: formData.hasSunroof,
-          has_premium_audio: formData.hasPremiumAudio,
-          has_roof_rack: formData.hasRoofRack,
-          has_wireless_charger: formData.hasWirelessCharger,
-          has_parking_sensors: formData.hasParkingSensors,
-          has_abs: formData.hasABS,
-          has_large_trunk: formData.hasLargeTrunk,
-          has_roof_box: formData.hasRoofBox,
-          has_bike_rack: formData.hasBikeRack,
-          has_android_auto: formData.hasAndroidAuto,
         };
 
-        const equipmentResult = await SupabaseVehiclesService.updateVehicle(vehicle.id, equipmentUpdateData);
-        if (equipmentResult.error) {
-          console.warn("Les équipements n'ont pas pu être sauvegardés:", equipmentResult.error);
+        const amenitiesResult = await SupabaseVehiclesService.updateVehicle(vehicle.id, accommodationAmenitiesData);
+        if (amenitiesResult.error) {
+          console.warn("Les équipements hébergement n'ont pas pu être sauvegardés:", amenitiesResult.error);
         } else {
-          console.log("Équipements sauvegardés avec succès");
+          console.log("Équipements hébergement sauvegardés avec succès");
         }
-      } catch (equipmentError) {
-        console.warn("Erreur lors de la sauvegarde des équipements:", equipmentError);
+      } catch (amenitiesError) {
+        console.warn("Erreur lors de la sauvegarde des équipements hébergement:", amenitiesError);
       }
 
       // 🆕 Sauvegarder les zones de pick-up et conditions de réservation
