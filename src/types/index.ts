@@ -114,6 +114,8 @@ export interface Vehicle {
   fuel: FuelType;
   year: number;
   hasAC: boolean;
+  hasPool?: boolean;
+  nearBeach?: boolean;
   hasGPS?: boolean;
   hasCruiseControl?: boolean;
   hasBluetooth?: boolean;

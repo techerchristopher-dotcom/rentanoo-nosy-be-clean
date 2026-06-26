@@ -37,6 +37,8 @@ export interface VehicleFormData {
 
   // Équipements
   hasAC: boolean;
+  hasPool: boolean;
+  nearBeach: boolean;
   hasGPS: boolean;
   hasCruiseControl: boolean;
   hasBluetooth: boolean;
@@ -176,6 +178,8 @@ export const initialFormData: VehicleFormData = {
   longDurationDiscount60: "",
   depositAmount: "1000",
   hasAC: false,
+  hasPool: false,
+  nearBeach: false,
   hasGPS: false,
   hasCruiseControl: false,
   hasBluetooth: false,

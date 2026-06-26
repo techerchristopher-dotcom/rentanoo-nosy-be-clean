@@ -32,6 +32,8 @@ export interface Vehicle {
   available: boolean | null;
   status: 'active' | 'inactive' | 'review' | null;
   has_ac: boolean | null;
+  has_pool?: boolean | null;
+  near_beach?: boolean | null;
   has_gps: boolean | null;
   has_cruise_control: boolean | null;
   has_bluetooth: boolean | null;
@@ -447,6 +449,8 @@ export const SupabaseVehiclesService = {
     description_de?: string | null;
     description_it?: string | null;
     has_ac?: boolean;
+    has_pool?: boolean;
+    near_beach?: boolean;
     has_gps?: boolean;
     has_cruise_control?: boolean;
     has_bluetooth?: boolean;

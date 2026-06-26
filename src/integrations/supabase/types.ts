@@ -1952,6 +1952,8 @@ export type Database = {
           description_it: string | null
           engine_capacity: string | null
           fuel_type: string | null
+          has_ac: boolean | null
+          has_pool: boolean
           high_season_surcharge: number
           id: string
           internal_code: string | null
@@ -1965,6 +1967,7 @@ export type Database = {
           low_season_discount: number
           mileage: number
           model: string
+          near_beach: boolean
           operational_status: string
           owner_id: string
           pickup_zones: Json | null
@@ -1993,6 +1996,8 @@ export type Database = {
           description_it?: string | null
           engine_capacity?: string | null
           fuel_type?: string | null
+          has_ac?: boolean | null
+          has_pool?: boolean
           high_season_surcharge?: number
           id?: string
           internal_code?: string | null
@@ -2006,6 +2011,7 @@ export type Database = {
           low_season_discount?: number
           mileage: number
           model: string
+          near_beach?: boolean
           operational_status?: string
           owner_id: string
           pickup_zones?: Json | null
@@ -2034,6 +2040,8 @@ export type Database = {
           description_it?: string | null
           engine_capacity?: string | null
           fuel_type?: string | null
+          has_ac?: boolean | null
+          has_pool?: boolean
           high_season_surcharge?: number
           id?: string
           internal_code?: string | null
@@ -2047,6 +2055,7 @@ export type Database = {
           low_season_discount?: number
           mileage?: number
           model?: string
+          near_beach?: boolean
           operational_status?: string
           owner_id?: string
           pickup_zones?: Json | null

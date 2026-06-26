@@ -2,7 +2,7 @@ import "@/styles/preview-banner.css";
 import "@/styles/manage-vehicle.css";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X } from "lucide-react";
+import { ArrowLeft, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Zap, Shield, Clock, Star, Upload, Image as ImageIcon, Trash2, Plus, MapPin, Settings, Wind, Navigation, Gauge, Volume2, Bluetooth, Smartphone, Phone, Users, CalendarIcon, ChevronLeft, ChevronRight, UserCheck, Car, Camera, Plane, Ship, Home, Baby, UserPlus, ArrowDownToLine, ArrowUpFromLine, Gift, Euro, AlertTriangle, X, Waves, Umbrella } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1635,6 +1635,8 @@ export default function ManageVehicle() {
       try {
         const equipmentUpdateData = {
           has_ac: formData.hasAC,
+          has_pool: formData.hasPool,
+          near_beach: formData.nearBeach,
           has_gps: formData.hasGPS,
           has_cruise_control: formData.hasCruiseControl,
           has_bluetooth: formData.hasBluetooth,
@@ -2131,6 +2133,50 @@ export default function ManageVehicle() {
                       </Label>
                     </div>
                   </div>
+
+                  {vehicleType === "accommodation" && (
+                    <div className="space-y-3">
+                      <Label className="flex items-center gap-2">
+                        <Settings className="h-4 w-4 text-primary" />
+                        Équipements hébergement
+                      </Label>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Wind className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm font-medium">Climatisation</span>
+                          </div>
+                          <Switch
+                            id="hasAC"
+                            checked={formData.hasAC}
+                            onCheckedChange={(v) => handleInputChange("hasAC", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Waves className="h-4 w-4 text-cyan-500" />
+                            <span className="text-sm font-medium">Piscine</span>
+                          </div>
+                          <Switch
+                            id="hasPool"
+                            checked={formData.hasPool}
+                            onCheckedChange={(v) => handleInputChange("hasPool", v)}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-2">
+                            <Umbrella className="h-4 w-4 text-orange-500" />
+                            <span className="text-sm font-medium">Proche de la mer</span>
+                          </div>
+                          <Switch
+                            id="nearBeach"
+                            checked={formData.nearBeach}
+                            onCheckedChange={(v) => handleInputChange("nearBeach", v)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

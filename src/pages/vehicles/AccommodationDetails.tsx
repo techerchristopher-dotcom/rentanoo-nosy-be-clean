@@ -46,6 +46,8 @@ import {
   Calendar as CalendarIcon,
   Plane,
   Ship,
+  Waves,
+  Umbrella,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1242,6 +1244,45 @@ export default function AccommodationDetails() {
                   </div>
                 )}
               </div>
+
+              {(vehicle.hasAC || vehicle.hasPool || vehicle.nearBeach) && (
+                <Card className="overflow-hidden">
+                  <CardHeader className="pb-3 bg-gradient-to-r from-primary-soft/10 to-transparent">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Settings className="h-5 w-5 text-primary" />
+                      {t("accommodationDetails.amenitiesTitle", "Équipements")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 p-4 sm:p-5">
+                    <div className="flex flex-wrap gap-3">
+                      {vehicle.hasAC && (
+                        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                          <Wind className="h-4 w-4 text-blue-600 shrink-0" />
+                          <span className="text-sm font-medium text-blue-800">
+                            {t("accommodationDetails.hasAC", "Climatisation")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.hasPool && (
+                        <div className="flex items-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2">
+                          <Waves className="h-4 w-4 text-cyan-600 shrink-0" />
+                          <span className="text-sm font-medium text-cyan-800">
+                            {t("accommodationDetails.hasPool", "Piscine")}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.nearBeach && (
+                        <div className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2">
+                          <Umbrella className="h-4 w-4 text-orange-600 shrink-0" />
+                          <span className="text-sm font-medium text-orange-800">
+                            {t("accommodationDetails.nearBeach", "Proche de la mer")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <Collapsible
                 open={expandedSections.reviews}

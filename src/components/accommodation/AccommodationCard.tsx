@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Home } from "lucide-react";
+import { MapPin, Users, Home, Wind, Waves, Umbrella } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
 import { PhotoService } from "@/services/supabase/photos";
@@ -150,6 +150,24 @@ export function AccommodationCard({
             <Home className="h-3 w-3 mr-1" />
             {typeLabel}
           </div>
+          {vehicle.hasAC && (
+            <div className="flex items-center text-xs text-blue-600 bg-blue-50 rounded-full px-2 py-1">
+              <Wind className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasAC", "Climatisation")}
+            </div>
+          )}
+          {vehicle.hasPool && (
+            <div className="flex items-center text-xs text-cyan-600 bg-cyan-50 rounded-full px-2 py-1">
+              <Waves className="h-3 w-3 mr-1" />
+              {t("accommodationCard.hasPool", "Piscine")}
+            </div>
+          )}
+          {vehicle.nearBeach && (
+            <div className="flex items-center text-xs text-orange-600 bg-orange-50 rounded-full px-2 py-1">
+              <Umbrella className="h-3 w-3 mr-1" />
+              {t("accommodationCard.nearBeach", "Proche de la mer")}
+            </div>
+          )}
         </div>
 
         <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
