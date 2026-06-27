@@ -208,12 +208,26 @@ export function WhatsAppFloatingButton() {
       justDraggedRef.current = false;
       return;
     }
+
+    // Empêche la navigation native pour garantir que le tracking part
+    // AVANT l'ouverture du nouvel onglet (iOS suspend le tab courant
+    // dès que target="_blank" navigue — les beacons seraient perdus).
+    e.preventDefault();
+
+    console.log("[WA] onAvatarClick — fbq:", typeof window.fbq, "| gtag:", typeof window.gtag);
+
     trackWhatsAppFabEvent("whatsapp_fab_click", {
       page_path: location.pathname,
       bubble_visible: bubblePhase === "visible" ? "yes" : "no",
     });
     trackMetaContact();
     trackGa4Event("contact", { method: "whatsapp" });
+
+    console.log("[WA] tracking fired ✓ — opening WhatsApp tab");
+
+    // Ouvre le lien après le tracking (synchrone dans le même handler
+    // de clic = pas bloqué par les popup blockers).
+    window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
   const showBubble = bubblePhase === "visible" || bubblePhase === "fading";
