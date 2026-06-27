@@ -61,10 +61,10 @@ const FAQ_ITEMS = [
 
 const RELATED_LINKS = [
   { label: "Location moto Nosy Be", href: "/location-moto-nosy-be" },
+  { label: "Location quad Nosy Be", href: "/location-quad-nosy-be" },
   { label: "Location voiture Nosy Be", href: "/location-voiture-nosy-be" },
   { label: "Hébergements Nosy Be", href: "/location-vacances-nosy-be" },
   { label: "Villas Nosy Be", href: "/location-villa-nosy-be" },
-  { label: "Villa bord de mer Nosy Be", href: "/location-villa-bord-de-mer-nosy-be" },
 ];
 
 const BREADCRUMB_SCHEMA = {
