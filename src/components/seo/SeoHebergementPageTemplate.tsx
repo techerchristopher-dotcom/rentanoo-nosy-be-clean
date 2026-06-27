@@ -49,6 +49,7 @@ export interface SeoHebergementPageProps {
   // Listings
   vehicleSubCategory?: string;       // Filtrer par catégorie (Appartement, Villa, Bungalow)
   nearBeach?: boolean;               // Filtrer uniquement les logements proches de la plage
+  hasPool?: boolean;                 // Filtrer uniquement les logements avec piscine
   pinnedShortIds?: readonly string[]; // IDs courts imposés (8 premiers chars UUID, lowercase)
   listingNoun: string;               // "appartement" | "villa" | "bungalow" | "hébergement"
   ctaHref: string;
@@ -326,7 +327,7 @@ function CancellationPolicyContent() {
 export function SeoHebergementPageTemplate({
   seoTitle, seoDescription, canonical, breadcrumbSchema,
   eyebrow, h1, subtitle,
-  vehicleSubCategory, nearBeach, pinnedShortIds = [], listingNoun,
+  vehicleSubCategory, nearBeach, hasPool, pinnedShortIds = [], listingNoun,
   ctaHref, ctaLabel,
   faqTitle, faqItems, relatedLinks,
   ctaPanelTitle, ctaPanelText,
@@ -366,6 +367,7 @@ export function SeoHebergementPageTemplate({
       vehicleType: "accommodation",
       vehicleCategories: vehicleSubCategory ? [vehicleSubCategory] : undefined,
       nearBeach: nearBeach ?? undefined,
+      hasPool: hasPool ?? undefined,
       limit: 20,
     }).then(async (accommodations) => {
       // Les données sont déjà filtrées par le service — pas de filter() client-side
@@ -426,7 +428,7 @@ export function SeoHebergementPageTemplate({
   // ACTION 1 — Dépendances stables : pinnedShortIdsKey est une string (stable),
   // pas un tableau (nouvelle référence à chaque render qui causait le double-fetch).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicleSubCategory, nearBeach, pinnedShortIdsKey]);
+  }, [vehicleSubCategory, nearBeach, hasPool, pinnedShortIdsKey]);
 
   const fadeUp = (delay: number) =>
     prefersReducedMotion ? {} : { animationDelay: `${delay}ms`, animationFillMode: "both" as const };

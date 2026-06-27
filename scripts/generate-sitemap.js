@@ -42,6 +42,7 @@ const STATIC_URLS = [
   { loc: "/location-appartement-nosy-be", changefreq: "weekly", priority: "0.9" },
   { loc: "/location-villa-nosy-be", changefreq: "weekly", priority: "0.9" },
   { loc: "/location-villa-bord-de-mer-nosy-be", changefreq: "weekly", priority: "0.9" },
+  { loc: "/location-villa-piscine-nosy-be", changefreq: "weekly", priority: "0.9" },
   { loc: "/location-bungalow-nosy-be", changefreq: "weekly", priority: "0.85" },
   // --- Blog ---
   { loc: "/blog", changefreq: "weekly", priority: "0.8" },

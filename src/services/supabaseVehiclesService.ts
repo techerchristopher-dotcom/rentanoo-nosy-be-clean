@@ -144,6 +144,7 @@ export const SupabaseVehiclesService = {
     vehicleCategories?: string[];
     vehicleType?: 'car' | 'moto' | 'scooter' | 'accommodation';
     nearBeach?: boolean;
+    hasPool?: boolean;
     fuel_type?: string[];
     transmission?: string[];
     /** Limite le nombre de lignes récupérées (utile pour les pages qui n'ont besoin que d'un aperçu). */
@@ -163,6 +164,11 @@ export const SupabaseVehiclesService = {
       // Filtre bord de mer
       if (filters?.nearBeach) {
         query = query.eq('near_beach', true);
+      }
+
+      // Filtre piscine
+      if (filters?.hasPool) {
+        query = query.eq('has_pool', true);
       }
 
       // Appliquer les filtres si fournis
