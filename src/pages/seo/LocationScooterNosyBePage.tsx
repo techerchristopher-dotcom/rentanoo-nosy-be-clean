@@ -357,16 +357,18 @@ export default function LocationScooterNosyBePage() {
       const [{ data: rows }, { data: pinnedPhotoRows }] = await Promise.all([
         supabase
           .from("vehicle_photos")
-          .select("vehicle_id, photo_url, is_primary, display_order")
+          .select("vehicle_id, photo_url, is_primary, display_order, created_at")
           .in("vehicle_id", ids)
           .not("photo_url", "ilike", "%.heic%")
-          .order("display_order", { ascending: true }),
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: false }),
         supabase
           .from("vehicle_photos")
-          .select("vehicle_id, photo_url, is_primary, display_order")
+          .select("vehicle_id, photo_url, is_primary, display_order, created_at")
           .eq("vehicle_id", PINNED_FULL_UUID)
           .not("photo_url", "ilike", "%.heic%")
-          .order("display_order", { ascending: true }),
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: false }),
       ]);
 
       if (!rows && !pinnedPhotoRows) return;

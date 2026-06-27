@@ -137,13 +137,19 @@ export class PhotoService {
       const vehicleId = urlParts[urlParts.length - 2];
       const fullPath = `${vehicleId}/${fileName}`;
 
-      const { error } = await supabase.storage
-        .from(this.BUCKET_NAME)
-        .remove([fullPath]);
+      // Suppression en parallèle : storage + enregistrement BD
+      const [storageResult, dbResult] = await Promise.all([
+        supabase.storage.from(this.BUCKET_NAME).remove([fullPath]),
+        supabase.from('vehicle_photos').delete().eq('photo_url', photoUrl),
+      ]);
 
-      if (error) {
-        console.error('Erreur lors de la suppression:', error);
-        return { success: false, error: error.message };
+      if (storageResult.error) {
+        console.error('Erreur suppression storage:', storageResult.error);
+        return { success: false, error: storageResult.error.message };
+      }
+      if (dbResult.error) {
+        console.error('Erreur suppression vehicle_photos:', dbResult.error);
+        return { success: false, error: dbResult.error.message };
       }
 
       return { success: true, error: null };

@@ -411,7 +411,8 @@ export function SeoHebergementPageTemplate({
         .select("vehicle_id, photo_url, is_primary, display_order")
         .in("vehicle_id", ids)
         .not("photo_url", "ilike", "%.heic%")
-        .order("display_order", { ascending: true });
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: false });
 
       if (!rows) return;
 
