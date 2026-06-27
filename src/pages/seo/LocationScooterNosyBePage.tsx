@@ -137,7 +137,7 @@ function ScooterAmenitiesList({ v }: { v: SupabaseVehicle }) {
 
 // ─── Carte scooter ────────────────────────────────────────────────────────────
 
-function ScooterCard({ v, photos, animDelay }: { v: SupabaseVehicle; photos: string[]; animDelay: number }) {
+function ScooterCard({ v, photos, animDelay, isNew }: { v: SupabaseVehicle; photos: string[]; animDelay: number; isNew?: boolean }) {
   const path = getPublicListingPath(v);
   const price = v.price_per_day;
   const label = `${v.brand} ${v.model}`.trim();
@@ -177,13 +177,18 @@ function ScooterCard({ v, photos, animDelay }: { v: SupabaseVehicle; photos: str
               </CarouselContent>
             </Carousel>
 
-            {ccBadge && (
-              <div className="absolute top-2 left-2 z-10 pointer-events-none">
+            <div className="absolute top-2 left-2 z-10 pointer-events-none flex gap-1 flex-wrap">
+              {ccBadge && (
                 <span className="inline-flex items-center rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
                   {ccBadge}
                 </span>
-              </div>
-            )}
+              )}
+              {isNew && (
+                <span className="inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                  Scooter neuf
+                </span>
+              )}
+            </div>
 
             {hasMultiple && (
               <>
@@ -251,13 +256,19 @@ function ScooterCard({ v, photos, animDelay }: { v: SupabaseVehicle; photos: str
   );
 }
 
+// ─── Scooter mis en avant ─────────────────────────────────────────────────────
+
+const PINNED_SHORT_ID = "e5a04af9"; // SYM Symphony ST 125 2025
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function LocationScooterNosyBePage() {
   const [listings, setListings] = useState<SupabaseVehicle[]>([]);
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [photosByVehicle, setPhotosByVehicle] = useState<Record<string, string[]>>({});
   const [heroBg, setHeroBg] = useState<string | null>(null);
   const [cancellationOpen, setCancellationOpen] = useState(false);
+  const fetchedRef = useRef(false);
 
   const trustRef = useRef<HTMLDivElement>(null);
   const trustVisible = useScrollReveal(trustRef as React.RefObject<Element>);
@@ -267,15 +278,55 @@ export default function LocationScooterNosyBePage() {
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
-    SupabaseVehiclesService.getAvailableVehicles({
-      vehicleType: "scooter",
-      limit: 20,
-    }).then(async (scooters) => {
-      // Tri par cylindrée croissante
-      const sorted = [...scooters].sort(
+    // Guard contre le double-fire de React 18 Strict Mode
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
+    // Fetch scooters ET motos en parallèle (une seule requête chacun, filtrée côté serveur)
+    Promise.all([
+      SupabaseVehiclesService.getAvailableVehicles({ vehicleType: "scooter", limit: 20 }),
+      SupabaseVehiclesService.getAvailableVehicles({ vehicleType: "moto", limit: 20 }),
+    ]).then(async ([scooters, motos]) => {
+      const all = [...scooters, ...motos];
+
+      // Pinned : SYM Symphony ST 125 2025 (E5A04AF9) — toujours en première position
+      const pinned = all.find((v) => v.id.toLowerCase().startsWith(PINNED_SHORT_ID)) ?? null;
+      const pinnedVehicleId = pinned?.id ?? null;
+      setPinnedId(pinnedVehicleId);
+      const pool = all.filter((v) => v.id !== pinnedVehicleId);
+
+      // Tri par cylindrée croissante dans chaque bucket
+      const sorted = [...pool].sort(
         (a, b) => parseCylindree(a.engine_capacity) - parseCylindree(b.engine_capacity)
       );
-      const sliced = sorted.slice(0, 6);
+
+      // Répartition : 1×110cc, 3×125cc (dont pinned), 2×150cc+
+      const bucket110 = sorted.filter((v) => parseCylindree(v.engine_capacity) <= 110).slice(0, 1);
+      const bucket125 = sorted
+        .filter((v) => { const cc = parseCylindree(v.engine_capacity); return cc > 110 && cc <= 125; })
+        .slice(0, pinned ? 2 : 3); // 2 non-pinned + 1 pinned = 3 total
+      const bucket150plus = sorted
+        .filter((v) => parseCylindree(v.engine_capacity) > 125)
+        .slice(0, 2);
+
+      const usedIds = new Set([
+        ...bucket110.map((v) => v.id),
+        ...bucket125.map((v) => v.id),
+        ...bucket150plus.map((v) => v.id),
+      ]);
+      // Si des buckets sont vides, compléter avec les suivants disponibles
+      const needed = 6 - (pinned ? 1 : 0) - bucket110.length - bucket125.length - bucket150plus.length;
+      const fill = sorted.filter((v) => !usedIds.has(v.id)).slice(0, Math.max(0, needed));
+
+      // Assemblage final : pinned en tête
+      const sliced = [
+        ...(pinned ? [pinned] : []),
+        ...bucket110,
+        ...bucket125,
+        ...bucket150plus,
+        ...fill,
+      ].slice(0, 6);
+
       setListings(sliced);
 
       const firstPhoto = (sliced[0] as unknown as { primaryPhotoUrl?: string })?.primaryPhotoUrl;
@@ -398,16 +449,16 @@ export default function LocationScooterNosyBePage() {
         <section className="container mx-auto px-4 py-10 max-w-5xl">
           <p className="text-sm text-muted-foreground mb-3">
             <span className="font-semibold text-primary">
-              {listings.length} scooter{listings.length > 1 ? "s" : ""}
+              {listings.length} scooter{listings.length > 1 ? "s" : ""} &amp; moto{listings.length > 1 ? "s" : ""}
             </span>
             {" "}disponible{listings.length > 1 ? "s" : ""} cette semaine à Nosy Be
           </p>
-          <h2 className="text-xl font-bold mb-5 tracking-tight">Scooters disponibles</h2>
+          <h2 className="text-xl font-bold mb-5 tracking-tight">Scooters &amp; motos disponibles</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {listings.map((v, i) => {
               const primaryUrl = (v as unknown as { primaryPhotoUrl?: string }).primaryPhotoUrl;
               const photos = photosByVehicle[v.id] ?? (primaryUrl ? [primaryUrl] : []);
-              return <ScooterCard key={v.id} v={v} photos={photos} animDelay={i * 60} />;
+              return <ScooterCard key={v.id} v={v} photos={photos} animDelay={i * 60} isNew={v.id === pinnedId} />;
             })}
           </div>
           <div className="mt-6 text-center">
@@ -438,16 +489,13 @@ export default function LocationScooterNosyBePage() {
               Des scooters vérifiés par notre équipe sur place à Nosy Be
             </h2>
             <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-              Chez Rentanoo, chaque scooter — qu'il soit 125cc, 150cc ou 200cc — est inspecté
-              par notre équipe locale avant d'être mis en ligne. Freins, pneus, éclairage,
-              état général : rien n'est laissé au hasard. Vous réservez en ligne, nous nous
-              occupons du reste.
-            </p>
-            <p className="mt-3 text-muted-foreground leading-relaxed text-sm md:text-base">
-              Nosy Be s'explore idéalement à scooter : les routes de l'île sont adaptées,
-              les distances courtes, et rien ne vaut la liberté de partir à la découverte
-              des plages d'Andilana, des marchés d'Hellville ou des collines parfumées de
-              l'île aux Parfums à votre propre rythme.
+              Je m'appelle Christopher, développeur installé à Nosy Be depuis décembre 2025.
+              Avant même d'arriver, j'ai vu le même problème côté scooters et motos qu'avec
+              les hébergements : des véhicules mal entretenus, des prix qui grimpent dès
+              qu'on sent un étranger, et des loueurs locaux sans aucune visibilité en ligne.
+              J'ai créé Rentanoo pour que ça change aussi sur ce point : des scooters vérifiés
+              par notre équipe avant chaque location, des prix affichés clairement, et plus
+              jamais de mauvaise surprise sur l'état du véhicule.
             </p>
           </div>
         </div>
