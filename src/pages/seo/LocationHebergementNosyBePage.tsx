@@ -21,6 +21,12 @@ import {
 } from "@/components/ui/carousel";
 import { WaveDivider } from "@/components/seo/WaveDivider";
 import { HowItWorksTimeline } from "@/components/seo/HowItWorksTimeline";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { supabase } from "@/integrations/supabase/client";
@@ -292,6 +298,7 @@ export default function LocationHebergementNosyBePage() {
   // Map vehicleId → tableau de photo URLs triées
   const [photosByVehicle, setPhotosByVehicle] = useState<Record<string, string[]>>({});
   const [heroBg, setHeroBg] = useState<string | null>(null);
+  const [cancellationOpen, setCancellationOpen] = useState(false);
 
   // Trust strip : toujours dans le DOM → scroll-reveal safe
   const trustRef = useRef<HTMLDivElement>(null);
@@ -533,7 +540,132 @@ export default function LocationHebergementNosyBePage() {
 
         <HowItWorksTimeline />
 
-        <SeoFaqSection title="Questions fréquentes — Hébergement à Nosy Be" items={FAQ_ITEMS} />
+        {/* FAQ inline — permet du JSX dans les réponses (lien modal annulation) */}
+        <div className="mt-14">
+          <h2 className="premium-section-title text-xl font-bold tracking-tight md:text-2xl">
+            Questions fréquentes — Hébergement à Nosy Be
+          </h2>
+          <Accordion
+            type="single"
+            collapsible
+            className="mt-6 overflow-hidden rounded-2xl border border-border/50 bg-card/40 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.04]"
+          >
+            {FAQ_ITEMS.map((item, i) => (
+              <AccordionItem key={i} value={`faq-${i}`} className="border-border/40 px-4">
+                <AccordionTrigger className="py-4 text-left font-medium hover:no-underline hover:text-primary">
+                  {item.q}
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 leading-relaxed text-muted-foreground">
+                  {item.a}
+                  {/* Lien modal uniquement sur la question annulation */}
+                  {item.q === "Puis-je annuler ma réservation ?" && (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        onClick={() => setCancellationOpen(true)}
+                        className="underline text-primary hover:text-primary/80 transition-colors text-sm"
+                      >
+                        Voir les conditions complètes
+                      </button>
+                    </>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+
+        {/* Modal politique d'annulation */}
+        <Dialog open={cancellationOpen} onOpenChange={setCancellationOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader className="pr-8">
+              <DialogTitle className="text-lg font-bold tracking-tight">
+                Conditions d'annulation
+              </DialogTitle>
+            </DialogHeader>
+            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" />
+            <div className="mt-2 space-y-5 text-sm text-muted-foreground leading-relaxed">
+              <p>
+                Chez Rentanoo, nous savons que les plans de voyage peuvent changer. Cette politique
+                s'applique à toutes les réservations effectuées sur rentanoo.com, qu'il s'agisse
+                de véhicules, de logements, ou des deux.
+              </p>
+
+              <section>
+                <h3 className="font-semibold text-foreground mb-2">1. Annulation par le client</h3>
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/60">
+                      <th className="text-left py-2 pr-4 font-medium text-foreground">Délai avant arrivée</th>
+                      <th className="text-left py-2 font-medium text-foreground">Remboursement</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border/30">
+                      <td className="py-2 pr-4">Plus de 48h avant</td>
+                      <td className="py-2 font-medium text-green-600 dark:text-green-400">100% du montant payé (hors frais de service)</td>
+                    </tr>
+                    <tr className="border-b border-border/30">
+                      <td className="py-2 pr-4">Entre 24h et 48h avant</td>
+                      <td className="py-2 font-medium text-amber-600 dark:text-amber-400">50% du montant payé</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 pr-4">Moins de 24h / no-show</td>
+                      <td className="py-2 font-medium text-destructive">Aucun remboursement</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="mt-2 text-xs">
+                  Les frais de service appliqués lors de la réservation ne sont pas remboursables,
+                  quel que soit le délai d'annulation.
+                </p>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-foreground mb-1">2. Réservations groupées</h3>
+                <p>
+                  Vous pouvez annuler un ou plusieurs éléments au sein d'une même réservation sans
+                  annuler l'ensemble du panier. Le remboursement est calculé élément par élément
+                  (véhicule ou logement), selon la grille ci-dessus appliquée à son prix et ses
+                  options associées. Le reste de la réservation demeure inchangé.
+                </p>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-foreground mb-1">3. Annulation par Rentanoo ou le prestataire</h3>
+                <p>
+                  Si une réservation confirmée doit être annulée de notre côté (véhicule ou
+                  logement indisponible, panne non réparable, etc.), vous recevez un remboursement
+                  intégral, sans pénalité. Lorsque cela est possible, nous vous proposons également
+                  une solution de remplacement équivalente.
+                </p>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-foreground mb-1">4. Cas de force majeure</h3>
+                <p>
+                  Si la prestation ne peut pas avoir lieu pour des raisons indépendantes de votre
+                  volonté — alerte météo officielle, route impraticable, panne mécanique ou
+                  problème majeur constaté sur place — vous bénéficiez d'un remboursement
+                  intégral, même si l'annulation intervient à moins de 24h. Les conditions météo
+                  habituelles (pluie, vent) ne constituent pas en elles-mêmes un motif de
+                  remboursement tant qu'elles ne rendent pas la prestation impossible.
+                </p>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-foreground mb-1">5. Comment annuler</h3>
+                <p>
+                  L'annulation se fait directement depuis votre espace réservation sur rentanoo.com,
+                  ou en nous contactant si besoin. Le remboursement, lorsqu'il est dû, est traité
+                  dans un délai de 5 à 7 jours ouvrés sur le moyen de paiement utilisé lors de la
+                  réservation.
+                </p>
+              </section>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <SeoCtaPanel
           title="Réservez votre hébergement à Nosy Be"
