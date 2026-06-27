@@ -284,33 +284,27 @@ export default function LocationScooterNosyBePage() {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
-    // Fetch scooters ET motos en parallèle (une seule requête chacun, filtrée côté serveur)
+    // Fetch scooters (limit 40), motos (20), + pinned par UUID prefix — 3 requêtes parallèles.
+    // La requête dédiée garantit la présence du pinned même s'il est hors du top-40.
+    const PINNED_UUID_PREFIX = PINNED_LICENSE.toLowerCase(); // "e5a04af9"
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fetchPinned = (supabase as any)
+      .from("vehicles")
+      .select("*, location_areas(id, name, slug, active)")
+      .ilike("id", `${PINNED_UUID_PREFIX}%`)
+      .limit(1)
+      .then((res: { data: SupabaseVehicle[] | null }) => res.data?.[0] ?? null);
+
     Promise.all([
-      SupabaseVehiclesService.getAvailableVehicles({ vehicleType: "scooter", limit: 20 }),
+      SupabaseVehiclesService.getAvailableVehicles({ vehicleType: "scooter", limit: 40 }),
       SupabaseVehiclesService.getAvailableVehicles({ vehicleType: "moto", limit: 20 }),
-    ]).then(async ([scooters, motos]) => {
+      fetchPinned as Promise<SupabaseVehicle | null>,
+    ]).then(async ([scooters, motos, pinnedRaw]) => {
       const all = [...scooters, ...motos];
 
-      // ── DEBUG TEMPORAIRE (à retirer après vérification) ──────────────────
-      console.group("[RENTANOO DEBUG] Véhicules scooter/moto récupérés");
-      console.log(`Total récupérés : ${all.length} (${scooters.length} scooters + ${motos.length} motos)`);
-      all.forEach((v) => {
-        const lic = (v as unknown as { license?: string }).license;
-        const computed = getListingLicense(v);
-        const isMatch = computed === PINNED_LICENSE;
-        console.log(
-          `%c${isMatch ? "🎯 MATCH" : "  "}`,
-          isMatch ? "color: green; font-weight: bold" : "",
-          `| id=${v.id} | license_raw="${lic ?? "(null)"}" | getListingLicense="${computed}" | brand="${v.brand}" | model="${v.model}" | cc="${v.engine_capacity ?? "(null)"}"`
-        );
-      });
-      console.log(`Recherché : PINNED_LICENSE="${PINNED_LICENSE}"`);
-      console.groupEnd();
-      // ── FIN DEBUG ─────────────────────────────────────────────────────────
-
-      // Pinned : SYM Symphony ST 125 2025 — match sur le champ license (pas l'UUID)
-      const pinned = all.find((v) => getListingLicense(v) === PINNED_LICENSE) ?? null;
-      console.log("[RENTANOO DEBUG] pinned =", pinned ? `${pinned.brand} ${pinned.model} (${pinned.id})` : "null — INTROUVABLE dans les 20 scooters + 20 motos");
+      // Pinned = résultat de la requête dédiée (indépendante du tri/limit de la liste principale)
+      const pinned: SupabaseVehicle | null = pinnedRaw;
       const pinnedVehicleId = pinned?.id ?? null;
       setPinnedId(pinnedVehicleId);
       const pool = all.filter((v) => v.id !== pinnedVehicleId);
