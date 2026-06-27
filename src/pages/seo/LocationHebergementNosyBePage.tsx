@@ -518,19 +518,40 @@ export default function LocationHebergementNosyBePage() {
 
       {/* ── SECTION FONDATEUR ──────────────────────────────────────────────── */}
       <SeoContentSection>
-        <div className="prose prose-neutral dark:prose-invert max-w-none prose-headings:tracking-tight">
-          <h2>Pourquoi Rentanoo ?</h2>
-          <p>
-            Je m'appelle Christopher, développeur installé à Nosy Be depuis décembre 2025.
-            Avant même d'arriver, j'ai galéré pendant des semaines pour trouver un logement
-            fiable : messages sans réponse, prix qui changeaient une fois sur place parce que
-            j'étais étranger, aucune facture, tout en espèces. J'ai créé Rentanoo pour que
-            ça n'arrive plus à personne : des prix clairs, affichés à l'avance, et des
-            hébergements vérifiés avant de vous les proposer.
-          </p>
+        {/* ── SECTION FONDATEUR — mobile-first ──────────────────────────────── */}
+
+        {/* Mobile : empilé verticalement / Desktop : 2 colonnes (photo | texte) */}
+        <div className="flex flex-col items-center gap-5 md:flex-row md:items-start md:gap-10">
+          {/* Photo ronde — centrée sur mobile, alignée en haut à gauche sur desktop */}
+          <div className="shrink-0 flex justify-center md:justify-start md:w-48">
+            <img
+              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/photo%20fondateur/photo%20techer%20christopher%20.png"
+              alt="Christopher, fondateur de Rentanoo"
+              width={160}
+              height={160}
+              className="h-24 w-24 md:h-44 md:w-44 rounded-full object-cover shadow-card ring-2 ring-primary/20"
+              loading="lazy"
+            />
+          </div>
+
+          {/* Texte — titre + histoire */}
+          <div className="text-center md:text-left">
+            <h2 className="premium-section-title text-xl font-bold tracking-tight md:text-2xl mb-3">
+              Pourquoi Rentanoo ?
+            </h2>
+            <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
+              Je m'appelle Christopher, développeur installé à Nosy Be depuis décembre 2025.
+              Avant même d'arriver, j'ai galéré pendant des semaines pour trouver un logement
+              fiable : messages sans réponse, prix qui changeaient une fois sur place parce que
+              j'étais étranger, aucune facture, tout en espèces. J'ai créé Rentanoo pour que
+              ça n'arrive plus à personne : des prix clairs, affichés à l'avance, et des
+              hébergements vérifiés avant de vous les proposer.
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 mt-4">
+        {/* Chips liens internes — pleine largeur sous les 2 colonnes */}
+        <div className="flex flex-wrap gap-3 mt-6">
           {RELATED_LINKS.map((l) => (
             <Button key={l.href} asChild variant="outline" size="sm">
               <Link to={l.href}>{l.label}</Link>
