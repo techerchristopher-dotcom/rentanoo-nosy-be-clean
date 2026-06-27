@@ -26,6 +26,7 @@ const FAQ_ITEMS = [
 ];
 
 const RELATED_LINKS = [
+  { label: "Villa bord de mer Nosy Be", href: "/location-villa-bord-de-mer-nosy-be" },
   { label: "Appartements Nosy Be", href: "/location-appartement-nosy-be" },
   { label: "Bungalows Nosy Be", href: "/location-bungalow-nosy-be" },
   { label: "Tous les hébergements", href: "/location-hebergement-nosy-be" },

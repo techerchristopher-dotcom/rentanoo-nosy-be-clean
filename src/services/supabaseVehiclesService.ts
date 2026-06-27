@@ -143,6 +143,7 @@ export const SupabaseVehiclesService = {
   async getAvailableVehicles(filters?: {
     vehicleCategories?: string[];
     vehicleType?: 'car' | 'moto' | 'scooter' | 'accommodation';
+    nearBeach?: boolean;
     fuel_type?: string[];
     transmission?: string[];
     /** Limite le nombre de lignes récupérées (utile pour les pages qui n'ont besoin que d'un aperçu). */
@@ -154,9 +155,14 @@ export const SupabaseVehiclesService = {
         .select(VEHICLE_SELECT_WITH_AREA)
         .eq('available', true);
 
-      // Filtre par type de véhicule (server-side — évite de rapatrier voitures/motos pour les pages hébergement)
+      // Filtre par type de véhicule (server-side)
       if (filters?.vehicleType) {
         query = query.eq('vehicle_type', filters.vehicleType);
+      }
+
+      // Filtre bord de mer
+      if (filters?.nearBeach) {
+        query = query.eq('near_beach', true);
       }
 
       // Appliquer les filtres si fournis
