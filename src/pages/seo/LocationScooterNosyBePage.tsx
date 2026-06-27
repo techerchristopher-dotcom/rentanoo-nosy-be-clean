@@ -347,16 +347,36 @@ export default function LocationScooterNosyBePage() {
 
       if (sliced.length === 0) return;
       const ids = sliced.map((v) => v.id);
-      const { data: rows } = await supabase
-        .from("vehicle_photos")
-        .select("vehicle_id, photo_url, is_primary, display_order")
-        .in("vehicle_id", ids)
-        .not("photo_url", "ilike", "%.heic%")
-        .order("display_order", { ascending: true });
 
-      if (!rows) return;
+      // Le pinned vient d'une requête (supabase as any) — son id peut ne pas matcher
+      // le filtre .in() du client typé. On le fetche séparément pour garantir ses photos.
+      const [{ data: rows }, { data: pinnedPhotoRows }] = await Promise.all([
+        supabase
+          .from("vehicle_photos")
+          .select("vehicle_id, photo_url, is_primary, display_order")
+          .in("vehicle_id", ids)
+          .not("photo_url", "ilike", "%.heic%")
+          .order("display_order", { ascending: true }),
+        supabase
+          .from("vehicle_photos")
+          .select("vehicle_id, photo_url, is_primary, display_order")
+          .eq("vehicle_id", PINNED_FULL_UUID)
+          .not("photo_url", "ilike", "%.heic%")
+          .order("display_order", { ascending: true }),
+      ]);
+
+      if (!rows && !pinnedPhotoRows) return;
       const grouped: Record<string, string[]> = {};
-      for (const row of rows) {
+
+      // Fusionne les deux résultats (le pinned peut apparaître dans les deux)
+      const allRows = [
+        ...(rows ?? []),
+        ...(pinnedPhotoRows ?? []).filter(
+          (r) => !rows?.some((x) => x.photo_url === r.photo_url)
+        ),
+      ];
+
+      for (const row of allRows) {
         const vid = row.vehicle_id as string;
         if (!grouped[vid]) grouped[vid] = [];
         if (row.photo_url) {
