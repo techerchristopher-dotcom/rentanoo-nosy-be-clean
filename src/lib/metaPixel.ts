@@ -117,6 +117,26 @@ export function trackMetaSearchInitiateCheckout(params: { value: number; currenc
   }
 }
 
+/** Contact — clic WhatsApp (bouton flottant ou fiche produit). */
+export function trackMetaContact(): void {
+  if (!isFbqAvailable()) return;
+  try {
+    window.fbq!("track", "Contact");
+  } catch {
+    // best effort
+  }
+}
+
+/** Lead — demande de réservation créée avec succès. */
+export function trackMetaLead(): void {
+  if (!isFbqAvailable()) return;
+  try {
+    window.fbq!("track", "Lead");
+  } catch {
+    // best effort
+  }
+}
+
 /** Purchase — paiement confirmé (Stripe session_id côté client, après vérif backend). */
 export function trackMetaPurchase(params: { value: number; currency: string; dedupId: string }): void {
   if (!isFbqAvailable()) return;

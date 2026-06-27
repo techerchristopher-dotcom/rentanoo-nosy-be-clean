@@ -51,6 +51,7 @@ import {
 } from "@/services/supabase/bookings";
 import { supabase } from "@/integrations/supabase/client";
 import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
+import { trackMetaLead } from "@/lib/metaPixel";
 import { ProfileService } from "@/services/supabase/profile";
 import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle as AppVehicle } from "@/types";
 import { Vehicle } from "@/services/supabaseVehiclesService";
@@ -939,6 +940,8 @@ export default function VehicleDetails() {
               subtotal: Number(bookingRow.subtotal ?? subtotal),
               currency: ANALYTICS_BOOKING_CURRENCY,
             });
+            trackMetaLead();
+            trackGa4Event("generate_lead");
           }
         } catch {
           // best effort analytics

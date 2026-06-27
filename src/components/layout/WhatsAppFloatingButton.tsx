@@ -8,6 +8,8 @@ import {
   useWhatsAppBubbleTrigger,
 } from "@/hooks/useWhatsAppBubbleTrigger";
 import { trackWhatsAppFabEvent } from "@/lib/whatsappAnalytics";
+import { trackMetaContact } from "@/lib/metaPixel";
+import { trackGa4Event } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const LS_POSITION_KEY = "rentanoo_whatsapp_fab_pos";
@@ -210,6 +212,8 @@ export function WhatsAppFloatingButton() {
       page_path: location.pathname,
       bubble_visible: bubblePhase === "visible" ? "yes" : "no",
     });
+    trackMetaContact();
+    trackGa4Event("contact", { method: "whatsapp" });
   };
 
   const showBubble = bubblePhase === "visible" || bubblePhase === "fading";

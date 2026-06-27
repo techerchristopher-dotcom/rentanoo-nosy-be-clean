@@ -71,6 +71,11 @@ export default function PaymentSuccess() {
               currency: data.currency || "EUR",
               dedupId: sessionIdFromUrl,
             });
+            trackGa4Event("purchase", {
+              value: data.amount,
+              currency: data.currency || "EUR",
+              transaction_id: sessionIdFromUrl,
+            });
           }
 
           bookingIdFromStripe = typeof data?.booking_id === "string" ? data.booking_id : null;
