@@ -260,7 +260,8 @@ function ScooterCard({ v, photos, animDelay, isNew }: { v: SupabaseVehicle; phot
 
 // "E5A04AF9" est le champ `license` (plaque), pas le début de l'UUID.
 // On utilise getListingLicense() — la même fonction que getPublicListingPath() — pour matcher.
-const PINNED_LICENSE = "E5A04AF9"; // SYM Symphony ST 125 2025
+const PINNED_LICENSE = "E5A04AF9"; // SYM Symphony ST 125 2025 — utilisé pour badge + URL
+const PINNED_FULL_UUID = "e5a04af9-0d98-472a-884b-3c7b91279d24"; // UUID complet (requête dédiée)
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 
@@ -286,13 +287,11 @@ export default function LocationScooterNosyBePage() {
 
     // Fetch scooters (limit 40), motos (20), + pinned par UUID prefix — 3 requêtes parallèles.
     // La requête dédiée garantit la présence du pinned même s'il est hors du top-40.
-    const PINNED_UUID_PREFIX = PINNED_LICENSE.toLowerCase(); // "e5a04af9"
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fetchPinned = (supabase as any)
       .from("vehicles")
       .select("*, location_areas(id, name, slug, active)")
-      .ilike("id", `${PINNED_UUID_PREFIX}%`)
+      .eq("id", PINNED_FULL_UUID)
       .limit(1)
       .then((res: { data: SupabaseVehicle[] | null }) => res.data?.[0] ?? null);
 
