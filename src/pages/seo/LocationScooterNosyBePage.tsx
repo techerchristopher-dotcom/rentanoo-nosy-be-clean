@@ -51,7 +51,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quel est le prix d'un scooter à Nosy Be ?",
-    a: "Les tarifs varient selon le modèle et la durée. Comptez entre 25 € et 50 € par jour. Des réductions sont disponibles pour les locations longue durée.",
+    a: "Les tarifs varient selon le modèle et la durée. Comptez à partir de 10 € par jour pour un 125cc. Des réductions sont disponibles pour les locations longue durée.",
   },
   {
     q: "Peut-on payer en ligne pour louer un scooter à Nosy Be ?",
