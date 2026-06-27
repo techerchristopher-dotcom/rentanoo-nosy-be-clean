@@ -49,20 +49,27 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleWindowError = (event: ErrorEvent) => {
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.error('[ErrorBoundary] ❌ Erreur globale capturée (window.onerror)');
-    console.error('[ErrorBoundary] 📦 Message:', event.message);
-    console.error('[ErrorBoundary] 📋 Source:', event.filename, 'ligne', event.lineno);
-    console.error('[ErrorBoundary] 📋 Erreur:', event.error);
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    // Ignorer les erreurs JS provenant de scripts tiers (tracking, ads, analytics)
+    // Un script tiers cassé ne doit JAMAIS bloquer l'app
+    if (event.filename) {
+      try {
+        const url = new URL(event.filename);
+        if (url.hostname !== window.location.hostname) {
+          console.warn(`[ErrorBoundary] Erreur JS tiers ignorée (${url.hostname}):`, event.message);
+          return;
+        }
+      } catch {
+        // URL relative ou invalide → traiter comme first-party
+      }
+    }
 
-    // Créer une erreur à partir de l'événement
+    // Script sans filename = extension browser ou context non identifiable → ignorer
+    if (!event.filename) return;
+
+    console.error('[ErrorBoundary] ❌ Erreur JS first-party (window.onerror):', event.message, event.filename, event.lineno);
+
     const error = event.error || new Error(event.message || 'Erreur inconnue');
-    this.setState({
-      hasError: true,
-      error,
-      errorInfo: null,
-    });
+    this.setState({ hasError: true, error, errorInfo: null });
   };
 
   handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -70,7 +77,6 @@ export class ErrorBoundary extends Component<Props, State> {
     const msg = reason instanceof Error ? reason.message : String(reason || '');
 
     // Dynamic import échoué après déploiement (chunk périmé) : auto-reload silencieux une fois
-    // Ces erreurs ressemblent à : "Failed to fetch dynamically imported module: .../assets/xxx.js"
     if (/Failed to fetch dynamically imported module|Loading chunk|ChunkLoadError/i.test(msg) ||
         (msg.includes('/assets/') && /\.(js|css)/.test(msg))) {
       const RELOAD_KEY = 'stale_chunk_reload';
@@ -81,39 +87,43 @@ export class ErrorBoundary extends Component<Props, State> {
       }
     }
 
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.error('[ErrorBoundary] ❌ Promesse rejetée non catchée (unhandledrejection)');
-    console.error('[ErrorBoundary] 📦 Raison:', reason);
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    // Ignorer les erreurs réseau génériques (fetch bloqué par adblocker, CORS tiers, timeout)
+    // Ces erreurs arrivent systématiquement avec des scripts de tracking bloqués
+    if (
+      msg === 'Failed to fetch' ||
+      msg === 'Load failed' ||
+      msg === 'NetworkError when attempting to fetch resource.' ||
+      /network error|net::ERR_/i.test(msg) ||
+      reason?.name === 'AbortError'
+    ) {
+      console.warn('[ErrorBoundary] Requête réseau échouée (ignorée, probable adblocker ou réseau) :', msg);
+      return;
+    }
+
+    console.error('[ErrorBoundary] ❌ Promesse rejetée non catchée :', reason);
 
     const error = reason instanceof Error
       ? reason
       : new Error(String(reason || 'Promesse rejetée'));
 
-    this.setState({
-      hasError: true,
-      error,
-      errorInfo: null,
-    });
+    this.setState({ hasError: true, error, errorInfo: null });
   };
 
   handleResourceError = (event: ErrorEvent) => {
-    // Capturer uniquement les erreurs de chargement de ressources (404, etc.)
     if (!event.target || !(event.target as HTMLElement).tagName) return;
 
     const target = event.target as HTMLElement;
     const tagName = target.tagName.toUpperCase();
 
-    // Ignorer IMG : les composants ont déjà onError/fallback, évite de spammer la console
+    // Images gérées par onError dans chaque composant — pas d'écran fatal
     if (tagName === 'IMG') return;
 
-    // Ignorer LINK rel=icon / apple-touch-icon (icônes favicon)
+    // Favicons — non critiques
     if (tagName === 'LINK') {
       const rel = (target as HTMLLinkElement).rel?.toLowerCase() || '';
       if (rel.includes('icon') || rel.includes('apple-touch-icon')) return;
     }
 
-    // Vérifier si c'est une ressource (link, script, style)
     const tagLower = tagName.toLowerCase();
     if (!['link', 'script', 'style'].includes(tagLower)) return;
 
@@ -121,11 +131,23 @@ export class ErrorBoundary extends Component<Props, State> {
                 (target as HTMLLinkElement).href ||
                 (target as HTMLScriptElement).src || '';
 
-    // Ignorer gtag/GA4/Google Ads : échec = best-effort, ne jamais bloquer l'app
-    if (tagName === 'SCRIPT' && src && /googletagmanager\.com/.test(src)) return;
+    // CORRECTION CRITIQUE : ignorer TOUT script/style provenant d'un domaine tiers.
+    // Les pixels de tracking (Doubleclick, Meta, GTM, Clarity, Hotjar, etc.) sont
+    // optionnels par nature — leur échec (adblocker, Safari ITP, réseau entreprise)
+    // ne doit JAMAIS provoquer un écran d'erreur fatal pour le visiteur.
+    if (src) {
+      try {
+        const url = new URL(src);
+        if (url.hostname !== window.location.hostname) {
+          console.warn(`[ErrorBoundary] Ressource tierce non chargée (ignorée) : ${url.hostname}${url.pathname}`);
+          return;
+        }
+      } catch {
+        // URL sans hostname (chemin relatif) → first-party, on continue
+      }
+    }
 
-    // Chunk Vite périmé après déploiement (/assets/*.js ou /assets/*.css avec hash) :
-    // auto-reload silencieux une seule fois pour récupérer le nouvel index.html.
+    // Chunk Vite first-party périmé après déploiement : auto-reload silencieux une fois
     if (src && /\/assets\/[^/]+\.(js|css)(\?.*)?$/.test(src)) {
       const RELOAD_KEY = 'stale_chunk_reload';
       if (!sessionStorage.getItem(RELOAD_KEY)) {
@@ -133,24 +155,12 @@ export class ErrorBoundary extends Component<Props, State> {
         window.location.reload();
         return;
       }
-      // Si déjà rechargé une fois et ça échoue encore → afficher l'erreur normalement
+      // Déjà rechargé → afficher l'erreur normalement (vraie ressource manquante)
     }
 
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.error('[ErrorBoundary] ❌ Erreur de chargement de ressource');
-    console.error('[ErrorBoundary] 📦 Type:', tagLower);
-    console.error('[ErrorBoundary] 📦 URL:', src);
-    console.error('[ErrorBoundary] 📦 Message:', event.message);
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    const error = new Error(
-      `Ressource non trouvée (404): ${tagName} - ${src || 'URL inconnue'}`
-    );
-    this.setState({
-      hasError: true,
-      error,
-      errorInfo: null,
-    });
+    console.error(`[ErrorBoundary] ❌ Ressource first-party manquante : ${tagLower} ${src}`);
+    const error = new Error(`Ressource non trouvée (404): ${tagName} - ${src || 'URL inconnue'}`);
+    this.setState({ hasError: true, error, errorInfo: null });
   };
 
   static getDerivedStateFromError(error: Error): State {
