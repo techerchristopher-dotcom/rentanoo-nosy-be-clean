@@ -20,6 +20,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { WaveDivider } from "@/components/seo/WaveDivider";
+import { HowItWorksTimeline } from "@/components/seo/HowItWorksTimeline";
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { supabase } from "@/integrations/supabase/client";
@@ -415,7 +416,7 @@ export default function LocationHebergementNosyBePage() {
             style={fadeUp(200)}
           >
             Hébergements vérifiés sur place par notre équipe locale à Nosy Be.
-            Prix clairs, réservation en 2 minutes.
+            Prix clairs, envoyez votre demande en 2 minutes.
           </p>
 
           {/* Trust chips glassmorphism */}
@@ -529,6 +530,8 @@ export default function LocationHebergementNosyBePage() {
             </Button>
           ))}
         </div>
+
+        <HowItWorksTimeline />
 
         <SeoFaqSection title="Questions fréquentes — Hébergement à Nosy Be" items={FAQ_ITEMS} />
 
