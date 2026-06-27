@@ -352,25 +352,31 @@ export function SeoHebergementPageTemplate({
     })),
   };
 
-  useEffect(() => {
-    SupabaseVehiclesService.getAvailableVehicles({ limit: 40 }).then(async (all) => {
-      let accommodations = all.filter((v) => v.vehicle_type === "accommodation");
+  // Stabiliser les IDs imposés en string pour éviter le double-fetch :
+  // si pinnedShortIds est [] par défaut (nouvelle référence à chaque render),
+  // la dépendance array change → useEffect re-déclenche un 2e fetch après setListings().
+  const pinnedShortIdsKey = pinnedShortIds.join(',');
 
-      // Filtre par sous-catégorie si précisé
-      if (vehicleSubCategory) {
-        accommodations = accommodations.filter(
-          (v) => (v as unknown as { vehicle_category?: string }).vehicle_category === vehicleSubCategory
-        );
-      }
+  useEffect(() => {
+    // ACTION 2 — Filtre server-side : on ne récupère QUE les hébergements (vehicle_type)
+    // et, si une sous-catégorie est précisée, uniquement ce type (villa/appartement/bungalow).
+    // Cela évite de rapatrier les 40 véhicules toutes catégories pour filtrer côté client.
+    SupabaseVehiclesService.getAvailableVehicles({
+      vehicleType: "accommodation",
+      vehicleCategories: vehicleSubCategory ? [vehicleSubCategory] : undefined,
+      limit: 20, // 20 suffisent pour choisir 6 — réduit le payload
+    }).then(async (accommodations) => {
+      // Les données sont déjà filtrées par le service — pas de filter() client-side
 
       // Logements imposés (toujours affichés en premier)
-      const pinned = pinnedShortIds
+      const pinnedIds_arr = pinnedShortIdsKey ? pinnedShortIdsKey.split(',') : [];
+      const pinned = pinnedIds_arr
         .map((shortId) => accommodations.find((v) => v.id.toLowerCase().startsWith(shortId)))
         .filter((v): v is SupabaseVehicle => !!v);
       const pinnedIds = new Set(pinned.map((v) => v.id));
       const pool = accommodations.filter((v) => !pinnedIds.has(v.id));
 
-      // 2-3 logements capacité ~4 personnes
+      // 2-3 logements capacité ~4 personnes (3-5 places)
       const near4 = pool.filter((v) => v.seats != null && v.seats >= 3 && v.seats <= 5).slice(0, 3);
       const near4Ids = new Set(near4.map((v) => v.id));
 
@@ -415,7 +421,10 @@ export function SeoHebergementPageTemplate({
       }
       setPhotosByVehicle(grouped);
     });
-  }, [vehicleSubCategory, pinnedShortIds]);
+  // ACTION 1 — Dépendances stables : pinnedShortIdsKey est une string (stable),
+  // pas un tableau (nouvelle référence à chaque render qui causait le double-fetch).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleSubCategory, pinnedShortIdsKey]);
 
   const fadeUp = (delay: number) =>
     prefersReducedMotion ? {} : { animationDelay: `${delay}ms`, animationFillMode: "both" as const };

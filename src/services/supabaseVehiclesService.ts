@@ -142,6 +142,7 @@ export const SupabaseVehiclesService = {
    */
   async getAvailableVehicles(filters?: {
     vehicleCategories?: string[];
+    vehicleType?: 'car' | 'moto' | 'scooter' | 'accommodation';
     fuel_type?: string[];
     transmission?: string[];
     /** Limite le nombre de lignes récupérées (utile pour les pages qui n'ont besoin que d'un aperçu). */
@@ -152,6 +153,11 @@ export const SupabaseVehiclesService = {
         .from('vehicles')
         .select(VEHICLE_SELECT_WITH_AREA)
         .eq('available', true);
+
+      // Filtre par type de véhicule (server-side — évite de rapatrier voitures/motos pour les pages hébergement)
+      if (filters?.vehicleType) {
+        query = query.eq('vehicle_type', filters.vehicleType);
+      }
 
       // Appliquer les filtres si fournis
       if (filters?.vehicleCategories?.length) {

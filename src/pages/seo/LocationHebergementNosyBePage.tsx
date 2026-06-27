@@ -309,8 +309,9 @@ export default function LocationHebergementNosyBePage() {
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
-    SupabaseVehiclesService.getAvailableVehicles({ limit: 40 }).then(async (all) => {
-      const accommodations = all.filter((v) => v.vehicle_type === "accommodation");
+    // Filtre server-side : uniquement les hébergements, limit 20 (on n'en affiche que 6)
+    SupabaseVehiclesService.getAvailableVehicles({ vehicleType: "accommodation", limit: 20 }).then(async (all) => {
+      const accommodations = all; // déjà filtrés par le service
 
       // ── Sélection des 6 logements ────────────────────────────────────────
       // 1. Logements imposés (toujours affichés en premier)
