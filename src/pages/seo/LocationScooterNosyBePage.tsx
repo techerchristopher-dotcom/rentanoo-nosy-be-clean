@@ -514,11 +514,13 @@ export default function LocationScooterNosyBePage() {
       <SeoContentSection>
         {/* Section fondateur */}
         <div className="flex flex-col items-center gap-5 md:flex-row md:items-start md:gap-10">
-          <div className="shrink-0">
+          <div className="shrink-0 flex justify-center md:justify-start md:w-48">
             <img
-              src="https://ovfvtbczthawfhduzoyd.supabase.co/storage/v1/object/public/vehicle-photos/founder.jpg"
-              alt="Fondateur Rentanoo Nosy Be"
-              className="w-24 h-24 rounded-full object-cover ring-2 ring-primary/20 shadow-card mx-auto md:mx-0 md:w-32 md:h-32"
+              src="https://tbsgzykqcksmqxpimwry.supabase.co/storage/v1/object/public/photo%20fondateur/photo%20techer%20christopher%20.png"
+              alt="Christopher, fondateur de Rentanoo"
+              width={160}
+              height={160}
+              className="h-24 w-24 md:h-44 md:w-44 rounded-full object-cover shadow-card ring-2 ring-primary/20"
               loading="lazy"
             />
           </div>
@@ -565,15 +567,6 @@ export default function LocationScooterNosyBePage() {
             suffit dans la plupart des cas. La réservation s'effectue entièrement en ligne
             avec acompte sécurisé et solde sur place.
           </p>
-        </div>
-
-        {/* Liens SEO */}
-        <div className="flex flex-wrap gap-3 mt-4">
-          {RELATED_LINKS.map((l) => (
-            <Button key={l.href} asChild variant="outline" size="sm">
-              <Link to={l.href}>{l.label}</Link>
-            </Button>
-          ))}
         </div>
 
         {/* Comment ça marche */}
@@ -664,6 +657,24 @@ export default function LocationScooterNosyBePage() {
             <Link to="/">Accueil Rentanoo</Link>
           </Button>
         </SeoCtaPanel>
+
+        {/* Liens SEO discrets — bas de page */}
+        <nav aria-label="Pages connexes Rentanoo" className="mt-10 border-t border-border/40 pt-6">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+            Découvrir aussi à Nosy Be
+          </p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {RELATED_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                to={l.href}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {l.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
       </SeoContentSection>
 
       <Footer />
