@@ -291,8 +291,26 @@ export default function LocationScooterNosyBePage() {
     ]).then(async ([scooters, motos]) => {
       const all = [...scooters, ...motos];
 
+      // ── DEBUG TEMPORAIRE (à retirer après vérification) ──────────────────
+      console.group("[RENTANOO DEBUG] Véhicules scooter/moto récupérés");
+      console.log(`Total récupérés : ${all.length} (${scooters.length} scooters + ${motos.length} motos)`);
+      all.forEach((v) => {
+        const lic = (v as unknown as { license?: string }).license;
+        const computed = getListingLicense(v);
+        const isMatch = computed === PINNED_LICENSE;
+        console.log(
+          `%c${isMatch ? "🎯 MATCH" : "  "}`,
+          isMatch ? "color: green; font-weight: bold" : "",
+          `| id=${v.id} | license_raw="${lic ?? "(null)"}" | getListingLicense="${computed}" | brand="${v.brand}" | model="${v.model}" | cc="${v.engine_capacity ?? "(null)"}"`
+        );
+      });
+      console.log(`Recherché : PINNED_LICENSE="${PINNED_LICENSE}"`);
+      console.groupEnd();
+      // ── FIN DEBUG ─────────────────────────────────────────────────────────
+
       // Pinned : SYM Symphony ST 125 2025 — match sur le champ license (pas l'UUID)
       const pinned = all.find((v) => getListingLicense(v) === PINNED_LICENSE) ?? null;
+      console.log("[RENTANOO DEBUG] pinned =", pinned ? `${pinned.brand} ${pinned.model} (${pinned.id})` : "null — INTROUVABLE dans les 20 scooters + 20 motos");
       const pinnedVehicleId = pinned?.id ?? null;
       setPinnedId(pinnedVehicleId);
       const pool = all.filter((v) => v.id !== pinnedVehicleId);
