@@ -1,41 +1,57 @@
-import { SeoCategoryPage } from "./SeoCategoryPage";
+import { SeoHebergementPageTemplate } from "@/components/seo/SeoHebergementPageTemplate";
+
+const BREADCRUMB_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil", item: "https://rentanoo.com/" },
+    { "@type": "ListItem", position: 2, name: "Location vacances Nosy Be", item: "https://rentanoo.com/location-vacances-nosy-be" },
+    { "@type": "ListItem", position: 3, name: "Villas Nosy Be", item: "https://rentanoo.com/location-villa-nosy-be" },
+  ],
+};
+
+const FAQ_ITEMS = [
+  {
+    q: "Comment fonctionne le paiement pour une villa ?",
+    a: "Vous réglez un acompte en ligne pour confirmer votre réservation, le solde se règle directement sur place à votre arrivée.",
+  },
+  {
+    q: "Puis-je annuler ma réservation ?",
+    a: "Oui. Vous êtes remboursé à 100% si vous annulez plus de 48h avant votre arrivée, à 50% entre 24h et 48h, sans remboursement en deçà de 24h. Les frais de service ne sont pas remboursables.",
+  },
+  {
+    q: "Les villas sont-elles vérifiées avant d'être mises en ligne ?",
+    a: "Oui, chaque villa est visitée et vérifiée sur place par notre équipe locale à Nosy Be avant d'être proposée sur la plateforme.",
+  },
+];
+
+const RELATED_LINKS = [
+  { label: "Appartements Nosy Be", href: "/location-appartement-nosy-be" },
+  { label: "Bungalows Nosy Be", href: "/location-bungalow-nosy-be" },
+  { label: "Tous les hébergements", href: "/location-hebergement-nosy-be" },
+  { label: "Location vacances Nosy Be", href: "/location-vacances-nosy-be" },
+  { label: "Location scooter Nosy Be", href: "/location-scooter-nosy-be" },
+];
 
 export default function LocationVillaNosyBePage() {
   return (
-    <SeoCategoryPage
+    <SeoHebergementPageTemplate
       seoTitle="Location villa à Nosy Be – Avec piscine & vue mer | Rentanoo"
       seoDescription="Louez une villa à Nosy Be : piscine, vue mer, espaces extérieurs. Andilana, Madirokely. Réservation en ligne sécurisée sur Rentanoo."
       canonical="https://rentanoo.com/location-villa-nosy-be"
+      breadcrumbSchema={BREADCRUMB_SCHEMA}
       eyebrow="Location villa · Nosy Be, Madagascar"
-      heroTitle="Location villa à Nosy Be"
-      heroIntro="Villas spacieuses avec piscine et espaces extérieurs à Nosy Be. Idéales pour les familles et groupes. Vue mer disponible. Réservation en ligne."
-      vehicleType="accommodation"
-  vehicleSubCategory="Villa"
-      contentTitle="Location de villa à Nosy Be : luxe et espace"
-      contentBody="Les villas disponibles à Nosy Be via Rentanoo offrent un cadre idéal pour des vacances en famille ou entre amis. Situées à Andilana, Madirokely ou Ambatoloaka, elles disposent d'espaces extérieurs, piscines privées ou partagées et vues sur la mer des fois. Chaque villa est vérifiée par l'équipe Rentanoo. Ménage disponible en option. Tarifs à la nuit, à la semaine ou au mois."
-      highlights={["Piscine disponible", "Vue mer", "Familles & groupes", "Espaces extérieurs", "Ménage en option", "Andilana & Madirokely"]}
-      faqTitle="Questions fréquentes — Location villa Nosy Be"
-      faqItems={[
-    {q: "O\u00f9 sont situ\u00e9es les villas en location \u00e0 Nosy Be ?", a: "Les villas Rentanoo sont situ\u00e9es dans les quartiers r\u00e9sidentiels de Nosy Be : Andilana (nord), Madirokely et Ambatoloaka (ouest)."},
-    {q: "Les villas \u00e0 Nosy Be ont-elles une piscine ?", a: "Certaines villas disposent d'une piscine priv\u00e9e ou partag\u00e9e. Filtrez les annonces ou contactez-nous pour pr\u00e9ciser votre besoin."},
-    {q: "Combien de personnes peut accueillir une villa \u00e0 Nosy Be ?", a: "Les villas accueillent en g\u00e9n\u00e9ral de 4 \u00e0 12 personnes selon la configuration. Chaque annonce pr\u00e9cise la capacit\u00e9 maximale."},
-    {q: "Le m\u00e9nage est-il inclus dans la location d'une villa ?", a: "Un m\u00e9nage de fin de s\u00e9jour est g\u00e9n\u00e9ralement inclus. Le m\u00e9nage quotidien est disponible en option payante selon les propri\u00e9taires."},
-    {q: "Y a-t-il un service de chef cuisinier possible dans les villas ?", a: "Certains propri\u00e9taires proposent un service de chef en option. Demandez via la messagerie Rentanoo lors de votre r\u00e9servation."}
-  ]}
-      ctaTitle="Réservez votre villa à Nosy Be"
-      ctaText="Espaces, piscine, vue mer. Réservation sécurisée en ligne."
+      h1="Trouvez votre villa idéale à Nosy Be"
+      subtitle="Villas vérifiées sur place par notre équipe locale à Nosy Be. Prix clairs, envoyez votre demande en 2 minutes."
+      vehicleSubCategory="Villa"
+      listingNoun="villa"
       ctaHref="/?cat=accommodation"
       ctaLabel="Voir les villas"
-  relatedLinks={[
-    {label: "Appartements Nosy Be", href: "/location-appartement-nosy-be"},
-    {label: "Bungalows Nosy Be", href: "/location-bungalow-nosy-be"},
-    {label: "Tous les hébergements", href: "/location-vacances-nosy-be"}
-  ]}
-      breadcrumbs={[
-    {name: "Accueil", item: "https://rentanoo.com/"},
-    {name: "Location vacances Nosy Be", item: "https://rentanoo.com/location-vacances-nosy-be"},
-    {name: "Villas Nosy Be", item: "https://rentanoo.com/location-villa-nosy-be"}
-  ]}
+      faqTitle="Questions fréquentes — Location villa Nosy Be"
+      faqItems={FAQ_ITEMS}
+      relatedLinks={RELATED_LINKS}
+      ctaPanelTitle="Réservez votre villa à Nosy Be"
+      ctaPanelText="Espaces, piscine, vue mer. Réservation sécurisée en ligne."
     />
   );
 }
