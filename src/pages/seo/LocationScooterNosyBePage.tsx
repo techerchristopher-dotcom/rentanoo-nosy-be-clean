@@ -141,10 +141,13 @@ function ScooterCard({ v, photos, animDelay, isNew }: { v: SupabaseVehicle; phot
   const path = getPublicListingPath(v);
   const price = v.price_per_day;
   const label = `${v.brand} ${v.model}`.trim();
-  const hasMultiple = photos.length > 1;
   const ccBadge = getCylindreeBadge(v.engine_capacity);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
+
+  const validPhotos = photos.filter((url) => !failedUrls.has(url));
+  const hasMultiple = validPhotos.length > 1;
 
   useEffect(() => {
     if (!api) return;
@@ -160,17 +163,18 @@ function ScooterCard({ v, photos, animDelay, isNew }: { v: SupabaseVehicle; phot
       style={{ animationDelay: `${animDelay}ms`, animationFillMode: "both" }}
     >
       <div className="relative h-44 bg-muted overflow-hidden">
-        {photos.length > 0 ? (
+        {validPhotos.length > 0 ? (
           <>
             <Carousel setApi={setApi} opts={{ loop: false, dragFree: false }} className="h-full w-full">
               <CarouselContent className="-ml-0 h-44">
-                {photos.map((url, i) => (
-                  <CarouselItem key={i} className="pl-0">
+                {validPhotos.map((url, i) => (
+                  <CarouselItem key={url} className="pl-0">
                     <img
                       src={url}
                       alt={i === 0 ? label : `${label} — photo ${i + 1}`}
                       className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
                       loading={i === 0 ? "eager" : "lazy"}
+                      onError={() => setFailedUrls((prev) => new Set([...prev, url]))}
                     />
                   </CarouselItem>
                 ))}
@@ -211,13 +215,13 @@ function ScooterCard({ v, photos, animDelay, isNew }: { v: SupabaseVehicle; phot
                   className={cn(
                     "absolute right-1.5 top-1/2 -translate-y-1/2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-opacity duration-200",
                     "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                    current === photos.length - 1 && "pointer-events-none opacity-0 group-hover:opacity-30"
+                    current === validPhotos.length - 1 && "pointer-events-none opacity-0 group-hover:opacity-30"
                   )}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
                 <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 pointer-events-none">
-                  {photos.map((_, i) => (
+                  {validPhotos.map((_, i) => (
                     <span
                       key={i}
                       className={cn(
