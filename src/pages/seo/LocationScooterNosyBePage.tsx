@@ -30,7 +30,7 @@ import {
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { supabase } from "@/integrations/supabase/client";
-import { getPublicListingPath } from "@/utils/vehicleType";
+import { getPublicListingPath, getListingLicense } from "@/utils/vehicleType";
 import { getCylindreeBadge, parseCylindree } from "@/utils/getCylindreeBadge";
 import { cn } from "@/lib/utils";
 
@@ -258,7 +258,9 @@ function ScooterCard({ v, photos, animDelay, isNew }: { v: SupabaseVehicle; phot
 
 // ─── Scooter mis en avant ─────────────────────────────────────────────────────
 
-const PINNED_SHORT_ID = "e5a04af9"; // SYM Symphony ST 125 2025
+// "E5A04AF9" est le champ `license` (plaque), pas le début de l'UUID.
+// On utilise getListingLicense() — la même fonction que getPublicListingPath() — pour matcher.
+const PINNED_LICENSE = "E5A04AF9"; // SYM Symphony ST 125 2025
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 
@@ -289,8 +291,8 @@ export default function LocationScooterNosyBePage() {
     ]).then(async ([scooters, motos]) => {
       const all = [...scooters, ...motos];
 
-      // Pinned : SYM Symphony ST 125 2025 (E5A04AF9) — toujours en première position
-      const pinned = all.find((v) => v.id.toLowerCase().startsWith(PINNED_SHORT_ID)) ?? null;
+      // Pinned : SYM Symphony ST 125 2025 — match sur le champ license (pas l'UUID)
+      const pinned = all.find((v) => getListingLicense(v) === PINNED_LICENSE) ?? null;
       const pinnedVehicleId = pinned?.id ?? null;
       setPinnedId(pinnedVehicleId);
       const pool = all.filter((v) => v.id !== pinnedVehicleId);
