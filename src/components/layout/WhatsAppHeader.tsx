@@ -5,6 +5,8 @@ import { Mail, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppIcon";
+import { trackMetaContact } from "@/lib/metaPixel";
+import { trackGa4Event } from "@/lib/analytics";
 
 const DIRECT_LINE_NUMBER = "+261373437912"; // Format E.164 pour tel:
 const DIRECT_LINE_DISPLAY = "+261 37 34 379 12"; // Format affiché
@@ -30,6 +32,10 @@ export function WhatsAppHeader() {
   }, []);
 
   const handleWhatsAppClick = () => {
+    console.log("[WA-header] clic — fbq:", typeof window.fbq, "| gtag:", typeof window.gtag);
+    trackMetaContact();
+    trackGa4Event("contact", { method: "whatsapp" });
+    console.log("[WA-header] tracking fired ✓");
     window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
