@@ -269,9 +269,15 @@ export default function CartSubmit() {
     stepTimers.forEach(clearTimeout);
     setSubmitStep(3);
 
+    console.log("[CartSubmit] results avant tracking:", JSON.stringify(results.map((r) => ({ id: r.id, status: r.status }))));
+    console.log("[CartSubmit] fbq:", typeof window.fbq, "| gtag:", typeof window.gtag);
     if (results.some((r) => r.status === "success")) {
+      console.log("[CartSubmit] condition ok → trackMetaLead()");
       trackMetaLead();
       trackGa4Event("generate_lead", { items_count: results.filter((r) => r.status === "success").length });
+      console.log("[CartSubmit] tracking fired ✓");
+    } else {
+      console.warn("[CartSubmit] condition KO — aucun résultat success, tracking non déclenché");
     }
 
     clearCart();
