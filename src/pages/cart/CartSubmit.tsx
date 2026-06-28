@@ -23,6 +23,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { DualPrice } from "@/components/currency/DualPrice";
 import { requiresHotelName } from "@/utils/bookingLocations";
 import { SubmitProgressOverlay } from "@/components/cart/SubmitProgressOverlay";
+import { trackMetaLead } from "@/lib/metaPixel";
+import { trackGa4Event } from "@/lib/analytics";
 import type { User } from "@/types";
 
 const TYPE_ICONS: Record<CartVehicleType, typeof Car> = {
@@ -266,6 +268,11 @@ export default function CartSubmit() {
 
     stepTimers.forEach(clearTimeout);
     setSubmitStep(3);
+
+    if (results.some((r) => r.status === "success")) {
+      trackMetaLead();
+      trackGa4Event("generate_lead", { items_count: results.filter((r) => r.status === "success").length });
+    }
 
     clearCart();
     setSubmitting(false);
