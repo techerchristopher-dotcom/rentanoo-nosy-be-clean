@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Home, Wind, Waves, Umbrella, Wifi, Bath, Shield, ShoppingBag, Music, UtensilsCrossed, Sun, Sparkles, Shirt, Laptop, Tv } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
-import { PhotoService } from "@/services/supabase/photos";
 import { VehicleCardRentalPricing } from "@/components/vehicles/VehicleCardRentalPricing";
 import {
   getOptimizedImageUrl,
@@ -14,7 +13,7 @@ import {
   IMAGE_SIZES,
   IMAGE_WIDTHS,
 } from "@/utils/imageOptimization";
-import { supabase } from "@/integrations/supabase/client";
+import { usePrimaryPhoto } from "@/hooks/usePrimaryPhoto";
 
 interface AccommodationCardProps {
   vehicle: Vehicle;
@@ -39,67 +38,10 @@ export function AccommodationCard({
   deferImages = false,
 }: AccommodationCardProps) {
   const { t } = useTranslation("common");
-  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
-  const [fetchedPhotoUrl, setFetchedPhotoUrl] = useState<string | null>(null);
-  const isFetchingFallback = useRef(false);
-
-  useEffect(() => {
-    if (primaryPhoto?.url) return;
-    let cancelled = false;
-    (supabase as any)
-      .from("vehicle_photos")
-      .select("photo_url, is_primary, display_order")
-      .eq("vehicle_id", vehicle.id)
-      .not("photo_url", "ilike", "%.heic")
-      .order("is_primary", { ascending: false })
-      .order("display_order", { ascending: true })
-      .limit(1)
-      .then(({ data }: any) => {
-        if (!cancelled && data?.[0]?.photo_url) {
-          setFetchedPhotoUrl(data[0].photo_url);
-        }
-      });
-    return () => { cancelled = true; };
-  }, [vehicle.id, primaryPhoto?.url]);
-
-  const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-    if (img.dataset.fallbackApplied === "1") return;
-    if (img.src === PLACEHOLDER_URL) return;
-
-    if (fallbackImageUrl) {
-      img.src = fallbackImageUrl;
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.dataset.fallbackApplied = "1";
-      return;
-    }
-
-    if (isFetchingFallback.current) {
-      img.src = PLACEHOLDER_URL;
-      img.dataset.fallbackApplied = "1";
-      return;
-    }
-
-    isFetchingFallback.current = true;
-    try {
-      const { data: availablePhotos, error } = await PhotoService.getVehiclePhotos(vehicle.id);
-      if (error || !availablePhotos?.length) {
-        img.src = PLACEHOLDER_URL;
-        img.dataset.fallbackApplied = "1";
-        return;
-      }
-      const url = availablePhotos[0]?.url || PLACEHOLDER_URL;
-      setFallbackImageUrl(url);
-      img.src = url;
-      img.dataset.fallbackApplied = "1";
-    } catch {
-      img.src = PLACEHOLDER_URL;
-      img.dataset.fallbackApplied = "1";
-    } finally {
-      isFetchingFallback.current = false;
-    }
-  };
+  const { resolvedUrl, handleImageError } = usePrimaryPhoto(
+    primaryPhoto?.url ?? null,
+    vehicle.id
+  );
 
   const seats = vehicle.seats;
   const hasSeats = typeof seats === "number" && seats > 0;
@@ -118,7 +60,7 @@ export function AccommodationCard({
     >
       <div className="aspect-[4/3] relative overflow-hidden">
         {(() => {
-          const imageUrl = primaryPhoto?.url || fetchedPhotoUrl || PLACEHOLDER_URL;
+          const imageUrl = resolvedUrl;
           const isSupabaseUrl = imageUrl.includes("supabase.co/storage");
           const srcSet = isSupabaseUrl ? generateSrcSet(imageUrl, IMAGE_WIDTHS.CARD) : undefined;
           const optimizedSrc = isSupabaseUrl ? getOptimizedImageUrl(imageUrl, 400) : imageUrl;
@@ -137,7 +79,7 @@ export function AccommodationCard({
               loading={loading}
               {...(fetchPriority ? { fetchPriority } : {})}
               decoding="async"
-              onError={handleImageError}
+              onError={() => handleImageError(resolvedUrl)}
             />
           );
         })()}

@@ -1,28 +1,28 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Car, 
-  Fuel, 
-  Settings, 
-  Wind, 
-  MapPin, 
+import {
+  Car,
+  Fuel,
+  Settings,
+  Wind,
+  MapPin,
   Users,
   Plane,
   Ship
 } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
-import { PhotoService } from "@/services/supabase/photos";
 import { VehicleCardRentalPricing } from "@/components/vehicles/VehicleCardRentalPricing";
-import { 
-  getOptimizedImageUrl, 
-  generateSrcSet, 
-  IMAGE_SIZES, 
-  IMAGE_WIDTHS 
+import {
+  getOptimizedImageUrl,
+  generateSrcSet,
+  IMAGE_SIZES,
+  IMAGE_WIDTHS
 } from "@/utils/imageOptimization";
+import { usePrimaryPhoto } from "@/hooks/usePrimaryPhoto";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -76,83 +76,10 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
 
   const FuelIcon = fuelIcons[vehicle.fuel] || Fuel;
 
-  // State pour stocker l'URL de fallback (photo suivante ou placeholder)
-  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
-  const isFetchingFallback = useRef(false);
-
-  const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-    
-    // Guard: éviter les boucles - si fallback déjà appliqué, ne rien faire
-    if (img.dataset.fallbackApplied === "1") {
-      return;
-    }
-
-    // Si on est déjà sur le placeholder, ne rien faire
-    if (img.src === PLACEHOLDER_URL) {
-      return;
-    }
-
-    // Si on a déjà un fallback en mémoire, l'utiliser
-    if (fallbackImageUrl) {
-      img.src = fallbackImageUrl;
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.dataset.fallbackApplied = "1";
-      return;
-    }
-
-    // Éviter les appels multiples simultanés
-    if (isFetchingFallback.current) {
-      img.src = PLACEHOLDER_URL;
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.dataset.fallbackApplied = "1";
-      return;
-    }
-
-    isFetchingFallback.current = true;
-
-    try {
-      // Plan B : Récupérer toutes les photos disponibles dans le Storage
-      const { data: availablePhotos, error } = await PhotoService.getVehiclePhotos(vehicle.id);
-
-      if (error || !availablePhotos || availablePhotos.length === 0) {
-        // Aucune photo disponible → placeholder
-        setFallbackImageUrl(PLACEHOLDER_URL);
-        img.src = PLACEHOLDER_URL;
-        img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.dataset.fallbackApplied = "1";
-        return;
-      }
-
-      // Prendre la première photo disponible (qui existe vraiment dans le Storage)
-      const firstValidPhoto = availablePhotos[0];
-      if (firstValidPhoto && firstValidPhoto.url) {
-        setFallbackImageUrl(firstValidPhoto.url);
-        img.src = firstValidPhoto.url;
-        img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.dataset.fallbackApplied = "1";
-      } else {
-        setFallbackImageUrl(PLACEHOLDER_URL);
-        img.src = PLACEHOLDER_URL;
-        img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.dataset.fallbackApplied = "1";
-      }
-    } catch (error) {
-      console.error('Erreur lors de la récupération des photos de fallback:', error);
-      setFallbackImageUrl(PLACEHOLDER_URL);
-      img.src = PLACEHOLDER_URL;
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.dataset.fallbackApplied = "1";
-    } finally {
-      isFetchingFallback.current = false;
-    }
-  };
+  const { resolvedUrl, handleImageError } = usePrimaryPhoto(
+    primaryPhoto?.url ?? null,
+    vehicle.id
+  );
 
   return (
     <Card 
@@ -165,7 +92,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
       {/* Image */}
       <div className="aspect-[4/3] relative overflow-hidden">
         {(() => {
-          const imageUrl = primaryPhoto?.url || PLACEHOLDER_URL;
+          const imageUrl = resolvedUrl;
           const isSupabaseUrl = imageUrl.includes('supabase.co/storage');
           const srcSet = isSupabaseUrl ? generateSrcSet(imageUrl, IMAGE_WIDTHS.CARD) : undefined;
           const sizes = IMAGE_SIZES.CARD_GRID;
@@ -186,7 +113,7 @@ export function VehicleCard({ vehicle, primaryPhoto, onClick, className, rentalI
               loading={loading}
               {...(fetchPriority ? { fetchPriority } : {})}
               decoding="async"
-              onError={handleImageError}
+              onError={() => handleImageError(resolvedUrl)}
             />
           );
         })()}

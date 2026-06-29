@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,14 +14,14 @@ import {
 } from "lucide-react";
 import { Vehicle, Photo, VehicleRentalInfo } from "@/types";
 import { cn } from "@/lib/utils";
-import { PhotoService } from "@/services/supabase/photos";
 import { VehicleCardRentalPricing } from "@/components/vehicles/VehicleCardRentalPricing";
-import { 
-  getOptimizedImageUrl, 
-  generateSrcSet, 
-  IMAGE_SIZES, 
-  IMAGE_WIDTHS 
+import {
+  getOptimizedImageUrl,
+  generateSrcSet,
+  IMAGE_SIZES,
+  IMAGE_WIDTHS
 } from "@/utils/imageOptimization";
+import { usePrimaryPhoto } from "@/hooks/usePrimaryPhoto";
 
 interface MotoVehicleCardProps {
   vehicle: Vehicle;
@@ -61,81 +61,10 @@ export function MotoVehicleCard({
 }: MotoVehicleCardProps) {
   const { t } = useTranslation();
 
-  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
-  const isFetchingFallback = useRef(false);
-
-  const handleImageError = async (event: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-
-    // Guard: éviter les boucles - si fallback déjà appliqué, ne rien faire
-    if (img.dataset.fallbackApplied === "1") {
-      return;
-    }
-
-    if (img.src === PLACEHOLDER_URL) {
-      return;
-    }
-
-    if (fallbackImageUrl) {
-      img.src = fallbackImageUrl;
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.dataset.fallbackApplied = "1";
-      return;
-    }
-
-    if (isFetchingFallback.current) {
-      img.src = PLACEHOLDER_URL;
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.dataset.fallbackApplied = "1";
-      return;
-    }
-
-    isFetchingFallback.current = true;
-
-    try {
-      const { data: availablePhotos, error } = await PhotoService.getVehiclePhotos(
-        vehicle.id
-      );
-
-      if (error || !availablePhotos || availablePhotos.length === 0) {
-        setFallbackImageUrl(PLACEHOLDER_URL);
-        img.src = PLACEHOLDER_URL;
-        img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.dataset.fallbackApplied = "1";
-        return;
-      }
-
-      const firstValidPhoto = availablePhotos[0];
-      if (firstValidPhoto && firstValidPhoto.url) {
-        setFallbackImageUrl(firstValidPhoto.url);
-        img.src = firstValidPhoto.url;
-        img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.dataset.fallbackApplied = "1";
-      } else {
-        setFallbackImageUrl(PLACEHOLDER_URL);
-        img.src = PLACEHOLDER_URL;
-        img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.dataset.fallbackApplied = "1";
-      }
-    } catch (error) {
-      console.error(
-        "Erreur lors de la récupération des photos de fallback (moto):",
-        error
-      );
-      setFallbackImageUrl(PLACEHOLDER_URL);
-      img.src = PLACEHOLDER_URL;
-      img.removeAttribute("srcset");
-      img.removeAttribute("sizes");
-      img.dataset.fallbackApplied = "1";
-    } finally {
-      isFetchingFallback.current = false;
-    }
-  };
+  const { resolvedUrl, handleImageError } = usePrimaryPhoto(
+    primaryPhoto?.url ?? null,
+    vehicle.id
+  );
 
   const seats = vehicle.seats;
   const hasSeats = typeof seats === "number" && seats > 0;
@@ -154,7 +83,7 @@ export function MotoVehicleCard({
       {/* Image */}
       <div className="aspect-[4/3] relative overflow-hidden">
         {(() => {
-          const imageUrl = primaryPhoto?.url || PLACEHOLDER_URL;
+          const imageUrl = resolvedUrl;
           const isSupabaseUrl = imageUrl.includes('supabase.co/storage');
           const srcSet = isSupabaseUrl ? generateSrcSet(imageUrl, IMAGE_WIDTHS.CARD) : undefined;
           const sizes = IMAGE_SIZES.CARD_GRID;
@@ -175,7 +104,7 @@ export function MotoVehicleCard({
               loading={loading}
               {...(fetchPriority ? { fetchPriority } : {})}
               decoding="async"
-              onError={handleImageError}
+              onError={() => handleImageError(resolvedUrl)}
             />
           );
         })()}
