@@ -37,6 +37,7 @@ import { useTranslation } from "react-i18next";
 import { ListingOwnersService } from "@/services/supabase/listingOwners";
 import { ListingOwnerAvatarsService } from "@/services/supabase/listingOwnerAvatars";
 import { LocationAreaSelect } from "@/components/location/LocationAreaSelect";
+import { PhotoWithPrimaryToggle } from "@/components/photos/PhotoWithPrimaryToggle";
 
 // ── Description multilingue ──────────────────────────────────────────────────
 const LANGS = [
@@ -1375,6 +1376,20 @@ export default function ManageVehicle() {
       });
     } finally {
       setDeletingPhoto(null);
+    }
+  };
+
+  const handleSetPrimaryPhoto = async (photoId: string) => {
+    if (!vehicleId) return;
+    try {
+      // Transaction atomique : d'abord tout décocher, puis cocher la sélection
+      await supabase.from('vehicle_photos').update({ is_primary: false }).eq('vehicle_id', vehicleId);
+      await supabase.from('vehicle_photos').update({ is_primary: true }).eq('id', photoId);
+      toast({ title: "Succès", description: "Photo principale mise à jour" });
+      await loadPhotos();
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la photo principale:', error);
+      toast({ title: "Erreur", description: "Impossible de mettre à jour la photo principale", variant: "destructive" });
     }
   };
 
@@ -3979,35 +3994,16 @@ export default function ManageVehicle() {
                   </div>
                   
                   {photos.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {photos.map((photo, index) => (
-                        <div key={photo.id} className="relative group">
-                          <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                            <img
-                              src={photo.url}
-                              alt={`Photo ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-8 w-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleDeletePhoto(photo.url)}
-                            disabled={deletingPhoto === photo.url}
-                          >
-                            {deletingPhoto === photo.url ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                          {index === 0 && (
-                            <Badge className="absolute top-2 left-2">
-                              Principale
-                            </Badge>
-                          )}
-                        </div>
+                    <div className="flex flex-wrap gap-4">
+                      {photos.map((photo) => (
+                        <PhotoWithPrimaryToggle
+                          key={photo.id}
+                          photoUrl={photo.url}
+                          isPrimary={photo.isPrimary}
+                          isOnly={photos.length === 1}
+                          onSetPrimary={() => handleSetPrimaryPhoto(photo.id)}
+                          onDelete={deletingPhoto === photo.url ? undefined : () => handleDeletePhoto(photo.url)}
+                        />
                       ))}
                     </div>
                   ) : (
