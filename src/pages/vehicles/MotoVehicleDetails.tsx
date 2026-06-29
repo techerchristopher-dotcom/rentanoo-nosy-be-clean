@@ -539,7 +539,7 @@ export default function MotoVehicleDetails() {
           brand: vehicle.brand,
           model: vehicle.model,
           year: vehicle.year,
-          imageUrl: photos.length > 0 ? photos[0].url : undefined,
+          imageUrl: primaryPhoto?.url,
         },
         navigationState.pickupLocation || t("motoDetails.notSpecified"),
         navigationState.rentalCalculation,
@@ -559,7 +559,7 @@ export default function MotoVehicleDetails() {
         vehicleBrand: vehicle.brand,
         vehicleModel: vehicle.model,
         vehicleYear: vehicle.year,
-        vehicleImageUrl: photos.length > 0 ? photos[0].url : undefined,
+        vehicleImageUrl: primaryPhoto?.url,
         startDate: navigationState.rentalCalculation.startDate.toISOString(),
         endDate: navigationState.rentalCalculation.endDate.toISOString(),
         startTime: navigationState.rentalCalculation.startTime,
@@ -712,7 +712,7 @@ export default function MotoVehicleDetails() {
       vehicleId: vehicle.id,
       vehicleType: (vehicle.vehicleType as any) || "moto",
       vehicleLabel: `${vehicle.brand} ${vehicle.model}`,
-      vehicleThumbnail: photos.length > 0 ? photos[0].url : undefined,
+      vehicleThumbnail: primaryPhoto?.url,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       startTime,
@@ -740,7 +740,7 @@ export default function MotoVehicleDetails() {
     if (added) {
       clearBookingDraft();
       setLastAddedCartItemId(added);
-      if (originEl) flyToCart(originEl, photos.length > 0 ? photos[0].url : undefined);
+      if (originEl) flyToCart(originEl, primaryPhoto?.url);
       openAddedModal({
         label: `${vehicle.brand} ${vehicle.model}`,
         dates: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
@@ -1054,7 +1054,7 @@ export default function MotoVehicleDetails() {
     );
   }
 
-  const primaryPhoto = photos.find((p) => p.isPrimary) || photos[0];
+  const primaryPhoto = photos.find((p) => p.isPrimary) || photos.find((p) => !p.url.toLowerCase().includes(".heic")) || photos[0];
   const dailyRate = vehicle.dailyPrice;
 
   const originalRate = Math.round(dailyRate * 1.2);
@@ -1833,7 +1833,7 @@ export default function MotoVehicleDetails() {
         onClose={() => setIsCartAddModalOpen(false)}
         pricePerDay={vehicle?.dailyPrice ?? 0}
         vehicleLabel={vehicle ? `${vehicle.brand} ${vehicle.model}` : ""}
-        vehicleThumbnail={photos.length > 0 ? photos[0].url : undefined}
+        vehicleThumbnail={primaryPhoto?.url}
         dateLocale={dateLocale}
         t={t}
         onAddToCart={doAddToCart}
@@ -1860,7 +1860,7 @@ export default function MotoVehicleDetails() {
             brand: vehicle.brand,
             model: vehicle.model,
             year: vehicle.year,
-            imageUrl: photos.length > 0 ? photos[0].url : undefined,
+            imageUrl: primaryPhoto?.url,
             category: vehicle.vehicleType ?? "moto",
             vehicleType: vehicle.vehicleType ?? "moto",
           }}
@@ -1883,7 +1883,7 @@ export default function MotoVehicleDetails() {
         isOpen={showMultiVehicleModal}
         onClose={() => setShowMultiVehicleModal(false)}
         onContinueWithOne={handleContinueWithOneVehicle}
-        selectedVehicleImage={photos.length > 0 ? photos[0].url : undefined}
+        selectedVehicleImage={primaryPhoto?.url}
         selectedVehicleName={
           vehicle ? `${vehicle.brand} ${vehicle.model}` : undefined
         }
