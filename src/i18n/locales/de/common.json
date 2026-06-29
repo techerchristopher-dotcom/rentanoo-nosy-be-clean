@@ -1412,5 +1412,12 @@
     "titleQuad": "Verfügbare Quads & Buggys",
     "countQuad": "{{count}} Quad(s)",
     "noMatchQuad": "Kein Quad entspricht Ihren Filtern."
+  },
+  "youtube": {
+    "sectionTitle": "Präsentationsvideo",
+    "watchOnYouTube": "Auf YouTube ansehen",
+    "iframeTitle": "Präsentationsvideo des Fahrzeugs",
+    "playVideo": "Präsentationsvideo abspielen",
+    "thumbnailAlt": "Vorschaubild des Präsentationsvideos"
   }
 }

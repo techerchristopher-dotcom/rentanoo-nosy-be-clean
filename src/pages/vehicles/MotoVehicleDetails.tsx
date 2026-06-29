@@ -118,6 +118,7 @@ import { createRentalCalculation } from "@/lib/utils";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { mapToMotoVehicle } from "@/mappers/vehicleMappers";
 import { isMoto } from "@/utils/vehicleType";
+import { YouTubePlayer } from "@/components/vehicles/YouTubePlayer";
 import { Seo } from "@/components/seo/Seo";
 import {
   buildVehicleSeoTitle,
@@ -1321,6 +1322,9 @@ export default function MotoVehicleDetails() {
                   </div>
                 )}
               </div>
+
+              {/* Vidéo de présentation YouTube */}
+              <YouTubePlayer youtubeUrl={vehicle?.youtubeUrl} />
 
               <div className="lg:hidden mb-6">
                 <PricingCard />

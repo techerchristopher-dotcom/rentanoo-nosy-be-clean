@@ -107,6 +107,7 @@ import { buildVehicleProductSchema } from "@/utils/vehicleSchema";
 import { ShareButton } from "@/components/shared/ShareButton";
 import { TranslatableDescription } from "@/components/shared/TranslatableDescription";
 import { isMoto, isAccommodation } from "@/utils/vehicleType";
+import { YouTubePlayer } from "@/components/vehicles/YouTubePlayer";
 import { getCarEquipmentItems, mapSupabaseEquipment } from "@/utils/vehicleEquipment";
 import {
   Breadcrumb,
@@ -363,10 +364,11 @@ export default function VehicleDetails() {
           additional_driver_free: vehicle.additional_driver_free || false,
           additional_driver_price: vehicle.additional_driver_price || 0,
           
+          youtubeUrl: vehicle.youtube_url || null,
           createdAt: vehicle.created_at || new Date().toISOString(),
           updatedAt: vehicle.updated_at || new Date().toISOString(),
         };
-        
+
         // 🧪 DEBUG: Vérifier le mapping des services
         console.log('🔧 [VehicleDetails] Véhicule Supabase original:', vehicle);
         console.log('🔧 [VehicleDetails] Véhicule mappé:', mappedVehicle);
@@ -1386,6 +1388,9 @@ export default function VehicleDetails() {
                   </div>
                 )}
               </div>
+
+              {/* Vidéo de présentation YouTube */}
+              <YouTubePlayer youtubeUrl={vehicle.youtubeUrl} />
 
               {/* Mobile: Price card appears here, right after photos - NOT STICKY */}
               <div className="lg:hidden mb-6">

@@ -1770,5 +1770,12 @@
         "waPrefillMessage": "Hello Rentanoo,\n\nI'm interested in the accommodations offered by Rentanoo (villa, house, bungalow).\n\nCould you let me know as soon as this service becomes available?\n\nThank you."
       }
     }
+  },
+  "youtube": {
+    "sectionTitle": "Presentation video",
+    "watchOnYouTube": "Watch on YouTube",
+    "iframeTitle": "Vehicle presentation video",
+    "playVideo": "Play presentation video",
+    "thumbnailAlt": "Presentation video thumbnail"
   }
 }

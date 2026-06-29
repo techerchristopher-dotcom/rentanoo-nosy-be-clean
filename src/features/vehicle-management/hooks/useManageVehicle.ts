@@ -201,6 +201,7 @@ export function useManageVehicle(
         additionalDriverService: vehicleData.additional_driver_service || false,
         additionalDriverFree: vehicleData.additional_driver_free ?? false,
         additionalDriverPrice: (vehicleData.additional_driver_price || 15).toString(),
+        youtubeUrl: (vehicleData as unknown as { youtube_url?: string | null }).youtube_url || "",
         listingOwnerId: vehicleData.listing_owner_id || "",
         listingOwnerDisplayName: "",
         listingOwnerAvatarUrl: "",

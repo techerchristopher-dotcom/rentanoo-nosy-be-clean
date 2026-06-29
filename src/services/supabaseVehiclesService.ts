@@ -110,6 +110,9 @@ export interface Vehicle {
   additional_driver_free?: boolean | null;
   additional_driver_price?: number | null;
   
+  /** URL canonique YouTube (https://www.youtube.com/watch?v={ID}). Null = pas de vidéo. */
+  youtube_url?: string | null;
+
   created_at: string | null;
   updated_at: string | null;
 
@@ -485,6 +488,7 @@ export const SupabaseVehiclesService = {
     long_duration_discount_14?: number;
     long_duration_discount_60?: number;
     deposit_amount?: number;
+    youtube_url?: string | null;
   }): Promise<{ data: Vehicle | null; error: string | null }> {
     try {
       debug('SupabaseVehiclesService.updateVehicle - ID:', vehicleId);

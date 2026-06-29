@@ -123,6 +123,9 @@ export interface VehicleFormData {
   additionalDriverFree: boolean;
   additionalDriverPrice: string;
 
+  /** URL canonique YouTube (https://www.youtube.com/watch?v={ID}). Vide = pas de vidéo. */
+  youtubeUrl: string;
+
   /** Propriétaire affiché publiquement (listing_owners) */
   listingOwnerId: string;
   listingOwnerDisplayName: string;
@@ -258,6 +261,7 @@ export const initialFormData: VehicleFormData = {
   additionalDriverService: false,
   additionalDriverFree: false,
   additionalDriverPrice: "15",
+  youtubeUrl: "",
   listingOwnerId: "",
   listingOwnerDisplayName: "",
   listingOwnerAvatarUrl: "",

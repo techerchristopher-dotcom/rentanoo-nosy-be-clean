@@ -146,6 +146,8 @@ export interface Vehicle {
   descriptionEn?: string | null;
   descriptionDe?: string | null;
   descriptionIt?: string | null;
+  /** URL canonique YouTube (https://www.youtube.com/watch?v={ID}). Null = pas de vidéo. */
+  youtubeUrl?: string | null;
   location?: string; // Libellé affichable (quartier ou zones pickup)
   /** Quartier structuré (FK location_areas) */
   locationArea?: LocationAreaRef;

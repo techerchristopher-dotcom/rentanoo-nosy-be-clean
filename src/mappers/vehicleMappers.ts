@@ -43,6 +43,7 @@ export const mapToCarVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
     vehicle.pickup_zones && vehicle.pickup_zones.length > 0
       ? vehicle.pickup_zones.join(", ")
       : "Nosy Be, Madagascar", // Utiliser les zones de prise en charge
+  youtubeUrl: vehicle.youtube_url || null,
   createdAt: vehicle.created_at || new Date().toISOString(),
   updatedAt: vehicle.updated_at || new Date().toISOString(),
 });
@@ -142,6 +143,7 @@ export const mapToMotoVehicle = (vehicle: SupabaseVehicle): Vehicle => ({
   additional_driver_service: vehicle.additional_driver_service || false,
   additional_driver_free: vehicle.additional_driver_free || false,
   additional_driver_price: vehicle.additional_driver_price || 0,
+  youtubeUrl: vehicle.youtube_url || null,
 });
 
 export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => {
@@ -196,6 +198,7 @@ export const mapToAccommodationVehicle = (vehicle: SupabaseVehicle): Vehicle => 
   seats: (vehicle.seats ?? undefined) as any,
   vehicleType: "accommodation",
   vehicleCategory: vehicle.vehicle_category ?? undefined,
+  youtubeUrl: vehicle.youtube_url || null,
 };
 };
 

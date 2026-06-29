@@ -38,6 +38,7 @@ import { ListingOwnersService } from "@/services/supabase/listingOwners";
 import { ListingOwnerAvatarsService } from "@/services/supabase/listingOwnerAvatars";
 import { LocationAreaSelect } from "@/components/location/LocationAreaSelect";
 import { PhotoWithPrimaryToggle } from "@/components/photos/PhotoWithPrimaryToggle";
+import { extractYouTubeId, toCanonicalYouTubeUrl } from "@/utils/youtube";
 
 // ── Description multilingue ──────────────────────────────────────────────────
 const LANGS = [
@@ -1039,6 +1040,11 @@ export default function ManageVehicle() {
           }
         }
         break;
+      case "youtubeUrl":
+        if (value && value.trim() && !extractYouTubeId(value.trim())) {
+          error = "Lien YouTube invalide. Formats acceptés : youtube.com/watch?v=..., youtu.be/..., ou ID brut.";
+        }
+        break;
     }
     
     setValidationErrors(prev => ({
@@ -1644,6 +1650,22 @@ export default function ManageVehicle() {
           description: "Les informations de base ont été sauvegardées, mais les remises n'ont pas pu être mises à jour.",
           variant: "destructive",
         });
+      }
+
+      // Sauvegarder l'URL YouTube (normalisation à la sauvegarde)
+      try {
+        const rawYoutube = formData.youtubeUrl?.trim() || "";
+        const canonicalUrl = rawYoutube ? toCanonicalYouTubeUrl(rawYoutube) : null;
+        const youtubeResult = await SupabaseVehiclesService.updateVehicle(vehicle.id, {
+          youtube_url: canonicalUrl,
+        });
+        if (youtubeResult.error) {
+          console.warn("La vidéo YouTube n'a pas pu être sauvegardée:", youtubeResult.error);
+        } else {
+          console.log("Vidéo YouTube sauvegardée avec succès");
+        }
+      } catch (youtubeError) {
+        console.warn("Erreur lors de la sauvegarde de la vidéo YouTube:", youtubeError);
       }
 
       // Sauvegarder les équipements hébergement (colonnes existantes en base)
@@ -4013,6 +4035,37 @@ export default function ManageVehicle() {
                       <p className="text-sm">Utilisez la zone ci-dessus pour ajouter des photos</p>
                     </div>
                   )}
+                </div>
+
+                {/* Vidéo YouTube */}
+                <div className="space-y-2 pt-4 border-t">
+                  <Label htmlFor="youtubeUrl" className="flex items-center gap-2 font-medium">
+                    Vidéo de présentation (YouTube)
+                    <span className="text-xs font-normal text-muted-foreground">— optionnel</span>
+                  </Label>
+                  <Input
+                    id="youtubeUrl"
+                    value={formData.youtubeUrl}
+                    onChange={(e) => {
+                      updateField("youtubeUrl", e.target.value);
+                      validateField("youtubeUrl", e.target.value);
+                    }}
+                    onBlur={(e) => validateField("youtubeUrl", e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=... ou youtu.be/..."
+                    className={validationErrors.youtubeUrl ? "border-destructive" : ""}
+                  />
+                  {validationErrors.youtubeUrl && (
+                    <p className="text-sm text-destructive">{validationErrors.youtubeUrl}</p>
+                  )}
+                  {formData.youtubeUrl && !validationErrors.youtubeUrl && extractYouTubeId(formData.youtubeUrl) && (
+                    <p className="text-sm text-green-600 flex items-center gap-1">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Vidéo reconnue — elle sera affichée sur la fiche produit.
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Formats acceptés : youtube.com/watch?v=..., youtu.be/..., ou l&apos;ID brut (11 caractères).
+                  </p>
                 </div>
               </CardContent>
             </Card>
