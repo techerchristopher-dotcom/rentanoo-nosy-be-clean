@@ -616,21 +616,21 @@ const OwnerVehicles = () => {
               {displayVehicles.map((vehicle) => (
                 <Card key={vehicle.id} className="hover:shadow-xl hover:scale-105 transition-all duration-300 relative overflow-hidden group border-0 shadow-lg">
                   {/* Fond avec photo — img + lazy au lieu de background-image pour optimiser */}
-                  {vehicle.imageUrl && (
-                    <img
-                      src={
-                        vehicle.imageUrl.includes("supabase.co/storage")
+                  <img
+                    src={
+                      vehicle.imageUrl
+                        ? vehicle.imageUrl.includes("supabase.co/storage")
                           ? getOptimizedImageUrl(vehicle.imageUrl, 600, 400)
                           : vehicle.imageUrl
-                      }
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 opacity-60"
-                      loading="lazy"
-                      decoding="async"
-                      width={600}
-                      height={400}
-                    />
-                  )}
+                        : "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop"
+                    }
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 opacity-60"
+                    loading="lazy"
+                    decoding="async"
+                    width={600}
+                    height={400}
+                  />
                   
                   {/* Overlay avec dégradé moderne */}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/85 via-white/70 to-white/90 group-hover:from-white/80 group-hover:via-white/65 group-hover:to-white/85 transition-all duration-300" />
