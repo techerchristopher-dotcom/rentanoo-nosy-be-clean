@@ -1418,6 +1418,8 @@
     "watchOnYouTube": "Auf YouTube ansehen",
     "iframeTitle": "Präsentationsvideo des Fahrzeugs",
     "playVideo": "Präsentationsvideo abspielen",
-    "thumbnailAlt": "Vorschaubild des Präsentationsvideos"
+    "thumbnailAlt": "Vorschaubild des Präsentationsvideos",
+    "showVideo": "Präsentationsvideo ansehen",
+    "hideVideo": "Video ausblenden"
   }
 }

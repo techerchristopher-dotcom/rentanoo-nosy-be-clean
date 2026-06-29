@@ -1418,6 +1418,8 @@
     "watchOnYouTube": "Guarda su YouTube",
     "iframeTitle": "Video di presentazione del veicolo",
     "playVideo": "Riproduci il video di presentazione",
-    "thumbnailAlt": "Anteprima del video di presentazione"
+    "thumbnailAlt": "Anteprima del video di presentazione",
+    "showVideo": "Guarda il video di presentazione",
+    "hideVideo": "Nascondi video"
   }
 }

@@ -1779,6 +1779,8 @@
     "watchOnYouTube": "Voir sur YouTube",
     "iframeTitle": "Vidéo de présentation du véhicule",
     "playVideo": "Lire la vidéo de présentation",
-    "thumbnailAlt": "Vignette de la vidéo de présentation"
+    "thumbnailAlt": "Vignette de la vidéo de présentation",
+    "showVideo": "Voir la vidéo de présentation",
+    "hideVideo": "Masquer la vidéo"
   }
 }

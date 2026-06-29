@@ -1776,6 +1776,8 @@
     "watchOnYouTube": "Watch on YouTube",
     "iframeTitle": "Vehicle presentation video",
     "playVideo": "Play presentation video",
-    "thumbnailAlt": "Presentation video thumbnail"
+    "thumbnailAlt": "Presentation video thumbnail",
+    "showVideo": "Watch the presentation video",
+    "hideVideo": "Hide video"
   }
 }
