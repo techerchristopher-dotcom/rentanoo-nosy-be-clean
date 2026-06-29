@@ -117,24 +117,7 @@ export interface Vehicle {
   primaryPhotoUrl?: string | null;
 }
 
-/** HEIC non supporté par le navigateur → ignorer pour éviter erreurs d'affichage / dégradation LCP */
-function isHeicUrl(url: string | undefined): boolean {
-  if (!url) return false;
-  const lower = url.toLowerCase();
-  return lower.endsWith(".heic") || lower.includes(".heic?");
-}
-
-/** Règles de sélection photo principale (alignées avec PhotoService.getPrimaryPhotosForVehicles).
- * Ignore les .heic (non affichables) et privilégie jpg/png/webp. */
-function pickPrimaryPhotoUrl(photos: Array<{ photo_url?: string; is_primary?: boolean; display_order?: number }> | null): string | null {
-  if (!photos || photos.length === 0) return null;
-  const valid = photos.filter((p) => p.photo_url && !isHeicUrl(p.photo_url));
-  if (valid.length === 0) return null;
-  const primary = valid.find((p) => p.is_primary);
-  if (primary?.photo_url) return primary.photo_url;
-  const sorted = [...valid].sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
-  return sorted[0]?.photo_url ?? null;
-}
+import { getValidPrimaryPhoto } from '@/utils/photoUtils';
 
 export const SupabaseVehiclesService = {
   /**
@@ -199,7 +182,7 @@ export const SupabaseVehiclesService = {
       const rows = (data || []) as Array<Vehicle & { vehicle_photos?: Array<{ photo_url?: string; is_primary?: boolean; display_order?: number }> }>;
       return rows.map(({ vehicle_photos, ...v }) => ({
         ...v,
-        primaryPhotoUrl: pickPrimaryPhotoUrl(vehicle_photos) ?? null,
+        primaryPhotoUrl: getValidPrimaryPhoto(vehicle_photos) ?? null,
       })) as Vehicle[];
     } catch (error) {
       console.error('Erreur lors de la récupération des véhicules:', error);
@@ -572,7 +555,7 @@ export const SupabaseVehiclesService = {
       const rows = (vehiclesData || []) as Array<Vehicle & { vehicle_photos?: Array<{ photo_url?: string; is_primary?: boolean; display_order?: number }> }>;
       let availableVehicles = rows.map(({ vehicle_photos, ...v }) => ({
         ...v,
-        primaryPhotoUrl: pickPrimaryPhotoUrl(vehicle_photos) ?? null,
+        primaryPhotoUrl: getValidPrimaryPhoto(vehicle_photos) ?? null,
       })) as Vehicle[];
 
       // 2. Filtre par localisation dans pickup_zones (côté client)

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { compressForUpload } from "@/utils/compressForUpload";
+import { getValidPrimaryPhoto } from "@/utils/photoUtils";
 
 export interface PhotoUpload {
   file: File;
@@ -76,7 +77,7 @@ export class PhotoService {
           vehicle_id: vehicleId,
           photo_url: publicUrl,
           storage_path: fileName,
-          is_primary: photoType === 'frontLeft',
+          is_primary: false,
           display_order: position ?? 1,
         });
 
@@ -266,29 +267,12 @@ export class PhotoService {
 
       const result: Record<string, UploadedPhoto> = {};
 
-      const isHeic = (url: string | null | undefined, path?: string | null) => {
-        const u = (url || path || '').toLowerCase();
-        return u.endsWith('.heic') || u.includes('.heic?');
-      };
-
       for (const [vehicleId, rows] of Object.entries(byVehicle)) {
-        const validRows = rows.filter((r) => !isHeic(r.photo_url, r.storage_path));
-        if (validRows.length === 0) continue;
+        // Utilise getValidPrimaryPhoto pour la sélection centralisée
+        const chosenUrl = getValidPrimaryPhoto(rows);
+        if (!chosenUrl) continue;
 
-        // 1) Essayer de trouver une photo marquée principale
-        let chosen = validRows.find((r) => r.is_primary) as any | undefined;
-
-        // 2) Sinon, prendre la plus petite display_order
-        if (!chosen) {
-          validRows.sort((a, b) => {
-            const da = a.display_order ?? Number.MAX_SAFE_INTEGER;
-            const db = b.display_order ?? Number.MAX_SAFE_INTEGER;
-            return da - db;
-          });
-          chosen = validRows[0];
-        }
-
-        if (!chosen) continue;
+        const chosen = rows.find((r) => r.photo_url === chosenUrl)!;
 
         // Construire un UploadedPhoto cohérent avec le reste du service
         const uploaded: UploadedPhoto = {

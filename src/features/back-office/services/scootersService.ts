@@ -1,26 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { OperationalStatus } from "@/integrations/supabase/types";
 import type { Scooter, ScooterFilters, ScooterInsert, ScooterUpdate } from "../types";
+import { getValidPrimaryPhoto } from "@/utils/photoUtils";
 
 export type ScooterListItem = Scooter & { primaryPhotoUrl: string | null };
-
-function isHeicUrl(url: string | undefined): boolean {
-  if (!url) return false;
-  const lower = url.toLowerCase();
-  return lower.endsWith(".heic") || lower.includes(".heic?");
-}
-
-function pickPrimaryPhotoUrl(
-  photos: Array<{ photo_url?: string; is_primary?: boolean; display_order?: number }> | null
-): string | null {
-  if (!photos || photos.length === 0) return null;
-  const valid = photos.filter((p) => p.photo_url && !isHeicUrl(p.photo_url));
-  if (valid.length === 0) return null;
-  const primary = valid.find((p) => p.is_primary);
-  if (primary?.photo_url) return primary.photo_url;
-  const sorted = [...valid].sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
-  return sorted[0]?.photo_url ?? null;
-}
 
 export async function listScooters(filters: ScooterFilters = {}): Promise<ScooterListItem[]> {
   let query = supabase
@@ -50,7 +33,7 @@ export async function listScooters(filters: ScooterFilters = {}): Promise<Scoote
     return {
       ...vehicle,
       primaryPhotoUrl:
-        pickPrimaryPhotoUrl(vehicle_photos ?? null) ?? vehicle.image_url ?? null,
+        getValidPrimaryPhoto(vehicle_photos ?? null) ?? vehicle.image_url ?? null,
     } as ScooterListItem;
   });
 }
