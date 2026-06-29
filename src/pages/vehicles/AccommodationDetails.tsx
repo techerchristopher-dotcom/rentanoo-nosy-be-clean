@@ -128,6 +128,7 @@ import { trackWhatsAppFabEvent } from "@/lib/whatsappAnalytics";
 import { flyToCart } from "@/utils/cartFlyAnimation";
 import { mapToAccommodationVehicle } from "@/mappers/vehicleMappers";
 import { isAccommodation } from "@/utils/vehicleType";
+import { YouTubePlayer } from "@/components/vehicles/YouTubePlayer";
 import { useListingTerms } from "@/utils/listingTerminology";
 import { Seo } from "@/components/seo/Seo";
 import { ShareButton } from "@/components/shared/ShareButton";
@@ -1194,6 +1195,9 @@ export default function AccommodationDetails() {
                   </div>
                 )}
               </div>
+
+              {/* Vidéo de présentation YouTube */}
+              <YouTubePlayer youtubeUrl={vehicle?.youtubeUrl} />
 
               <div className="lg:hidden mb-6">
                 <PricingCard />
