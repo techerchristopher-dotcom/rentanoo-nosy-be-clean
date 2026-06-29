@@ -30,6 +30,7 @@ import {
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { supabase } from "@/integrations/supabase/client";
+import { getValidPrimaryPhoto } from "@/utils/photoUtils";
 import { getPublicListingPath, getListingLicense } from "@/utils/vehicleType";
 import { getCylindreeBadge, parseCylindree } from "@/utils/getCylindreeBadge";
 import { cn } from "@/lib/utils";
@@ -382,16 +383,19 @@ export default function LocationScooterNosyBePage() {
         ),
       ];
 
+      // Groupe les rows par vehicle_id en objets complets
+      const rowsByVehicle: Record<string, Array<{ photo_url: string; is_primary: boolean | null; display_order: number | null }>> = {};
       for (const row of allRows) {
         const vid = row.vehicle_id as string;
-        if (!grouped[vid]) grouped[vid] = [];
         if (row.photo_url) {
-          if (row.is_primary) grouped[vid].unshift(row.photo_url);
-          else grouped[vid].push(row.photo_url);
+          if (!rowsByVehicle[vid]) rowsByVehicle[vid] = [];
+          rowsByVehicle[vid].push({ photo_url: row.photo_url, is_primary: row.is_primary ?? null, display_order: row.display_order ?? null });
         }
       }
-      for (const vid of Object.keys(grouped)) {
-        grouped[vid] = grouped[vid].slice(0, 5);
+      for (const [vid, rows] of Object.entries(rowsByVehicle)) {
+        const primaryUrl = getValidPrimaryPhoto(rows);
+        const others = rows.map(r => r.photo_url).filter(u => u !== primaryUrl);
+        grouped[vid] = (primaryUrl ? [primaryUrl, ...others] : others).slice(0, 5);
       }
       setPhotosByVehicle(grouped);
     });

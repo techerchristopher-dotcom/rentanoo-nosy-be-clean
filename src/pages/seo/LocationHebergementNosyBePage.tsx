@@ -30,6 +30,7 @@ import {
 import { ClientMgaPrice } from "@/components/currency/ClientMgaPrice";
 import { SupabaseVehiclesService, Vehicle as SupabaseVehicle } from "@/services/supabaseVehiclesService";
 import { supabase } from "@/integrations/supabase/client";
+import { getValidPrimaryPhoto } from "@/utils/photoUtils";
 import { getPublicListingPath } from "@/utils/vehicleType";
 import { getCapacityBadge } from "@/utils/getCapacityBadge";
 import { cn } from "@/lib/utils";
@@ -358,21 +359,18 @@ export default function LocationHebergementNosyBePage() {
       if (!rows) return;
 
       const grouped: Record<string, string[]> = {};
+      const rowsByVehicle: Record<string, Array<{ photo_url: string; is_primary: boolean | null; display_order: number | null }>> = {};
       for (const row of rows) {
         const vid = row.vehicle_id as string;
-        if (!grouped[vid]) grouped[vid] = [];
         if (row.photo_url) {
-          // Mettre la photo principale en premier
-          if (row.is_primary) {
-            grouped[vid].unshift(row.photo_url);
-          } else {
-            grouped[vid].push(row.photo_url);
-          }
+          if (!rowsByVehicle[vid]) rowsByVehicle[vid] = [];
+          rowsByVehicle[vid].push({ photo_url: row.photo_url, is_primary: row.is_primary ?? null, display_order: (row as any).display_order ?? null });
         }
       }
-      // Limiter à 5 photos par carte
-      for (const vid of Object.keys(grouped)) {
-        grouped[vid] = grouped[vid].slice(0, 5);
+      for (const [vid, vRows] of Object.entries(rowsByVehicle)) {
+        const primaryUrl = getValidPrimaryPhoto(vRows);
+        const others = vRows.map(r => r.photo_url).filter(u => u !== primaryUrl);
+        grouped[vid] = (primaryUrl ? [primaryUrl, ...others] : others).slice(0, 5);
       }
       setPhotosByVehicle(grouped);
     });
