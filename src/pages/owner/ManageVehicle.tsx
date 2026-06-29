@@ -4047,7 +4047,7 @@ export default function ManageVehicle() {
                     id="youtubeUrl"
                     value={formData.youtubeUrl}
                     onChange={(e) => {
-                      updateField("youtubeUrl", e.target.value);
+                      handleInputChange("youtubeUrl", e.target.value);
                       validateField("youtubeUrl", e.target.value);
                     }}
                     onBlur={(e) => validateField("youtubeUrl", e.target.value)}
