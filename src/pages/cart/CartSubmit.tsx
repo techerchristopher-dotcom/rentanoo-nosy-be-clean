@@ -154,77 +154,51 @@ export default function CartSubmit() {
       const email = guestEmail.trim();
       const phone = guestPhone.trim();
 
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: crypto.randomUUID(),
-        options: { data: { firstName, lastName } },
-      });
-
-      if (signUpError) {
-        stepTimers.forEach(clearTimeout);
-        setSubmitting(false);
-        const isAlreadyRegistered =
-          signUpError.message.toLowerCase().includes("already registered") ||
-          signUpError.message.toLowerCase().includes("already been registered");
-        toast({
-          title: isAlreadyRegistered ? "Email déjà utilisé" : "Erreur lors de la création du compte",
-          description: isAlreadyRegistered
-            ? "Un compte existe déjà avec cet email. Connecte-toi pour envoyer ta demande."
-            : signUpError.message,
-          variant: "destructive",
-        });
-        if (isAlreadyRegistered) {
-          navigate(`/auth/login?redirect=${encodeURIComponent("/panier/soumettre")}`);
-        }
-        return;
-      }
-
-      if (!signUpData.session) {
-        stepTimers.forEach(clearTimeout);
-        setSubmitting(false);
-        toast({
-          title: "Vérifie ta boîte email",
-          description:
-            "Un email de confirmation a été envoyé. Confirme-le puis reviens ici — ton panier est sauvegardé.",
-        });
-        return;
-      }
-
-      await supabase.from("profiles").upsert({
-        id: signUpData.session.user.id,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        role: "renter",
-        kyc_status: "pending",
-      });
-
-      effectiveClientName = `${firstName} ${lastName}`;
+      // Invité pur : AUCUNE création de compte (plus de signUp → plus de bug
+      // "email déjà utilisé" ni de confirmation email bloquante). Le contact est
+      // transmis à la RPC create_web_guest_booking et stocké sur le booking (guest_*).
+      effectiveClientName = `${firstName} ${lastName}`.trim();
       effectiveClientEmail = email;
       effectiveClientPhone = phone;
-      effectiveClientUserId = signUpData.session.user.id;
+      effectiveClientUserId = "";
     }
 
     const cartGroupId = crypto.randomUUID();
     const results: ItemResult[] = [];
 
     for (const item of items) {
-      const { data, error } = await SupabaseBookingsService.createBooking({
-        vehicleId: item.vehicleId,
-        renterId: effectiveClientUserId,
-        startDate: item.startDate,
-        endDate: item.endDate,
-        startTime: item.startTime,
-        endTime: item.endTime,
-        pickupLocation: item.pickupLocation,
-        hotelName: item.hotelName?.trim() || undefined,
-        notes: notes.trim() || undefined,
-        totalPrice: feePreviews[item.id]?.amount_total_expected ?? item.estimatedPrice ?? 0,
-        basePrice: item.estimatedPrice || 0,
-        selectedOptions: item.selectedOptions?.map((o) => ({ id: o.id, name: o.name, pricePerDay: 0, totalPrice: o.totalPrice })),
-        cartGroupId,
-      });
+      const selectedOptions = item.selectedOptions?.map((o) => ({ id: o.id, name: o.name, pricePerDay: 0, totalPrice: o.totalPrice }));
+      const { data, error } = authUser
+        ? await SupabaseBookingsService.createBooking({
+            vehicleId: item.vehicleId,
+            renterId: effectiveClientUserId,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            pickupLocation: item.pickupLocation,
+            hotelName: item.hotelName?.trim() || undefined,
+            notes: notes.trim() || undefined,
+            totalPrice: feePreviews[item.id]?.amount_total_expected ?? item.estimatedPrice ?? 0,
+            basePrice: item.estimatedPrice || 0,
+            selectedOptions,
+            cartGroupId,
+          })
+        : await SupabaseBookingsService.createGuestBooking({
+            vehicleId: item.vehicleId,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            startTime: item.startTime,
+            endTime: item.endTime,
+            pickupLocation: item.pickupLocation,
+            hotelName: item.hotelName?.trim() || undefined,
+            notes: notes.trim() || undefined,
+            selectedOptions,
+            cartGroupId,
+            guestName: effectiveClientName,
+            guestEmail: effectiveClientEmail,
+            guestPhone: effectiveClientPhone,
+          });
 
       results.push({
         id: item.id,
