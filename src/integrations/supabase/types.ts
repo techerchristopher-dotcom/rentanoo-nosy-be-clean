@@ -218,6 +218,9 @@ export type Database = {
           deposit_status: string | null
           end_date: string
           end_time: string | null
+          guest_email: string | null
+          guest_name: string | null
+          guest_phone: string | null
           id: string
           offline_payment_method: string | null
           options_total: number
@@ -269,6 +272,9 @@ export type Database = {
           deposit_status?: string | null
           end_date: string
           end_time?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           offline_payment_method?: string | null
           options_total: number
@@ -320,6 +326,9 @@ export type Database = {
           deposit_status?: string | null
           end_date?: string
           end_time?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           offline_payment_method?: string | null
           options_total?: number
@@ -2266,6 +2275,25 @@ export type Database = {
             }
             Returns: Json
           }
+      create_web_guest_booking: {
+        Args: {
+          p_cart_group_id?: string
+          p_end_date: string
+          p_end_time: string
+          p_guest_email: string
+          p_guest_name: string
+          p_guest_phone: string
+          p_hotel_name: string
+          p_notes?: string
+          p_payment_method: string
+          p_pickup_location: string
+          p_selected_options: Json
+          p_start_date: string
+          p_start_time: string
+          p_vehicle_id: string
+        }
+        Returns: Json
+      }
       derive_booking_locations: {
         Args: { p_hotel_name?: string; p_selected_options: Json }
         Returns: {

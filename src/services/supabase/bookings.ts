@@ -33,6 +33,7 @@ function mapCreateWebBookingRpcError(message: string): string {
   if (message.includes('HOTEL_NAME_REQUIRED')) return 'HOTEL_NAME_REQUIRED';
   if (message.includes('UNAUTHENTICATED')) return 'UNAUTHENTICATED';
   if (message.includes('INVALID_PAYMENT_METHOD')) return 'INVALID_PAYMENT_METHOD';
+  if (message.includes('GUEST_CONTACT_REQUIRED')) return 'GUEST_CONTACT_REQUIRED';
   return message;
 }
 
@@ -71,6 +72,33 @@ export interface BookingData {
   paymentMethod?: BookingPaymentMethod;
   /** Panier multi-réservation : regroupe plusieurs bookings soumis en une seule fois. */
   cartGroupId?: string;
+}
+
+/**
+ * Données pour une réservation en INVITÉ PUR (sans compte).
+ * Pas de renterId : la RPC create_web_guest_booking insère user_id = NULL et
+ * stocke le contact dans guest_name / guest_email / guest_phone.
+ */
+export interface GuestBookingData {
+  vehicleId: string;
+  startDate: string; // Format ISO
+  endDate: string; // Format ISO
+  startTime?: string;
+  endTime?: string;
+  pickupLocation?: string;
+  hotelName?: string;
+  notes?: string;
+  selectedOptions?: Array<{
+    id?: string;
+    name: string;
+    pricePerDay: number;
+    totalPrice: number;
+  }>;
+  paymentMethod?: BookingPaymentMethod;
+  cartGroupId?: string;
+  guestName: string;
+  guestEmail: string;
+  guestPhone: string;
 }
 
 export interface BookingResponse {
@@ -171,6 +199,66 @@ export class SupabaseBookingsService {
       };
     } catch (error: any) {
       // Erreur inattendue lors de la création de la réservation
+      return { data: null, error: error.message || 'Erreur lors de la création de la réservation' };
+    }
+  }
+
+  /**
+   * Création d'une réservation en INVITÉ PUR (sans compte).
+   * Appelle la RPC SECURITY DEFINER create_web_guest_booking : recalcul serveur
+   * des montants avec les mêmes fonctions de prix que create_web_booking,
+   * insère user_id = NULL + guest_* + status = 'pending'.
+   */
+  static async createGuestBooking(bookingData: GuestBookingData): Promise<{
+    data: BookingResponse | null;
+    error: string | null;
+  }> {
+    try {
+      const startMs = new Date(bookingData.startDate).getTime();
+      const endMs = new Date(bookingData.endDate).getTime();
+      if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+        return { data: null, error: 'INVALID_DATETIME_RANGE' };
+      }
+
+      const paymentMethod: BookingPaymentMethod =
+        bookingData.paymentMethod ?? 'card_online';
+
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_web_guest_booking', {
+        p_vehicle_id: bookingData.vehicleId,
+        p_start_date: bookingData.startDate.split('T')[0],
+        p_end_date: bookingData.endDate.split('T')[0],
+        p_start_time: bookingData.startTime ?? '',
+        p_end_time: bookingData.endTime ?? '',
+        p_pickup_location: bookingData.pickupLocation ?? '',
+        p_selected_options: (bookingData.selectedOptions ?? []) as unknown as Json,
+        p_hotel_name: bookingData.hotelName?.trim() ?? '',
+        p_payment_method: paymentMethod,
+        p_guest_name: bookingData.guestName?.trim() ?? '',
+        p_guest_email: bookingData.guestEmail?.trim() ?? '',
+        p_guest_phone: bookingData.guestPhone?.trim() ?? '',
+        p_cart_group_id: bookingData.cartGroupId ?? null,
+        p_notes: bookingData.notes?.trim() ?? '',
+      });
+
+      if (rpcError) {
+        return { data: null, error: mapCreateWebBookingRpcError(rpcError.message) };
+      }
+
+      const created = rpcData as CreateWebBookingRpcResult | null;
+      if (!created?.id) {
+        return { data: null, error: 'Erreur lors de la création de la réservation' };
+      }
+
+      return {
+        data: {
+          id: created.id,
+          referenceNumber: created.reference_number ?? 0,
+          status: created.status || 'pending',
+          createdAt: created.created_at || new Date().toISOString(),
+        },
+        error: null,
+      };
+    } catch (error: any) {
       return { data: null, error: error.message || 'Erreur lors de la création de la réservation' };
     }
   }
