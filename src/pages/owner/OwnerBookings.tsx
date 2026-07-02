@@ -311,6 +311,10 @@ const OwnerBookings = () => {
         id: booking.id,
         vehicleId: booking.vehicle_id,
         renterId: booking.user_id,
+        // Contact invité (bookings.guest_*) — renseigné seulement si demande sans compte
+        guestName: booking.guest_name ?? null,
+        guestEmail: booking.guest_email ?? null,
+        guestPhone: booking.guest_phone ?? null,
         startDate: booking.start_date,
         endDate: booking.end_date,
         totalAmount: booking.total_price,

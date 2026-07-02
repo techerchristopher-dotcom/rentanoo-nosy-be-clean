@@ -599,7 +599,24 @@ export default function RenterBookingCard({
     }
   }, [booking.renter, booking.renterId])
 
-  const renter = booking.renter ?? renterFromFetch
+  // Fallback INVITÉ : pas de compte (renterId absent) + contact invité présent →
+  // renter minimal synthétisé depuis booking.guest_*. Gate stricte : ne se déclenche
+  // JAMAIS pour un booking existant (qui a toujours un renterId).
+  const guestRenter: User | null =
+    !booking.renterId && booking.guestName
+      ? {
+          id: "",
+          email: booking.guestEmail ?? "",
+          firstName: booking.guestName.trim().split(/\s+/)[0] ?? booking.guestName,
+          lastName: booking.guestName.trim().split(/\s+/).slice(1).join(" "),
+          phone: booking.guestPhone ?? undefined,
+          roles: ["renter"] as User["roles"],
+          kycStatus: "pending",
+          createdAt: "",
+          updatedAt: "",
+        }
+      : null
+  const renter = booking.renter ?? renterFromFetch ?? guestRenter
 
   // Charger les données de l'utilisateur actuel
   useEffect(() => {

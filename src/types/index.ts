@@ -223,7 +223,12 @@ export interface Booking {
   id: string;
   vehicleId: string;
   renterId: string;
-  
+  /** Demande INVITÉ (sans compte) : contact stocké sur le booking (bookings.guest_*).
+   *  Renseigné uniquement pour les bookings invités (user_id NULL). */
+  guestName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+
   // Dates et heures complètes
   startDate: string; // ISO string (ex: "2025-01-15T06:30:00Z")
   startTime: string; // Format HH:MM (ex: "06:30")
