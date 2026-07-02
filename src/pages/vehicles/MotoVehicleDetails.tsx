@@ -742,6 +742,13 @@ export default function MotoVehicleDetails() {
       clearBookingDraft();
       setLastAddedCartItemId(added);
       if (originEl) flyToCart(originEl, primaryPhoto?.url);
+      trackBeginCheckout({
+        itemId: vehicle.id,
+        itemName: `${vehicle.brand} ${vehicle.model}`,
+        value: pricing.basePrice,
+        rentalDays: pricing.billableDays,
+        source: "moto_detail",
+      });
       openAddedModal({
         label: `${vehicle.brand} ${vehicle.model}`,
         dates: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },

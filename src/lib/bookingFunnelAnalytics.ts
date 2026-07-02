@@ -52,7 +52,7 @@ export function trackBeginCheckout(params: {
   itemName: string;
   value: number;
   rentalDays: number;
-  source: "vehicle_detail" | "moto_detail";
+  source: "vehicle_detail" | "moto_detail" | "accommodation_detail";
 }): void {
   trackGa4Event("begin_checkout", {
     item_id: params.itemId,

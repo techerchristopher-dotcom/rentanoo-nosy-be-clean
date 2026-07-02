@@ -687,6 +687,13 @@ export default function AccommodationDetails() {
       clearBookingDraft();
       setLastAddedCartItemId(added);
       if (originEl) flyToCart(originEl, primaryPhoto?.url);
+      trackBeginCheckout({
+        itemId: vehicle.id,
+        itemName: vehicle.model,
+        value: pricing.basePrice,
+        rentalDays: pricing.billableDays,
+        source: "accommodation_detail",
+      });
       openAddedModal({
         label: vehicle.model,
         dates: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
