@@ -83,7 +83,7 @@ import {
 } from "@/services/supabase/bookings";
 import { supabase } from "@/integrations/supabase/client";
 import { ANALYTICS_BOOKING_CURRENCY, trackGa4Event } from "@/lib/analytics";
-import { trackMetaLead } from "@/lib/metaPixel";
+import { trackMetaLead, trackMetaContact } from "@/lib/metaPixel";
 import { ProfileService } from "@/services/supabase/profile";
 import { Photo, User, RentalCalculation, VehicleRentalInfo, Vehicle } from "@/types";
 import { createVehicleRentalInfo, createRentalCalculation } from "@/lib/utils";
@@ -1065,7 +1065,10 @@ export default function AccommodationDetails() {
             href={`${whatsappBaseUrl}?text=${encodeURIComponent(`Bonjour, j'ai une question sur ${vehicle ? vehicle.model : "cet hébergement"}${license ? ` (réf: ${license})` : ""}.`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => trackWhatsAppFabEvent("whatsapp_pdp_click", { page_path: `/hebergement/${license}`, vehicle_ref: license ?? "" })}
+            onClick={() => {
+              trackMetaContact();
+              trackWhatsAppFabEvent("whatsapp_pdp_click", { page_path: `/hebergement/${license}`, vehicle_ref: license ?? "" });
+            }}
             className="flex items-center justify-center gap-2 w-full rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700 hover:bg-green-100 transition-colors"
           >
             <MessageSquare className="h-4 w-4 shrink-0" />

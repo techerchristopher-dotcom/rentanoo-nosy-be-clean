@@ -9,6 +9,7 @@ import {
 } from "@/data/explorerFilterConfig";
 import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
 import { trackGa4Event } from "@/lib/analytics";
+import { trackMetaContact } from "@/lib/metaPixel";
 import { buildWhatsAppUrl } from "@/utils/whatsappUrl";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,7 @@ export function EmptyCategoryState({
       subCategory: subCategory ?? "",
     });
 
+    trackMetaContact();
     const message = t(config.waPrefillKey);
     const url = buildWhatsAppUrl(waUrl, message);
     window.open(url, "_blank", "noopener,noreferrer");

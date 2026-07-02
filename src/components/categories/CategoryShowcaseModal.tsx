@@ -16,6 +16,7 @@ import {
 import { isFilterableVehicleType, useCategoryShowcase } from "@/hooks/useCategoryShowcase";
 import { useWhatsAppContact } from "@/contexts/WhatsAppContactContext";
 import { trackGa4Event } from "@/lib/analytics";
+import { trackMetaContact } from "@/lib/metaPixel";
 import { buildWhatsAppUrl } from "@/utils/whatsappUrl";
 import { CategoryShowcaseCard } from "./CategoryShowcaseCard";
 
@@ -44,6 +45,7 @@ export function CategoryShowcaseModal() {
 
       trackGa4Event("category_interest", { category: item.gtagCategoryId });
 
+      trackMetaContact();
       const prefillMessage = t(item.waPrefillKey);
       const url = buildWhatsAppUrl(waUrl, prefillMessage);
       window.open(url, "_blank", "noopener,noreferrer");
